@@ -60,6 +60,16 @@ type GooseDbVersionRelational struct {
 	Tstamp    pgtype.Timestamp
 }
 
+type LoginChallenge struct {
+	TokenHash string
+	UserID    string
+	CreatedAt time.Time
+	ExpiresAt time.Time
+	Attempts  int32
+	UsedAt    *time.Time
+	RemoteIp  string
+}
+
 type OauthClient struct {
 	ClientID      string
 	System        string
@@ -78,6 +88,21 @@ type OauthClient struct {
 	UpdatedBy     string
 }
 
+type Session struct {
+	Jti          string
+	UserID       string
+	Realm        string
+	Roles        []string
+	IssuedAt     time.Time
+	ExpiresAt    time.Time
+	LastSeenAt   time.Time
+	RevokedAt    *time.Time
+	RevokedBy    *string
+	RevokeReason *string
+	RemoteIp     string
+	UserAgent    string
+}
+
 type SigningKey struct {
 	Kid          string
 	Purpose      string
@@ -88,4 +113,35 @@ type SigningKey struct {
 	RetiredAt    *time.Time
 	RequestedBy  *string
 	RequestedAt  *time.Time
+}
+
+type User struct {
+	ID          string
+	Username    string
+	DisplayName string
+	Roles       []string
+	Realm       string
+	Agency      *string
+	IpAllow     []string
+	Status      string
+	CreatedAt   time.Time
+	CreatedBy   string
+	UpdatedAt   time.Time
+	UpdatedBy   string
+}
+
+type UserCredential struct {
+	UserID       string
+	PasswordHash string
+	UpdatedAt    time.Time
+}
+
+type UserMfa struct {
+	UserID         string
+	KeyID          string
+	SecretEnc      []byte
+	EnrolledAt     *time.Time
+	LastStep       int64
+	RecoveryHashes []string
+	UpdatedAt      time.Time
 }

@@ -13,10 +13,12 @@ go 1.27
 //   jwx/v3        the token service's JWK handling and session signing
 //                 (internal/tokens only; already core's dependency)
 //   x/crypto      argon2id for passwords and client secrets (internal/passhash)
+//   pquerna/otp   TOTP (RFC 6238) enrolment and codes of console MFA (internal/authz)
 require (
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/lestrrat-go/jwx/v3 v3.3.0
 	github.com/oapi-codegen/runtime v1.7.0
+	github.com/pquerna/otp v1.5.0
 	github.com/pressly/goose/v3 v3.28.0
 	github.com/prometheus/client_golang v1.24.1
 	github.com/rootxkit/uspace-core v1.1.0
@@ -30,6 +32,7 @@ require (
 require (
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.1 // indirect

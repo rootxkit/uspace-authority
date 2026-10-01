@@ -222,7 +222,7 @@ func (s *Service) authenticateAssertion(ctx context.Context, req TokenRequest, n
 		return Client{}, refuse(http.StatusBadRequest, ErrInvalidRequest, "client_assertion_type_wrong",
 			"client_assertion_type must be "+AssertionType)
 	}
-	id := AssertionIssuer(req.ClientAssertion)
+	id := UnverifiedIssuer(req.ClientAssertion)
 	if id == "" {
 		return Client{}, invalid
 	}

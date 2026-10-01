@@ -49,6 +49,26 @@ type OAuthAdminHandler interface {
 	RotateSigningKey(ctx context.Context, request gen.RotateSigningKeyRequestObject) (gen.RotateSigningKeyResponseObject, error)
 }
 
+// AuthHandler serves /v1/auth/* (api, WP-2).
+type AuthHandler interface {
+	Login(ctx context.Context, request gen.LoginRequestObject) (gen.LoginResponseObject, error)
+	VerifyMFA(ctx context.Context, request gen.VerifyMFARequestObject) (gen.VerifyMFAResponseObject, error)
+	GetSession(ctx context.Context, request gen.GetSessionRequestObject) (gen.GetSessionResponseObject, error)
+	Logout(ctx context.Context, request gen.LogoutRequestObject) (gen.LogoutResponseObject, error)
+}
+
+// UsersHandler serves /v1/users* (api, WP-2).
+type UsersHandler interface {
+	ListUsers(ctx context.Context, request gen.ListUsersRequestObject) (gen.ListUsersResponseObject, error)
+	CreateUser(ctx context.Context, request gen.CreateUserRequestObject) (gen.CreateUserResponseObject, error)
+	GetUser(ctx context.Context, request gen.GetUserRequestObject) (gen.GetUserResponseObject, error)
+	SetUserRoles(ctx context.Context, request gen.SetUserRolesRequestObject) (gen.SetUserRolesResponseObject, error)
+	DisableUser(ctx context.Context, request gen.DisableUserRequestObject) (gen.DisableUserResponseObject, error)
+	EnableUser(ctx context.Context, request gen.EnableUserRequestObject) (gen.EnableUserResponseObject, error)
+	ResetUserMFA(ctx context.Context, request gen.ResetUserMFARequestObject) (gen.ResetUserMFAResponseObject, error)
+	RevokeUserSessions(ctx context.Context, request gen.RevokeUserSessionsRequestObject) (gen.RevokeUserSessionsResponseObject, error)
+}
+
 // Server implements gen.StrictServerInterface by delegating to one
 // handler per group. A group left nil must not be mounted.
 type Server struct {
@@ -57,6 +77,8 @@ type Server struct {
 	AuditHandler
 	TokenHandler
 	OAuthAdminHandler
+	AuthHandler
+	UsersHandler
 }
 
 var _ gen.StrictServerInterface = Server{}

@@ -6,10 +6,11 @@
 // listener mounts the subset it serves with Mount. A work package that
 // adds a group adds its handler interface here.
 //
-// It also holds the role check placeholder of WP-1: every /v1
-// operation names its console roles (x-roles in the contract, Roles
-// here) and RequireRole refuses a request whose identity lacks them.
-// Until WP-2 (internal/authz) replaces the IdentifyFunc there is no
-// session, so the production identity function refuses every request
-// with 401 unauthenticated; tests pass their own.
+// It also holds the access rules of every operation (Authorize, WP-2):
+// public operations (`security: []`), operations open to any console
+// session (`x-session: any`), role operations (x-roles in the contract,
+// Roles here, with the console realm unless an operation names
+// another) and scope operations for machine tokens. The IdentifyFunc
+// that resolves a request's identity is internal/authz's Authenticator
+// in production; tests pass their own.
 package apiserver

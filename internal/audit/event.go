@@ -87,6 +87,25 @@ const (
 	EventKeyRotationRefused   = "key_rotation_refused"
 )
 
+// Event types of WP-2's console accounts (internal/authz): every login,
+// MFA failure, logout, role change and revocation.
+const (
+	EventLoginPasswordAccepted = "login_password_accepted"
+	EventLoginRefused          = "login_refused"
+	EventMFARefused            = "mfa_refused"
+	EventMFAEnrolled           = "mfa_enrolled"
+	EventSessionStarted        = "session_started"
+	EventLogout                = "logout"
+	EventSessionRevoked        = "session_revoked"
+	EventUserCreated           = "user_created"
+	EventUserRolesChanged      = "user_roles_changed"
+	EventUserDisabled          = "user_disabled"
+	EventUserEnabled           = "user_enabled"
+	EventUserMFAReset          = "user_mfa_reset"
+	EventUserBootstrapped      = "user_bootstrapped"
+	EventUserBootstrapRefused  = "user_bootstrap_refused"
+)
+
 // DefaultCatalogue is the catalogue of this build.
 func DefaultCatalogue() Catalogue {
 	return Catalogue{
@@ -102,6 +121,21 @@ func DefaultCatalogue() Catalogue {
 		EventSigningKeyActivated:  {},
 		EventKeyRotationRequested: {},
 		EventKeyRotationRefused:   {},
+
+		EventLoginPasswordAccepted: {},
+		EventLoginRefused:          {},
+		EventMFARefused:            {},
+		EventMFAEnrolled:           {},
+		EventSessionStarted:        {},
+		EventLogout:                {},
+		EventSessionRevoked:        {},
+		EventUserCreated:           {},
+		EventUserRolesChanged:      {},
+		EventUserDisabled:          {},
+		EventUserEnabled:           {},
+		EventUserMFAReset:          {},
+		EventUserBootstrapped:      {},
+		EventUserBootstrapRefused:  {},
 	}
 }
 

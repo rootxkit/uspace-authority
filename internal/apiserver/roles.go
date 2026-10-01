@@ -35,16 +35,24 @@ const (
 // compares the two. An operation absent from Roles, Public and
 // AnySession is refused (fail closed).
 var Roles = map[string][]string{
-	"GetPolicy":         {RoleAdmin},
-	"CreatePolicy":      {RoleAdmin},
-	"ActivatePolicy":    {RoleAdmin},
-	"ListAuditEvents":   {RoleAdmin, RoleAuditor},
-	"ListOAuthClients":  {RoleAdmin},
-	"CreateOAuthClient": {RoleAdmin},
-	"GetOAuthClient":    {RoleAdmin},
-	"UpdateOAuthClient": {RoleAdmin},
-	"ListSigningKeys":   {RoleAdmin},
-	"RotateSigningKey":  {RoleAdmin},
+	"GetPolicy":          {RoleAdmin},
+	"CreatePolicy":       {RoleAdmin},
+	"ActivatePolicy":     {RoleAdmin},
+	"ListAuditEvents":    {RoleAdmin, RoleAuditor},
+	"ListOAuthClients":   {RoleAdmin},
+	"CreateOAuthClient":  {RoleAdmin},
+	"GetOAuthClient":     {RoleAdmin},
+	"UpdateOAuthClient":  {RoleAdmin},
+	"ListSigningKeys":    {RoleAdmin},
+	"RotateSigningKey":   {RoleAdmin},
+	"ListUsers":          {RoleAdmin},
+	"CreateUser":         {RoleAdmin},
+	"GetUser":            {RoleAdmin},
+	"SetUserRoles":       {RoleAdmin},
+	"DisableUser":        {RoleAdmin},
+	"EnableUser":         {RoleAdmin},
+	"ResetUserMFA":       {RoleAdmin},
+	"RevokeUserSessions": {RoleAdmin},
 }
 
 // Public lists the operations with `security: []` in the contract: no
@@ -58,17 +66,23 @@ var Public = map[string]bool{
 	"RequestToken":      true,
 	"GetJWKS":           true,
 	"GetIssuerMetadata": true,
+	"Login":             true,
+	"VerifyMFA":         true,
 }
 
 // AnySession lists the operations open to every console session
 // whatever its roles (`x-session: any` in the contract).
-var AnySession = map[string]bool{}
+var AnySession = map[string]bool{"GetSession": true, "Logout": true}
 
 // Rules is the access rule set Authorize applies.
 type Rules struct {
 	Public     map[string]bool
 	AnySession map[string]bool
 	Roles      map[string][]string
+	// Scopes names the scope a machine operation requires: an ecosystem
+	// token (not a session) granting it is admitted (06 §3). No
+	// operation of WP-2 has one; WP-3 adds the first.
+	Scopes map[string]string
 	// Realms names the realm an operation requires; an operation with
 	// roles and no entry requires the console realm.
 	Realms map[string]string
@@ -157,6 +171,7 @@ func RequireRole(identify IdentifyFunc, roles map[string][]string) Middleware {
 func Authorize(identify IdentifyFunc, rules Rules) Middleware {
 	return func(f gen.StrictHandlerFunc, operationID string) gen.StrictHandlerFunc {
 		allowed, hasRoles := rules.Roles[operationID]
+		scope, hasScope := rules.Scopes[operationID]
 		public := rules.Public[operationID]
 		anySession := rules.AnySession[operationID]
 		realm := rules.Realms[operationID]
@@ -168,7 +183,7 @@ func Authorize(identify IdentifyFunc, rules Rules) Middleware {
 			if public {
 				return f(ctx, w, r, request)
 			}
-			if !hasRoles && !anySession {
+			if !hasRoles && !anySession && !hasScope {
 				httpx.NewProblem(http.StatusForbidden, httpx.SlugForbidden, "", "this operation has no role rule").Write(w, r)
 				return nil, nil
 			}
@@ -176,6 +191,13 @@ func Authorize(identify IdentifyFunc, rules Rules) Middleware {
 			if err != nil {
 				httpx.NewProblem(http.StatusUnauthorized, httpx.SlugUnauthn, "", err.Error()).Write(w, r)
 				return nil, nil
+			}
+			if hasScope {
+				if id.Session || !slices.Contains(id.Scopes, scope) {
+					httpx.NewProblem(http.StatusForbidden, httpx.SlugForbidden, "", "this operation needs an ecosystem token granting "+scope).Write(w, r)
+					return nil, nil
+				}
+				return f(WithIdentity(ctx, id), w, r, request)
 			}
 			if !id.Session {
 				httpx.NewProblem(http.StatusForbidden, httpx.SlugForbidden, "", "this operation needs a console session, not a machine token").Write(w, r)

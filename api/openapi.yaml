@@ -45,6 +45,10 @@ tags:
       `docs/runbooks/token-service.md`.
   - name: oauth-admin
     description: The token service's client registry and signing keys (admin).
+  - name: auth
+    description: Console sign-in, TOTP and sessions (WP-2).
+  - name: users
+    description: Console accounts (admin).
 
 paths:
   # WP-0: health paths, served by every process on its admin port.
@@ -223,6 +227,285 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuditEventPage"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  # WP-2: console sign-in (password, then TOTP) and sessions. A session
+  # is table A's session JWT (M20), presented as a bearer by the web BFF
+  # from the uspace_session cookie (docs/runbooks/session-contract.md).
+  /v1/auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: First sign-in step (password)
+      description: |
+        Checks the password and returns a short, single-use MFA
+        challenge. An unknown user, a disabled user and a wrong password
+        get the same answer after the same argon2id work (no user
+        enumeration). An account without confirmed TOTP gets its
+        enrolment secret here, after the password. Rate-limited per
+        client address and per username (429 with `Retry-After`).
+        Every attempt is an events row (`login_password_accepted` or
+        `login_refused`).
+      security: []
+      x-audit: {event_type: login_password_accepted, entity_type: user, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: The MFA challenge.
+          headers:
+            Cache-Control:
+              schema: {type: string, enum: [no-store]}
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginChallenge"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/auth/mfa:
+    post:
+      operationId: verifyMFA
+      tags: [auth]
+      summary: Second sign-in step (TOTP or a recovery code)
+      description: |
+        Exchanges the challenge and a TOTP code (or one recovery code)
+        for a session. A code is accepted once; a challenge allows a
+        bounded number of attempts and is used once. The first success
+        after enrolment confirms it and returns the recovery codes,
+        once. Every failure is an `mfa_refused` event; the session is a
+        `session_started` event.
+      security: []
+      x-audit: {event_type: session_started, entity_type: session, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MFARequest"
+      responses:
+        "200":
+          description: The session.
+          headers:
+            Cache-Control:
+              schema: {type: string, enum: [no-store]}
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionIssued"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/auth/session:
+    get:
+      operationId: getSession
+      tags: [auth]
+      summary: The session of the caller
+      security:
+        - sessionCookie: []
+      x-session: any
+      x-audit: none
+      responses:
+        "200":
+          description: The session.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionInfo"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: End the session of the caller
+      security:
+        - sessionCookie: []
+      x-session: any
+      x-audit: {event_type: logout, entity_type: session, purpose: none}
+      responses:
+        "204":
+          description: The session is revoked.
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: Console accounts
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: none
+      responses:
+        "200":
+          description: Every account, by username.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create an account
+      description: |
+        The account signs in with the password given here and enrols
+        TOTP at its first sign-in.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: user_created, entity_type: user, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+      responses:
+        "201":
+          description: The account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/users/{user_id}:
+    parameters:
+      - {name: user_id, in: path, required: true, schema: {type: string, maxLength: 32}}
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: One account
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: none
+      responses:
+        "200":
+          description: The account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/users/{user_id}/roles:
+    parameters:
+      - {name: user_id, in: path, required: true, schema: {type: string, maxLength: 32}}
+    put:
+      operationId: setUserRoles
+      tags: [users]
+      summary: Replace the roles of an account
+      description: Revokes the sessions of the account, so the new roles apply at the next sign-in. The last active admin cannot lose the role (409).
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: user_roles_changed, entity_type: user, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RolesInput"
+      responses:
+        "200":
+          description: The account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/users/{user_id}/disable:
+    parameters:
+      - {name: user_id, in: path, required: true, schema: {type: string, maxLength: 32}}
+    post:
+      operationId: disableUser
+      tags: [users]
+      summary: Disable an account
+      description: Revokes its sessions; it can no longer sign in. The last active admin cannot be disabled (409).
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: user_disabled, entity_type: user, purpose: none}
+      responses:
+        "200":
+          description: The account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/users/{user_id}/enable:
+    parameters:
+      - {name: user_id, in: path, required: true, schema: {type: string, maxLength: 32}}
+    post:
+      operationId: enableUser
+      tags: [users]
+      summary: Enable a disabled account
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: user_enabled, entity_type: user, purpose: none}
+      responses:
+        "200":
+          description: The account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/users/{user_id}/mfa/reset:
+    parameters:
+      - {name: user_id, in: path, required: true, schema: {type: string, maxLength: 32}}
+    post:
+      operationId: resetUserMFA
+      tags: [users]
+      summary: Reset the TOTP of an account
+      description: Deletes the TOTP secret and the recovery codes and revokes the sessions; the account enrols again at its next sign-in.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: user_mfa_reset, entity_type: user, purpose: none}
+      responses:
+        "200":
+          description: The account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/users/{user_id}/sessions/revoke:
+    parameters:
+      - {name: user_id, in: path, required: true, schema: {type: string, maxLength: 32}}
+    post:
+      operationId: revokeUserSessions
+      tags: [users]
+      summary: Revoke every session of an account
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: session_revoked, entity_type: session, purpose: none}
+      responses:
+        "200":
+          description: How many sessions were revoked.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Revoked"
         default:
           $ref: "#/components/responses/Problem"
 
@@ -524,6 +807,15 @@ components:
   responses:
     Problem:
       description: An error.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    RateLimited:
+      description: The budget of this client address or account is spent.
+      headers:
+        Retry-After:
+          schema: {type: integer, minimum: 1}
       content:
         application/problem+json:
           schema:
@@ -913,3 +1205,118 @@ components:
         previous_kid: {type: string}
         requested_by: {type: string}
         confirm_before: {type: string, format: date-time}
+    Role:
+      type: string
+      enum: [viewer, inspector, registrar, incident_officer, admin, auditor]
+    Realm:
+      type: string
+      enum: [console, police]
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: {type: string, maxLength: 256}
+        password: {type: string, maxLength: 1024}
+    LoginChallenge:
+      type: object
+      required: [mfa_token, expires_at]
+      properties:
+        mfa_token: {type: string, description: Single use; present it to /v1/auth/mfa.}
+        expires_at: {type: string, format: date-time}
+        enrolment:
+          $ref: "#/components/schemas/MFAEnrolment"
+    MFAEnrolment:
+      type: object
+      description: Present only while the account has no confirmed TOTP.
+      required: [secret, otpauth_uri]
+      properties:
+        secret: {type: string, description: Base32 TOTP secret (RFC 6238, SHA-1, 6 digits, 30 s).}
+        otpauth_uri: {type: string}
+    MFARequest:
+      type: object
+      required: [mfa_token]
+      properties:
+        mfa_token: {type: string, maxLength: 256}
+        code: {type: string, maxLength: 16, description: The current TOTP code.}
+        recovery_code: {type: string, maxLength: 64, description: One unused recovery code, instead of a TOTP code.}
+    SessionInfo:
+      type: object
+      required: [sub, roles, realm, jti, expires_at, idle_expires_at]
+      properties:
+        sub: {type: string, description: The account id.}
+        roles:
+          type: array
+          items: {type: string}
+        realm:
+          $ref: "#/components/schemas/Realm"
+        jti: {type: string, description: The session id.}
+        expires_at: {type: string, format: date-time}
+        idle_expires_at: {type: string, format: date-time}
+    SessionIssued:
+      type: object
+      required: [token, token_type, expires_at, idle_timeout_s, session]
+      properties:
+        token: {type: string, description: "The session JWT (table A): the BFF puts it in the uspace_session cookie."}
+        token_type: {type: string, enum: [Bearer]}
+        expires_at: {type: string, format: date-time}
+        idle_timeout_s: {type: integer}
+        session:
+          $ref: "#/components/schemas/SessionInfo"
+        recovery_codes:
+          type: array
+          description: Shown once, at the sign-in that confirms enrolment.
+          items: {type: string}
+    UserInput:
+      type: object
+      required: [username, password, roles, realm]
+      properties:
+        username: {type: string, maxLength: 64}
+        password: {type: string, maxLength: 1024}
+        display_name: {type: string, maxLength: 200}
+        roles:
+          type: array
+          maxItems: 6
+          items:
+            $ref: "#/components/schemas/Role"
+        realm:
+          $ref: "#/components/schemas/Realm"
+    RolesInput:
+      type: object
+      required: [roles]
+      properties:
+        roles:
+          type: array
+          maxItems: 6
+          items:
+            $ref: "#/components/schemas/Role"
+    User:
+      type: object
+      required: [id, username, display_name, roles, realm, status, mfa_enrolled, created_at, created_by, updated_at, updated_by]
+      properties:
+        id: {type: string}
+        username: {type: string}
+        display_name: {type: string}
+        roles:
+          type: array
+          items: {type: string}
+        realm:
+          $ref: "#/components/schemas/Realm"
+        status: {type: string, enum: [active, disabled]}
+        mfa_enrolled: {type: boolean}
+        created_at: {type: string, format: date-time}
+        created_by: {type: string}
+        updated_at: {type: string, format: date-time}
+        updated_by: {type: string}
+    UserList:
+      type: object
+      required: [users]
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+    Revoked:
+      type: object
+      required: [revoked]
+      properties:
+        revoked: {type: integer}

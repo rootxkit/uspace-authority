@@ -20,6 +20,7 @@ func validAPI() map[string]string {
 		"NATS_URL":             "nats://nats:4222",
 		"AUTHORITY_PUBLIC_URL": "https://authority.example.test",
 		"SIGNING_KEY_FILES":    "/run/keys/token-1.pem",
+		"PII_KEY_FILE":         "/run/keys/pii.key",
 	}
 }
 
@@ -267,5 +268,32 @@ func TestArgon2BoundsAreTheOWASPMinimum(t *testing.T) {
 	var d API
 	if err := Load(&d, env(validAPI())); err != nil || d.Argon2MemoryKiB != 19456 || d.Argon2Time != 2 || d.Argon2Threads != 1 {
 		t.Fatalf("defaults: %v %+v", err, d.Argon2)
+	}
+}
+
+func TestAPIPairsAreBothOrNeither(t *testing.T) {
+	for _, half := range []map[string]string{
+		{"CISP_ISSUER_URL": "https://cisp.example.test"},
+		{"LAB_JWKS_URL": "https://lab.example.test/jwks"},
+		{"BOOTSTRAP_ADMIN_USERNAME": "admin"},
+	} {
+		m := validAPI()
+		for k, v := range half {
+			m[k] = v
+		}
+		var c API
+		if fes := FieldErrors(Load(&c, env(m))); len(fes) != 1 {
+			t.Errorf("%v: %v", half, fes)
+		}
+	}
+	m := validAPI()
+	m["CISP_ISSUER_URL"], m["CISP_JWKS_URL"] = "https://cisp.example.test", "https://cisp.example.test/.well-known/jwks.json"
+	m["BOOTSTRAP_ADMIN_USERNAME"], m["BOOTSTRAP_ADMIN_PASSWORD_FILE"] = "admin", "/run/keys/admin"
+	var c API
+	if err := Load(&c, env(m)); err != nil {
+		t.Fatalf("accepted twin: %v", err)
+	}
+	if l := c.List(); len(l) != 1 || l["https://cisp.example.test"] == "" {
+		t.Fatalf("peers %v", l)
 	}
 }

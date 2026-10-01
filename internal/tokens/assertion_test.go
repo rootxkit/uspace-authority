@@ -213,12 +213,12 @@ func privJWK(t *testing.T, i int, kid string) []byte {
 	return k
 }
 
-func FuzzAssertionIssuer(f *testing.F) {
+func FuzzUnverifiedIssuer(f *testing.F) {
 	f.Add("eyJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJjaXNwLTAxIn0.x")
 	f.Add("a.b.c")
 	f.Add("")
 	f.Fuzz(func(t *testing.T, a string) {
-		iss := AssertionIssuer(a)
+		iss := UnverifiedIssuer(a)
 		if iss != "" && len(a) > auth.DefaultMaxTokenBytes {
 			t.Fatalf("read an iss from an oversized assertion")
 		}

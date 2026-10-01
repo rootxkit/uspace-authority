@@ -15,6 +15,7 @@ import (
 
 	"github.com/rootxkit/uspace-authority/internal/apiserver"
 	"github.com/rootxkit/uspace-authority/internal/audit"
+	"github.com/rootxkit/uspace-authority/internal/authz"
 	"github.com/rootxkit/uspace-authority/internal/config"
 	"github.com/rootxkit/uspace-authority/internal/passhash"
 	"github.com/rootxkit/uspace-authority/internal/policy"
@@ -31,10 +32,13 @@ func main() {
 	os.Exit(code)
 }
 
-// spec is the production process. Console sessions arrive with the
-// authz part of WP-2; until then every role route answers 401.
-func spec(cfg *config.API) proc.Spec { return specWith(cfg, apiserver.NoSession) }
+// spec is the production process: identities come from bearer tokens
+// verified by the authz wiring (sessions of this issuer, machine tokens
+// of the allow-listed issuers).
+func spec(cfg *config.API) proc.Spec { return specWith(cfg, nil) }
 
+// specWith is spec with identify replacing the bearer-token identity
+// when not nil (tests).
 func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 	return proc.Spec{Name: "api", Config: cfg, Run: func(ctx context.Context, rt *proc.Runtime) error {
 		if cfg.MTLSMode == "off" {
@@ -92,7 +96,34 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 		rt.AddCounters("tokens", tok.Counters)
 		rt.AddStatus(tok.StatusAttrs)
 		rt.Logger.Info("token service ready", slog.String("issuer", cfg.Issuer()), slog.String("signing_kid", tok.Keys.ActiveKID()))
+
+		az, err := authz.Assemble(ctx, authz.Setup{
+			Store: authz.PG{DB: db, Audit: auditWriter}, Hasher: hasher, Keys: tok.Keys,
+			PIIKeyID: cfg.PIIKeyID, PIIKeyFile: cfg.PIIKeyFile, Audiences: cfg.AudienceList(), Peers: cfg.List(),
+			Config: authz.Config{
+				OwnHost: cfg.OwnHost(), SessionTTL: time.Duration(cfg.SessionTTLS) * time.Second,
+				IdleTimeout: time.Duration(cfg.SessionIdleS) * time.Second, MaxSessions: cfg.SessionMaxPerUser,
+				ChallengeTTL: time.Duration(cfg.MFAChallengeTTLS) * time.Second, MaxAttempts: cfg.MFAMaxAttempts,
+				PasswordMinLen: cfg.PasswordMinLength, TOTPIssuer: cfg.TOTPIssuer,
+			},
+			IPPerMin: cfg.LoginIPPerMin, IPBurst: cfg.LoginIPBurst, UserPerMin: cfg.LoginUserPerMin, UserBurst: cfg.LoginUserBurst,
+			MaxRateKeys: cfg.LoginRateMaxKeys, Logger: rt.Logger,
+		})
+		if err != nil {
+			return err
+		}
+		rt.AddCounters("authz", az.Counters)
+		rt.AddCounters("verifier", az.Verifier.Counters())
+		rt.AddStatus(az.Verifier.StatusAttrs)
+		tok.Manager.OnChange = az.OnKeysChanged(rt.Logger)
+		if _, err := az.Service.Bootstrap(ctx, cfg.BootstrapAdmin, cfg.BootstrapPassword); err != nil {
+			return err
+		}
+		if identify == nil {
+			identify = az.Authenticator.Identify
+		}
 		wg.Go(func() { tok.Manager.Run(ctx, time.Duration(cfg.KeyRefreshS)*time.Second) })
+		wg.Go(func() { az.Run(ctx, time.Duration(cfg.SessionSweepS)*time.Second) })
 
 		mux := http.NewServeMux()
 		apiserver.Mount(mux, apiserver.Server{
@@ -100,6 +131,8 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 			AuditHandler:      audit.Handler{Writer: auditWriter},
 			TokenHandler:      tok.Handler,
 			OAuthAdminHandler: tok.Handler,
+			AuthHandler:       az.Handler,
+			UsersHandler:      az.Handler,
 		}, apiserver.Options{
 			Logger:      rt.Logger,
 			Middlewares: []apiserver.Middleware{tok.Handler.FormGuard(), apiserver.Authorize(identify, apiserver.DefaultRules())},

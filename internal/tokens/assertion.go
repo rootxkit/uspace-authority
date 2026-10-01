@@ -28,10 +28,11 @@ const (
 	CounterReplayed   = "assertion_replayed"           // an assertion id used twice
 )
 
-// AssertionIssuer reads the iss of a client assertion without verifying
-// it, only to choose whose keys verify it; core's Verifier then checks
-// iss against exactly that client. Anything unreadable returns "".
-func AssertionIssuer(assertion string) string {
+// UnverifiedIssuer reads the iss of a compact JWT without verifying it,
+// only to choose whose keys verify it (a client assertion's client, a
+// bearer token's issuer); core's Verifier then checks iss against
+// exactly that issuer. Anything unreadable returns "".
+func UnverifiedIssuer(assertion string) string {
 	if len(assertion) > auth.DefaultMaxTokenBytes {
 		return ""
 	}

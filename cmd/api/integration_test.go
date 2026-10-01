@@ -77,6 +77,7 @@ func baseEnv(t *testing.T, pgURL string) map[string]string {
 		"POLICY_REFRESH_S": "1", "SHUTDOWN_TIMEOUT_S": "5", "AUTHORITY_MTLS_MODE": "off",
 		"SIGNING_KEY_FILES":    tokentest.WriteKey(t, dir, 0) + "," + tokentest.WriteKey(t, dir, 1),
 		"PUBLICATION_KEY_FILE": tokentest.WriteKey(t, dir, 9),
+		"PII_KEY_FILE":         writePIIKey(t, dir),
 	}
 }
 

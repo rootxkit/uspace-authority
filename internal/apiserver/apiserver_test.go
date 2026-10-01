@@ -262,6 +262,7 @@ func TestAuthorizeRules(t *testing.T) {
 		Public:     map[string]bool{"Pub": true},
 		AnySession: map[string]bool{"Mine": true},
 		Roles:      map[string][]string{"Admin": {RoleAdmin}, "Police": {RoleAdmin}},
+		Scopes:     map[string]string{"Machine": "registry.validate"},
 		Realms:     map[string]string{"Police": RealmPolice},
 	}
 	session := Identity{ActorType: "user", Subject: "u", Roles: []string{RoleAdmin}, Realm: RealmConsole, Session: true}
@@ -286,6 +287,9 @@ func TestAuthorizeRules(t *testing.T) {
 		{"no roles on any-session op", bare, nil, "Mine", 200, true},
 		{"machine on any-session op", machine, nil, "Mine", 403, false},
 		{"no rule", session, nil, "Unknown", 403, false},
+		{"machine with the scope", Identity{ActorType: "client", Subject: "ussp-A-01", Scopes: []string{"registry.validate"}}, nil, "Machine", 200, true},
+		{"machine without the scope", machine, nil, "Machine", 403, false},
+		{"session on a scope op", session, nil, "Machine", 403, false},
 	}
 	for _, c := range cases {
 		code, called, ri := authorized(rules, c.id, c.err, c.op)

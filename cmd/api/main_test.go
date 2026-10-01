@@ -34,7 +34,7 @@ func TestStartWithoutTheDatabaseFailsAndSaysWhich(t *testing.T) {
 		"PG_URL": "postgres://u:p@127.0.0.1:1/absent?connect_timeout=2", "TS_URL": "postgres://u:p@127.0.0.1:1/ts",
 		"NATS_URL": "nats://127.0.0.1:1", "AUTHORITY_PUBLIC_URL": "http://localhost:8080",
 		"API_ADDR": "127.0.0.1:0", "ADMIN_ADDR": "127.0.0.1:0", "SHUTDOWN_TIMEOUT_S": "2",
-		"SIGNING_KEY_FILES": "/nonexistent/token-1.pem",
+		"SIGNING_KEY_FILES": "/nonexistent/token-1.pem", "PII_KEY_FILE": "/nonexistent/pii.key",
 	}
 	var out, errOut bytes.Buffer
 	code := proc.Main(context.Background(), spec(&config.API{}), nil, &out, &errOut, func(k string) (string, bool) { v, ok := m[k]; return v, ok })
@@ -55,7 +55,7 @@ func TestStartWithoutASigningKeyNamesTheVariable(t *testing.T) {
 	}
 	var out, errOut bytes.Buffer
 	code := proc.Main(context.Background(), spec(&config.API{}), nil, &out, &errOut, func(k string) (string, bool) { v, ok := m[k]; return v, ok })
-	if code != proc.ExitConfig || !strings.Contains(errOut.String(), "SIGNING_KEY_FILES: required") {
+	if code != proc.ExitConfig || !strings.Contains(errOut.String(), "SIGNING_KEY_FILES: required") || !strings.Contains(errOut.String(), "PII_KEY_FILE: required") {
 		t.Fatalf("exit %d: %s", code, errOut.String())
 	}
 }

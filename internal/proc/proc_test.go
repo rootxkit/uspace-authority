@@ -65,6 +65,7 @@ func apiEnv(extra map[string]string) config.LookupFunc {
 		"STATUS_INTERVAL_S":    "1",
 		"SHUTDOWN_TIMEOUT_S":   "2",
 		"SIGNING_KEY_FILES":    "/run/keys/token-1.pem",
+		"PII_KEY_FILE":         "/run/keys/pii.key",
 	}
 	for k, v := range extra {
 		m[k] = v
