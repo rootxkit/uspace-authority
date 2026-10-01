@@ -227,11 +227,15 @@ func Idle(owner string) func(context.Context, *Runtime) error {
 // then drains within the runtime's bound. Unmatched paths answer with a
 // not_found problem.
 func (rt *Runtime) ServePublic(ctx context.Context, cfg config.HTTP, addr string, mux *http.ServeMux) error {
+	proxies, err := httpx.ParseTrustedProxies(cfg.TrustedProxies)
+	if err != nil {
+		return &core.FieldError{Field: "AUTHORITY_TRUSTED_PROXIES", Reason: err.Error()}
+	}
 	counters := &core.Counters{}
 	rt.AddCounters("http", counters)
 	mux.HandleFunc("/", httpx.NotFound)
 	rl := httpx.NewRateLimiter(cfg.RateLimitRPS, cfg.RateLimitBurst, cfg.RateLimitMaxClients, counters)
-	h := httpx.Baseline(mux, rt.Logger, httpx.BaselineDeps{Counters: counters, RateLimiter: rl, MaxBodyBytes: int64(cfg.MaxBodyBytes)})
+	h := httpx.Baseline(mux, rt.Logger, httpx.BaselineDeps{Counters: counters, RateLimiter: rl, MaxBodyBytes: int64(cfg.MaxBodyBytes), TrustedProxies: proxies})
 	srv := httpx.NewServer(httpx.ServerOptions{
 		Name: "public", Addr: addr, Logger: rt.Logger,
 		Handler:           httpx.TrackRoute(metrics.NewHTTP(rt.Registry, "public").Middleware(h)),

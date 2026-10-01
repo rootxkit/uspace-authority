@@ -297,3 +297,17 @@ func TestAPIPairsAreBothOrNeither(t *testing.T) {
 		t.Fatalf("peers %v", l)
 	}
 }
+
+func TestTrustedProxiesMustParse(t *testing.T) {
+	m := validAPI()
+	m["AUTHORITY_TRUSTED_PROXIES"] = "10.0.0.0/8, 172.18.0.2"
+	var c API
+	if err := Load(&c, env(m)); err != nil || len(c.TrustedProxies) != 2 {
+		t.Fatalf("accepted twin: %v %v", err, c.TrustedProxies)
+	}
+	m["AUTHORITY_TRUSTED_PROXIES"] = "10.0.0.0/8,caddy"
+	var bad API
+	if fes := FieldErrors(Load(&bad, env(m))); len(fes) != 1 || fes[0].Field != "AUTHORITY_TRUSTED_PROXIES" {
+		t.Fatalf("got %v", fes)
+	}
+}

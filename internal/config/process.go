@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"net/netip"
 	"net/url"
 	"slices"
 	"strings"
@@ -29,11 +30,12 @@ func (c *Common) CommonBlock() *Common { return c }
 
 // HTTP is the public listener of a process that serves HTTP.
 type HTTP struct {
-	MaxBodyBytes        int     `env:"HTTP_MAX_BODY_BYTES" default:"1048576" min:"1024" max:"67108864" help:"default request body cap; routes may override it"`
-	ReadHeaderTimeoutS  int     `env:"HTTP_READ_HEADER_TIMEOUT_S" default:"5" min:"1" max:"60" help:"time allowed to read request headers"`
-	RateLimitRPS        float64 `env:"HTTP_RATE_LIMIT_RPS" default:"20" min:"0.1" help:"sustained requests per second per client"`
-	RateLimitBurst      int     `env:"HTTP_RATE_LIMIT_BURST" default:"40" min:"1" help:"burst size per client"`
-	RateLimitMaxClients int     `env:"HTTP_RATE_LIMIT_MAX_CLIENTS" default:"10000" min:"1" help:"clients tracked by the rate limiter; the least recently seen is evicted beyond it"`
+	MaxBodyBytes        int      `env:"HTTP_MAX_BODY_BYTES" default:"1048576" min:"1024" max:"67108864" help:"default request body cap; routes may override it"`
+	ReadHeaderTimeoutS  int      `env:"HTTP_READ_HEADER_TIMEOUT_S" default:"5" min:"1" max:"60" help:"time allowed to read request headers"`
+	RateLimitRPS        float64  `env:"HTTP_RATE_LIMIT_RPS" default:"20" min:"0.1" help:"sustained requests per second per client"`
+	RateLimitBurst      int      `env:"HTTP_RATE_LIMIT_BURST" default:"40" min:"1" help:"burst size per client"`
+	RateLimitMaxClients int      `env:"HTTP_RATE_LIMIT_MAX_CLIENTS" default:"10000" min:"1" help:"clients tracked by the rate limiter; the least recently seen is evicted beyond it"`
+	TrustedProxies      []string `env:"AUTHORITY_TRUSTED_PROXIES" help:"CIDRs or addresses of the reverse proxies (Caddy) whose X-Forwarded-For names the client; the rightmost hop that is not one of them is the client address of every limiter and audit row"`
 }
 
 // API is the control plane.
@@ -237,6 +239,13 @@ func (c *API) Validate() error {
 	for _, a := range c.Audiences {
 		if strings.ContainsAny(a, "/:@ ") || a != strings.ToLower(a) {
 			errs = append(errs, core.Fieldf("AUTHORITY_AUDIENCES", "%q is not a lower-case host name", a))
+		}
+	}
+	for _, p := range c.TrustedProxies {
+		if _, err := netip.ParsePrefix(p); err != nil {
+			if _, err := netip.ParseAddr(p); err != nil {
+				errs = append(errs, core.Fieldf("AUTHORITY_TRUSTED_PROXIES", "%q is neither a CIDR nor an address", p))
+			}
 		}
 	}
 	for _, pr := range [][3]string{

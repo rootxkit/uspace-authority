@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"strings"
 	"testing"
 	"time"
@@ -129,5 +130,46 @@ func TestRateLimitOverHTTPHasRetryAfter(t *testing.T) {
 	code, hdr, _ = send(t, http.MethodPost, srv.URL+"/v1/auth/mfa", "", `{"mfa_token":"x","code":"123456"}`)
 	if code != 429 || hdr.Get("Retry-After") == "" {
 		t.Fatalf("mfa: %d", code)
+	}
+}
+
+// Behind the trusted proxy (the test server's peer is 127.0.0.1) the
+// sign-in limit and the audit row use the forwarded client, so two
+// clients do not share a bucket; without the trust, X-Forwarded-For
+// changes nothing.
+func TestSignInLimitAndAuditUseTheForwardedClient(t *testing.T) {
+	for _, trust := range []bool{true, false} {
+		f := newFixture(t, fxOpts{ipBurst: 1})
+		mux := http.NewServeMux()
+		apiserver.Mount(mux, apiserver.Server{AuthHandler: Handler{Service: f.svc}}, apiserver.Options{
+			Middlewares: []apiserver.Middleware{apiserver.Authorize(f.a.Identify, apiserver.DefaultRules())},
+			Keep:        apiserver.PathPrefix("/v1/"),
+		})
+		var proxies []netip.Prefix
+		if trust {
+			proxies = []netip.Prefix{netip.MustParsePrefix("127.0.0.0/8"), netip.MustParsePrefix("::1/128")}
+		}
+		srv := httptest.NewServer(httpx.Baseline(mux, slog.New(slog.DiscardHandler), httpx.BaselineDeps{Counters: newCounters(), TrustedProxies: proxies}))
+		login := func(client string) int {
+			req, _ := http.NewRequest(http.MethodPost, srv.URL+"/v1/auth/login", strings.NewReader(`{"username":"admin","password":"wrong password!!"}`))
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("X-Forwarded-For", "1.2.3.4, "+client)
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_ = resp.Body.Close()
+			return resp.StatusCode
+		}
+		first, second := login("203.0.113.1"), login("203.0.113.2")
+		evs := f.st.eventsOf("login_refused")
+		ip := evs[0].Payload.(map[string]any)["remote_ip"]
+		if trust && (first != 401 || second != 401 || ip != "203.0.113.1") {
+			t.Fatalf("trusted proxy: %d %d, audited %v", first, second, ip)
+		}
+		if !trust && (second != 429 || (ip != "127.0.0.1" && ip != "::1")) {
+			t.Fatalf("untrusted peer: %d %d, audited %v", first, second, ip)
+		}
+		srv.Close()
 	}
 }

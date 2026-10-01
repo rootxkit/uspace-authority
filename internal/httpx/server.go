@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/netip"
 	"time"
 
 	"github.com/rootxkit/uspace-core/core"
@@ -124,14 +125,20 @@ type BaselineDeps struct {
 	Counters     *core.Counters
 	RateLimiter  *RateLimiter // nil: no rate limit
 	MaxBodyBytes int64        // <= 0: DefaultMaxBodyBytes
+	// TrustedProxies are the proxies whose X-Forwarded-For names the
+	// client (AUTHORITY_TRUSTED_PROXIES); empty means the peer is the
+	// client.
+	TrustedProxies []netip.Prefix
 }
 
 // Baseline wraps h with the middleware every public listener uses, in
-// order: route tracking, request id, access log, panic recovery, rate limit (when rl is
-// not nil) and the default body cap.
+// order: route tracking, the client address (RealIP), request id,
+// access log, panic recovery, rate limit (when rl is not nil) and the
+// default body cap.
 func Baseline(h http.Handler, logger *slog.Logger, deps BaselineDeps) http.Handler {
 	mws := []func(http.Handler) http.Handler{
 		TrackRoute,
+		RealIP(deps.TrustedProxies),
 		RequestID,
 		AccessLog(logger),
 		Recover(logger, deps.Counters),
