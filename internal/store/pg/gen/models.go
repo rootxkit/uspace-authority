@@ -5,8 +5,25 @@
 package gen
 
 import (
+	"time"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type Event struct {
+	ID         int64
+	Ts         time.Time
+	ActorType  string
+	ActorID    string
+	Realm      *string
+	Purpose    *string
+	EntityType string
+	EntityID   *string
+	EventType  string
+	Payload    []byte
+	PrevHash   string
+	Hash       string
+}
 
 type GooseDbVersionRelational struct {
 	ID        int32
