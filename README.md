@@ -18,12 +18,15 @@ operator and to the USSP (spec `01 §1`).
 
 ## Status
 
-Planning. `docs/PLAN.md` and the work package briefs under
-`docs/WORKPACKAGES/` are the implementation plan; no product code yet.
-Milestones A-M1..A-M5 follow `uspace-lab/docs/spec/07-roadmap.md`
-phase 3.
+WP-0 (scaffold): the Go module, the seven process stubs behind one
+`uspace-authority` entrypoint, the config, logging, metrics, tracing and
+HTTP baselines, the OpenAPI skeleton, the two empty migration trees, CI,
+the image and the development stack. `docs/PLAN.md` and the work package
+briefs under `docs/WORKPACKAGES/` are the plan for the rest; milestones
+A-M1..A-M5 follow `uspace-lab/docs/spec/07-roadmap.md` phase 3.
+Development setup: [`docs/runbooks/dev-setup.md`](docs/runbooks/dev-setup.md).
 
-## Layout (planned)
+## Layout
 
 ```
 cmd/            api, rid-ingest, dp-poller, manned-ingest, detect, tsdb-writer, picture-ws
