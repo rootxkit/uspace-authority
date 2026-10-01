@@ -586,10 +586,11 @@ edits another's), `CHANGELOG.md` (one line per WP under Unreleased) and
 
 ## 13. Engineering standards and CI
 
-- Go 1.27, `CGO_ENABLED=0`; `uspace-core` pinned by tag (`v1.0.0`,
-  released; bump to `v1.1.0` in its own `build:` commit when core WP-14
-  ships the additive JWS helpers, `geodesy/cell`, `core.BasisProvider`
-  and `alerting.Config.SkipConflicts`). No fork, no `replace`.
+- Go 1.27, `CGO_ENABLED=0`; `uspace-core` pinned by tag (`v1.1.0`
+  since WP-2: the additive JWS helpers, audience lists and
+  `StrictSessionClaims`, `geodesy/cell`, `core.BasisProvider` and
+  `alerting.Config.SkipConflicts`; it moved from `v1.0.0` in its own
+  `build:` commit). No fork, no `replace`.
 - Third-party modules (each with the reason in `go.mod` comments and the
   adding commit): `github.com/rootxkit/uspace-core`; `jackc/pgx/v5`;
   `pressly/goose/v3`; `sqlc` (tool, `go run`); `oapi-codegen/v2` (tool)
