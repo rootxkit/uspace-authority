@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/rootxkit/uspace-authority/api/gen"
+	"github.com/rootxkit/uspace-authority/internal/apiserver"
 	"github.com/rootxkit/uspace-authority/internal/httpx"
 	"github.com/rootxkit/uspace-authority/internal/metrics"
 )
@@ -71,27 +72,25 @@ type health struct{ ready *Readiness }
 
 // GetHealthz answers 200 while the process runs.
 func (h health) GetHealthz(context.Context, gen.GetHealthzRequestObject) (gen.GetHealthzResponseObject, error) {
-	return gen.GetHealthz200JSONResponse{Status: gen.Ok}, nil
+	return gen.GetHealthz200JSONResponse{Status: gen.HealthStatusOk}, nil
 }
 
 // GetReadyz runs every readiness check.
 func (h health) GetReadyz(ctx context.Context, _ gen.GetReadyzRequestObject) (gen.GetReadyzResponseObject, error) {
 	ok, checks := h.ready.Run(ctx)
 	if !ok {
-		return gen.GetReadyz503JSONResponse{Status: gen.NotReady, Checks: checks}, nil
+		return gen.GetReadyz503JSONResponse{Status: gen.ReadinessStatusNotReady, Checks: checks}, nil
 	}
-	return gen.GetReadyz200JSONResponse{Status: gen.Ready, Checks: checks}, nil
+	return gen.GetReadyz200JSONResponse{Status: gen.ReadinessStatusReady, Checks: checks}, nil
 }
 
 // AdminHandler serves /healthz and /readyz through the handlers
 // generated from api/openapi.yaml, and /metrics.
 func AdminHandler(ready *Readiness, reg *prometheus.Registry) http.Handler {
 	mux := http.NewServeMux()
-	strict := gen.NewStrictHandlerWithOptions(health{ready: ready}, nil, gen.StrictHTTPServerOptions{
-		RequestErrorHandlerFunc:  func(w http.ResponseWriter, r *http.Request, err error) { httpx.WriteError(w, r, err) },
-		ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) { httpx.WriteError(w, r, err) },
+	apiserver.Mount(mux, apiserver.Server{HealthHandler: health{ready: ready}}, apiserver.Options{
+		Keep: func(pattern string) bool { return pattern == "GET /healthz" || pattern == "GET /readyz" },
 	})
-	gen.HandlerWithOptions(strict, gen.StdHTTPServerOptions{BaseRouter: mux})
 	mux.Handle("GET /metrics", metrics.Handler(reg))
 	mux.HandleFunc("/", httpx.NotFound)
 	return mux

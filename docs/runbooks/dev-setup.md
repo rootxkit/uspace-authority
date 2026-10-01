@@ -56,7 +56,7 @@ golangci-lint run ./...
 | `make race` | `CGO_ENABLED=1 go test -race -count=1 -shuffle=on ./...` |
 | `make vectors` | `go test -count=1 -run 'Vector\|Manifest\|Version' github.com/rootxkit/uspace-core/...` then the same over `./...` |
 | `make verify-generated` | `scripts/verify-generated.sh` (regenerates into a scratch directory and diffs) |
-| `make generate` | `scripts/generate.sh` (after editing `api/openapi.yaml`) |
+| `make generate` | `scripts/generate.sh` (after editing `api/openapi.yaml`, `sqlc.yaml`, a query under `internal/store/*/queries` or a migration) |
 
 ## 5. The development stack
 
@@ -78,14 +78,21 @@ go run ./cmd/uspace-authority migrate
 ```
 
 It logs one `tree at version` line per tree (`goose_db_version_relational`,
-`goose_db_version_timeseries`) and exits 0. Then the integration tests
+`goose_db_version_timeseries`) and exits 0. The migrations create the
+NOLOGIN roles the processes work as when they do not exist yet
+(`authority_app` in the relational database; `authority_ts_reader` and
+`authority_ts_writer` in the telemetry one); each process `SET ROLE`s on
+connect (`PG_ROLE` for `api`), so the login user must be a member. The
+development stack logs in as the superuser, which is. Then the integration tests
 (`make integration`):
 
 ```
 INTEGRATION=1 go test -count=1 -run Integration -v ./...
 ```
 
-Without `INTEGRATION=1` they skip and say why.
+Without `INTEGRATION=1` they skip and say why. Each integration test
+works in a scratch database created from `template0` and migrated
+(`internal/store/storetest`), dropped when it ends.
 
 ## 6. Run a process
 
@@ -97,9 +104,13 @@ go run ./cmd/api
 The first line is `started` with the configuration (secrets redacted);
 a `status` line follows at once and then every `STATUS_INTERVAL_S`.
 `curl 127.0.0.1:9090/healthz` answers `{"status":"ok"}`; `/readyz` lists
-the readiness checks; `/metrics` is the Prometheus text. Any path on
-`API_ADDR` (127.0.0.1:8080) answers a `not_found` problem until WP-1 adds
-routes. SIGTERM (or Ctrl-C) drains within `SHUTDOWN_TIMEOUT_S` and exits
+the readiness checks (`relational`); `/metrics` is the Prometheus text.
+The status line carries `policy_version` once api has read the active
+policy. On `API_ADDR` (127.0.0.1:8080) `/v1/policy*` and
+`/v1/audit/events` answer `401 unauthenticated` until WP-2 brings
+console sessions; any other path answers a `not_found` problem. Started
+without the relational database (or below the schema version it needs),
+api logs `process failed` naming it and exits 1. SIGTERM (or Ctrl-C) drains within `SHUTDOWN_TIMEOUT_S` and exits
 0 with a `stopped` line. With a required variable missing the process
 writes one `configuration invalid` line naming it and exits 2.
 

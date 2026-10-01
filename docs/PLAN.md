@@ -592,7 +592,9 @@ edits another's), `CHANGELOG.md` (one line per WP under Unreleased) and
   and `alerting.Config.SkipConflicts`). No fork, no `replace`.
 - Third-party modules (each with the reason in `go.mod` comments and the
   adding commit): `github.com/rootxkit/uspace-core`; `jackc/pgx/v5`;
-  `pressly/goose/v3`; `sqlc` (tool, `go run`); `oapi-codegen/v2` (tool);
+  `pressly/goose/v3`; `sqlc` (tool, `go run`); `oapi-codegen/v2` (tool)
+  and `oapi-codegen/runtime` (the parameter binding its generated server
+  imports, from WP-1);
   `nats-io/nats.go`; `lestrrat-go/jwx/v3` (through core only: the JWS
   for publications and webhooks goes through core's `auth.SignDetached`,
   `VerifyDetached`, `SignCompact`, `VerifyCompact` and `KeyRing` from

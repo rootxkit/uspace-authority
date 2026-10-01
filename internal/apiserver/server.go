@@ -1,0 +1,116 @@
+package apiserver
+
+import (
+	"context"
+	"log/slog"
+	"net/http"
+	"strings"
+
+	"github.com/rootxkit/uspace-core/core"
+
+	"github.com/rootxkit/uspace-authority/api/gen"
+	"github.com/rootxkit/uspace-authority/internal/httpx"
+	"github.com/rootxkit/uspace-authority/internal/logging"
+)
+
+// HealthHandler serves the health group (every process, admin port).
+type HealthHandler interface {
+	GetHealthz(ctx context.Context, request gen.GetHealthzRequestObject) (gen.GetHealthzResponseObject, error)
+	GetReadyz(ctx context.Context, request gen.GetReadyzRequestObject) (gen.GetReadyzResponseObject, error)
+}
+
+// PolicyHandler serves /v1/policy* (api, WP-1).
+type PolicyHandler interface {
+	GetPolicy(ctx context.Context, request gen.GetPolicyRequestObject) (gen.GetPolicyResponseObject, error)
+	CreatePolicy(ctx context.Context, request gen.CreatePolicyRequestObject) (gen.CreatePolicyResponseObject, error)
+	ActivatePolicy(ctx context.Context, request gen.ActivatePolicyRequestObject) (gen.ActivatePolicyResponseObject, error)
+}
+
+// AuditHandler serves /v1/audit/* (api, WP-1).
+type AuditHandler interface {
+	ListAuditEvents(ctx context.Context, request gen.ListAuditEventsRequestObject) (gen.ListAuditEventsResponseObject, error)
+}
+
+// Server implements gen.StrictServerInterface by delegating to one
+// handler per group. A group left nil must not be mounted.
+type Server struct {
+	HealthHandler
+	PolicyHandler
+	AuditHandler
+}
+
+var _ gen.StrictServerInterface = Server{}
+
+// Middleware wraps every mounted operation; it is the generated strict
+// middleware type, named here so cmd/* need not import api/gen.
+type Middleware = gen.StrictMiddlewareFunc
+
+// Options configures Mount.
+type Options struct {
+	Logger *slog.Logger
+	// Middlewares run around every mounted operation (RequireRole).
+	Middlewares []Middleware
+	// Keep selects the ServeMux patterns ("GET /v1/policy") mounted.
+	Keep func(pattern string) bool
+}
+
+// PathPrefix keeps the patterns whose path starts with one of prefixes.
+func PathPrefix(prefixes ...string) func(string) bool {
+	return func(pattern string) bool {
+		_, path, _ := strings.Cut(pattern, " ")
+		for _, p := range prefixes {
+			if strings.HasPrefix(path, p) {
+				return true
+			}
+		}
+		return false
+	}
+}
+
+// subsetMux registers only the patterns keep accepts.
+type subsetMux struct {
+	*http.ServeMux
+	keep    func(string) bool
+	mounted *[]string
+}
+
+// HandleFunc registers h when keep accepts pattern.
+func (m subsetMux) HandleFunc(pattern string, h func(http.ResponseWriter, *http.Request)) {
+	if m.keep(pattern) {
+		m.ServeMux.HandleFunc(pattern, h)
+		*m.mounted = append(*m.mounted, pattern)
+	}
+}
+
+func badRequest(w http.ResponseWriter, r *http.Request, err error) {
+	httpx.NewProblem(http.StatusBadRequest, httpx.SlugValidation, "Invalid request", "",
+		&core.FieldError{Field: "request", Reason: err.Error()}).Write(w, r)
+}
+
+// Mount registers on mux the operations of s that o.Keep selects and
+// returns their patterns. A malformed request (an unparsable parameter
+// or body) is a 400 validation problem naming what failed; an error a
+// handler returns is mapped by httpx.ProblemFromError, and a 5xx is
+// logged without echoing its text to the client.
+func Mount(mux *http.ServeMux, s Server, o Options) []string {
+	logger := o.Logger
+	if logger == nil {
+		logger = logging.Discard()
+	}
+	strict := gen.NewStrictHandlerWithOptions(s, o.Middlewares, gen.StrictHTTPServerOptions{
+		RequestErrorHandlerFunc: badRequest,
+		ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+			p := httpx.ProblemFromError(err)
+			if p.Status >= http.StatusInternalServerError {
+				logging.Error(r.Context(), logger, "request failed", err, slog.String("route", httpx.Route(r)))
+			}
+			p.Write(w, r)
+		},
+	})
+	var mounted []string
+	gen.HandlerWithOptions(strict, gen.StdHTTPServerOptions{
+		BaseRouter:       subsetMux{ServeMux: mux, keep: o.Keep, mounted: &mounted},
+		ErrorHandlerFunc: badRequest,
+	})
+	return mounted
+}

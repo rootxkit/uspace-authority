@@ -4,6 +4,7 @@ go 1.27
 
 // Direct dependencies, each listed in docs/PLAN.md §13:
 //   uspace-core   every judgement (identification, zones, auth, geodesy)
+//   oapi-codegen/runtime  parameter binding of the generated server (api/gen)
 //   pgx/v5        PostgreSQL driver (database/sql for goose; pgxpool from WP-1)
 //   goose/v3      the two embedded migration trees and the migrate subcommand
 //   client_golang Prometheus registry and /metrics
@@ -11,6 +12,7 @@ go 1.27
 //   otlptracehttp
 require (
 	github.com/jackc/pgx/v5 v5.11.0
+	github.com/oapi-codegen/runtime v1.7.0
 	github.com/pressly/goose/v3 v3.28.0
 	github.com/prometheus/client_golang v1.24.1
 	github.com/rootxkit/uspace-core v1.0.0
@@ -21,6 +23,7 @@ require (
 )
 
 require (
+	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

@@ -9,22 +9,86 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
+
+	"github.com/oapi-codegen/runtime"
 )
+
+// Defines values for AuditEventActorType.
+const (
+	AuditEventActorTypeClient   AuditEventActorType = "client"
+	AuditEventActorTypeReceiver AuditEventActorType = "receiver"
+	AuditEventActorTypeSystem   AuditEventActorType = "system"
+	AuditEventActorTypeUser     AuditEventActorType = "user"
+)
+
+// Valid indicates whether the value is a known member of the AuditEventActorType enum.
+func (e AuditEventActorType) Valid() bool {
+	switch e {
+	case AuditEventActorTypeClient:
+		return true
+	case AuditEventActorTypeReceiver:
+		return true
+	case AuditEventActorTypeSystem:
+		return true
+	case AuditEventActorTypeUser:
+		return true
+	default:
+		return false
+	}
+}
 
 // Defines values for HealthStatus.
 const (
-	Ok HealthStatus = "ok"
+	HealthStatusOk HealthStatus = "ok"
 )
 
 // Valid indicates whether the value is a known member of the HealthStatus enum.
 func (e HealthStatus) Valid() bool {
 	switch e {
-	case Ok:
+	case HealthStatusOk:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PolicyHeightLimitInUspace.
+const (
+	PolicyHeightLimitInUspaceEvaluate           PolicyHeightLimitInUspace = "evaluate"
+	PolicyHeightLimitInUspaceSkipWhenAuthorised PolicyHeightLimitInUspace = "skip_when_authorised"
+)
+
+// Valid indicates whether the value is a known member of the PolicyHeightLimitInUspace enum.
+func (e PolicyHeightLimitInUspace) Valid() bool {
+	switch e {
+	case PolicyHeightLimitInUspaceEvaluate:
+		return true
+	case PolicyHeightLimitInUspaceSkipWhenAuthorised:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PolicyInputHeightLimitInUspace.
+const (
+	PolicyInputHeightLimitInUspaceEvaluate           PolicyInputHeightLimitInUspace = "evaluate"
+	PolicyInputHeightLimitInUspaceSkipWhenAuthorised PolicyInputHeightLimitInUspace = "skip_when_authorised"
+)
+
+// Valid indicates whether the value is a known member of the PolicyInputHeightLimitInUspace enum.
+func (e PolicyInputHeightLimitInUspace) Valid() bool {
+	switch e {
+	case PolicyInputHeightLimitInUspaceEvaluate:
+		return true
+	case PolicyInputHeightLimitInUspaceSkipWhenAuthorised:
 		return true
 	default:
 		return false
@@ -33,20 +97,68 @@ func (e HealthStatus) Valid() bool {
 
 // Defines values for ReadinessStatus.
 const (
-	NotReady ReadinessStatus = "not_ready"
-	Ready    ReadinessStatus = "ready"
+	ReadinessStatusNotReady ReadinessStatus = "not_ready"
+	ReadinessStatusReady    ReadinessStatus = "ready"
 )
 
 // Valid indicates whether the value is a known member of the ReadinessStatus enum.
 func (e ReadinessStatus) Valid() bool {
 	switch e {
-	case NotReady:
+	case ReadinessStatusNotReady:
 		return true
-	case Ready:
+	case ReadinessStatusReady:
 		return true
 	default:
 		return false
 	}
+}
+
+// Defines values for Severity.
+const (
+	SeverityCritical Severity = "critical"
+	SeverityInfo     Severity = "info"
+	SeverityWarning  Severity = "warning"
+)
+
+// Valid indicates whether the value is a known member of the Severity enum.
+func (e Severity) Valid() bool {
+	switch e {
+	case SeverityCritical:
+		return true
+	case SeverityInfo:
+		return true
+	case SeverityWarning:
+		return true
+	default:
+		return false
+	}
+}
+
+// AuditEvent defines model for AuditEvent.
+type AuditEvent struct {
+	ActorId    string                 `json:"actor_id"`
+	ActorType  AuditEventActorType    `json:"actor_type"`
+	EntityId   *string                `json:"entity_id,omitempty"`
+	EntityType string                 `json:"entity_type"`
+	EventType  string                 `json:"event_type"`
+	Hash       string                 `json:"hash"`
+	Id         int64                  `json:"id"`
+	Payload    map[string]interface{} `json:"payload"`
+	PrevHash   string                 `json:"prev_hash"`
+	Purpose    *string                `json:"purpose,omitempty"`
+	Realm      *string                `json:"realm,omitempty"`
+	Ts         time.Time              `json:"ts"`
+}
+
+// AuditEventActorType defines model for AuditEvent.ActorType.
+type AuditEventActorType string
+
+// AuditEventPage defines model for AuditEventPage.
+type AuditEventPage struct {
+	Events []AuditEvent `json:"events"`
+
+	// NextBeforeId Pass as before_id for the next page; absent on the last page.
+	NextBeforeId *int64 `json:"next_before_id,omitempty"`
 }
 
 // Check defines model for Check.
@@ -69,6 +181,123 @@ type Health struct {
 
 // HealthStatus defines model for Health.Status.
 type HealthStatus string
+
+// Policy defines model for Policy.
+type Policy struct {
+	ActivatedAt *time.Time `json:"activated_at,omitempty"`
+	ActivatedBy *string    `json:"activated_by,omitempty"`
+	Active      bool       `json:"active"`
+
+	// BroadcastToleranceS Default 1.
+	BroadcastToleranceS float64 `json:"broadcast_tolerance_s"`
+
+	// CisStaleBoundS Default 300.
+	CisStaleBoundS float64 `json:"cis_stale_bound_s"`
+
+	// ClearAfterS Default 3.
+	ClearAfterS float64   `json:"clear_after_s"`
+	CreatedAt   time.Time `json:"created_at"`
+	CreatedBy   string    `json:"created_by"`
+
+	// DpPollHz Default 1.
+	DpPollHz float64 `json:"dp_poll_hz"`
+
+	// DpViewDiagonalKm Default 7.
+	DpViewDiagonalKm float64 `json:"dp_view_diagonal_km"`
+
+	// HeightLimitAglM Height limit over the ground (default 120).
+	HeightLimitAglM        float64                   `json:"height_limit_agl_m"`
+	HeightLimitInUspace    PolicyHeightLimitInUspace `json:"height_limit_in_uspace"`
+	IdentificationSeverity Severity                  `json:"identification_severity"`
+
+	// IdentifyWithinS Default 4.
+	IdentifyWithinS float64 `json:"identify_within_s"`
+
+	// IdentityTtlS Default 15.
+	IdentityTtlS float64 `json:"identity_ttl_s"`
+
+	// LiveMaxAgeS Default 10.
+	LiveMaxAgeS float64 `json:"live_max_age_s"`
+
+	// MaxGapS Default 3.
+	MaxGapS float64 `json:"max_gap_s"`
+
+	// MaxLatencyS Default 5.
+	MaxLatencyS      float64  `json:"max_latency_s"`
+	MismatchSeverity Severity `json:"mismatch_severity"`
+	Note             string   `json:"note"`
+
+	// PressureUncertaintyM Pressure-altitude margin (default 250).
+	PressureUncertaintyM float64 `json:"pressure_uncertainty_m"`
+
+	// SpoofDistanceM Default 300.
+	SpoofDistanceM float64 `json:"spoof_distance_m"`
+
+	// StaleAfterS Default 15.
+	StaleAfterS float64 `json:"stale_after_s"`
+
+	// Version The policy_version every violation carries.
+	Version                 int64    `json:"version"`
+	ZoneConditionalSeverity Severity `json:"zone_conditional_severity"`
+}
+
+// PolicyHeightLimitInUspace defines model for Policy.HeightLimitInUspace.
+type PolicyHeightLimitInUspace string
+
+// PolicyInput The thresholds of one policy version. Units are in the names;
+// every number is finite and positive (E-15). The defaults named
+// below are those of version 1, the predecessor's values.
+type PolicyInput struct {
+	// BroadcastToleranceS Default 1.
+	BroadcastToleranceS float64 `json:"broadcast_tolerance_s"`
+
+	// CisStaleBoundS Default 300.
+	CisStaleBoundS float64 `json:"cis_stale_bound_s"`
+
+	// ClearAfterS Default 3.
+	ClearAfterS float64 `json:"clear_after_s"`
+
+	// DpPollHz Default 1.
+	DpPollHz float64 `json:"dp_poll_hz"`
+
+	// DpViewDiagonalKm Default 7.
+	DpViewDiagonalKm float64 `json:"dp_view_diagonal_km"`
+
+	// HeightLimitAglM Height limit over the ground (default 120).
+	HeightLimitAglM        float64                        `json:"height_limit_agl_m"`
+	HeightLimitInUspace    PolicyInputHeightLimitInUspace `json:"height_limit_in_uspace"`
+	IdentificationSeverity Severity                       `json:"identification_severity"`
+
+	// IdentifyWithinS Default 4.
+	IdentifyWithinS float64 `json:"identify_within_s"`
+
+	// IdentityTtlS Default 15.
+	IdentityTtlS float64 `json:"identity_ttl_s"`
+
+	// LiveMaxAgeS Default 10.
+	LiveMaxAgeS float64 `json:"live_max_age_s"`
+
+	// MaxGapS Default 3.
+	MaxGapS float64 `json:"max_gap_s"`
+
+	// MaxLatencyS Default 5.
+	MaxLatencyS      float64  `json:"max_latency_s"`
+	MismatchSeverity Severity `json:"mismatch_severity"`
+	Note             *string  `json:"note,omitempty"`
+
+	// PressureUncertaintyM Pressure-altitude margin (default 250).
+	PressureUncertaintyM float64 `json:"pressure_uncertainty_m"`
+
+	// SpoofDistanceM Default 300.
+	SpoofDistanceM float64 `json:"spoof_distance_m"`
+
+	// StaleAfterS Default 15.
+	StaleAfterS             float64  `json:"stale_after_s"`
+	ZoneConditionalSeverity Severity `json:"zone_conditional_severity"`
+}
+
+// PolicyInputHeightLimitInUspace defines model for PolicyInput.HeightLimitInUspace.
+type PolicyInputHeightLimitInUspace string
 
 // Problem RFC 9457 problem details with the field-error extension of
 // decision M28; the shape of uspace-lab `schemas/common/problem/v1`.
@@ -95,6 +324,31 @@ type Readiness struct {
 
 // ReadinessStatus defines model for Readiness.Status.
 type ReadinessStatus string
+
+// Severity defines model for Severity.
+type Severity string
+
+// ListAuditEventsParams defines parameters for ListAuditEvents.
+type ListAuditEventsParams struct {
+	EntityType *string `form:"entity_type,omitempty" json:"entity_type,omitempty"`
+	EntityId   *string `form:"entity_id,omitempty" json:"entity_id,omitempty"`
+	ActorId    *string `form:"actor_id,omitempty" json:"actor_id,omitempty"`
+	EventType  *string `form:"event_type,omitempty" json:"event_type,omitempty"`
+
+	// From Inclusive lower bound of ts.
+	From *time.Time `form:"from,omitempty" json:"from,omitempty"`
+
+	// To Exclusive upper bound of ts.
+	To       *time.Time `form:"to,omitempty" json:"to,omitempty"`
+	BeforeId *int64     `form:"before_id,omitempty" json:"before_id,omitempty"`
+	Limit    *int       `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Purpose Why the log is read; recorded on the view event.
+	Purpose *string `form:"purpose,omitempty" json:"purpose,omitempty"`
+}
+
+// CreatePolicyJSONRequestBody defines body for CreatePolicy for application/json ContentType.
+type CreatePolicyJSONRequestBody = PolicyInput
 
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -186,6 +440,54 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /readyz (the `GetReadyz` operationId).
 	GetReadyz(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListAuditEvents Audit events, newest first
+	//
+	// Every filter is optional; pages are cut by `before_id` (the
+	// `next_before_id` of the previous page). Reading the log is itself
+	// recorded as an `audit_events_viewed` event.
+	//
+	// Corresponds with GET /v1/audit/events (the `ListAuditEvents` operationId).
+	ListAuditEvents(ctx context.Context, params *ListAuditEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetPolicy The active policy
+	//
+	// The one active policy version and its thresholds.
+	//
+	// Corresponds with GET /v1/policy (the `GetPolicy` operationId).
+	GetPolicy(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreatePolicyWithBody Create a new policy version
+	//
+	// Validates every threshold (finite and positive, E-15; a refusal
+	// names each field) and stores it as the next version, inactive.
+	// Activation is a separate, audited step.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/policy (the `CreatePolicy` operationId).
+	CreatePolicyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreatePolicy Create a new policy version
+	//
+	// Validates every threshold (finite and positive, E-15; a refusal
+	// names each field) and stores it as the next version, inactive.
+	// Activation is a separate, audited step.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/policy (the `CreatePolicy` operationId).
+	CreatePolicy(ctx context.Context, body CreatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ActivatePolicy Activate a policy version
+	//
+	// Makes `version` the one active policy and publishes it to the
+	// processes that follow it. Only a version newer than the active
+	// one can be activated (followers apply only a higher version); a
+	// rollback is a new version with the old values (409 otherwise).
+	//
+	// Corresponds with POST /v1/policy/{version}/activate (the `ActivatePolicy` operationId).
+	ActivatePolicy(ctx context.Context, version int64, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 // GetHealthz Liveness
@@ -215,6 +517,104 @@ func (c *Client) GetHealthz(ctx context.Context, reqEditors ...RequestEditorFn) 
 // Corresponds with GET /readyz (the `GetReadyz` operationId).
 func (c *Client) GetReadyz(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetReadyzRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListAuditEvents Audit events, newest first
+//
+// Every filter is optional; pages are cut by `before_id` (the
+// `next_before_id` of the previous page). Reading the log is itself
+// recorded as an `audit_events_viewed` event.
+//
+// Corresponds with GET /v1/audit/events (the `ListAuditEvents` operationId).
+func (c *Client) ListAuditEvents(ctx context.Context, params *ListAuditEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAuditEventsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetPolicy The active policy
+//
+// The one active policy version and its thresholds.
+//
+// Corresponds with GET /v1/policy (the `GetPolicy` operationId).
+func (c *Client) GetPolicy(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetPolicyRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreatePolicyWithBody Create a new policy version
+//
+// Validates every threshold (finite and positive, E-15; a refusal
+// names each field) and stores it as the next version, inactive.
+// Activation is a separate, audited step.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/policy (the `CreatePolicy` operationId).
+func (c *Client) CreatePolicyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePolicyRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreatePolicy Create a new policy version
+//
+// Validates every threshold (finite and positive, E-15; a refusal
+// names each field) and stores it as the next version, inactive.
+// Activation is a separate, audited step.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/policy (the `CreatePolicy` operationId).
+func (c *Client) CreatePolicy(ctx context.Context, body CreatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePolicyRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ActivatePolicy Activate a policy version
+//
+// Makes `version` the one active policy and publishes it to the
+// processes that follow it. Only a version newer than the active
+// one can be activated (followers apply only a higher version); a
+// rollback is a new version with the old values (409 otherwise).
+//
+// Corresponds with POST /v1/policy/{version}/activate (the `ActivatePolicy` operationId).
+func (c *Client) ActivatePolicy(ctx context.Context, version int64, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewActivatePolicyRequest(c.Server, version)
 	if err != nil {
 		return nil, err
 	}
@@ -272,6 +672,257 @@ func NewGetReadyzRequest(server string) (*http.Request, error) {
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListAuditEventsRequest constructs an http.Request for the ListAuditEvents method
+func NewListAuditEventsRequest(server string, params *ListAuditEventsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/audit/events")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.EntityType != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "entity_type", *params.EntityType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.EntityId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "entity_id", *params.EntityId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ActorId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "actor_id", *params.ActorId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.EventType != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "event_type", *params.EventType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.From != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from", *params.From, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.To != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to", *params.To, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.BeforeId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "before_id", *params.BeforeId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Purpose != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "purpose", *params.Purpose, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetPolicyRequest constructs an http.Request for the GetPolicy method
+func NewGetPolicyRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/policy")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreatePolicyRequest calls the generic CreatePolicy builder with application/json body
+func NewCreatePolicyRequest(server string, body CreatePolicyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreatePolicyRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreatePolicyRequestWithBody constructs an http.Request for the CreatePolicy method, with any body, and a specified content type
+func NewCreatePolicyRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/policy")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewActivatePolicyRequest constructs an http.Request for the ActivatePolicy method
+func NewActivatePolicyRequest(server string, version int64) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "version", version, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/policy/%s/activate", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -343,6 +994,60 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /readyz (the `GetReadyz` operationId).
 	GetReadyzWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetReadyzResponse, error)
+
+	// ListAuditEventsWithResponse Audit events, newest first
+	//
+	// Every filter is optional; pages are cut by `before_id` (the
+	// `next_before_id` of the previous page). Reading the log is itself
+	// recorded as an `audit_events_viewed` event.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/audit/events (the `ListAuditEvents` operationId).
+	ListAuditEventsWithResponse(ctx context.Context, params *ListAuditEventsParams, reqEditors ...RequestEditorFn) (*ListAuditEventsResponse, error)
+
+	// GetPolicyWithResponse The active policy
+	//
+	// The one active policy version and its thresholds.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/policy (the `GetPolicy` operationId).
+	GetPolicyWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetPolicyResponse, error)
+
+	// CreatePolicyWithBodyWithResponse Create a new policy version
+	//
+	// Validates every threshold (finite and positive, E-15; a refusal
+	// names each field) and stores it as the next version, inactive.
+	// Activation is a separate, audited step.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/policy (the `CreatePolicy` operationId).
+	CreatePolicyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePolicyResponse, error)
+
+	// CreatePolicyWithResponse Create a new policy version
+	//
+	// Validates every threshold (finite and positive, E-15; a refusal
+	// names each field) and stores it as the next version, inactive.
+	// Activation is a separate, audited step.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/policy (the `CreatePolicy` operationId).
+	CreatePolicyWithResponse(ctx context.Context, body CreatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePolicyResponse, error)
+
+	// ActivatePolicyWithResponse Activate a policy version
+	//
+	// Makes `version` the one active policy and publishes it to the
+	// processes that follow it. Only a version newer than the active
+	// one can be activated (followers apply only a higher version); a
+	// rollback is a new version with the old values (409 otherwise).
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/policy/{version}/activate (the `ActivatePolicy` operationId).
+	ActivatePolicyWithResponse(ctx context.Context, version int64, reqEditors ...RequestEditorFn) (*ActivatePolicyResponse, error)
 }
 
 type GetHealthzResponse struct {
@@ -448,6 +1153,198 @@ func (r GetReadyzResponse) ContentType() string {
 	return ""
 }
 
+type ListAuditEventsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *AuditEventPage
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListAuditEventsResponse) GetJSON200() *AuditEventPage {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ListAuditEventsResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListAuditEventsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListAuditEventsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListAuditEventsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListAuditEventsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetPolicyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Policy
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetPolicyResponse) GetJSON200() *Policy {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetPolicyResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetPolicyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetPolicyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetPolicyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetPolicyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreatePolicyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *Policy
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreatePolicyResponse) GetJSON201() *Policy {
+	return r.JSON201
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r CreatePolicyResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreatePolicyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreatePolicyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreatePolicyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreatePolicyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ActivatePolicyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Policy
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ActivatePolicyResponse) GetJSON200() *Policy {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ActivatePolicyResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ActivatePolicyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ActivatePolicyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ActivatePolicyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ActivatePolicyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // GetHealthzWithResponse Liveness
 //
 // 200 while the process runs. Says nothing about dependencies.
@@ -479,6 +1376,90 @@ func (c *ClientWithResponses) GetReadyzWithResponse(ctx context.Context, reqEdit
 		return nil, err
 	}
 	return ParseGetReadyzResponse(rsp)
+}
+
+// ListAuditEventsWithResponse Audit events, newest first
+//
+// Every filter is optional; pages are cut by `before_id` (the
+// `next_before_id` of the previous page). Reading the log is itself
+// recorded as an `audit_events_viewed` event.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/audit/events (the `ListAuditEvents` operationId).
+func (c *ClientWithResponses) ListAuditEventsWithResponse(ctx context.Context, params *ListAuditEventsParams, reqEditors ...RequestEditorFn) (*ListAuditEventsResponse, error) {
+	rsp, err := c.ListAuditEvents(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListAuditEventsResponse(rsp)
+}
+
+// GetPolicyWithResponse The active policy
+//
+// The one active policy version and its thresholds.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/policy (the `GetPolicy` operationId).
+func (c *ClientWithResponses) GetPolicyWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetPolicyResponse, error) {
+	rsp, err := c.GetPolicy(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetPolicyResponse(rsp)
+}
+
+// CreatePolicyWithBodyWithResponse Create a new policy version
+//
+// Validates every threshold (finite and positive, E-15; a refusal
+// names each field) and stores it as the next version, inactive.
+// Activation is a separate, audited step.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/policy (the `CreatePolicy` operationId).
+func (c *ClientWithResponses) CreatePolicyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePolicyResponse, error) {
+	rsp, err := c.CreatePolicyWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreatePolicyResponse(rsp)
+}
+
+// CreatePolicyWithResponse Create a new policy version
+//
+// Validates every threshold (finite and positive, E-15; a refusal
+// names each field) and stores it as the next version, inactive.
+// Activation is a separate, audited step.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/policy (the `CreatePolicy` operationId).
+func (c *ClientWithResponses) CreatePolicyWithResponse(ctx context.Context, body CreatePolicyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePolicyResponse, error) {
+	rsp, err := c.CreatePolicy(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreatePolicyResponse(rsp)
+}
+
+// ActivatePolicyWithResponse Activate a policy version
+//
+// Makes `version` the one active policy and publishes it to the
+// processes that follow it. Only a version newer than the active
+// one can be activated (followers apply only a higher version); a
+// rollback is a new version with the old values (409 otherwise).
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/policy/{version}/activate (the `ActivatePolicy` operationId).
+func (c *ClientWithResponses) ActivatePolicyWithResponse(ctx context.Context, version int64, reqEditors ...RequestEditorFn) (*ActivatePolicyResponse, error) {
+	rsp, err := c.ActivatePolicy(ctx, version, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseActivatePolicyResponse(rsp)
 }
 
 // ParseGetHealthzResponse parses an HTTP response from a GetHealthzWithResponse call
@@ -554,6 +1535,138 @@ func ParseGetReadyzResponse(rsp *http.Response) (*GetReadyzResponse, error) {
 	return response, nil
 }
 
+// ParseListAuditEventsResponse parses an HTTP response from a ListAuditEventsWithResponse call
+func ParseListAuditEventsResponse(rsp *http.Response) (*ListAuditEventsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListAuditEventsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuditEventPage
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetPolicyResponse parses an HTTP response from a GetPolicyWithResponse call
+func ParseGetPolicyResponse(rsp *http.Response) (*GetPolicyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetPolicyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Policy
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreatePolicyResponse parses an HTTP response from a CreatePolicyWithResponse call
+func ParseCreatePolicyResponse(rsp *http.Response) (*CreatePolicyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreatePolicyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Policy
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseActivatePolicyResponse parses an HTTP response from a ActivatePolicyWithResponse call
+func ParseActivatePolicyResponse(rsp *http.Response) (*ActivatePolicyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ActivatePolicyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Policy
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// GetHealthz Liveness
@@ -562,6 +1675,18 @@ type ServerInterface interface {
 	// GetReadyz Readiness
 	// (GET /readyz)
 	GetReadyz(w http.ResponseWriter, r *http.Request)
+	// ListAuditEvents Audit events, newest first
+	// (GET /v1/audit/events)
+	ListAuditEvents(w http.ResponseWriter, r *http.Request, params ListAuditEventsParams)
+	// GetPolicy The active policy
+	// (GET /v1/policy)
+	GetPolicy(w http.ResponseWriter, r *http.Request)
+	// CreatePolicy Create a new policy version
+	// (POST /v1/policy)
+	CreatePolicy(w http.ResponseWriter, r *http.Request)
+	// ActivatePolicy Activate a policy version
+	// (POST /v1/policy/{version}/activate)
+	ActivatePolicy(w http.ResponseWriter, r *http.Request, version int64)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -592,6 +1717,197 @@ func (siw *ServerInterfaceWrapper) GetReadyz(w http.ResponseWriter, r *http.Requ
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetReadyz(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAuditEvents operation middleware
+func (siw *ServerInterfaceWrapper) ListAuditEvents(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAuditEventsParams
+
+	// ------------- Optional query parameter "entity_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "entity_type", r.URL.Query(), &params.EntityType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "entity_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "entity_type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "entity_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "entity_id", r.URL.Query(), &params.EntityId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "entity_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "entity_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "actor_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "actor_id", r.URL.Query(), &params.ActorId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "actor_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "actor_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "event_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "event_type", r.URL.Query(), &params.EventType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "event_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "event_type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "before_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "before_id", r.URL.Query(), &params.BeforeId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "before_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "before_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "purpose" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "purpose", r.URL.Query(), &params.Purpose, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "purpose"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "purpose", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAuditEvents(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetPolicy operation middleware
+func (siw *ServerInterfaceWrapper) GetPolicy(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPolicy(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreatePolicy operation middleware
+func (siw *ServerInterfaceWrapper) CreatePolicy(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreatePolicy(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ActivatePolicy operation middleware
+func (siw *ServerInterfaceWrapper) ActivatePolicy(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "version" -------------
+	var version int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "version", r.PathValue("version"), &version, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ActivatePolicy(w, r, version)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -723,6 +2039,10 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/healthz", wrapper.GetHealthz)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/readyz", wrapper.GetReadyz)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/policy", wrapper.GetPolicy)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/policy", wrapper.CreatePolicy)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/policy/{version}/activate", wrapper.ActivatePolicy)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/audit/events", wrapper.ListAuditEvents)
 
 	return m
 }
@@ -819,6 +2139,161 @@ func (response GetReadyzdefaultApplicationProblemPlusJSONResponse) VisitGetReady
 	return err
 }
 
+type ListAuditEventsRequestObject struct {
+	Params ListAuditEventsParams
+}
+
+type ListAuditEventsResponseObject interface {
+	VisitListAuditEventsResponse(w http.ResponseWriter) error
+}
+
+type ListAuditEvents200JSONResponse AuditEventPage
+
+func (response ListAuditEvents200JSONResponse) VisitListAuditEventsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAuditEventsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListAuditEventsdefaultApplicationProblemPlusJSONResponse) VisitListAuditEventsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPolicyRequestObject struct {
+}
+
+type GetPolicyResponseObject interface {
+	VisitGetPolicyResponse(w http.ResponseWriter) error
+}
+
+type GetPolicy200JSONResponse Policy
+
+func (response GetPolicy200JSONResponse) VisitGetPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPolicydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetPolicydefaultApplicationProblemPlusJSONResponse) VisitGetPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePolicyRequestObject struct {
+	Body *CreatePolicyJSONRequestBody
+}
+
+type CreatePolicyResponseObject interface {
+	VisitCreatePolicyResponse(w http.ResponseWriter) error
+}
+
+type CreatePolicy201JSONResponse Policy
+
+func (response CreatePolicy201JSONResponse) VisitCreatePolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePolicydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreatePolicydefaultApplicationProblemPlusJSONResponse) VisitCreatePolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ActivatePolicyRequestObject struct {
+	Version int64 `json:"version"`
+}
+
+type ActivatePolicyResponseObject interface {
+	VisitActivatePolicyResponse(w http.ResponseWriter) error
+}
+
+type ActivatePolicy200JSONResponse Policy
+
+func (response ActivatePolicy200JSONResponse) VisitActivatePolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ActivatePolicydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ActivatePolicydefaultApplicationProblemPlusJSONResponse) VisitActivatePolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// GetHealthz Liveness
@@ -827,6 +2302,18 @@ type StrictServerInterface interface {
 	// GetReadyz Readiness
 	// (GET /readyz)
 	GetReadyz(ctx context.Context, request GetReadyzRequestObject) (GetReadyzResponseObject, error)
+	// ListAuditEvents Audit events, newest first
+	// (GET /v1/audit/events)
+	ListAuditEvents(ctx context.Context, request ListAuditEventsRequestObject) (ListAuditEventsResponseObject, error)
+	// GetPolicy The active policy
+	// (GET /v1/policy)
+	GetPolicy(ctx context.Context, request GetPolicyRequestObject) (GetPolicyResponseObject, error)
+	// CreatePolicy Create a new policy version
+	// (POST /v1/policy)
+	CreatePolicy(ctx context.Context, request CreatePolicyRequestObject) (CreatePolicyResponseObject, error)
+	// ActivatePolicy Activate a policy version
+	// (POST /v1/policy/{version}/activate)
+	ActivatePolicy(ctx context.Context, request ActivatePolicyRequestObject) (ActivatePolicyResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -909,6 +2396,113 @@ func (sh *strictHandler) GetReadyz(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetReadyzResponseObject); ok {
 		if err := validResponse.VisitGetReadyzResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAuditEvents operation middleware
+func (sh *strictHandler) ListAuditEvents(w http.ResponseWriter, r *http.Request, params ListAuditEventsParams) {
+	var request ListAuditEventsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAuditEvents(ctx, request.(ListAuditEventsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAuditEvents")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAuditEventsResponseObject); ok {
+		if err := validResponse.VisitListAuditEventsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPolicy operation middleware
+func (sh *strictHandler) GetPolicy(w http.ResponseWriter, r *http.Request) {
+	var request GetPolicyRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPolicy(ctx, request.(GetPolicyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPolicy")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetPolicyResponseObject); ok {
+		if err := validResponse.VisitGetPolicyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreatePolicy operation middleware
+func (sh *strictHandler) CreatePolicy(w http.ResponseWriter, r *http.Request) {
+	var request CreatePolicyRequestObject
+
+	var body CreatePolicyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreatePolicy(ctx, request.(CreatePolicyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreatePolicy")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreatePolicyResponseObject); ok {
+		if err := validResponse.VisitCreatePolicyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ActivatePolicy operation middleware
+func (sh *strictHandler) ActivatePolicy(w http.ResponseWriter, r *http.Request, version int64) {
+	var request ActivatePolicyRequestObject
+
+	request.Version = version
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ActivatePolicy(ctx, request.(ActivatePolicyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ActivatePolicy")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ActivatePolicyResponseObject); ok {
+		if err := validResponse.VisitActivatePolicyResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

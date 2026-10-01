@@ -65,6 +65,10 @@ func (rt *Runtime) AddCounters(component string, c *core.Counters) {
 	rt.Registry.MustRegister(metrics.NewCountersCollector(component, c))
 }
 
+// AddStatus puts attributes on every later status line (E-09): the
+// version of a followed policy, the age of a projection.
+func (rt *Runtime) AddStatus(fn func() []slog.Attr) { rt.status.AddExtra(fn) }
+
 // DrainTimeout is the bound on the drain after the context ends.
 func (rt *Runtime) DrainTimeout() time.Duration {
 	return time.Duration(rt.Common.ShutdownTimeoutS) * time.Second

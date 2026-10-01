@@ -32,6 +32,10 @@ servers:
 tags:
   - name: health
     description: Liveness, readiness and metrics of one process instance (admin port).
+  - name: policy
+    description: The versioned authority policy (INV-03); thresholds are data.
+  - name: audit
+    description: The append-only audit log with its monthly hash chain.
 
 paths:
   # WP-0: health paths, served by every process on its admin port.
@@ -98,6 +102,120 @@ paths:
             text/plain:
               schema:
                 type: string
+
+  # WP-1: the authority policy and the audit log. Every operation below
+  # names the console roles allowed in `x-roles`; until WP-2 lands the
+  # role check is a placeholder that refuses every request without a
+  # session (401 unauthenticated).
+  /v1/policy:
+    get:
+      operationId: getPolicy
+      tags: [policy]
+      summary: The active policy
+      description: The one active policy version and its thresholds.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: none
+      responses:
+        "200":
+          description: The active policy.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createPolicy
+      tags: [policy]
+      summary: Create a new policy version
+      description: |
+        Validates every threshold (finite and positive, E-15; a refusal
+        names each field) and stores it as the next version, inactive.
+        Activation is a separate, audited step.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: policy_created, entity_type: authority_policy, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PolicyInput"
+      responses:
+        "201":
+          description: The new version, inactive.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/policy/{version}/activate:
+    post:
+      operationId: activatePolicy
+      tags: [policy]
+      summary: Activate a policy version
+      description: |
+        Makes `version` the one active policy and publishes it to the
+        processes that follow it. Only a version newer than the active
+        one can be activated (followers apply only a higher version); a
+        rollback is a new version with the old values (409 otherwise).
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: policy_activated, entity_type: authority_policy, purpose: none}
+      parameters:
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        "200":
+          description: The policy now active.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/audit/events:
+    get:
+      operationId: listAuditEvents
+      tags: [audit]
+      summary: Audit events, newest first
+      description: |
+        Every filter is optional; pages are cut by `before_id` (the
+        `next_before_id` of the previous page). Reading the log is itself
+        recorded as an `audit_events_viewed` event.
+      security:
+        - sessionCookie: []
+      x-roles: [admin, auditor]
+      x-audit: {event_type: audit_events_viewed, entity_type: events, purpose: optional}
+      parameters:
+        - {name: entity_type, in: query, schema: {type: string}}
+        - {name: entity_id, in: query, schema: {type: string}}
+        - {name: actor_id, in: query, schema: {type: string}}
+        - {name: event_type, in: query, schema: {type: string}}
+        - {name: from, in: query, description: Inclusive lower bound of ts., schema: {type: string, format: date-time}}
+        - {name: to, in: query, description: Exclusive upper bound of ts., schema: {type: string, format: date-time}}
+        - {name: before_id, in: query, schema: {type: integer, format: int64, minimum: 1}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 500, default: 100}}
+        - {name: purpose, in: query, description: Why the log is read; recorded on the view event., schema: {type: string}}
+      responses:
+        "200":
+          description: One page of events.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditEventPage"
+        default:
+          $ref: "#/components/responses/Problem"
 
 components:
   securitySchemes:
@@ -204,3 +322,123 @@ components:
             $ref: "#/components/schemas/FieldProblem"
         truncated:
           type: boolean
+    Severity:
+      type: string
+      enum: [info, warning, critical]
+    PolicyInput:
+      type: object
+      description: |
+        The thresholds of one policy version. Units are in the names;
+        every number is finite and positive (E-15). The defaults named
+        below are those of version 1, the predecessor's values.
+      required:
+        - height_limit_agl_m
+        - pressure_uncertainty_m
+        - zone_conditional_severity
+        - mismatch_severity
+        - identification_severity
+        - spoof_distance_m
+        - identity_ttl_s
+        - max_gap_s
+        - identify_within_s
+        - broadcast_tolerance_s
+        - max_latency_s
+        - live_max_age_s
+        - clear_after_s
+        - stale_after_s
+        - dp_view_diagonal_km
+        - dp_poll_hz
+        - cis_stale_bound_s
+        - height_limit_in_uspace
+      properties:
+        height_limit_agl_m: {type: number, format: double, description: "Height limit over the ground (default 120)."}
+        pressure_uncertainty_m: {type: number, format: double, description: "Pressure-altitude margin (default 250)."}
+        zone_conditional_severity: {$ref: "#/components/schemas/Severity"}
+        mismatch_severity: {$ref: "#/components/schemas/Severity"}
+        identification_severity: {$ref: "#/components/schemas/Severity"}
+        spoof_distance_m: {type: number, format: double, description: "Default 300."}
+        identity_ttl_s: {type: number, format: double, description: "Default 15."}
+        max_gap_s: {type: number, format: double, description: "Default 3."}
+        identify_within_s: {type: number, format: double, description: "Default 4."}
+        broadcast_tolerance_s: {type: number, format: double, description: "Default 1."}
+        max_latency_s: {type: number, format: double, description: "Default 5."}
+        live_max_age_s: {type: number, format: double, description: "Default 10."}
+        clear_after_s: {type: number, format: double, description: "Default 3."}
+        stale_after_s: {type: number, format: double, description: "Default 15."}
+        dp_view_diagonal_km: {type: number, format: double, description: "Default 7."}
+        dp_poll_hz: {type: number, format: double, description: "Default 1."}
+        cis_stale_bound_s: {type: number, format: double, description: "Default 300."}
+        height_limit_in_uspace:
+          type: string
+          enum: [evaluate, skip_when_authorised]
+        note:
+          type: string
+          maxLength: 1000
+    Policy:
+      allOf:
+        - $ref: "#/components/schemas/PolicyInput"
+        - type: object
+          required: [version, active, created_at, created_by, note]
+          properties:
+            version:
+              type: integer
+              format: int64
+              description: The policy_version every violation carries.
+            active:
+              type: boolean
+            created_at:
+              type: string
+              format: date-time
+            created_by:
+              type: string
+            activated_at:
+              type: string
+              format: date-time
+            activated_by:
+              type: string
+    AuditEvent:
+      type: object
+      required: [id, ts, actor_type, actor_id, entity_type, event_type, payload, prev_hash, hash]
+      properties:
+        id:
+          type: integer
+          format: int64
+        ts:
+          type: string
+          format: date-time
+        actor_type:
+          type: string
+          enum: [user, client, receiver, system]
+        actor_id:
+          type: string
+        realm:
+          type: string
+        purpose:
+          type: string
+        entity_type:
+          type: string
+        entity_id:
+          type: string
+        event_type:
+          type: string
+        payload:
+          type: object
+          additionalProperties: true
+        prev_hash:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+        hash:
+          type: string
+          pattern: "^[0-9a-f]{64}$"
+    AuditEventPage:
+      type: object
+      required: [events]
+      properties:
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditEvent"
+        next_before_id:
+          type: integer
+          format: int64
+          description: Pass as before_id for the next page; absent on the last page.
