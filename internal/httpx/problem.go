@@ -26,6 +26,9 @@ const (
 	SlugNotFound     = "not_found"
 	SlugMethod       = "method_not_allowed"
 	SlugInternal     = "internal"
+	SlugConflict     = "conflict"
+	SlugUnauthn      = "unauthenticated"
+	SlugForbidden    = "forbidden"
 )
 
 // FieldProblem is one entry of Problem.Errors.
@@ -93,8 +96,24 @@ func WriteError(w http.ResponseWriter, r *http.Request, err error) {
 	ProblemFromError(err).Write(w, r)
 }
 
+// ProblemError carries a problem through an error return, so a handler
+// can refuse with a status and slug of its own (404, 409, ...).
+type ProblemError struct{ Problem *Problem }
+
+func (e *ProblemError) Error() string { return e.Problem.Slug() + ": " + e.Problem.Detail }
+
+// Refuse returns a ProblemError with status, slug and the field errors.
+func Refuse(status int, slug, detail string, errs ...*core.FieldError) error {
+	return &ProblemError{Problem: NewProblem(status, slug, "", detail, errs...)}
+}
+
 // ProblemFromError is the mapping WriteError uses.
 func ProblemFromError(err error) *Problem {
+	var pe *ProblemError
+	if errors.As(err, &pe) {
+		cp := *pe.Problem
+		return &cp
+	}
 	var mbe *http.MaxBytesError
 	if errors.As(err, &mbe) {
 		return NewProblem(http.StatusRequestEntityTooLarge, SlugBodyTooLarge, "", "request body exceeds the limit of this route",

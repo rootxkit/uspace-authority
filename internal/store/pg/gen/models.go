@@ -10,6 +10,34 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AuthorityPolicy struct {
+	Version                 int64
+	HeightLimitAglM         float64
+	PressureUncertaintyM    float64
+	ZoneConditionalSeverity string
+	MismatchSeverity        string
+	IdentificationSeverity  string
+	SpoofDistanceM          float64
+	IdentityTtlS            float64
+	MaxGapS                 float64
+	IdentifyWithinS         float64
+	BroadcastToleranceS     float64
+	MaxLatencyS             float64
+	LiveMaxAgeS             float64
+	ClearAfterS             float64
+	StaleAfterS             float64
+	DpViewDiagonalKm        float64
+	DpPollHz                float64
+	CisStaleBoundS          float64
+	HeightLimitInUspace     string
+	Note                    string
+	Active                  bool
+	CreatedAt               time.Time
+	CreatedBy               string
+	ActivatedAt             *time.Time
+	ActivatedBy             *string
+}
+
 type Event struct {
 	ID         int64
 	Ts         time.Time

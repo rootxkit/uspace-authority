@@ -84,6 +84,7 @@ func TestWriteErrorMapsFieldErrorsTooLargeAndInternal(t *testing.T) {
 		{errors.Join(core.Fieldf("serial", "too long"), &core.FieldError{Field: "class", Reason: "unknown"}), 400, SlugValidation, []string{"serial", "class"}},
 		{fmt.Errorf("decode: %w", &core.FieldError{Field: "lat_deg", Reason: "out of range"}), 400, SlugValidation, []string{"lat_deg"}},
 		{&http.MaxBytesError{Limit: 10}, 413, SlugBodyTooLarge, []string{"body"}},
+		{fmt.Errorf("activate: %w", Refuse(409, SlugConflict, "not newer", core.Fieldf("version", "older"))), 409, SlugConflict, []string{"version"}},
 		{errors.New("pq: password authentication failed for user secret"), 500, SlugInternal, nil},
 	}
 	for _, c := range cases {
