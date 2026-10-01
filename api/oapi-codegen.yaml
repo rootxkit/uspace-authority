@@ -13,3 +13,7 @@ output-options:
   skip-prune: true
   # /metrics is in the contract but served by the Prometheus handler.
   exclude-operation-ids: [getMetrics]
+compatibility:
+  # Enum constants carry their type name (AuditEventActorTypeClient, not
+  # Client), so an enum value never collides with a generated type.
+  always-prefix-enum-values: true

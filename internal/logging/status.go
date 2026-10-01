@@ -30,6 +30,15 @@ type Status struct {
 
 	mu      sync.Mutex
 	started time.Time
+	extras  []func() []slog.Attr
+}
+
+// AddExtra adds attributes to every later line (a followed policy's
+// version, a projection's age); safe while Run is running.
+func (s *Status) AddExtra(fn func() []slog.Attr) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.extras = append(s.extras, fn)
 }
 
 // Add puts one more source on the line; safe while Run is running.
@@ -50,6 +59,7 @@ func (s *Status) Emit(ctx context.Context) {
 	for _, src := range s.Sources {
 		counters[src.Name] = src.Counters.Snapshot()
 	}
+	extras := append([]func() []slog.Attr(nil), s.extras...)
 	s.mu.Unlock()
 	attrs := []slog.Attr{
 		slog.Int64("uptime_s", int64(time.Since(started).Seconds())),
@@ -57,6 +67,9 @@ func (s *Status) Emit(ctx context.Context) {
 	}
 	if s.Extra != nil {
 		attrs = append(attrs, s.Extra()...)
+	}
+	for _, fn := range extras {
+		attrs = append(attrs, fn()...)
 	}
 	s.Logger.LogAttrs(ctx, slog.LevelInfo, "status", attrs...)
 }

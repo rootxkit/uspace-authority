@@ -1,0 +1,190 @@
+package apiserver
+
+import (
+	"bufio"
+	"context"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"regexp"
+	"slices"
+	"strings"
+	"testing"
+
+	"github.com/rootxkit/uspace-authority/api/gen"
+	"github.com/rootxkit/uspace-authority/internal/httpx"
+)
+
+// stubPolicy answers every policy operation and records who called.
+type stubPolicy struct{ seen *Identity }
+
+func (s stubPolicy) GetPolicy(ctx context.Context, _ gen.GetPolicyRequestObject) (gen.GetPolicyResponseObject, error) {
+	id, _ := IdentityFrom(ctx)
+	*s.seen = id
+	return gen.GetPolicy200JSONResponse{Version: 1}, nil
+}
+
+func (s stubPolicy) CreatePolicy(context.Context, gen.CreatePolicyRequestObject) (gen.CreatePolicyResponseObject, error) {
+	return nil, httpx.Refuse(http.StatusConflict, httpx.SlugConflict, "stub")
+}
+
+func (s stubPolicy) ActivatePolicy(context.Context, gen.ActivatePolicyRequestObject) (gen.ActivatePolicyResponseObject, error) {
+	return nil, errors.New("database password=s3cret unreachable")
+}
+
+func identity(roles ...string) IdentifyFunc {
+	return func(*http.Request) (Identity, error) {
+		return Identity{ActorType: "user", Subject: "u-1", Roles: roles, Realm: "console"}, nil
+	}
+}
+
+func server(t *testing.T, identify IdentifyFunc) (*httptest.Server, *Identity, []string) {
+	t.Helper()
+	seen := &Identity{}
+	mux := http.NewServeMux()
+	mounted := Mount(mux, Server{PolicyHandler: stubPolicy{seen: seen}}, Options{
+		Middlewares: []Middleware{RequireRole(identify, Roles)},
+		Keep:        PathPrefix("/v1/policy"),
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	return srv, seen, mounted
+}
+
+func call(t *testing.T, method, url string) (int, httpx.Problem) {
+	t.Helper()
+	req, err := http.NewRequest(method, url, strings.NewReader("{}"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	var p httpx.Problem
+	if resp.Header.Get("Content-Type") == httpx.ProblemContentType {
+		if err := json.NewDecoder(resp.Body).Decode(&p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return resp.StatusCode, p
+}
+
+func TestMountServesOnlyTheKeptPatterns(t *testing.T) {
+	srv, _, mounted := server(t, identity(RoleAdmin))
+	slices.Sort(mounted)
+	want := []string{"GET /v1/policy", "POST /v1/policy", "POST /v1/policy/{version}/activate"}
+	if !slices.Equal(mounted, want) {
+		t.Fatalf("mounted %v", mounted)
+	}
+	resp, err := http.Get(srv.URL + "/healthz")
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("an unmounted operation answered %d", resp.StatusCode)
+	}
+}
+
+// E-01: the placeholder refuses without a session (401) and without the
+// role (403), and admits the role, handing the identity to the handler.
+func TestRequireRoleRefusesThenAdmits(t *testing.T) {
+	srv, _, _ := server(t, NoSession)
+	if code, p := call(t, http.MethodGet, srv.URL+"/v1/policy"); code != http.StatusUnauthorized || p.Slug() != httpx.SlugUnauthn {
+		t.Fatalf("no session: %d %+v", code, p)
+	}
+	srv, _, _ = server(t, identity(RoleAuditor, RoleViewer))
+	if code, p := call(t, http.MethodGet, srv.URL+"/v1/policy"); code != http.StatusForbidden || !strings.Contains(p.Detail, RoleAdmin) {
+		t.Fatalf("wrong role: %d %+v", code, p)
+	}
+	srv, seen, _ := server(t, identity(RoleViewer, RoleAdmin))
+	if code, _ := call(t, http.MethodGet, srv.URL+"/v1/policy"); code != http.StatusOK || seen.Subject != "u-1" {
+		t.Fatalf("admin: %d seen %+v", code, seen)
+	}
+}
+
+func TestRequireRoleRefusesAnOperationWithoutARule(t *testing.T) {
+	mw := RequireRole(identity(RoleAdmin), map[string][]string{})
+	called := false
+	h := mw(func(context.Context, http.ResponseWriter, *http.Request, any) (any, error) {
+		called = true
+		return nil, nil
+	}, "Unlisted")
+	rec := httptest.NewRecorder()
+	_, _ = h(context.Background(), rec, httptest.NewRequest(http.MethodGet, "/v1/x", nil), nil)
+	if called || rec.Code != http.StatusForbidden || !strings.Contains(rec.Body.String(), "no role rule") {
+		t.Fatalf("called %v code %d %s", called, rec.Code, rec.Body.String())
+	}
+}
+
+// Errors keep the contract's shape: a handler's problem passes through,
+// an unparsable parameter is a 400 naming the request, and an internal
+// error is a 500 that does not echo its text.
+func TestErrorsAreProblems(t *testing.T) {
+	srv, _, _ := server(t, identity(RoleAdmin))
+	if code, p := call(t, http.MethodPost, srv.URL+"/v1/policy"); code != http.StatusConflict || p.Slug() != httpx.SlugConflict {
+		t.Fatalf("handler problem: %d %+v", code, p)
+	}
+	if code, p := call(t, http.MethodPost, srv.URL+"/v1/policy/abc/activate"); code != http.StatusBadRequest || len(p.Errors) != 1 || p.Errors[0].Field != "request" {
+		t.Fatalf("bad parameter: %d %+v", code, p)
+	}
+	code, p := call(t, http.MethodPost, srv.URL+"/v1/policy/2/activate")
+	if code != http.StatusInternalServerError || strings.Contains(p.Detail+p.Title, "s3cret") {
+		t.Fatalf("internal: %d %+v", code, p)
+	}
+}
+
+// xRoles reads x-roles of every operation from api/openapi.yaml, keyed
+// by the operation id as the generated code names it.
+func xRoles(t *testing.T) map[string][]string {
+	t.Helper()
+	f, err := os.Open("../../api/openapi.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	opRe := regexp.MustCompile(`^\s+operationId:\s*(\w+)`)
+	rolesRe := regexp.MustCompile(`^\s+x-roles:\s*\[([^\]]*)\]`)
+	out := map[string][]string{}
+	op := ""
+	sc := bufio.NewScanner(f)
+	for sc.Scan() {
+		if m := opRe.FindStringSubmatch(sc.Text()); m != nil {
+			op = strings.ToUpper(m[1][:1]) + m[1][1:]
+			continue
+		}
+		if m := rolesRe.FindStringSubmatch(sc.Text()); m != nil && op != "" {
+			var roles []string
+			for r := range strings.SplitSeq(m[1], ",") {
+				roles = append(roles, strings.TrimSpace(r))
+			}
+			out[op] = roles
+		}
+	}
+	if err := sc.Err(); err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+func TestRolesMatchTheContract(t *testing.T) {
+	spec := xRoles(t)
+	if len(spec) == 0 {
+		t.Fatal("no x-roles found in api/openapi.yaml")
+	}
+	for op, roles := range spec {
+		if !slices.Equal(Roles[op], roles) {
+			t.Errorf("%s: contract %v, code %v", op, roles, Roles[op])
+		}
+	}
+	for op := range Roles {
+		if _, ok := spec[op]; !ok {
+			t.Errorf("%s has roles in code but no x-roles in the contract", op)
+		}
+	}
+}

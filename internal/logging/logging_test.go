@@ -163,3 +163,19 @@ func TestStatusRunEmitsAtOnceThenPerIntervalUntilCancelled(t *testing.T) {
 		t.Fatalf("got %d status lines, want at least 2", n)
 	}
 }
+
+func TestStatusCarriesEveryAddedExtra(t *testing.T) {
+	var buf bytes.Buffer
+	s := &Status{Logger: slog.New(slog.NewJSONHandler(&buf, nil))}
+	s.Emit(context.Background())
+	s.AddExtra(func() []slog.Attr { return []slog.Attr{slog.Int64("policy_version", 2)} })
+	s.AddExtra(func() []slog.Attr { return []slog.Attr{slog.Int64("projection_age_s", 5)} })
+	s.Emit(context.Background())
+	got := lines(t, &buf)
+	if _, ok := got[0]["policy_version"]; ok {
+		t.Fatalf("an extra appeared before it was added: %v", got[0])
+	}
+	if got[1]["policy_version"] != 2.0 || got[1]["projection_age_s"] != 5.0 {
+		t.Fatalf("second line %v", got[1])
+	}
+}
