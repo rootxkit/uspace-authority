@@ -1,0 +1,17 @@
+# Dependency updates (plan §7, public repository row). Each update is a
+# pull request that CI gates like any other; uspace-core is bumped by
+# hand in its own build: commit and is ignored here.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: monthly
+    ignore:
+      - dependency-name: github.com/rootxkit/uspace-core
+    open-pull-requests-limit: 5
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5

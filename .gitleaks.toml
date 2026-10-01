@@ -1,0 +1,13 @@
+# gitleaks configuration for uspace-authority: the default rules, no
+# allowlist. Read by gitleaks (and gitleaks-action) from the repository
+# root; the version is pinned in the Makefile and the CI workflow.
+#
+# There is deliberately no global [allowlist] (gitleaks 8.24.3 ignores
+# condition = "AND" on it, so a path there would exempt every rule). Test
+# keys are generated at test time and never committed (CLAUDE.md rule 11);
+# if a fixture ever needs an exemption, it is a narrow allowlist on one
+# rule and one path, as in uspace-core's .gitleaks.toml.
+title = "uspace-authority"
+
+[extend]
+useDefault = true

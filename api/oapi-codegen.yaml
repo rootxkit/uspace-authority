@@ -1,0 +1,15 @@
+# oapi-codegen v2 configuration for api/gen (the output path is passed
+# by scripts/generate.sh with -o). Run scripts/generate.sh
+# (make generate); never edit api/gen by hand. scripts/verify-generated.sh
+# regenerates into a temporary directory and fails on any difference.
+package: gen
+generate:
+  models: true
+  std-http-server: true
+  strict-server: true
+  client: true
+  embedded-spec: false
+output-options:
+  skip-prune: true
+  # /metrics is in the contract but served by the Prometheus handler.
+  exclude-operation-ids: [getMetrics]

@@ -1,0 +1,174 @@
+package layout
+
+import (
+	"bytes"
+	"io/fs"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+const module = "github.com/rootxkit/uspace-authority"
+
+func repoRoot(t *testing.T) string {
+	t.Helper()
+	root, err := filepath.Abs("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "go.mod")); err != nil {
+		t.Fatalf("repository root not found from %s", root)
+	}
+	return root
+}
+
+// goList returns, for every package matching pattern, its non-test
+// dependencies (or direct imports when deps is false).
+func goList(t *testing.T, root, pattern string, deps bool) map[string][]string {
+	t.Helper()
+	field := "Imports"
+	if deps {
+		field = "Deps"
+	}
+	cmd := exec.Command("go", "list", "-f", `{{.ImportPath}} {{join .`+field+` " "}}`, pattern)
+	cmd.Dir = root
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("go list %s: %v: %s", pattern, err, stderr.String())
+	}
+	m := map[string][]string{}
+	for line := range strings.SplitSeq(strings.TrimSpace(string(out)), "\n") {
+		parts := strings.Fields(line)
+		if len(parts) > 0 {
+			m[parts[0]] = parts[1:]
+		}
+	}
+	return m
+}
+
+// linksTestOnly reports which binaries link a test-only package.
+func linksTestOnly(deps map[string][]string, testOnly string) []string {
+	var bad []string
+	for pkg, ds := range deps {
+		for _, d := range ds {
+			if d == testOnly || strings.HasPrefix(d, testOnly+"/") {
+				bad = append(bad, pkg+" links "+d)
+			}
+		}
+	}
+	return bad
+}
+
+// Plan §3 and spec 06 T11: internal/ltest (the test harness) is never
+// linked into a binary. The Dockerfile runs the same check.
+func TestNoBinaryLinksTheTestHarness(t *testing.T) {
+	root := repoRoot(t)
+	for _, b := range linksTestOnly(goList(t, root, "./cmd/...", true), module+"/internal/ltest") {
+		t.Error(b)
+	}
+}
+
+func TestTestHarnessCheckCatchesALink(t *testing.T) {
+	deps := map[string][]string{module + "/cmd/api": {"fmt", module + "/internal/ltest/fixtures"}}
+	if got := linksTestOnly(deps, module+"/internal/ltest"); len(got) != 1 {
+		t.Fatalf("got %v", got)
+	}
+}
+
+// foreignImports lists imports of a cmd package that are neither the
+// standard library nor this module's internal packages.
+func foreignImports(imports map[string][]string) []string {
+	var bad []string
+	for pkg, imps := range imports {
+		for _, imp := range imps {
+			first, _, _ := strings.Cut(imp, "/")
+			std := !strings.Contains(first, ".")
+			if std || strings.HasPrefix(imp, module+"/internal/") {
+				continue
+			}
+			bad = append(bad, pkg+" imports "+imp)
+		}
+	}
+	return bad
+}
+
+// Plan §3: cmd/* imports internal/* (and the standard library) only.
+func TestCommandsImportInternalOnly(t *testing.T) {
+	root := repoRoot(t)
+	for _, b := range foreignImports(goList(t, root, "./cmd/...", false)) {
+		t.Error(b)
+	}
+}
+
+func TestForeignImportCheckCatchesAnImport(t *testing.T) {
+	got := foreignImports(map[string][]string{module + "/cmd/api": {"net/http", module + "/internal/proc", "github.com/jackc/pgx/v5", module + "/api/gen"}})
+	if len(got) != 2 {
+		t.Fatalf("got %v", got)
+	}
+}
+
+// stagingHost is assembled so this file does not itself match.
+var stagingHost = "chikox" + ".net"
+
+// hostnameHits walks root and lists files naming the staging host
+// outside deploy/staging/ (spec 06 §4). docs/ is exempt: the plan and
+// the briefs name the predecessor's hosts that A-M5 retires.
+func hostnameHits(t *testing.T, root string) []string {
+	t.Helper()
+	var hits []string
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, _ := filepath.Rel(root, path)
+		rel = filepath.ToSlash(rel)
+		if d.IsDir() {
+			switch rel {
+			case ".git", "deploy/staging", "docs", "node_modules", "web/node_modules", "web/.next":
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if bytes.Contains(b, []byte(stagingHost)) {
+			hits = append(hits, rel)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return hits
+}
+
+func TestNoStagingHostnameOutsideDeployStaging(t *testing.T) {
+	for _, h := range hostnameHits(t, repoRoot(t)) {
+		t.Errorf("%s names the staging host; it belongs under deploy/staging/ only", h)
+	}
+}
+
+func TestHostnameCheckCatchesAHost(t *testing.T) {
+	dir := t.TempDir()
+	write := func(rel, body string) {
+		p := filepath.Join(dir, filepath.FromSlash(rel))
+		if err := os.MkdirAll(filepath.Dir(p), 0o750); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("deploy/staging/Caddyfile", "uspace-authority."+stagingHost)
+	write("docs/PLAN.md", "utm."+stagingHost)
+	write("internal/x/x.go", "const host = \"api."+stagingHost+"\"")
+	if got := hostnameHits(t, dir); len(got) != 1 || got[0] != "internal/x/x.go" {
+		t.Fatalf("got %v", got)
+	}
+}

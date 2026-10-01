@@ -1,0 +1,9 @@
+.git
+.github
+docs
+web/node_modules
+web/.next
+**/*.test
+coverage.*
+.env
+.env.*

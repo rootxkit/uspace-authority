@@ -1,0 +1,206 @@
+openapi: 3.1.0
+info:
+  title: uspace-authority national API
+  version: 0.1.0
+  description: |
+    The competent authority's system of the Georgian U-space rebuild.
+    This file is the contract: the only source of handlers and types
+    (`api/gen/`), and an endpoint that is not in it does not exist
+    (spec `00 §7`). Paths are versioned under `/v1`; changes within a
+    version are additive only.
+
+    Every error is `application/problem+json` in the shape of the
+    `Problem` schema (the lab's `schemas/common/problem/v1`, decision
+    M28).
+
+    Every operation carries `security` (an empty list only for the
+    health paths) and the vendor extension `x-audit`, which names the
+    `events` row the operation writes:
+
+    - `x-audit: none` the operation writes no `events` row (health and
+      public reads only);
+    - `x-audit: {event_type: <name>, entity_type: <name>, purpose:
+      required | optional | none}` the operation writes one `events`
+      row of that type, inside the same transaction as its effect;
+      `purpose: required` means the request is refused without a
+      `purpose` (every PII read, CLAUDE.md rule 6).
+
+    Work packages add their path groups below under a `# WP-k` comment
+    and regenerate `api/gen/` with `scripts/generate.sh`.
+servers:
+  - url: /
+tags:
+  - name: health
+    description: Liveness, readiness and metrics of one process instance (admin port).
+
+paths:
+  # WP-0: health paths, served by every process on its admin port.
+  /healthz:
+    get:
+      operationId: getHealthz
+      tags: [health]
+      summary: Liveness
+      description: 200 while the process runs. Says nothing about dependencies.
+      security: []
+      x-audit: none
+      responses:
+        "200":
+          description: The process is alive.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        default:
+          $ref: "#/components/responses/Problem"
+  /readyz:
+    get:
+      operationId: getReadyz
+      tags: [health]
+      summary: Readiness
+      description: |
+        200 when every readiness check the process registered passes,
+        503 otherwise. Every check is listed with its state, so a
+        process that registered no check says so with an empty map
+        rather than claiming a dependency is healthy.
+      security: []
+      x-audit: none
+      responses:
+        "200":
+          description: Ready to serve.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Readiness"
+        "503":
+          description: At least one readiness check failed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Readiness"
+        default:
+          $ref: "#/components/responses/Problem"
+  /metrics:
+    get:
+      operationId: getMetrics
+      tags: [health]
+      summary: Prometheus metrics
+      description: |
+        Prometheus text exposition, on the admin port only (loopback or
+        the private network, never routed by Caddy). Served by the
+        Prometheus handler, not by a generated handler
+        (`api/oapi-codegen.yaml` excludes this operation).
+      security: []
+      x-audit: none
+      responses:
+        "200":
+          description: The metrics.
+          content:
+            text/plain:
+              schema:
+                type: string
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: uspace_session
+      description: |
+        Console session (decision M20): a JWT with `scope = "session"`,
+        `roles[]`, `realm` (`console` or `police`), `jti`, `aud` = this
+        system's host, set by the web BFF. State-changing requests also
+        carry `X-CSRF-Token` matching the `uspace_csrf` cookie (M21).
+    ecosystemToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Ecosystem machine token issued by a trusted issuer (RS256,
+        `aud` = this system's host, scope from the catalogue in
+        `docs/WORKPACKAGES/WP-2.md`), verified by uspace-core `auth`.
+    receiverKey:
+      type: http
+      scheme: bearer
+      description: |
+        Per-receiver bearer key of a Remote ID receiver, together with
+        an HMAC-SHA256 of the exact body bytes under a separate secret
+        (WP-7). Not a JWT and not a scope.
+
+  responses:
+    Problem:
+      description: An error.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+
+  schemas:
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+    Readiness:
+      type: object
+      required: [status, checks]
+      properties:
+        status:
+          type: string
+          enum: [ready, not_ready]
+        checks:
+          type: object
+          description: Check name to its state; an error names the cause.
+          additionalProperties:
+            $ref: "#/components/schemas/Check"
+    Check:
+      type: object
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+        error:
+          type: string
+    FieldProblem:
+      type: object
+      required: [field, reason]
+      properties:
+        field:
+          type: string
+          description: JSON path or parameter name, as core.FieldError writes it.
+        reason:
+          type: string
+          minLength: 1
+    Problem:
+      type: object
+      description: |
+        RFC 9457 problem details with the field-error extension of
+        decision M28; the shape of uspace-lab `schemas/common/problem/v1`.
+        `errors` is capped at 100 entries; `truncated` is true when it
+        was cut.
+      required: [type, title, status, errors]
+      properties:
+        type:
+          type: string
+          pattern: "^https://schemas\\.uspace\\.ge/problems/[a-z_]+$"
+          description: "`https://schemas.uspace.ge/problems/<slug>`, slug = the counter or refusal name."
+        title:
+          type: string
+          minLength: 1
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference
+        errors:
+          type: array
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/FieldProblem"
+        truncated:
+          type: boolean

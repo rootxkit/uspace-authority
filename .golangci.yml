@@ -1,0 +1,163 @@
+# golangci-lint v2 configuration for uspace-authority. The base is
+# uspace-core's .golangci.yml (same linters, same pinned versions: see the
+# Makefile and .github/workflows/ci.yml); the additions are depguard for
+# the import rules of docs/PLAN.md §3 and forbidigo's process exemption.
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  default: standard # errcheck, govet, ineffassign, staticcheck, unused
+  enable:
+    - depguard # plan §3 import rules, CLAUDE.md rule 3
+    - errname
+    - errorlint
+    - exhaustive
+    - forbidigo
+    - gocritic
+    - gosec
+    - misspell
+    - nolintlint
+    - prealloc
+    - revive
+    - unconvert
+    - unparam
+    - copyloopvar
+    - durationcheck
+    - makezero
+    - nilerr
+    - predeclared
+    - wastedassign
+  settings:
+    staticcheck:
+      checks: ["all", "-ST1000", "-ST1003"] # package comments live in doc.go; names follow E-13
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment
+        - shadow
+    gocritic:
+      enabled-tags: [diagnostic, performance]
+      disabled-checks:
+        - hugeParam
+    gosec:
+      excludes:
+        - G115 # integer conversions are bounded at the parser boundary
+    revive:
+      rules:
+        - name: exported
+          arguments: ["checkPrivateReceivers", "disableStutteringCheck"]
+        - name: var-naming
+          arguments: [["ID", "UAS", "AMSL", "AGL", "HAE", "WGS84", "ODID", "JWT", "JWKS", "HMAC", "CPA", "DEM", "URL", "TS", "PG", "NATS", "RID", "DP", "DSS", "ANSP", "OTLP", "MTLS", "RPS"], []]
+        - name: unused-parameter
+        - name: context-as-argument
+        - name: error-return
+        - name: error-strings
+        - name: increment-decrement
+        - name: indent-error-flow
+        - name: range
+        - name: receiver-naming
+        - name: redefines-builtin-id
+        - name: superfluous-else
+        - name: time-naming
+        - name: unexported-return
+        - name: unreachable-code
+    forbidigo:
+      analyze-types: true
+      forbid:
+        - pattern: '^panic$'
+          msg: "return an error that names the field (core.FieldError) or a problem; no panics outside cmd/*/main.go and tests"
+        - pattern: '^fmt\.Print(f|ln)?$'
+          msg: "log through slog (internal/logging); only cmd/*/main.go may print"
+        - pattern: '^log\.'
+          msg: "use log/slog through internal/logging, never the log package"
+        - pattern: '^os\.Exit$'
+          msg: "only cmd/*/main.go exits the process"
+    depguard:
+      rules:
+        # CLAUDE.md rule 3: geometry, geodesy and JWT live once, in
+        # uspace-core. No other library for them, anywhere.
+        judgement-lives-in-core:
+          list-mode: lax
+          deny:
+            - pkg: github.com/golang-jwt
+              desc: "JWT verification is uspace-core/auth; issuance is internal/tokens through core"
+            - pkg: github.com/go-jose
+              desc: "JWS/JWT go through uspace-core/auth"
+            - pkg: gopkg.in/square/go-jose.v2
+              desc: "JWS/JWT go through uspace-core/auth"
+            - pkg: github.com/paulmach/orb
+              desc: "geometry is uspace-core (geodesy, zones)"
+            - pkg: github.com/twpayne/go-geom
+              desc: "geometry is uspace-core (geodesy, zones)"
+            - pkg: github.com/golang/geo
+              desc: "geometry is uspace-core (geodesy, zones)"
+            - pkg: github.com/uber/h3-go
+              desc: "no H3 (cgo); cells are uspace-core geodesy/cell (plan Q-A3)"
+            - pkg: github.com/tidwall/geodesic
+              desc: "geodesy is uspace-core/geodesy"
+            - pkg: github.com/peterstace/simplefeatures
+              desc: "geometry is uspace-core (geodesy, zones)"
+        # Plan §3: only internal/tokens and internal/authz import jwx.
+        jwx-only-in-tokens-and-authz:
+          list-mode: lax
+          files:
+            - "$all"
+            - "!**/internal/tokens/**"
+            - "!**/internal/authz/**"
+          deny:
+            - pkg: github.com/lestrrat-go/jwx
+              desc: "only internal/tokens and internal/authz import jwx, and JWS goes through core's auth helpers"
+        # Plan §3: only internal/store opens a database.
+        database-only-in-store:
+          list-mode: lax
+          files:
+            - "$all"
+            - "!**/internal/store/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/jackc/pgx
+              desc: "only internal/store (pg, ts, migrate) opens a database"
+            - pkg: database/sql
+              desc: "only internal/store (pg, ts, migrate) opens a database"
+            - pkg: github.com/pressly/goose
+              desc: "migrations run through internal/store/migrate only"
+        # Plan §3, spec 06 T11: the test harness never reaches a binary.
+        ltest-only-in-tests:
+          list-mode: lax
+          files:
+            - "$all"
+            - "!$test"
+          deny:
+            - pkg: github.com/rootxkit/uspace-authority/internal/ltest
+              desc: "internal/ltest is imported by _test.go files only"
+    exhaustive:
+      default-signifies-exhaustive: false
+    misspell:
+      locale: UK
+      ignore-rules: [authorization, authorize, authorized, authorizing, center, meter, meters, color, analyze, organization]
+  exclusions:
+    generated: lax
+    rules:
+      - path: _test\.go
+        linters: [gosec, errcheck, forbidigo, unparam, prealloc]
+      # cmd/*/main.go is the one place that exits the process.
+      - path: ^cmd/[^/]+/main\.go$
+        text: "os\\.Exit"
+        linters: [forbidigo]
+      - path: ^api/gen/
+        linters: [revive, gocritic, misspell, exhaustive, errorlint, gosec, staticcheck]
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes: [github.com/rootxkit/uspace-authority]
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

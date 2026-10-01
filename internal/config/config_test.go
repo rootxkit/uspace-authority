@@ -1,0 +1,204 @@
+package config
+
+import (
+	"errors"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/rootxkit/uspace-core/core"
+)
+
+func env(m map[string]string) LookupFunc {
+	return func(k string) (string, bool) { v, ok := m[k]; return v, ok }
+}
+
+func validAPI() map[string]string {
+	return map[string]string{
+		"PG_URL":               "postgres://u:pw-relational@db:5432/authority",
+		"TS_URL":               "postgres://u:pw-telemetry@db:5432/authority_ts",
+		"NATS_URL":             "nats://nats:4222",
+		"AUTHORITY_PUBLIC_URL": "https://authority.example.test",
+	}
+}
+
+func TestLoadAcceptsAValidAPIConfigAndAppliesDefaults(t *testing.T) {
+	var c API
+	if err := Load(&c, env(validAPI())); err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if c.Addr != ":8080" || c.AdminAddr != ":9090" || c.LogLevel != "info" || c.MTLSMode != "required" {
+		t.Errorf("defaults not applied: %+v", c)
+	}
+	if c.MaxBodyBytes != 1<<20 || c.StatusIntervalS != 60 || c.ShutdownTimeoutS != 15 || c.RateLimitRPS != 20 {
+		t.Errorf("numeric defaults not applied: %+v", c)
+	}
+}
+
+func TestLoadRefusesMissingRequiredVariableNamingIt(t *testing.T) {
+	m := validAPI()
+	delete(m, "PG_URL")
+	var c API
+	err := Load(&c, env(m))
+	if err == nil {
+		t.Fatal("Load accepted a config without PG_URL")
+	}
+	fes := FieldErrors(err)
+	if len(fes) != 1 || fes[0].Field != "PG_URL" || fes[0].Reason != "required" {
+		t.Fatalf("got %v, want one FieldError naming PG_URL", fes)
+	}
+}
+
+func TestLoadReportsEveryProblemAtOnce(t *testing.T) {
+	var c API
+	err := Load(&c, env(map[string]string{"LOG_LEVEL": "loud", "STATUS_INTERVAL_S": "0", "AUTHORITY_MTLS_MODE": "maybe"}))
+	got := map[string]bool{}
+	for _, fe := range FieldErrors(err) {
+		got[fe.Field] = true
+	}
+	for _, want := range []string{"PG_URL", "TS_URL", "NATS_URL", "AUTHORITY_PUBLIC_URL", "LOG_LEVEL", "STATUS_INTERVAL_S", "AUTHORITY_MTLS_MODE"} {
+		if !got[want] {
+			t.Errorf("no error for %s in %v", want, err)
+		}
+	}
+}
+
+func TestLoadFieldKinds(t *testing.T) {
+	type kinds struct {
+		S  string        `env:"S"`
+		B  bool          `env:"B"`
+		I  int           `env:"I" min:"2" max:"5"`
+		F  float64       `env:"F" min:"0.5"`
+		D  time.Duration `env:"D"`
+		L  []string      `env:"L"`
+		U  string        `env:"U" kind:"url"`
+		Df string        `env:"DF" default:"dflt"`
+	}
+	var k kinds
+	err := Load(&k, env(map[string]string{"S": " x ", "B": "true", "I": "3", "F": "0.75", "D": "1500ms", "L": "a, b,,c", "U": "https://h.example.test/p", "DF": ""}))
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if k.S != "x" || !k.B || k.I != 3 || k.F != 0.75 || k.D != 1500*time.Millisecond || strings.Join(k.L, "|") != "a|b|c" || k.Df != "dflt" {
+		t.Errorf("parsed %+v", k)
+	}
+
+	bad := map[string]string{"B": "yes-ish", "I": "9", "F": "NaN", "D": "-1s", "U": "not a url"}
+	for name, val := range bad {
+		var k kinds
+		err := Load(&k, env(map[string]string{name: val}))
+		fes := FieldErrors(err)
+		if len(fes) != 1 || fes[0].Field != name {
+			t.Errorf("%s=%q: got %v, want one error naming %s", name, val, err, name)
+		}
+	}
+	var k2 kinds
+	if fes := FieldErrors(Load(&k2, env(map[string]string{"I": "1"}))); len(fes) != 1 || !strings.Contains(fes[0].Reason, "at least 2") {
+		t.Errorf("below min: %v", fes)
+	}
+	if fes := FieldErrors(Load(&k2, env(map[string]string{"I": "x"}))); len(fes) != 1 || fes[0].Reason != "must be an integer" {
+		t.Errorf("not an integer: %v", fes)
+	}
+	if fes := FieldErrors(Load(&k2, env(map[string]string{"U": "/relative"}))); len(fes) != 1 || !strings.Contains(fes[0].Reason, "absolute") {
+		t.Errorf("relative url: %v", fes)
+	}
+}
+
+func TestLoadRefusesUnsupportedTypesAndNonPointers(t *testing.T) {
+	type odd struct {
+		M map[string]int `env:"M"`
+	}
+	var o odd
+	if fes := FieldErrors(Load(&o, env(map[string]string{"M": "x"}))); len(fes) != 1 || fes[0].Field != "M" {
+		t.Errorf("unsupported type: %v", fes)
+	}
+	if err := Load(odd{}, env(nil)); err == nil {
+		t.Error("Load accepted a non-pointer")
+	}
+}
+
+func TestValidateRefusesOneDatabaseForBothTrees(t *testing.T) {
+	m := validAPI()
+	m["TS_URL"] = m["PG_URL"]
+	var c API
+	fes := FieldErrors(Load(&c, env(m)))
+	if len(fes) != 1 || fes[0].Field != "TS_URL" {
+		t.Fatalf("got %v, want TS_URL refused", fes)
+	}
+	m = validAPI()
+	m["ADMIN_ADDR"] = ":8080"
+	var c2 API
+	if fes := FieldErrors(Load(&c2, env(m))); len(fes) != 1 || fes[0].Field != "ADMIN_ADDR" {
+		t.Fatalf("got %v, want ADMIN_ADDR refused", fes)
+	}
+	mig := &Migrate{}
+	if fes := FieldErrors(Load(mig, env(map[string]string{"PG_URL": "postgres://a/x", "TS_URL": "postgres://a/x"}))); len(fes) != 1 || fes[0].Field != "TS_URL" {
+		t.Fatalf("migrate: got %v", fes)
+	}
+	mig = &Migrate{}
+	if err := Load(mig, env(map[string]string{"PG_URL": "postgres://a/x", "TS_URL": "postgres://a/y"})); err != nil {
+		t.Fatalf("migrate with two databases: %v", err)
+	}
+}
+
+func TestStringRedactsSecrets(t *testing.T) {
+	var c API
+	if err := Load(&c, env(validAPI())); err != nil {
+		t.Fatal(err)
+	}
+	s := c.String()
+	for _, secret := range []string{"pw-relational", "pw-telemetry", "nats://nats"} {
+		if strings.Contains(s, secret) {
+			t.Errorf("String leaks %q: %s", secret, s)
+		}
+	}
+	for _, want := range []string{"PG_URL=<redacted>", "TS_URL=<redacted>", "AUTHORITY_PUBLIC_URL=https://authority.example.test", "API_ADDR=:8080"} {
+		if !strings.Contains(s, want) {
+			t.Errorf("String lacks %q: %s", want, s)
+		}
+	}
+	var empty Detect
+	if !strings.Contains(empty.String(), "TS_URL= ") {
+		t.Errorf("an unset secret should show as empty, not redacted: %s", empty.String())
+	}
+}
+
+func TestHelpListsEveryVariableWithoutSecretDefaults(t *testing.T) {
+	h := Help(&API{})
+	for _, want := range []string{"PG_URL (required; secret)", "API_ADDR (default :8080)", "AUTHORITY_MTLS_MODE (default required; one of required, off)", "OTEL_EXPORTER_OTLP_ENDPOINT", "HTTP_RATE_LIMIT_MAX_CLIENTS"} {
+		if !strings.Contains(h, want) {
+			t.Errorf("Help lacks %q:\n%s", want, h)
+		}
+	}
+}
+
+func TestEveryProcessConfigLoadsFromTheExampleShape(t *testing.T) {
+	m := validAPI()
+	for _, c := range []interface {
+		CommonConfig
+		String() string
+	}{&API{}, &RIDIngest{}, &DPPoller{}, &MannedIngest{}, &Detect{}, &TSDBWriter{}, &PictureWS{}} {
+		if err := Load(c, env(m)); err != nil {
+			t.Errorf("%T: %v", c, err)
+		}
+		if c.CommonBlock().AdminAddr != ":9090" {
+			t.Errorf("%T: common block not loaded", c)
+		}
+		if c.String() == "" {
+			t.Errorf("%T: empty String", c)
+		}
+	}
+}
+
+func TestFieldErrorsOfNonFieldErrors(t *testing.T) {
+	if FieldErrors(nil) != nil {
+		t.Error("nil error has field errors")
+	}
+	if FieldErrors(errors.New("plain")) != nil {
+		t.Error("plain error has field errors")
+	}
+	wrapped := errors.Join(&core.FieldError{Field: "A", Reason: "r"}, errors.New("plain"))
+	if fes := FieldErrors(wrapped); len(fes) != 1 || fes[0].Field != "A" {
+		t.Errorf("got %v", fes)
+	}
+}
