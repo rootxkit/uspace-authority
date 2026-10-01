@@ -8,9 +8,16 @@ authority's endpoint groups in `§3`, `03 §1` the data model, `04` messages,
 `05` scale, `06` security, `07` phase 3 milestones A-M1..A-M5, `08` open
 questions, `09` conformance), the knowledge base at `uspace-lab/knowledge/`
 (`LESSONS.md`, 18 vector files, `scenarios.md`), the shared library
-`rootxkit/uspace-core` (`v0.2.0`; `docs/PLAN.md` there is the template for
+`rootxkit/uspace-core` (`v1.0.0`; `docs/PLAN.md` there is the template for
 this plan) and the predecessor `rootxkit/utm` at `484cd22` (read-only
 reference for behaviour, never for architecture).
+
+Reconciled on 2026-10-02 against the four sibling plans (`uspace-cisp`,
+`uspace-ui`, `uspace-ussp`, `uspace-ansp`): the cross-plan decisions
+(M-numbers below) are applied in place; §14 says which open questions
+are decided and which stay with the owner. The normative JWT contract
+and scope catalogue of the ecosystem live in `docs/WORKPACKAGES/WP-2.md`
+§"Normative tables".
 
 Sections: 1 scope and role boundary; 2 architecture; 3 package layout;
 4 data model and migrations; 5 the published API; 6 bus subjects and
@@ -59,11 +66,11 @@ listed in §14.
 |---|---|---|
 | D1 | Seven Go processes, exactly the spec's list (`00 §6.1`): `api`, `rid-ingest`, `dp-poller`, `manned-ingest`, `detect`, `tsdb-writer`, `picture-ws`. Periodic jobs (certificate lapse, registry re-projection, retention, hash-chain verification) run inside `api` under PostgreSQL advisory locks, so several `api` replicas never run one job twice; no eighth process. | One image, seven entrypoints; the droplet has 2 vCPU (`§10`); a job process would be a singleton the spec does not name. |
 | D2 | Projections for the hot path live in **two places**, both named by spec `05 §2`: small, latency-critical state (source switches, policy, cell ownership) in NATS KV with a push subject; large state (registry facts, zones and U-space airspaces, the CIS cache of restrictions) in **projection tables in the telemetry database**, written by `api`, announced by a push subject and re-read periodically. Hot-path processes open the telemetry database read-only and never the relational one. | LESSONS G-09: a registry outgrows a KV value (1 MiB default); G-08: the projection is written with the change and repaired every 300 s; B-15: ingest never reaches the business database. Spec `03` already has `api` reading TimescaleDB read-only. |
-| D3 | The partition key is a plain latitude/longitude grid, not H3: `cell5` = 0.1° × 0.1° (≈ 11 km × 8.5 km at 42° N, the size `05 §3` gives for H3 resolution 5), `cell3` = 1° × 1°. Implemented once in `internal/cell` behind an interface; never on an external interface. | `uspace-core` plan §11 gap 3: the maintained H3 binding is cgo; this system's images are static (`CGO_ENABLED=0`). H3 can replace the grid behind the same interface if the owner accepts cgo (§14 Q-A3). |
+| D3 | The partition key is a plain latitude/longitude grid, not H3: `cell5` = 0.1° × 0.1° (≈ 11 km × 8.5 km at 42° N, the size `05 §3` gives for H3 resolution 5), `cell3` = 1° × 1°, names `c5:<lat_idx>:<lon_idx>` / `c3:<lat_idx>:<lon_idx>`. The grid is core's `geodesy/cell` (additive in `uspace-core` v1.1.0, core WP-14); `internal/cell` is a thin wrapper over it (ownership map, viewport → cell set) and never on an external interface. Until v1.1.0 ships, `internal/cell` holds the same grid behind the same names and is replaced by the import in a `build:` commit. | Decided across plans (M35): no H3, no cgo, one grid shared with the USSP. |
 | D4 | Every judgement is a call into `uspace-core`: `odid`, `timeplace`, `rid`, `geoid`, `terrain`, `identify`, `zones`, `alerting`, `ed318`, `ed269`, `f3411`, `f3548`, `auth`, `sources`, `regnum`, `serial`. This repository holds adapters (wire → core input), persistence, workflow and transport, and nothing that decides whether an aircraft is where it may be. `golangci-lint` `depguard` forbids any geometry, geodesy or JWT library other than core and `jwx`. | Spec `00 §6` hard rule; `06` T12. |
 | D5 | Violations are the `alerting.Monitor` raises of kinds `height`, `zone`, `identification` and `identification_mismatch`, mapped to `violation/v1` kinds `height_120m`, `zone_incursion`, `unregistered` and `identification_mismatch` (`04 §3.3`). Conflict (`cpa`) raises are counted and dropped; the authority does not warn of proximity. `no_authorisation` and `rid_absent` are later detectors gated on open questions (§14 Q-A5, Q-A6). | `01 §7`: CPA warnings belong to the USSP; the authority's violation kinds are the spec's list. |
 | D6 | Direct Remote ID and network Remote ID (F3411 DP) of the same serial share one track id (`rid.AircraftID`), as SC-06 requires; both are claims (`trust: broadcast` and `trust: provider`), and the authority holds no authenticated telemetry, so `identify.JudgeFleet` sees no vouching rows here (LESSONS I-09: broadcast rows never vouch). The `fleet_match` vectors are run by core; this repository's adapters document that `AuthRow` is never produced here. | `04 §3.2` "the authority resolves every track in its picture against the registry itself"; I-08/I-09. |
-| D7 | Migrations with `goose` (embedded, two trees that never merge: `migrations/relational`, `migrations/timeseries`), queries with `sqlc` on `pgx/v5`, OpenAPI 3.1 spec-first with `oapi-codegen` v2 for the server and the Go client types, generated code committed and verified offline in CI. | Owner's fixed stack. Spec `03` names `golang-migrate`; the deviation is recorded (§14 Q-A1). |
+| D7 | Migrations with `goose` (embedded, two trees that never merge: `migrations/relational`, `migrations/timeseries`; version tables `goose_db_version_relational` and `goose_db_version_timeseries`, so a tree run against the wrong database fails on the table name), applied only by the `migrate` subcommand of the system binary and a one-shot `migrate` compose service; long-running processes never migrate and refuse to start on a schema version lower than they need, printing which. Queries with `sqlc` on `pgx/v5`, OpenAPI 3.1 spec-first with `oapi-codegen` v2 for the server and the Go client types, generated code committed and verified offline in CI. | Owner's fixed stack; migration discipline decided across plans (M36). Spec `03` names `golang-migrate`; the deviation is a spec erratum (§14 Q-A1). |
 | D8 | The `web/` console starts after `uspace-ui` publishes its first release (U-M1) and consumes it at build time; nothing in `web/` is hand-written for types or geometry. | `00 §6.3`; `07` phase 2. |
 | D9 | PII columns are encrypted at the application layer with a key from the environment (AES-256-GCM, key id in the row), and the registration number's secret part and a pilot's national id are stored as salted hashes. Occurrence reporter identity is a separately keyed column visible to `incident_officer` only. | `06 §5`; 376 Art. 16(3). |
 
@@ -160,7 +167,7 @@ github.com/rootxkit/uspace-authority
 │   ├── openapi.yaml    the published national API (OpenAPI 3.1); the only source of handlers and types
 │   ├── gen/            oapi-codegen output (server, client, types), committed
 │   └── examples/       request/response examples the contract tests load
-├── schemas/            JSON Schemas of the messages this repo produces (04 §1): violation/v1, rid/observation/v1 (as consumed), picture frames
+├── schemas/            JSON Schemas this repo OWNS (04 §1, ownership rule M14): violation/v1 (pushed, produced here), occurrence/v1 and rid/observation/v1 (request bodies of this API); the authority-specific extras of console/status/v1. Shapes several systems produce (envelope/v1, track/telemetry/v1, source/status/v1, console/status/v1, console/snapshot/v1, console/subscribe/v1, problem/v1) are CONSUMED from uspace-lab/schemas/common/ and never defined here; track/manned/v1 is the ANSP's, cis/* the CISP's
 ├── internal/
 │   ├── config/         env parsing, validation, one struct per process
 │   ├── logging/        slog JSON, rate-limited "first then once per interval" (E-09)
@@ -176,7 +183,7 @@ github.com/rootxkit/uspace-authority
 │   ├── audit/          append-only events with the monthly hash chain; purpose on every PII read
 │   ├── policy/         authority_policy row, policy_version, KV publish
 │   ├── bus/            NATS: streams, KV buckets, subjects, consumers, object naming (05 §3)
-│   ├── cell/           the partition grid (D3)
+│   ├── cell/           thin wrapper over core geodesy/cell (D3): ownership map, viewport → cells
 │   ├── sources/        source_controls table, KV + push, follower wiring (U-15)
 │   ├── registry/       operators, UAS, pilots, competencies; status lifecycle; validate; change feed; projection; import
 │   ├── zonesvc/        geo_zones and uspace_airspaces versions, ED-318 authoring, ED-269 import, projection
@@ -185,8 +192,8 @@ github.com/rootxkit/uspace-authority
 │   ├── receivers/      rid_receivers, keys and HMAC secrets, config, heartbeat
 │   ├── ridpipe/        the Remote ID pipeline: verify → decode → identity → time → altitude → identification → track
 │   ├── dp/             ISA discovery, subscriptions, SP polling with limits, network placement, ussp_flights
-│   ├── manned/         F4 client and manned_track.v1 mapping
-│   ├── track/          track/telemetry/v1 struct, envelope, trust, publish helpers
+│   ├── manned/         F4 client and track/manned/v1 mapping
+│   ├── track/          track/telemetry/v1 struct (from the lab's common schema), envelope, trust, publish helpers
 │   ├── detectsvc/      Monitor per cell, projection loaders, event → violation mapping, republish
 │   ├── violations/     persistence, review workflow, evidence_excerpt capture
 │   ├── incidents/      incidents, evidence packs (build, seal, store, download)
@@ -224,9 +231,14 @@ Import rules (enforced by `depguard` and a layout test):
 Conventions (spec `03`): units in every column name, `TIMESTAMPTZ` UTC,
 geometry `SRID 4326`, distance on `geography`, no stored AGL (D-02),
 pressure altitude never in an AMSL column (R-08). Two trees, two
-databases, two `goose` version tables (`goose_version_relational`,
-`goose_version_timeseries`); a test fails if a migration file names a
-table of the other tree.
+databases, two `goose` version tables (`goose_db_version_relational`,
+`goose_db_version_timeseries`, the names every sibling uses, M36); a
+test fails if a migration file names a table of the other tree.
+Migrations are applied by `uspace-authority migrate` (both trees,
+advisory-locked) and by the one-shot `migrate` compose service; no
+long-running process migrates, and each refuses to start on a version
+lower than it needs, printing the version it found and the one it
+wants (D7).
 
 ### 4.1 Relational database (PostgreSQL 16 + PostGIS 3.4), written by `api` only
 
@@ -235,7 +247,7 @@ table of the other tree.
 | `events` | WP-1 | `id` (bigserial), `ts`, `actor_type` (user/client/receiver/system), `actor_id`, `realm`, `purpose`, `entity_type`, `entity_id`, `event_type`, `payload` JSONB, `prev_hash`, `hash` | Append-only: `INSERT` grant only for the application role; a trigger refuses `UPDATE`/`DELETE`; partitioned by month; `hash = sha256(prev_hash ‖ canonical row)`, chain restarted per month with the last hash of the previous month recorded (T7). Views and exports are events too. |
 | `authority_policy` | WP-1 | `version`, `height_limit_agl_m` (120), `pressure_uncertainty_m` (250), zone severities, `spoof_distance_m`, `identity_ttl_s`, `max_gap_s`, `identify_within_s`, `broadcast_tolerance_s`, `max_latency_s`, `live_max_age_s`, `clear_after_s`, `stale_after_s`, `dp_view_diagonal_km` (7), `dp_poll_hz`, `cis_stale_bound_s`, `height_limit_in_uspace` (evaluate / skip_when_authorised), `active` | Versioned rows; the active one is published to KV `policy` with `policy_version` (INV-03). |
 | `users`, `user_credentials`, `user_mfa`, `sessions` | WP-2 | argon2id hash, TOTP secret (encrypted), roles[], realm (`console` / `police`), agency, ip allow-list | `06 §3`. |
-| `oauth_clients` | WP-2 | `client_id` (`sys-name-nn`), `system`, `scopes[]`, `secret_hash` or `jwks`, `mtls_subject`, `certificate_id` (FK, nullable), `status` | The token service's registry; a USSP's client is created from its certificate (WP-16). |
+| `oauth_clients` | WP-2 | `client_id` (one per calling system: `authority-01`, `cisp-01`, `ansp-01`, `ussp-<code>-01`, `lab-01`; M24), `system`, `scopes[]`, `audiences[]` (hosts; consulted for national scopes only), `secret_hash` or `jwks`, `mtls_subject`, `certificate_id` (FK, nullable), `status` | The token service's registry; a USSP's client is created from its certificate (WP-16) and its id from `certificates.code`. |
 | `signing_keys` | WP-2 | `kid`, public JWK, `private_ref` (file or KMS reference, never the key), `active_from`, `retired_at` | 90-day rotation (T4); JWKS lists active and retiring keys. |
 | `uas_operators`, `uas`, `remote_pilots`, `pilot_competencies` | WP-3 | the `03 §1` field sets; `registration_number_public`, `secret_part_hash`; `serial`, `serial_fold` (ASCII fold, G-12); `person_ref_hash`, `person_ref_last4`; `status`, `status_reason`, `valid_from`, `valid_until`, `source` | PII columns encrypted (D9); unique `(manufacturer_code, serial)`; status changes audited. |
 | `registry_status_changes` | WP-3 | `seq` (bigserial), `entity_type`, `entity_id`, `public_key` (reg number or serial), `status`, `at` | The F8 change feed of ids only. |
@@ -244,7 +256,7 @@ table of the other tree.
 | `uspace_airspaces` | WP-5 | `03 §1` columns incl. the Art. 3(4) block as JSONB, `adjacent_ids[]`, `in_controlled_airspace`, `designated_from/to`, `aip_ref` | Empty until designation (Q2). |
 | `publications` | WP-6 | `dataset`, `version`, `payload_hash`, `signature` (JWS), `state` (pending/sent/acknowledged/failed), `attempts`, `next_retry_at`, `cisp_version` | F1 outbox with retry; "not yet published" age on the console. |
 | `cis_cache` | WP-6 | `dataset`, `version`, `fetched_at`, `payload` JSONB, `etag` | F3 subscriber state; restrictions and the USSP list as published. |
-| `certificates` | WP-16 | `03 §1` columns; `status` transitions audited; `operations_started_at`, `operations_ceased_at` | Lapse rules (Art. 16(2)) as a job. |
+| `certificates` | WP-16 | `03 §1` columns; `code` (≤ 8 upper-case alphanumerics, unique, assigned at issue; it is `ussp_id` in `cis/ussp_list/v1`, the USSP's `USSP_SYSTEM_ID` and the short code in the authorisation number, M8); `status` transitions audited; `operations_started_at`, `operations_ceased_at` | Lapse rules (Art. 16(2)) as a job. |
 | `rid_receivers` | WP-7 | `id` (slug), `name`, `geom`, `owner`, `key_hash`, `hmac_secret_enc`, `status`, `disabled_by`, `last_seen_at`, `firmware`, `config` JSONB | A receiver's key material is shown once at creation. |
 | `source_controls` | WP-10 | `(source_type, instance_id)`, `enabled`, `reason`, `actor`, `changed_at`, `version` (sequence), `epoch` | B-09. |
 | `violations` | WP-12 | `03 §1` columns; `evidence_excerpt` JSONB (the samples at detection); `policy_version`; `status` (new/reviewed/dismissed/escalated); `reviewed_by`, `review_note` | Never populated from `occurrence_reports`; no FK to them. |
@@ -260,7 +272,7 @@ table of the other tree.
 | `rid_observations` | WP-7/WP-9 | `03 §1` columns; raw `payload` bytea always kept (R-15); hypertable on `captured_at`, 1-day chunks, `compress_segmentby` = `transmitter`, compress after 7 days, 90 days online, archive job later (WP-27). |
 | `tracks` | WP-8/WP-9 | the fused picture rows of `03 §1`; `source` ∈ direct_rid / network_rid / manned_ansp; `alt_source`; identification block; `cell5`. |
 | `ussp_flights` | WP-14 | `RIDFlight` and details as received, `ussp_id`, `isa_id`, `rx_ts`; **retention policy 24 h** (`add_retention_policy`), plus a startup and hourly check that fails loudly if anything older exists (`07` A-M4 done-when). |
-| `manned_tracks` | WP-15 | `manned_track.v1` columns. |
+| `manned_tracks` | WP-15 | `track/manned/v1` columns (`alt_pressure_m`, `alt_wgs84_m`; the ANSP's schema). |
 | `writer_gaps` | WP-9 | every dropped or spilled batch with cause and counts (B-13: holes are holes). |
 | `proj_registry_uas`, `proj_registry_operators` | WP-3 | the `identify.UASFacts` / `OperatorFacts` columns plus `projected_at`, `registry_version`; written by `api` inside the registry transaction (G-08), full re-projection every 300 s under advisory lock. |
 | `proj_zones` | WP-5 | one row per published zone version in force: `feature` JSONB (ED-318), `zone_version`, `valid_from/to`; U-space airspaces as `USPACE` zones with the Art. 3(4) block. |
@@ -278,48 +290,63 @@ One OpenAPI 3.1 document, path-versioned `/v1`, served by `api` except
 where the process column says otherwise; Caddy routes by path prefix
 (`02 §3`). Every endpoint carries `security`, the scope or role, and
 `x-audit` (what `events` row it writes). An endpoint not in the file does
-not exist (`00 §7`). Errors are RFC 9457 `application/problem+json`.
+not exist (`00 §7`). Errors are RFC 9457 `application/problem+json` in
+the shape every system uses (M28): `{type, title, status, detail,
+instance, errors: [{field, reason}], truncated?: bool}`, `field` the
+JSON path as `core.FieldError` / `ed269.Problems` write it, at most 100
+entries with `truncated: true` beyond; `type` =
+`https://schemas.uspace.ge/problems/<slug>` where `slug` is the counter
+or refusal name (`unauthenticated`, `forbidden`, `signature`,
+`validation`, `cis_stale`, ...). The schema is the lab's
+`schemas/common/problem/v1`.
 
 | Group | Endpoints | Process | Auth | Spec |
 |---|---|---|---|---|
 | Health | `GET /healthz`, `GET /readyz`, `GET /metrics` (loopback/private only) | each | none | `05 §6` |
 | Console auth | `POST /v1/auth/login`, `POST /v1/auth/mfa`, `POST /v1/auth/logout`, `GET /v1/auth/session`; `POST /v1/users` (admin), roles | api | session cookie via BFF | `01 §1` users; `06 §3` |
-| Token service | `POST /oauth/token` (client credentials: `client_secret_post` or `private_key_jwt`), `GET /.well-known/jwks.json`, `GET /.well-known/openid-configuration` (issuer metadata, issuer only); admin `GET/POST/PATCH /v1/oauth/clients`, `POST /v1/oauth/keys/rotate` | api | client credentials; admin role | `02 §3`; `06 §2` T4, T5; `06 §3` |
+| Token service | `POST /oauth/token` (client credentials: `client_secret_post` or `private_key_jwt`; `audience` and RFC 8707 `resource` parameters name the target **host**, one token per audience), `GET /.well-known/jwks.json` (token-signing and publication-signing keys, `use: sig`, distinguished by `kid`), `GET /.well-known/openid-configuration` (issuer metadata, issuer only); admin `GET/POST/PATCH /v1/oauth/clients`, `POST /v1/oauth/keys/rotate` | api | client credentials; admin role | `02 §3`; `06 §2` T4, T5; `06 §3`; the JWT contract and scope catalogue are WP-2's normative tables (M18, M23, M24) |
 | Registry (clerks) | `GET/POST /v1/registry/operators`, `GET/PATCH /v1/registry/operators/{id}`, `POST .../status`; same for `/uas`, `/pilots`; `POST /v1/registry/pilots/{id}/competencies`; `POST /v1/registry/import` (uas.gov.ge, rules file) | api | `registrar`, read `inspector`/`viewer` | `01` A1, A6; Q4 |
 | Registry (USSPs, F8) | `GET /v1/registry/validate?operator=&serial=&pilot=`, `POST /v1/registry/validate` (batch), `GET /v1/registry/changes?since=` | api | scope `registry.validate`; audited with `purpose` ∈ authorisation / identification | `02 F8` |
 | Registry (public) | `GET /v1/registry/check?number=` → status only; `POST /v1/registry/applications` (if Q4) | api | none (rate-limited) / portal session | `01` operators row; Q4 |
-| Zones | `GET/POST /v1/zones`, `GET/PUT /v1/zones/{identifier}` (new version), `POST .../approve`, `GET /v1/zones/{identifier}/versions`, `POST /v1/zones/import` (ED-318 or ED-269; all or nothing, problems by path), `GET /v1/zones/export?at=` (ED-318), `POST /v1/zones/publish` | api | `inspector` (author), `admin` (approve, publish) | `01` A2; `02 F1`; `03`; Z-01..Z-07 |
+| Zones | `GET/POST /v1/zones`, `GET/PUT /v1/zones/{identifier}` (new version), `POST .../approve`, `GET /v1/zones/{identifier}/versions`, `POST /v1/zones/import` (ED-318 or ED-269; all or nothing, problems by path), `GET /v1/zones/export?at=` (ED-318, filtered to what applies at `at`) and `?applies_at=` (annotate only: `extendedProperties.cis_applicability` ∈ `applies` / `not_applicable` / `unknown`, nothing filtered; M17), `POST /v1/zones/publish` | api | `inspector` (author), `admin` (approve, publish) | `01` A2; `02 F1`; `03`; Z-01..Z-07 |
 | U-space airspace | `GET/POST /v1/uspace`, `GET/PUT /v1/uspace/{id}`, `POST .../designate`, `POST /v1/uspace/publish` | api | `admin` | `01` A3, A4 |
 | Certificates | `GET/POST /v1/certificates`, `GET/PATCH /v1/certificates/{id}`, `POST /v1/certificates/{id}/status` (F7 operating status, machine), `POST /v1/certificates/{id}/suspend`, `GET /v1/certificates/register` (public), `POST /v1/certificates/publish-list` (F1 `ussp_list`) | api | `admin`; scope `certificates.status` for the machine endpoint; public register unauthenticated | `01` A5; `02 F7`; Art. 18(a) |
 | Remote ID receivers | `GET/POST /v1/rid/receivers`, `GET/PATCH /v1/rid/receivers/{id}`, `POST .../keys/rotate`, `GET /v1/rid/receivers/{id}/config` (receiver), `POST /v1/rid/receivers/{id}/heartbeat` (receiver) | api | `admin`; receiver bearer for the two receiver endpoints | `02 F9` |
-| Remote ID ingest | `POST /v1/rid/observations` (batches ≤ 1 s, bearer + body HMAC, `sent_at_ms`, `nonce`) | rid-ingest | per-receiver key, scope `rid.observe` | `02 F9`; `06` T2 |
+| Remote ID ingest | `POST /v1/rid/observations` (`rid/observation/v1` batches ≤ 1 s, bearer + body HMAC, `sent_at_ms`, `nonce`) | rid-ingest | per-receiver bearer key plus HMAC; **not a JWT scope** (`rid.observe` is retired from the catalogue, M23) | `02 F9`; `06` T2 |
 | Raw frames | `GET /v1/rid/frames?transmitter=&from=&to=`, `GET /v1/rid/frames/{id}` | api | `incident_officer`, `inspector` | `02 §3` |
-| Picture | `GET /v1/picture/ws?bbox=` (WebSocket), `GET /v1/picture/snapshot?bbox=`, `GET /v1/picture/sources` | picture-ws | session; police realm read | `02 F7`; `05 §3` |
-| F3411 DP inbound | `POST /uss/identification_service_areas/{id}` (ISA change notification from the DSS) | dp-poller | ecosystem token, scope `rid.service_provider` from the DSS audience | `02 F7` |
+| Picture | `GET /v1/picture/ws` (WebSocket; every frame is the common console frame: `04 §2` envelope + `body` named by `schema`; `console/status/v1`, `console/snapshot/v1`, `track/telemetry/v1`, `track/manned/v1`, `violation/v1`, `source/status/v1`; the client sends `console/subscribe/v1 {bbox, layers[]}`; M29), `GET /v1/picture/snapshot?bbox=`, `GET /v1/picture/sources` | picture-ws | session cookie on a same-origin upgrade with an `Origin` allow-list, verified by the shared verifier (no ticket, M22); police realm read | `02 F7`; `05 §3` |
+| F3411 DP inbound | `POST /uss/identification_service_areas/{id}` (ISA change notification posted by the **Service Provider** that owns the ISA; the DSS only lists subscribers) | dp-poller | ecosystem token from an allow-listed issuer, scope `rid.service_provider`, `aud` = this system's host (M6, M18) | `02 F7` |
 | DP administration | `GET /v1/dp/views`, `POST /v1/dp/views` (oversight areas), `GET /v1/dp/providers` (USSPs seen, state), `PUT /v1/dp/providers/{uss_id}/availability` (→ DSS `PUT /dss/v1/uss_availability/{uss_id}`) | api | `admin` | `02 F6` (`utm.availability_arbitration`) |
 | Violations | `GET /v1/violations?status=&kind=&from=&to=&bbox=`, `GET /v1/violations/{id}`, `POST /v1/violations/{id}/review` (reviewed/dismissed/escalated → opens an incident) | api | `inspector` | `01` A7; `04 §3.3` |
 | Incidents | `GET/POST /v1/incidents`, `GET/PATCH /v1/incidents/{id}`, `POST /v1/incidents/{id}/evidence-packs`, `GET /v1/incidents/{id}/evidence-packs/{pack}` (manifest), `GET .../download` (audited, purpose) | api | `inspector`, `incident_officer` | `01` A10; `03`; `06` T7 |
-| Occurrences (intake) | `POST /v1/occurrences` (`occurrence/v1`, from USSPs, the ANSP, operators via portal) | api | scope `occurrences.write`; portal session | `02 F7`, `F11`; 376 Art. 4–5 |
+| Occurrences (intake) | `POST /v1/occurrences` (`occurrence/v1`, **owned here** as this API's request body, M14; from USSPs, the ANSP, operators via portal) | api | scope `occurrences.write`; portal session | `02 F7`, `F11`; 376 Art. 4–5 |
 | Occurrences (officers) | `GET /v1/occurrences`, `GET /v1/occurrences/{id}`, `PATCH .../analysis`, `POST .../classify`, `POST /v1/occurrences/export` (de-identified, ECCAIRS/ADREP-compatible) | api | `incident_officer` only | 376 Art. 6(3), 7(2), 7(4), 16 |
 | Police | `GET /v1/police/aircraft?bbox=&at=&purpose=&case_ref=`, `GET /v1/police/operators/{reg}?purpose=&case_ref=`, `GET /v1/police/serials/{serial}?...`, `POST /v1/police/exports` | api | realm `police`, scope `police.query`, MFA, IP allow-list | `02 F10` |
 | Sources | `GET /v1/sources`, `PUT /v1/sources/{type}`, `PUT /v1/sources/{type}/{instance}` (enable/disable with reason) | api | `admin` | `02 §3`; U-15; B-09..B-11 |
 | Audit | `GET /v1/audit/events?...`, `GET /v1/audit/verify?month=` (hash-chain check), `GET /v1/audit/dpo-report?month=` | api | `admin`, `auditor` | `01` A10; `06 §5` |
-| CIS subscriber | `POST /v1/cis/notifications` (signed `cis/change/v1` webhook from the CISP) | api | JWS verified against the CISP's JWKS | `02 F3` |
+| CIS subscriber | `POST /v1/cis/notifications` (compact JWS, `application/jose`, payload `cis/change/v1`; the one receiver path every subscriber implements, M1; the ANSP's degraded direct delivery posts the same message here, M5) | api | JWS verified against an allow-list of **two** issuers, the CISP and the ANSP (`AUTHORITY_CIS_NOTIFY_ISSUERS`, JWKS URLs from config); `aud` = this host; `pull_url` honoured only on the issuer's configured host; `subscription_test`, `republished` and unknown reasons → `204` without a pull (M16) | `02 F3` |
 | Policy | `GET /v1/policy`, `POST /v1/policy` (new version), `POST /v1/policy/{version}/activate` | api | `admin` | INV-03 |
 
 Outbound clients this system implements (not in its own OpenAPI; their
 contracts are the owning repo's or the standard's): F1 publisher to the
-CISP (`PUT /v1/publications/{dataset}`), F3 pull (`GET /v1/{dataset}`,
-`HEAD` on `ETag`, `GET /v1/changes`), F3411 DSS and SP calls (`GET
+CISP (`PUT /v1/publications/{dataset}` with the detached JWS in
+`X-JWS-Signature`, and `POST /v1/publishers/heartbeat {sent_at}` every
+15 s, M3, M26), F3 pull (`GET /v1/{dataset}` with `?at=` and
+`?applies_at=`, `HEAD` on `ETag`, `GET /v1/changes`), F3411 DSS and SP calls (`GET
 /rid/v2/dss/identification_service_areas?area=`, `PUT
 /rid/v2/dss/subscriptions/{id}`, `GET {uss_base_url}/uss/flights?view=`,
 `GET .../details`), F3548 `PUT /dss/v1/uss_availability/{uss_id}`, F4
 `WS /v1/manned-traffic/stream?bbox=`, F7 `GET /v1/records/flights/{id}`
 and `/v1/records/daily/{date}` on each USSP (base URL from its
-certificate), F11 `POST /v1/restriction-requests` on the ANSP. Each client
-is generated from that repo's OpenAPI once it is aggregated in
-`uspace-lab/api/` (§14 Q-A2) and hand-typed against `uspace-core/f3411`
-and `f3548` for the standard ones.
+certificate), F11 `POST /v1/restriction-requests` on the ANSP. Every
+outbound machine token names the **host of the target's published base
+URL** as `aud` (M18): the CISP's host, the DSS's host, a peer's
+`uss_base_url` host, the ANSP's host. Each national client is generated
+from a pinned copy of that repo's `api/openapi.yaml` in
+`api/clients/<system>.yaml` with a `SOURCE` commit and a CI diff (the
+mechanism every repo adopted, M11), replaced by the lab aggregate
+`uspace-lab/api/` when it exists (§14 Q-A2); the standard ones are typed
+against `uspace-core/f3411` and `f3548`.
 
 ---
 
@@ -345,9 +372,15 @@ NATS (`02 §1`). Subjects follow `05 §3` with `<cell3>.<cell5>` from
 | `ingest.v1.<cell3>` | JetStream work queue `INGEST` | rid-ingest → tsdb-writer (and shedding under backpressure) | 10 min |
 | `tsw.v1.<table>` | JetStream `TSW` | adapters → tsdb-writer | 10 min (spill) |
 
-Schemas in `schemas/` (`$id` `https://schemas.uspace.ge/<family>/<name>/v1.json`);
-every message carries `schema`, `msg_id`, `producer`, `ts`, `rx_ts`,
-`captured_at`, `time_source`, `backlog` (`04 §2`). Production ingest
+Schemas in `schemas/` (`$id` `https://schemas.uspace.ge/<family>/<name>/v1.json`)
+for what this repo owns (§3); the shared shapes come from
+`uspace-lab/schemas/common/` (M14). Every message, on NATS and on every
+WebSocket this system serves or consumes, carries the `04 §2` envelope
+(`schema`, `msg_id`, `producer`, `ts`, `rx_ts`, `captured_at`,
+`time_source`, `backlog`) and a `body` named by `schema` (M29). The
+internal subjects above deviate from `05 §3` (`tsw.v1.<table>`,
+`zones.v1.changed`, `registry.v1.changed`); NATS never crosses a system,
+so this is a spec erratum, not a contract (M30). Production ingest
 refuses `trust: simulated` and `source: sitl` at the validator (T11).
 
 ---
@@ -356,17 +389,17 @@ refuses `trust: simulated` and `source: sitl` at the validator (T11).
 
 | Boundary | Mechanism | Owner WP |
 |---|---|---|
-| Humans → console | local accounts (argon2id), TOTP MFA mandatory, roles `viewer`, `inspector`, `registrar`, `incident_officer`, `admin`, `auditor`; session JWT in an `HttpOnly`, `SameSite=Strict` cookie set by the Next.js BFF, forwarded as a bearer; CSRF token; login rate limits (S-15) | WP-2, WP-21 |
+| Humans → console | local accounts (argon2id), TOTP MFA mandatory, roles `viewer`, `inspector`, `registrar`, `incident_officer`, `admin`, `auditor`; session JWT (the one session shape of the ecosystem, M20: `iss` = this issuer, `aud` = this system's host, `sub` = account id, `scope = "session"`, `roles: [..]`, `realm` ∈ `console` / `police`, `jti` = session id, `exp` ≤ 12 h, idle 30 min) in the `uspace_session` cookie (`HttpOnly; Secure; SameSite=Strict`) set by the Next.js BFF and forwarded as a bearer; CSRF in `uspace_csrf` + `X-CSRF-Token` (M21); the picture WebSocket takes the same cookie on a same-origin upgrade with an `Origin` allow-list (M22); login rate limits (S-15) | WP-2, WP-13, WP-21 |
 | Police realm | separate realm, per-agency accounts, MFA, IP allow-list, `purpose` and `case_ref` on every query, every query and export in `events` and `police_queries`; occurrence data never reachable | WP-19 |
-| Machine clients | ecosystem token service: RS256, `iss` = this deployment's issuer URL, `aud` = target system, `sub` = client id, `scope`, `exp` ≤ 1 h, `jti`, `kid`; keys loaded from a file or KMS reference, never from the repo; 90-day rotation with overlap; every issuance and refusal an `events` row | WP-2 |
-| Verification | `uspace-core/auth.Verifier` with this system's audience, allow-listed issuers (itself; the CISP for webhooks; the DSS/USSP issuer is itself) | WP-2 |
-| Receivers | per-receiver bearer key plus HMAC-SHA256 over the exact body bytes with a separate secret; `sent_at_ms` 30 s window; nonce memory; keys revocable; disabled receivers refused with 503 + `Retry-After` (B-10) | WP-7 |
-| ANSP stream | mTLS (Caddy terminates and forwards the client subject; `manned-ingest` as a client presents its certificate) | WP-15 |
-| CISP publication | detached JWS over the payload with this system's signing key so provenance survives the CISP (Annex III A(4)) | WP-6 |
+| Machine clients | ecosystem token service: RS256, `iss` = this deployment's issuer URL, **`aud` = the host of the target's published base URL** (M18), `sub` = client id (one per calling system, M24), `scope` from the catalogue (WP-2 normative tables, M23), `exp` ≤ 1 h, `jti`, `kid`; the per-client allowed-audience list applies to national scopes, any audience may be requested for `utm.*` / `rid.*` because peers are discovered, not configured (`00 §7`); keys loaded from a file or KMS reference, never from the repo; 90-day rotation with overlap; every issuance and refusal an `events` row | WP-2 |
+| Verification | `uspace-core/auth.Verifier`, RS256 only, `AUTHORITY_AUDIENCES` (this system's public host plus a lab alias such as the compose service name), allow-listed issuers with JWKS URLs (itself; the CISP and the ANSP for `/v1/cis/notifications`; the lab issuer in the lab, so WP-2 gates nobody), 30 s skew, `jti` required, scope per endpoint | WP-2 |
+| Receivers | per-receiver bearer key plus HMAC-SHA256 over the exact body bytes with a separate secret; `sent_at_ms` 30 s window; nonce memory; keys revocable; disabled receivers refused with 503 + `Retry-After` (B-10); not a JWT scope | WP-7 |
+| mTLS | `AUTHORITY_MTLS_MODE = required \| off` (`required` in production, `off` on the staging droplet and in the lab, printed at error level every status period when `off`; M25). Outbound: `manned-ingest` presents a client certificate from the environment to the ANSP. Inbound: Caddy (composed by `uspace-deploy`) terminates with `client_auth { mode verify_if_given }` and forwards `X-Client-Cert-Subject`, stripped on every other route; `api` binds it to `oauth_clients.mtls_subject` on the mTLS routes only | WP-15, WP-24 |
+| CISP publication | detached JWS in `X-JWS-Signature` (RFC 7515 App. F, RFC 7797 `b64: false`, `crit: ["b64"]`, `alg RS256`, `kid`, `iat` ≤ 5 min; the CISP's specification, M26) with this system's publication-signing key, published in this issuer's JWKS under its own `kid`, so provenance survives the CISP (Annex III A(4)); signing and verification through core's `auth.SignDetached` / `VerifyDetached` once v1.1.0 ships (M27; WP-6 waits for it, it is not on the critical path) | WP-6 |
 | PII | application-layer encryption of PII columns; registry validity answers status-only; evidence packs redact unless `legal`; occurrence reporter identity visible to `incident_officer` only and never exported; public network-ID subset excludes the remote pilot position | WP-3, WP-17, WP-18 |
 | Records | append-only `events` with monthly hash chain; `UPDATE` denied on hypertables for the application roles; evidence packs SHA-256 sealed | WP-1, WP-9, WP-17 |
 | Public repo | gitleaks in CI, `.env.example` only, fixtures use `GEO-TEST-*` and `TEST*`, a CI grep fails `chikox.net` outside `deploy/staging/`, Dependabot, SBOM and cosign on images | WP-0, WP-24 |
-| Supply chain | `go.sum` pinned, `uspace-core` by tag, `npm ci` with a lockfile, `govulncheck` | WP-0 |
+| Supply chain | `go.sum` pinned, `uspace-core` by tag, `pnpm` with `packageManager` pinned and `--frozen-lockfile` (M34), `uspace-ui` from npmjs with exact pins (never a git tag, M32), `govulncheck` | WP-0 |
 
 Threats T1–T12 of `06 §2` map onto the WPs above; each WP brief names
 the rows it closes.
@@ -427,27 +460,41 @@ named test.
   image (`uspace-authority-web`), built in CI with `next build` (never on
   the server). Tags: `sha-<short>` and `v*`; cosign-signed; SBOM attached.
 - `deploy/compose.yaml`: `api`, `rid-ingest`, `dp-poller`, `manned-ingest`,
-  `detect`, `tsdb-writer`, `picture-ws`, `web`, `postgres` (PostGIS),
-  `timescale`, `nats` (JetStream, file store), all on an isolated project
-  network; only Caddy (shared, outside the project) reaches `api`,
-  `picture-ws`, `rid-ingest` and `web` by path:
-  `authority.chikox.net` → `/v1/rid/observations` → rid-ingest,
-  `/v1/picture/*` → picture-ws, `/uss/*` → dp-poller, `/v1/*`, `/oauth/*`,
-  `/.well-known/*` → api, everything else → web. The staging hostname
-  appears only in `deploy/staging/Caddyfile.snippet`; production hostnames
-  are configuration.
+  `detect`, `tsdb-writer`, `picture-ws`, `web`, the one-shot `migrate`,
+  **one `timescale/timescaledb-ha:pg16` container holding both databases**
+  (it ships PostGIS; the relational and the telemetry database stay
+  separate databases with separate trees and version tables, M37; two
+  hosts only when this system outgrows one, `05 §4`), `nats` (JetStream,
+  file store), all on an isolated project network; only Caddy (shared,
+  composed by the private deployment repo `uspace-deploy` from this
+  repo's `deploy/caddy/` snippet, D1) reaches `api`, `picture-ws`,
+  `rid-ingest`, `dp-poller` and `web` by path: `/v1/rid/observations` →
+  rid-ingest, `/v1/picture/*` → picture-ws, `/uss/*` → dp-poller, `/v1/*`,
+  `/oauth/*`, `/.well-known/*` → api, `/basemap/*` → the shared read-only
+  basemap volume the deployment repo mounts on every host (M38; one copy
+  for five systems, built by lab WP-L3), everything else → web. The
+  staging hostname appears only in `deploy/staging/`; production
+  hostnames are configuration.
 - Config by environment (`internal/config`), one `.env.example` per
   process group; secrets (database URLs, signing-key path, NATS creds, PII
-  key) from the environment of the private infra repo. Terrain tiles and
-  the geoid grid are a mounted volume fetched by `deploy/fetch-ground.sh`
-  (the lab's tooling writes the PGM tiles core reads).
-- Migrations run by `api` at startup (`goose up` on both databases,
-  advisory-locked), never by hand.
+  key) from the environment of the private deployment repo. Terrain tiles
+  and the geoid grid are a mounted volume fetched by
+  `deploy/fetch-ground.sh` (the lab's tooling writes the PGM tiles core
+  reads).
+- Migrations run by the one-shot `migrate` service (`uspace-authority
+  migrate`, both trees, advisory-locked) before the long-running services
+  start; never by `api`, never by hand (D7, M36).
+- `web/` sets the kit's CSP (`connect-src 'self'`, `font-src 'self'`,
+  `worker-src blob:`), serves the kit's Noto Sans + Noto Sans Georgian
+  through `next/font/local`, and makes no third-party tile or font
+  request, ever (M38).
 - Backups: nightly `pg_dump` of both databases to the droplet and copied
   off; restore rehearsed by `deploy/restore-check.sh` into scratch
   databases (predecessor P0-09).
 - Resource budget on the demo droplet: this system ≤ 1.2 GB RSS across
-  its processes at 100 drones; measured in WP-24.
+  its processes at 100 drones; measured in WP-24. The five systems' budgets
+  together exceed the current 2 vCPU / 3.8 GB droplet once the DSS and the
+  lab stack are added; the sizing decision is the owner's (§14 Q-A20).
 
 ---
 
@@ -481,15 +528,15 @@ describes what was built; PR text pastes the outputs it claims (E-04).
 | WP-5 | `zones` | `internal/zonesvc`, zone and U-space migrations, `proj_zones`, `/v1/zones/*`, `/v1/uspace/*` | WP-1 | A-M1 |
 | WP-6 | `cisp-client` | `internal/cisp`, `publications`, `cis_cache`, `proj_restrictions`, `/v1/cis/notifications`, publish endpoints' outbox | WP-2, WP-5 | A-M1 |
 | WP-7 | `rid-receivers-ingest` | `internal/receivers`, `cmd/rid-ingest` (auth, batch, raw storage), `rid_receivers` migration, `rid_observations` hypertable, `/v1/rid/receivers/*`, `/v1/rid/observations`, `/v1/rid/frames/*` | WP-1, WP-9, WP-10 | A-M2 |
-| WP-8 | `rid-pipeline` | `internal/ridpipe`, `internal/track`, `tracks` hypertable, `schemas/track`, `ident.v1` | WP-3, WP-7, WP-10, WP-11 | A-M2 |
+| WP-8 | `rid-pipeline` | `internal/ridpipe`, `internal/track` (typed from the lab's `schemas/common/track/telemetry/v1`, not defined here), `tracks` hypertable, `ident.v1` | WP-3, WP-7, WP-10, WP-11 | A-M2 |
 | WP-9 | `tsdb-writer` | `cmd/tsdb-writer`, `internal/store/ts` writer side, `writer_gaps`, retention and compression policies | WP-1 | A-M2 |
-| WP-10 | `bus-sources-cells` | `internal/bus`, `internal/cell`, `internal/sources`, `source_controls` migration, KV buckets, `/v1/sources/*`, `src.v1` | WP-1 | A-M2 |
+| WP-10 | `bus-sources-cells` | `internal/bus`, `internal/cell` (wrapper over core `geodesy/cell`), `internal/sources`, `source_controls` migration, KV buckets, `/v1/sources/*`, `src.v1` | WP-1 | A-M2 |
 | WP-11 | `ground` | `internal/ground`, `deploy/fetch-ground.sh`, status reporting | WP-0 | A-M2 |
 | WP-12 | `detect-violations` | `cmd/detect`, `internal/detectsvc`, `internal/violations`, `violations` migration, `/v1/violations/*`, `alrt.v1` | WP-5, WP-8, WP-9, WP-10, WP-11 | A-M3 |
-| WP-13 | `picture-ws` | `cmd/picture-ws`, `internal/picture`, `/v1/picture/*` | WP-8, WP-10 | A-M2 |
+| WP-13 | `picture-ws` | `cmd/picture-ws`, `internal/picture`, `/v1/picture/*`, `schemas/picture/` (authority-specific extras of `console/status/v1` only) | WP-8, WP-10 | A-M2 |
 | WP-14 | `display-provider` | `cmd/dp-poller`, `internal/dp`, `ussp_flights`, `/uss/identification_service_areas/{id}`, `/v1/dp/*` | WP-2, WP-8, WP-9, WP-16 | A-M4 |
 | WP-15 | `manned-ingest` | `cmd/manned-ingest`, `internal/manned`, `manned_tracks` | WP-2, WP-9, WP-10 | A-M4 |
-| WP-16 | `certificates` | `internal/certs`, `certificates` migration, `/v1/certificates/*`, the `ussp_list` dataset, the lapse job | WP-2, WP-6 | A-M4 |
+| WP-16 | `certificates` | `internal/certs`, `certificates` migration (incl. `code`), `/v1/certificates/*`, the `ussp_list` dataset (to the CISP's `cis/ussp_list/v1`), the lapse job | WP-2, WP-6 | A-M4 |
 | WP-17 | `incidents-evidence` | `internal/incidents`, migrations, `/v1/incidents/*` | WP-12 | A-M3 |
 | WP-18 | `occurrences` | `internal/occurrences`, the `occurrences` schema, `/v1/occurrences/*` | WP-2 | A-M3 |
 | WP-19 | `police-realm` | `internal/police`, `police_queries`, `/v1/police/*`, DPO report | WP-2, WP-3, WP-12, WP-13 | A-M4 |
@@ -499,7 +546,7 @@ describes what was built; PR text pastes the outputs it claims (E-04).
 | WP-23 | `web-oversight` | `web/` violations, incidents, evidence, occurrences (officer realm), sources, audit, police realm, public pages | WP-21, WP-17, WP-18, WP-19 | A-M5 |
 | WP-24 | `deploy-staging` | `deploy/*`, image build and signing, GHCR publish, backups, restore check, cutover runbook | WP-13, WP-21 | A-M5 |
 | WP-25 | `scenario-harness` | `internal/ltest`, the scenario tests, CI job `scenarios` | WP-9, WP-10 | A-M2 |
-| WP-26 | `no-authorisation-detector` | `no_authorisation` and the U-space gating of `height_120m` (gated on Q2, Q-A5) | WP-12, WP-14 | A-M5 |
+| WP-26 | `no-authorisation-detector` | `no_authorisation` (DSS reads with `utm.conformance_monitoring_sa`, decided Q-A5) and the U-space gating of `height_120m`; gated only on a designated U-space airspace existing (spec Q2) | WP-12, WP-14 | A-M5 |
 | WP-27 | `retention-archive` | archive to object storage, PII drop at 90 days, hash-chain verification job, `/v1/audit/verify` | WP-1, WP-9 | A-M5 |
 
 (WP-4 is intentionally unused: the registry projection moved into WP-3
@@ -539,14 +586,17 @@ edits another's), `CHANGELOG.md` (one line per WP under Unreleased) and
 
 ## 13. Engineering standards and CI
 
-- Go 1.27, `CGO_ENABLED=0`; `uspace-core` pinned by tag (`v0.2.0` now;
-  bump to `v1.0.0` in its own `build:` commit when tagged). No fork, no
-  `replace`.
+- Go 1.27, `CGO_ENABLED=0`; `uspace-core` pinned by tag (`v1.0.0`,
+  released; bump to `v1.1.0` in its own `build:` commit when core WP-14
+  ships the additive JWS helpers, `geodesy/cell`, `core.BasisProvider`
+  and `alerting.Config.SkipConflicts`). No fork, no `replace`.
 - Third-party modules (each with the reason in `go.mod` comments and the
   adding commit): `github.com/rootxkit/uspace-core`; `jackc/pgx/v5`;
   `pressly/goose/v3`; `sqlc` (tool, `go run`); `oapi-codegen/v2` (tool);
-  `nats-io/nats.go`; `lestrrat-go/jwx/v3` (through core, plus JWS for
-  publications and webhooks); `prometheus/client_golang`;
+  `nats-io/nats.go`; `lestrrat-go/jwx/v3` (through core only: the JWS
+  for publications and webhooks goes through core's `auth.SignDetached`,
+  `VerifyDetached`, `SignCompact`, `VerifyCompact` and `KeyRing` from
+  v1.1.0, M27; no JWS code of this repo's own); `prometheus/client_golang`;
   `go.opentelemetry.io/otel` and the OTLP exporter; `alexedwards/argon2id`
   (or `golang.org/x/crypto/argon2` directly); `pquerna/otp` (TOTP);
   `coder/websocket` (WebSocket server and client, pure Go);
@@ -565,7 +615,9 @@ edits another's), `CHANGELOG.md` (one line per WP under Unreleased) and
   `scenarios` (from WP-25), `web` (path-filtered to `web/**`),
   `govulncheck`, `gitleaks`; `image` on `main` and tags only (build, sign,
   push to GHCR). Path filters, `concurrency: cancel-in-progress`,
-  `timeout-minutes` on every job, Go and npm caches, no scheduled jobs.
+  `timeout-minutes` on every job, Go and pnpm caches, no scheduled jobs.
+  The `migrate` subcommand runs both trees in the `integration` job
+  before any process starts (D7).
   Branch protection requires `build-vet-lint`, `test-race`, `vectors`,
   `contract`, `integration`, `gitleaks`.
 - Commits: Conventional Commits with the WP and milestone in brackets;
@@ -575,28 +627,36 @@ edits another's), `CHANGELOG.md` (one line per WP under Unreleased) and
 
 ## 14. Open questions with proposed answers
 
-Spec gaps and deviations found while planning. Each is implemented as
-proposed until the owner says otherwise; questions that need GCAA are
-cross-referenced to `08-open-questions.md`.
+Spec gaps and deviations found while planning. The cross-plan
+reconciliation of 2026-10-02 **decided** every row the coordinator could
+decide; those rows say so and name the mismatch (M-nn) they settle. The
+rows marked **open (owner)** need GCAA, the ministry, Sakaeronavigatsia,
+the DPO or the owner's money; each is implemented with the stated demo
+default until answered, and the default is never a policy answer.
+Questions that need GCAA are cross-referenced to `08-open-questions.md`.
 
-| # | Question | Proposed answer (assumed in this plan) | Needs |
+| # | Question | Answer assumed in this plan | Status |
 |---|---|---|---|
-| Q-A1 | Spec `03` says `golang-migrate`; the owner's stack says `goose`. | `goose`, embedded, two trees with their own version tables. Recorded as a spec erratum for the lab to adopt. | Owner confirms; lab updates `03`. |
-| Q-A2 | `uspace-lab/api/` (OpenAPI aggregate) and `uspace-lab/schemas/` (JSON Schema aggregate, KT-2) do not exist yet; the clients for F1, F3, F4, F7, F11 need the sibling repos' OpenAPI files. | Each client WP (6, 14, 15, 16) hand-maintains a minimal `api/clients/<system>.yaml` copied from the sibling repo's `api/openapi.yaml` at a recorded commit, generated with oapi-codegen, until the lab aggregate exists; a CI step diffs the copy against the sibling at that commit. The sibling planners must publish those files; contracts are exactly `02` F1, F3, F4, F7, F11. | Lab to create the aggregate; sibling planners to publish OpenAPI files. |
-| Q-A3 | Partition key: `05 §3` says H3 res 5/3; the maintained Go binding is cgo (core gap 3). | A lat/lon grid at 0.1° / 1° behind `internal/cell` (D3); cells never cross an interface. If the owner accepts cgo in system images, swap the implementation and keep the interface. | Owner decision. |
-| Q-A4 | Projection transport: `00 §6.2` and `03` say NATS KV; `05 §2` allows the time-series database; LESSONS G-09 says a registry outgrows KV. | Projection tables in the telemetry database for registry, zones and restrictions; KV for switches, policy and cells (D2). | Owner confirms; lab aligns `00 §6.2`/`03`. |
-| Q-A5 | `no_authorisation` needs operational intent references from the DSS; the authority's listed scopes (`rid.display_provider`, `utm.availability_arbitration`) do not read operational intents. | WP-26 uses `utm.conformance_monitoring_sa` to read operational intent references and telemetry (F3548 allows it for that purpose); the detector is gated on a designated U-space airspace (Q2) and runs only inside `USPACE` zones. Until then `height_120m` is evaluated everywhere (`height_limit_in_uspace: evaluate`). | GCAA (Q2); owner on the scope. |
-| Q-A6 | `rid_absent` ("authenticated flight seen without broadcast where required") needs the authority to know a flight is authenticated; it only has provider-trust DP flights. | Deferred: a DP flight whose UAS class requires direct RID (C1–C3, C5, C6 per `serial.RequiresCTA`) and that is heard by no receiver within a receiver's coverage would be an `rid_absent` lead; needs receiver coverage geometry. Not in any wave; listed in §12 as future. | Owner (scope) and Q11 (receiver fleet). |
-| Q-A7 | InterUSS `uss_qualifier` tests a Display Provider through an "observation" endpoint the DP exposes for the test (`/display_data?view=`), which is not in `02 §3`. | `dp-poller` serves `GET /v1/dp/observations?view=` (test-only scope `dp.observe`, issued to the lab only) returning the qualifier's `GetDisplayDataResponse` shape, documented as a conformance hook, not a product endpoint. Confirm the exact interface against the qualifier's `observation` interface at the lab's pinned InterUSS commit before implementing (never from memory). | Lab (L-M4) pins the InterUSS commit. |
-| Q-A8 | Identification `basis` has two values (`authenticated`, `as_broadcast`); a DP flight is a provider's claim, neither. | Resolve DP flights with `identify.ResolveBroadcast` and `Basis: as_broadcast`, trust `provider`; propose an additive `basis: provider` to core (minor) and switch when it exists. | Core maintainers. |
-| Q-A9 | The `alerting.Monitor` always judges conflicts; the authority discards them (D5) but pays the CPA cost. | Discard with counter `conflict_events_ignored`; propose an additive `Config.SkipConflicts` to core. Not a correctness issue. | Core maintainers. |
-| Q-A10 | Registration-number format and whether the secret part is on air (Q5). | `regnum` pattern from `authority_policy` (default EU shape); any received suffix hashed on ingest; comparisons on the public part (G-04). | GCAA (Q5). |
-| Q-A11 | Registry of record or mirror of uas.gov.ge (Q4); whether the public portal takes applications. | WP-3 builds the registry as the record; WP-20 adds the import with a rules file and the applications flow behind a feature flag `REGISTRY_APPLICATIONS=on`. | GCAA (Q4). |
-| Q-A12 | Occurrence export format (Q9): E5X requires the ECCAIRS taxonomy. | WP-18 exports a de-identified JSON record with the 376/2014 Annex I fields that are known, tagged `format: eccairs-compatible-draft`; the E5X writer is a later WP when Q9 is answered. | GCAA (Q9). |
-| Q-A13 | Terrain and geoid sources (Q10) and their licence. | Copernicus GLO-30 tiles as the lab's PGM container and EGM2008 2.5′; attribution shown beside every AGL number (D-05). | GCAA (Q10). |
-| Q-A14 | Police access legal basis and access levels (Q8, Art. 18(b)–(c)). | WP-19 implements the purpose-logged realm with status-only results by default and PII only with `purpose` ∈ a configured list and a case reference; the list is configuration. | GCAA DPO (Q8). |
-| Q-A15 | Retention above the floor (Q8). | `05 §4` defaults as policy rows; WP-27 implements them as jobs. | GCAA DPO (Q8). |
-| Q-A16 | Who hosts the DSS and the issuer URL (Q7). | Issuer URL is configuration; the DSS base URL and audience are configuration; the lab DSS for all tests. | Owner (Q7). |
-| Q-A17 | Spec `01 §1` has operators registering "through the public portal"; `06 §3` lists no operator authentication at the authority. | Applications are submitted anonymously with an email verification step (no account); results by email and the public `check` endpoint. If GCAA wants operator accounts, that is a new WP. | GCAA (Q4). |
-| Q-A18 | `02 F7` records: which USSP records the authority pulls and when (Art. 18(b) determination). | Daily pull of `GET /v1/records/daily/{date}` from every operating USSP into object storage, on demand per flight from an incident; implemented in WP-17 as the incident's "fetch USSP record" action and in WP-27 as the daily job. | GCAA (Art. 18(b)). |
-| Q-A19 | mTLS for the ANSP stream: Caddy terminates TLS; the client-certificate subject must reach `manned-ingest` as a client and the ANSP must see this system's certificate. | `manned-ingest` is the TLS client and presents a certificate from the environment; no Caddy involvement on the outbound path. Inbound mTLS (ANSP → authority occurrences) uses Caddy's `client_auth` and a forwarded subject header that `api` binds to `oauth_clients.mtls_subject`. | Owner confirms the Caddy setup in the private infra repo. |
+| Q-A1 | Spec `03` says `golang-migrate`; the owner's stack says `goose`. | `goose`, embedded, two trees with version tables `goose_db_version_relational` / `goose_db_version_timeseries`; a `migrate` subcommand and a one-shot compose service; no process migrates at start (D7). | **Decided** (M36); spec erratum for `03` via lab WP-L4. |
+| Q-A2 | `uspace-lab/api/` (OpenAPI aggregate) and `uspace-lab/schemas/` (JSON Schema aggregate, KT-2) do not exist yet; the clients for F1, F3, F4, F7, F11 need the sibling repos' OpenAPI files. | Each client WP (6, 14, 15, 16) keeps `api/clients/<system>.yaml` copied from the sibling's `api/openapi.yaml` at a commit recorded in `SOURCE`, generated with oapi-codegen; a CI step diffs the copy against the sibling at that commit. Copies are bumped in `build:` commits, never inside a feature PR. The lab aggregate (lab WP-L1) replaces the copies. | **Decided** (M11, M31): this mechanism is adopted by every repo. |
+| Q-A3 | Partition key: `05 §3` says H3 res 5/3; the maintained Go binding is cgo (core gap 3). | No H3. Core ships a pure-Go `geodesy/cell` (0.1° / 1°, `c5:` / `c3:`, ring-1 neighbours, bbox → cells) in v1.1.0; `internal/cell` wraps it (D3). | **Decided** (M35); spec erratum for `05 §3`. |
+| Q-A4 | Projection transport: `00 §6.2` and `03` say NATS KV; `05 §2` allows the time-series database; LESSONS G-09 says a registry outgrows KV. | Projection tables in the telemetry database for registry, zones and restrictions; KV for switches, policy and cells (D2). | **Decided**; spec erratum for `00 §6.2` / `03`. |
+| Q-A5 | `no_authorisation` needs operational intent references from the DSS; the authority's listed scopes (`rid.display_provider`, `utm.availability_arbitration`) do not read operational intents. | WP-26 uses `utm.conformance_monitoring_sa` for the authority's own DSS reads (F3548 allows it for that purpose); the detector runs only inside `USPACE` zones and is gated on a designation existing (spec Q2). Until then `height_120m` is evaluated everywhere (`height_limit_in_uspace: evaluate`). | **Decided** on the scope; the designation itself is GCAA's (spec Q2). |
+| Q-A6 | `rid_absent` ("authenticated flight seen without broadcast where required") needs the authority to know a flight is authenticated; it only has provider-trust DP flights. | Deferred, not in any wave: a DP flight whose UAS class requires direct RID (`serial.RequiresCTA`) and that no receiver hears inside its coverage would be a lead; needs receiver coverage geometry (spec Q11). | **Decided** (deferred). |
+| Q-A7 | InterUSS `uss_qualifier` tests a Display Provider through an "observation" endpoint the DP exposes for the test, which is not in `02 §3`. | `dp-poller` serves `GET /v1/dp/observations?view=` behind scope `dp.observe`, issued to the lab client `lab-01` only; documented as a conformance hook, not a product endpoint; the exact shape is read from the qualifier at the lab's pinned InterUSS commit before coding (never from memory). | **Decided** (M23 adds `dp.observe` to the catalogue). |
+| Q-A8 | Identification `basis` has two values (`authenticated`, `as_broadcast`); a DP flight is a provider's claim, neither. | Core adds `core.BasisProvider = "provider"` (additive, v1.1.0, core WP-14); the kit's `IdentBasis` gains `provider`. Until then DP flights use `identify.ResolveBroadcast` with `basis: as_broadcast`, trust `provider`, and switch in a `build:` commit. | **Decided**; core WP-14. |
+| Q-A9 | The `alerting.Monitor` always judges conflicts; the authority discards them (D5) but pays the CPA cost. | Core adds `alerting.Config.SkipConflicts` (additive, v1.1.0, core WP-14); counter `conflict_events_ignored` until then. Not a correctness issue. | **Decided**; core WP-14. |
+| Q-A10 | Registration-number format and whether the secret part is on air (spec Q5). | `regnum` pattern from `authority_policy` (default EU shape); any received suffix hashed on ingest; comparisons on the public part (G-04). | **Open (owner)**: GCAA fixes the format (spec Q5). Demo default above. |
+| Q-A11 | Registry of record or mirror of uas.gov.ge (spec Q4); whether the public portal takes applications. | WP-3 builds the registry as the record; WP-20 adds the import with a rules file and the applications flow behind `REGISTRY_APPLICATIONS=on`. | **Open (owner)**: data-sharing agreement with uas.gov.ge (spec Q4). Demo default above. |
+| Q-A12 | Occurrence export format (spec Q9): E5X requires the ECCAIRS taxonomy. | WP-18 exports a de-identified JSON record with the 376/2014 Annex I fields that are known, tagged `format: eccairs-compatible-draft`; the E5X writer is a later WP. | **Open (owner)**: GCAA's reporting obligations (spec Q9). Demo default above. |
+| Q-A13 | Terrain and geoid sources (spec Q10) and their licence. | Copernicus GLO-30 tiles as the lab's PGM container and EGM2008 2.5′; attribution shown beside every AGL number (D-05). | **Open (owner)**: licence acceptance (spec Q10). Demo default above. |
+| Q-A14 | Police access legal basis and access levels (spec Q8, Art. 18(b)–(c)). | WP-19 implements the purpose-logged realm with status-only results by default and PII only with `purpose` ∈ a configured list and a case reference; the list is configuration. | **Open (owner)**: national law and the DPO (spec Q8). Demo default above. |
+| Q-A15 | Retention above the floor (spec Q8). | `05 §4` defaults as policy rows (90 d telemetry online, 2 y archive, 5 y alerts and intents, incidents indefinite, audit 10 y); WP-27 implements them as jobs. | **Open (owner)**: legal retention, the DPO (spec Q8). Demo default above. |
+| Q-A16 | Who hosts the DSS and the issuer URL (spec Q7). | Issuer URL is configuration and equals this system's public host in the lab and on staging; the lab DSS runs beside the CISP compose on the droplet (lab WP-L2) with `accepted_jwt_audiences` = the hosts of M18; the DSS base URL and its host-as-audience are configuration. | **Open (owner)** for production hosting of the DSS (spec Q7); the lab arrangement is decided. |
+| Q-A17 | Spec `01 §1` has operators registering "through the public portal"; `06 §3` lists no operator authentication at the authority. | Applications are submitted anonymously with an e-mail verification step (no operator accounts at the authority); results by e-mail and the public `check` endpoint. If GCAA wants operator accounts, that is a new WP. | **Open (owner)**: depends on Q-A11 (spec Q4). Demo default above. |
+| Q-A18 | `02 F7` records: which USSP records the authority pulls and when (Art. 18(b) determination). | Daily `GET /v1/records/daily/{date}` from every operating USSP into object storage (WP-27 job); per flight on demand from an incident (WP-17 action). | **Open (owner)**: the authority's Art. 18(b) determination. Demo default above. |
+| Q-A19 | mTLS for the ANSP stream and for inbound machine calls. | `AUTHORITY_MTLS_MODE = required \| off` (`off` on staging and in the lab, printed at error level while `off`). Outbound: `manned-ingest` presents a client certificate from the environment; no Caddy on that path. Inbound: Caddy `client_auth { mode verify_if_given }` with the mTLS CA, `X-Client-Cert-Subject` forwarded on the mTLS routes and stripped elsewhere, bound by `api` to `oauth_clients.mtls_subject`; the Caddy rule is composed by `uspace-deploy` from this repo's snippet. | **Decided** (M25, D1). |
+| Q-A20 | Droplet sizing: the demo adds the InterUSS DSS (with CockroachDB) and the lab stack to five systems on 2 vCPU / 3.8 GB; the per-system budgets (this system ≤ 1.2 GB, CISP ≤ 0.6 GB, ANSP ≤ 0.6 GB, plus USSP and lab) already exceed it. | Resize to ≥ 4 vCPU / 8 GB before the lab's L-M1, or run the DSS and lab on a second droplet; this system's budget (§10) is unchanged either way. | **Open (owner)**: money. Decide before L-M1. |
+
+Owner-only rows stay open until the named party answers; nothing in
+this plan may turn the demo default into the policy answer.

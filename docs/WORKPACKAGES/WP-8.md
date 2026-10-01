@@ -1,7 +1,9 @@
 # WP-8: the Remote ID pipeline and the track format
 
 Branch `feat/WP-8-rid-pipeline`. Milestone A-M2. Owns `internal/ridpipe`,
-`internal/track`, `schemas/track/telemetry/v1.json`, the `tracks`
+`internal/track` (typed from `uspace-lab/schemas/common/track/telemetry/v1`,
+which this repo consumes and does not define: the shape is produced by
+the USSP and the authority alike, M14), the `tracks`
 hypertable migration (writer in WP-9), the `ident.v1` subject, and the
 decoded columns of `rid_observations`. Depends on WP-3 (projection
 reader), WP-7 (`ridpipe.Sink`), WP-10 (bus, cell), WP-11 (geoid).

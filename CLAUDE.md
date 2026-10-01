@@ -131,6 +131,33 @@ are `uspace-lab/knowledge/LESSONS.md`.
   issuance and refusal, every export and every review is an `events`
   row with the actor and, where it applies, the purpose.
 
+## Cross-system contracts (reconciled 2026-10-02)
+
+These are shared with the four sibling systems; change them by a pull
+request against `docs/WORKPACKAGES/WP-2.md`'s normative tables first.
+
+- JWT `aud` is always the **host** of the target's published base URL;
+  each verifier accepts `AUTHORITY_AUDIENCES` (own host + lab alias).
+  One client id per calling system (`authority-01`, `cisp-01`,
+  `ansp-01`, `ussp-<code>-01`, `lab-01`). The scope catalogue is WP-2
+  table B; `rid.observe` is not a scope.
+- Sessions everywhere: `scope = "session"`, `roles[]`, `realm`, `jti`,
+  `aud` = own host; cookies `uspace_session` / `uspace_csrf`, header
+  `X-CSRF-Token`; WebSockets take the cookie on a same-origin upgrade
+  with an `Origin` allow-list, never a ticket.
+- Errors: `problem+json` with `errors: [{field, reason}]` and
+  `truncated`, `type` = `https://schemas.uspace.ge/problems/<slug>`.
+- Every WebSocket frame, served or consumed, is the `04 §2` envelope +
+  `body` named by `schema`; `console/status/v1` is the status frame.
+  Shared schemas come from `uspace-lab/schemas/common/`; this repo
+  defines only `violation/v1`, `occurrence/v1`, `rid/observation/v1`
+  and its status extras.
+- CIS: receiver path `/v1/cis/notifications`, issuers CISP and ANSP;
+  heartbeat `POST /v1/publishers/heartbeat` every 15 s; detached JWS in
+  `X-JWS-Signature`; `cis/*` schemas are the CISP's.
+- `AUTHORITY_MTLS_MODE = required | off`; migrations only by the
+  `migrate` subcommand; `pnpm`; one `timescaledb-ha` container.
+
 ## Commands
 
 ```

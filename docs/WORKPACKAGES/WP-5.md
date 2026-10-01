@@ -49,13 +49,24 @@ Consumers: WP-6, WP-12, WP-13, WP-22, WP-26.
   `adjacent_ids[]`, `in_controlled_airspace`, `ats_provider_id`,
   `cisp_id`, `designated_from/to`, `designation_ref`,
   `risk_assessment_ref`, `aip_ref`. Exported as `USPACE` zones with the
-  block in `extendedProperties` exactly as `02 F1` names the keys.
+  block in `extendedProperties` in the shape of the CISP's
+  `cis/uspace_requirements/v1` (the CISP owns that schema, M7); the
+  export is validated in CI against the pinned copy of the CISP's
+  schema that WP-6's `api/clients/cisp.yaml` + `SOURCE` mechanism
+  carries, never against a local reading of `02 F1`.
 - Authoring API (plan §5): create a draft version, replace (new
   version), approve, publish (creates the `publications` outbox row for
   dataset `zones` or `uspace_airspace` with the full current set),
   history, `GET /v1/zones/export?at=` giving the ED-318
-  `FeatureCollection` in force at `at` (metadata
-  `creationDateTime`/`updateDateTime`/`originator` from config), and
+  `FeatureCollection` in force at `at` (collection metadata in core's
+  `ed318.Metadata` names, `issued` and `provider` from config, never
+  the spec's `creationDateTime`/`updateDateTime`/`originator`, which
+  core's `Parse` on the CISP would not carry; M15, spec erratum) and
+  `GET /v1/zones/export?applies_at=<RFC 3339>` annotating every
+  feature with `extendedProperties.cis_applicability` ∈ `applies` /
+  `not_applicable` / `unknown` without filtering (M17; a console shows
+  "not applicable now" from one fetch; `at` and `applies_at` together
+  are refused), and
   `POST /v1/zones/import` accepting ED-318 or ED-269 (detected by
   wrapper): all or nothing, every problem by JSON path and reason (Z-02),
   an ED-269 import mapped through `ed318.FromED269` with what cannot be
@@ -95,7 +106,9 @@ Consumers: WP-6, WP-12, WP-13, WP-22, WP-26.
   (generated in the test, ≤ 1400-vertex zone); publish; projection
   written and read back as a `zones.Index` with the right candidates for
   a point; re-projection repairs a deleted row; `export?at=` returns the
-  version in force at two instants around a change.
+  version in force at two instants around a change; `export?applies_at=`
+  returns every feature with the three annotation values exercised
+  (E-01: one of each).
 - E-10: import bounded by `ed269.DefaultLimits`; a document past the
   byte cap refused with the reason.
 
