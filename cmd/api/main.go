@@ -105,6 +105,8 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 				IdleTimeout: time.Duration(cfg.SessionIdleS) * time.Second, MaxSessions: cfg.SessionMaxPerUser,
 				ChallengeTTL: time.Duration(cfg.MFAChallengeTTLS) * time.Second, MaxAttempts: cfg.MFAMaxAttempts,
 				PasswordMinLen: cfg.PasswordMinLength, TOTPIssuer: cfg.TOTPIssuer,
+				LockoutAfter: cfg.MFALockoutAfter, LockoutBase: time.Duration(cfg.MFALockoutBaseS) * time.Second,
+				LockoutMax: time.Duration(cfg.MFALockoutMaxS) * time.Second, HardLockAfter: cfg.MFAHardLockAfter,
 			},
 			IPPerMin: cfg.LoginIPPerMin, IPBurst: cfg.LoginIPBurst, UserPerMin: cfg.LoginUserPerMin, UserBurst: cfg.LoginUserBurst,
 			MaxRateKeys: cfg.LoginRateMaxKeys, Logger: rt.Logger,

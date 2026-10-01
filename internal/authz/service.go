@@ -45,6 +45,7 @@ const (
 	CounterBootstrapRefused  = "user_bootstrap_refused"
 	CounterSessionIdleEnded  = "sessions_idle_ended"
 	CounterSessionLimitEnded = "sessions_limit_ended"
+	CounterMFALocked         = "mfa_accounts_locked"
 )
 
 // Config are the account and session settings (config.Auth).
@@ -58,7 +59,16 @@ type Config struct {
 	MaxAttempts    int
 	PasswordMinLen int
 	TOTPIssuer     string
-	Now            func() time.Time
+	// The per-account MFA failure budget (NIST SP 800-63B 5.2.2):
+	// LockoutAfter failures lock the account for LockoutBase, doubling
+	// with each further failure up to LockoutMax; HardLockAfter failures
+	// lock it until an admin unlocks it. Zero LockoutAfter disables it
+	// (tests only; the configuration requires it).
+	LockoutAfter  int
+	LockoutBase   time.Duration
+	LockoutMax    time.Duration
+	HardLockAfter int
+	Now           func() time.Time
 }
 
 // Service is console accounts, sign-in and sessions.
@@ -359,13 +369,19 @@ func (s *Service) VerifyMFA(ctx context.Context, challenge, code, recovery strin
 		case ch.Attempts >= s.Config.MaxAttempts:
 			return refuse(actor, "challenge_exhausted", "too many wrong codes; sign in again")
 		}
-		u, err := tx.UserByID(ctx, ch.UserID)
+		u, err := tx.UserForUpdate(ctx, ch.UserID)
 		if err != nil {
 			return err
 		}
 		actor = userActor(u)
 		if u.Status != StatusActive {
 			return refuse(actor, "user_disabled", "the challenge is not valid; sign in again")
+		}
+		if u.MFAHardLocked {
+			return refuse(actor, "mfa_locked_until_unlocked", "too many wrong codes: an admin must unlock this account")
+		}
+		if u.MFALockedUntil != nil && now.Before(*u.MFALockedUntil) {
+			return refuse(actor, "mfa_locked", "too many wrong codes: try again after "+u.MFALockedUntil.UTC().Format(time.RFC3339))
 		}
 		m, err := tx.MFA(ctx, u.ID)
 		if errors.Is(err, ErrNotFound) {
@@ -397,7 +413,15 @@ func (s *Service) VerifyMFA(ctx context.Context, challenge, code, recovery strin
 			if err := tx.CountChallengeAttempt(ctx, ch.TokenHash); err != nil {
 				return err
 			}
+			if err := s.countMFAFailure(ctx, tx, u, now); err != nil {
+				return err
+			}
 			return refuse(actor, reason, "the code is wrong")
+		}
+		if u.MFAFailures > 0 || u.MFALockedUntil != nil {
+			if err := tx.SetMFALock(ctx, u.ID, MFALock{}); err != nil {
+				return err
+			}
 		}
 		if err := tx.UseChallenge(ctx, ch.TokenHash, now); err != nil {
 			return err
@@ -429,6 +453,56 @@ func (s *Service) VerifyMFA(ctx context.Context, challenge, code, recovery strin
 	}
 	s.count(CounterSessionsStarted)
 	return out, nil
+}
+
+// LockFor is the timed lock after failures (at least LockoutAfter): the
+// base, doubled for each failure beyond LockoutAfter, at most the max.
+func (c Config) LockFor(failures int) time.Duration {
+	d := c.LockoutBase
+	for i := c.LockoutAfter; i < failures && d < c.LockoutMax; i++ {
+		d *= 2
+	}
+	return min(d, c.LockoutMax)
+}
+
+// countMFAFailure adds one failure to the budget of the account and
+// locks it when the budget is spent; a lock is an mfa_locked event.
+func (s *Service) countMFAFailure(ctx context.Context, tx Tx, u User, now time.Time) error {
+	if s.Config.LockoutAfter <= 0 {
+		return nil
+	}
+	l := MFALock{Failures: u.MFAFailures + 1, LockedUntil: u.MFALockedUntil, HardLocked: u.MFAHardLocked}
+	locked := false
+	switch {
+	case s.Config.HardLockAfter > 0 && l.Failures >= s.Config.HardLockAfter:
+		l.HardLocked, locked = true, true
+	case l.Failures >= s.Config.LockoutAfter:
+		until := now.Add(s.Config.LockFor(l.Failures))
+		l.LockedUntil, locked = &until, true
+	}
+	if err := tx.SetMFALock(ctx, u.ID, l); err != nil {
+		return err
+	}
+	if !locked {
+		return nil
+	}
+	s.count(CounterMFALocked)
+	return tx.Record(ctx, audit.Event{
+		Actor: audit.SystemActor("mfa-lockout"), EntityType: "user", EntityID: u.ID, EventType: audit.EventMFALocked,
+		Payload: map[string]any{"failures": l.Failures, "locked_until": l.LockedUntil, "until_unlocked": l.HardLocked},
+	})
+}
+
+// UnlockMFA clears the MFA failures and lock of an account (admin).
+func (s *Service) UnlockMFA(ctx context.Context, id string, actor audit.Actor) (User, error) {
+	return s.change(ctx, id, actor, audit.EventUserMFAUnlocked, "", func(tx Tx, before User) (User, error) {
+		if err := tx.SetMFALock(ctx, id, MFALock{}); err != nil {
+			return User{}, err
+		}
+		u := before
+		u.MFAFailures, u.MFALockedUntil, u.MFAHardLocked = 0, nil, false
+		return u, nil
+	})
 }
 
 func (s *Service) refuseMFA(ctx context.Context, actor audit.Actor, ri apiserver.RequestInfo, reason string) {

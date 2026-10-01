@@ -67,6 +67,7 @@ type UsersHandler interface {
 	EnableUser(ctx context.Context, request gen.EnableUserRequestObject) (gen.EnableUserResponseObject, error)
 	ResetUserMFA(ctx context.Context, request gen.ResetUserMFARequestObject) (gen.ResetUserMFAResponseObject, error)
 	RevokeUserSessions(ctx context.Context, request gen.RevokeUserSessionsRequestObject) (gen.RevokeUserSessionsResponseObject, error)
+	UnlockUserMFA(ctx context.Context, request gen.UnlockUserMFARequestObject) (gen.UnlockUserMFAResponseObject, error)
 }
 
 // Server implements gen.StrictServerInterface by delegating to one

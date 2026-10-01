@@ -22,7 +22,10 @@
 // (internal/pii). POST /v1/auth/mfa takes the challenge and a TOTP code
 // (each time step accepted once) or a recovery code (ten, hashed, each
 // once); the first success confirms enrolment and shows the recovery
-// codes once. The challenge allows MFA_MAX_ATTEMPTS codes.
+// codes once. The challenge allows MFA_MAX_ATTEMPTS codes, and every
+// wrong code also counts against the account in the database (NIST SP
+// 800-63B 5.2.2): MFA_LOCKOUT_AFTER failures lock it with a doubling
+// backoff, MFA_HARD_LOCK_AFTER until an admin unlocks it.
 //
 // Sessions: table A's session JWT (M20) signed by internal/tokens, aud
 // this system's own host, scope "session", roles, realm, jti = the

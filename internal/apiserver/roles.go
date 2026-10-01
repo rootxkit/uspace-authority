@@ -53,6 +53,7 @@ var Roles = map[string][]string{
 	"EnableUser":         {RoleAdmin},
 	"ResetUserMFA":       {RoleAdmin},
 	"RevokeUserSessions": {RoleAdmin},
+	"UnlockUserMFA":      {RoleAdmin},
 }
 
 // Public lists the operations with `security: []` in the contract: no

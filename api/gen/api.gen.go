@@ -842,17 +842,26 @@ type TokenResponseTokenType string
 
 // User defines model for User.
 type User struct {
-	CreatedAt   time.Time  `json:"created_at"`
-	CreatedBy   string     `json:"created_by"`
-	DisplayName string     `json:"display_name"`
-	Id          string     `json:"id"`
-	MfaEnrolled bool       `json:"mfa_enrolled"`
-	Realm       Realm      `json:"realm"`
-	Roles       []string   `json:"roles"`
-	Status      UserStatus `json:"status"`
-	UpdatedAt   time.Time  `json:"updated_at"`
-	UpdatedBy   string     `json:"updated_by"`
-	Username    string     `json:"username"`
+	CreatedAt   time.Time `json:"created_at"`
+	CreatedBy   string    `json:"created_by"`
+	DisplayName string    `json:"display_name"`
+	Id          string    `json:"id"`
+	MfaEnrolled bool      `json:"mfa_enrolled"`
+
+	// MfaFailures Consecutive wrong MFA codes.
+	MfaFailures *int `json:"mfa_failures,omitempty"`
+
+	// MfaHardLocked MFA refused until an admin unlocks the account.
+	MfaHardLocked *bool `json:"mfa_hard_locked,omitempty"`
+
+	// MfaLockedUntil MFA refused until then.
+	MfaLockedUntil *time.Time `json:"mfa_locked_until,omitempty"`
+	Realm          Realm      `json:"realm"`
+	Roles          []string   `json:"roles"`
+	Status         UserStatus `json:"status"`
+	UpdatedAt      time.Time  `json:"updated_at"`
+	UpdatedBy      string     `json:"updated_by"`
+	Username       string     `json:"username"`
 }
 
 // UserStatus defines model for User.Status.
@@ -1334,6 +1343,18 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /v1/users/{user_id}/mfa/reset (the `ResetUserMFA` operationId).
 	ResetUserMFA(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UnlockUserMFA Clear the MFA lock of an account
+	//
+	// Wrong TOTP or recovery codes count against the account across
+	// challenges and addresses (NIST SP 800-63B 5.2.2): from
+	// `MFA_LOCKOUT_AFTER` failures the account is locked for a time
+	// that doubles with each failure, and at `MFA_HARD_LOCK_AFTER`
+	// (at most 100) until an admin calls this. A success clears the
+	// count.
+	//
+	// Corresponds with POST /v1/users/{user_id}/mfa/unlock (the `UnlockUserMFA` operationId).
+	UnlockUserMFA(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// SetUserRolesWithBody Replace the roles of an account
 	//
@@ -2001,6 +2022,28 @@ func (c *Client) EnableUser(ctx context.Context, userId string, reqEditors ...Re
 // Corresponds with POST /v1/users/{user_id}/mfa/reset (the `ResetUserMFA` operationId).
 func (c *Client) ResetUserMFA(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewResetUserMFARequest(c.Server, userId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UnlockUserMFA Clear the MFA lock of an account
+//
+// Wrong TOTP or recovery codes count against the account across
+// challenges and addresses (NIST SP 800-63B 5.2.2): from
+// `MFA_LOCKOUT_AFTER` failures the account is locked for a time
+// that doubles with each failure, and at `MFA_HARD_LOCK_AFTER`
+// (at most 100) until an admin calls this. A success clears the
+// count.
+//
+// Corresponds with POST /v1/users/{user_id}/mfa/unlock (the `UnlockUserMFA` operationId).
+func (c *Client) UnlockUserMFA(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUnlockUserMFARequest(c.Server, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -3002,6 +3045,40 @@ func NewResetUserMFARequest(server string, userId string) (*http.Request, error)
 	return req, nil
 }
 
+// NewUnlockUserMFARequest constructs an http.Request for the UnlockUserMFA method
+func NewUnlockUserMFARequest(server string, userId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "user_id", userId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/users/%s/mfa/unlock", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewSetUserRolesRequest calls the generic SetUserRoles builder with application/json body
 func NewSetUserRolesRequest(server string, userId string, body SetUserRolesJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -3494,6 +3571,20 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /v1/users/{user_id}/mfa/reset (the `ResetUserMFA` operationId).
 	ResetUserMFAWithResponse(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*ResetUserMFAResponse, error)
+
+	// UnlockUserMFAWithResponse Clear the MFA lock of an account
+	//
+	// Wrong TOTP or recovery codes count against the account across
+	// challenges and addresses (NIST SP 800-63B 5.2.2): from
+	// `MFA_LOCKOUT_AFTER` failures the account is locked for a time
+	// that doubles with each failure, and at `MFA_HARD_LOCK_AFTER`
+	// (at most 100) until an admin calls this. A success clears the
+	// count.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/users/{user_id}/mfa/unlock (the `UnlockUserMFA` operationId).
+	UnlockUserMFAWithResponse(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*UnlockUserMFAResponse, error)
 
 	// SetUserRolesWithBodyWithResponse Replace the roles of an account
 	//
@@ -4820,6 +4911,54 @@ func (r ResetUserMFAResponse) ContentType() string {
 	return ""
 }
 
+type UnlockUserMFAResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *User
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UnlockUserMFAResponse) GetJSON200() *User {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r UnlockUserMFAResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r UnlockUserMFAResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UnlockUserMFAResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UnlockUserMFAResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UnlockUserMFAResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type SetUserRolesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -5474,6 +5613,26 @@ func (c *ClientWithResponses) ResetUserMFAWithResponse(ctx context.Context, user
 		return nil, err
 	}
 	return ParseResetUserMFAResponse(rsp)
+}
+
+// UnlockUserMFAWithResponse Clear the MFA lock of an account
+//
+// Wrong TOTP or recovery codes count against the account across
+// challenges and addresses (NIST SP 800-63B 5.2.2): from
+// `MFA_LOCKOUT_AFTER` failures the account is locked for a time
+// that doubles with each failure, and at `MFA_HARD_LOCK_AFTER`
+// (at most 100) until an admin calls this. A success clears the
+// count.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/users/{user_id}/mfa/unlock (the `UnlockUserMFA` operationId).
+func (c *ClientWithResponses) UnlockUserMFAWithResponse(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*UnlockUserMFAResponse, error) {
+	rsp, err := c.UnlockUserMFA(ctx, userId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUnlockUserMFAResponse(rsp)
 }
 
 // SetUserRolesWithBodyWithResponse Replace the roles of an account
@@ -6491,6 +6650,39 @@ func ParseResetUserMFAResponse(rsp *http.Response) (*ResetUserMFAResponse, error
 	return response, nil
 }
 
+// ParseUnlockUserMFAResponse parses an HTTP response from a UnlockUserMFAWithResponse call
+func ParseUnlockUserMFAResponse(rsp *http.Response) (*UnlockUserMFAResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UnlockUserMFAResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest User
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseSetUserRolesResponse parses an HTTP response from a SetUserRolesWithResponse call
 func ParseSetUserRolesResponse(rsp *http.Response) (*SetUserRolesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -6634,6 +6826,9 @@ type ServerInterface interface {
 	// ResetUserMFA Reset the TOTP of an account
 	// (POST /v1/users/{user_id}/mfa/reset)
 	ResetUserMFA(w http.ResponseWriter, r *http.Request, userId string)
+	// UnlockUserMFA Clear the MFA lock of an account
+	// (POST /v1/users/{user_id}/mfa/unlock)
+	UnlockUserMFA(w http.ResponseWriter, r *http.Request, userId string)
 	// SetUserRoles Replace the roles of an account
 	// (PUT /v1/users/{user_id}/roles)
 	SetUserRoles(w http.ResponseWriter, r *http.Request, userId string)
@@ -7208,6 +7403,32 @@ func (siw *ServerInterfaceWrapper) ResetUserMFA(w http.ResponseWriter, r *http.R
 	handler.ServeHTTP(w, r)
 }
 
+// UnlockUserMFA operation middleware
+func (siw *ServerInterfaceWrapper) UnlockUserMFA(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "user_id" -------------
+	var userId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", r.PathValue("user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "user_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UnlockUserMFA(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // SetUserRoles operation middleware
 func (siw *ServerInterfaceWrapper) SetUserRoles(w http.ResponseWriter, r *http.Request) {
 
@@ -7397,6 +7618,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/users/{user_id}/disable", wrapper.DisableUser)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/users/{user_id}/enable", wrapper.EnableUser)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/users/{user_id}/mfa/reset", wrapper.ResetUserMFA)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/users/{user_id}/mfa/unlock", wrapper.UnlockUserMFA)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/users/{user_id}/sessions/revoke", wrapper.RevokeUserSessions)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/oauth/token", wrapper.RequestToken)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/.well-known/jwks.json", wrapper.GetJWKS)
@@ -8557,6 +8779,45 @@ func (response ResetUserMFAdefaultApplicationProblemPlusJSONResponse) VisitReset
 	return err
 }
 
+type UnlockUserMFARequestObject struct {
+	UserId string `json:"user_id"`
+}
+
+type UnlockUserMFAResponseObject interface {
+	VisitUnlockUserMFAResponse(w http.ResponseWriter) error
+}
+
+type UnlockUserMFA200JSONResponse User
+
+func (response UnlockUserMFA200JSONResponse) VisitUnlockUserMFAResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnlockUserMFAdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UnlockUserMFAdefaultApplicationProblemPlusJSONResponse) VisitUnlockUserMFAResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type SetUserRolesRequestObject struct {
 	UserId string `json:"user_id"`
 	Body   *SetUserRolesJSONRequestBody
@@ -8713,6 +8974,9 @@ type StrictServerInterface interface {
 	// ResetUserMFA Reset the TOTP of an account
 	// (POST /v1/users/{user_id}/mfa/reset)
 	ResetUserMFA(ctx context.Context, request ResetUserMFARequestObject) (ResetUserMFAResponseObject, error)
+	// UnlockUserMFA Clear the MFA lock of an account
+	// (POST /v1/users/{user_id}/mfa/unlock)
+	UnlockUserMFA(ctx context.Context, request UnlockUserMFARequestObject) (UnlockUserMFAResponseObject, error)
 	// SetUserRoles Replace the roles of an account
 	// (PUT /v1/users/{user_id}/roles)
 	SetUserRoles(ctx context.Context, request SetUserRolesRequestObject) (SetUserRolesResponseObject, error)
@@ -9422,6 +9686,32 @@ func (sh *strictHandler) ResetUserMFA(w http.ResponseWriter, r *http.Request, us
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ResetUserMFAResponseObject); ok {
 		if err := validResponse.VisitResetUserMFAResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UnlockUserMFA operation middleware
+func (sh *strictHandler) UnlockUserMFA(w http.ResponseWriter, r *http.Request, userId string) {
+	var request UnlockUserMFARequestObject
+
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UnlockUserMFA(ctx, request.(UnlockUserMFARequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UnlockUserMFA")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UnlockUserMFAResponseObject); ok {
+		if err := validResponse.VisitUnlockUserMFAResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

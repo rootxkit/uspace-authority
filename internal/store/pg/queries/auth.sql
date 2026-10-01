@@ -98,3 +98,12 @@ DELETE FROM sessions WHERE expires_at < sqlc.arg(before);
 
 -- name: DeleteExpiredChallenges :execrows
 DELETE FROM login_challenges WHERE expires_at < sqlc.arg(before);
+
+-- name: UserForUpdate :one
+SELECT * FROM users WHERE id = sqlc.arg(id) FOR UPDATE;
+
+-- name: SetMFALock :exec
+UPDATE users
+SET mfa_failures = sqlc.arg(mfa_failures), mfa_locked_until = sqlc.narg(mfa_locked_until),
+    mfa_hard_locked = sqlc.arg(mfa_hard_locked)
+WHERE id = sqlc.arg(id);

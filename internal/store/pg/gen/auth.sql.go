@@ -153,7 +153,7 @@ const insertUser = `-- name: InsertUser :one
 INSERT INTO users (id, username, display_name, roles, realm, status, created_at, created_by, updated_at, updated_by)
 VALUES ($1, $2, $3, $4, $5, 'active',
         $6, $7, $6, $7)
-RETURNING id, username, display_name, roles, realm, agency, ip_allow, status, created_at, created_by, updated_at, updated_by
+RETURNING id, username, display_name, roles, realm, agency, ip_allow, status, created_at, created_by, updated_at, updated_by, mfa_failures, mfa_locked_until, mfa_hard_locked
 `
 
 type InsertUserParams struct {
@@ -190,12 +190,15 @@ func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (User, e
 		&i.CreatedBy,
 		&i.UpdatedAt,
 		&i.UpdatedBy,
+		&i.MfaFailures,
+		&i.MfaLockedUntil,
+		&i.MfaHardLocked,
 	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, username, display_name, roles, realm, agency, ip_allow, status, created_at, created_by, updated_at, updated_by FROM users ORDER BY username LIMIT $1
+SELECT id, username, display_name, roles, realm, agency, ip_allow, status, created_at, created_by, updated_at, updated_by, mfa_failures, mfa_locked_until, mfa_hard_locked FROM users ORDER BY username LIMIT $1
 `
 
 func (q *Queries) ListUsers(ctx context.Context, pageSize int32) ([]User, error) {
@@ -220,6 +223,9 @@ func (q *Queries) ListUsers(ctx context.Context, pageSize int32) ([]User, error)
 			&i.CreatedBy,
 			&i.UpdatedAt,
 			&i.UpdatedBy,
+			&i.MfaFailures,
+			&i.MfaLockedUntil,
+			&i.MfaHardLocked,
 		); err != nil {
 			return nil, err
 		}
@@ -373,10 +379,34 @@ func (q *Queries) SessionByJTI(ctx context.Context, jti string) (Session, error)
 	return i, err
 }
 
+const setMFALock = `-- name: SetMFALock :exec
+UPDATE users
+SET mfa_failures = $1, mfa_locked_until = $2,
+    mfa_hard_locked = $3
+WHERE id = $4
+`
+
+type SetMFALockParams struct {
+	MfaFailures    int32
+	MfaLockedUntil *time.Time
+	MfaHardLocked  bool
+	ID             string
+}
+
+func (q *Queries) SetMFALock(ctx context.Context, arg SetMFALockParams) error {
+	_, err := q.db.Exec(ctx, setMFALock,
+		arg.MfaFailures,
+		arg.MfaLockedUntil,
+		arg.MfaHardLocked,
+		arg.ID,
+	)
+	return err
+}
+
 const setUserRoles = `-- name: SetUserRoles :one
 UPDATE users SET roles = $1, updated_at = $2, updated_by = $3
 WHERE id = $4
-RETURNING id, username, display_name, roles, realm, agency, ip_allow, status, created_at, created_by, updated_at, updated_by
+RETURNING id, username, display_name, roles, realm, agency, ip_allow, status, created_at, created_by, updated_at, updated_by, mfa_failures, mfa_locked_until, mfa_hard_locked
 `
 
 type SetUserRolesParams struct {
@@ -407,6 +437,9 @@ func (q *Queries) SetUserRoles(ctx context.Context, arg SetUserRolesParams) (Use
 		&i.CreatedBy,
 		&i.UpdatedAt,
 		&i.UpdatedBy,
+		&i.MfaFailures,
+		&i.MfaLockedUntil,
+		&i.MfaHardLocked,
 	)
 	return i, err
 }
@@ -414,7 +447,7 @@ func (q *Queries) SetUserRoles(ctx context.Context, arg SetUserRolesParams) (Use
 const setUserStatus = `-- name: SetUserStatus :one
 UPDATE users SET status = $1, updated_at = $2, updated_by = $3
 WHERE id = $4
-RETURNING id, username, display_name, roles, realm, agency, ip_allow, status, created_at, created_by, updated_at, updated_by
+RETURNING id, username, display_name, roles, realm, agency, ip_allow, status, created_at, created_by, updated_at, updated_by, mfa_failures, mfa_locked_until, mfa_hard_locked
 `
 
 type SetUserStatusParams struct {
@@ -445,6 +478,9 @@ func (q *Queries) SetUserStatus(ctx context.Context, arg SetUserStatusParams) (U
 		&i.CreatedBy,
 		&i.UpdatedAt,
 		&i.UpdatedBy,
+		&i.MfaFailures,
+		&i.MfaLockedUntil,
+		&i.MfaHardLocked,
 	)
 	return i, err
 }
@@ -529,7 +565,7 @@ func (q *Queries) UseChallenge(ctx context.Context, arg UseChallengeParams) erro
 
 const userByID = `-- name: UserByID :one
 
-SELECT id, username, display_name, roles, realm, agency, ip_allow, status, created_at, created_by, updated_at, updated_by FROM users WHERE id = $1
+SELECT id, username, display_name, roles, realm, agency, ip_allow, status, created_at, created_by, updated_at, updated_by, mfa_failures, mfa_locked_until, mfa_hard_locked FROM users WHERE id = $1
 `
 
 // WP-2: console accounts, MFA, sign-in challenges and sessions.
@@ -549,12 +585,15 @@ func (q *Queries) UserByID(ctx context.Context, id string) (User, error) {
 		&i.CreatedBy,
 		&i.UpdatedAt,
 		&i.UpdatedBy,
+		&i.MfaFailures,
+		&i.MfaLockedUntil,
+		&i.MfaHardLocked,
 	)
 	return i, err
 }
 
 const userByUsername = `-- name: UserByUsername :one
-SELECT id, username, display_name, roles, realm, agency, ip_allow, status, created_at, created_by, updated_at, updated_by FROM users WHERE username = $1
+SELECT id, username, display_name, roles, realm, agency, ip_allow, status, created_at, created_by, updated_at, updated_by, mfa_failures, mfa_locked_until, mfa_hard_locked FROM users WHERE username = $1
 `
 
 func (q *Queries) UserByUsername(ctx context.Context, username string) (User, error) {
@@ -573,6 +612,36 @@ func (q *Queries) UserByUsername(ctx context.Context, username string) (User, er
 		&i.CreatedBy,
 		&i.UpdatedAt,
 		&i.UpdatedBy,
+		&i.MfaFailures,
+		&i.MfaLockedUntil,
+		&i.MfaHardLocked,
+	)
+	return i, err
+}
+
+const userForUpdate = `-- name: UserForUpdate :one
+SELECT id, username, display_name, roles, realm, agency, ip_allow, status, created_at, created_by, updated_at, updated_by, mfa_failures, mfa_locked_until, mfa_hard_locked FROM users WHERE id = $1 FOR UPDATE
+`
+
+func (q *Queries) UserForUpdate(ctx context.Context, id string) (User, error) {
+	row := q.db.QueryRow(ctx, userForUpdate, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.DisplayName,
+		&i.Roles,
+		&i.Realm,
+		&i.Agency,
+		&i.IpAllow,
+		&i.Status,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.UpdatedBy,
+		&i.MfaFailures,
+		&i.MfaLockedUntil,
+		&i.MfaHardLocked,
 	)
 	return i, err
 }

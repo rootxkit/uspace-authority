@@ -88,6 +88,8 @@ func TestAuthAndUserRoutesOverHTTP(t *testing.T) {
 		{http.MethodPost, "/v1/users/" + id + "/enable", "", 200},
 		{http.MethodPost, "/v1/users/" + id + "/mfa/reset", "", 200},
 		{http.MethodPost, "/v1/users/" + id + "/sessions/revoke", "", 200},
+		{http.MethodPost, "/v1/users/" + id + "/mfa/unlock", "", 200},
+		{http.MethodPost, "/v1/users/nobody/mfa/unlock", "", 404},
 		{http.MethodPost, "/v1/users", `{"username":"x"}`, 400},
 	} {
 		if code, _, body := send(t, c.method, srv.URL+c.path, token, c.body); code != c.want {

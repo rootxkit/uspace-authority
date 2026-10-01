@@ -116,18 +116,21 @@ type SigningKey struct {
 }
 
 type User struct {
-	ID          string
-	Username    string
-	DisplayName string
-	Roles       []string
-	Realm       string
-	Agency      *string
-	IpAllow     []string
-	Status      string
-	CreatedAt   time.Time
-	CreatedBy   string
-	UpdatedAt   time.Time
-	UpdatedBy   string
+	ID             string
+	Username       string
+	DisplayName    string
+	Roles          []string
+	Realm          string
+	Agency         *string
+	IpAllow        []string
+	Status         string
+	CreatedAt      time.Time
+	CreatedBy      string
+	UpdatedAt      time.Time
+	UpdatedBy      string
+	MfaFailures    int32
+	MfaLockedUntil *time.Time
+	MfaHardLocked  bool
 }
 
 type UserCredential struct {

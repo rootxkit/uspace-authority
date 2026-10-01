@@ -43,6 +43,17 @@ oldest.
 3. `POST /v1/auth/logout` with the session as bearer ends it.
    `GET /v1/auth/session` reads it.
 
+Wrong TOTP or recovery codes count against the account in the
+database, across challenges, addresses and api replicas (NIST SP
+800-63B 5.2.2): from `MFA_LOCKOUT_AFTER` (5) failures the account's MFA
+is locked for `MFA_LOCKOUT_BASE_S` (60 s), doubling with each further
+failure up to `MFA_LOCKOUT_MAX_S` (1 h); at `MFA_HARD_LOCK_AFTER` (100)
+it stays locked until an admin calls `POST /v1/users/{id}/mfa/unlock`.
+A success clears the count; each lock is an `mfa_locked` event. The
+per-address and per-username sign-in limits are per process (each api
+replica keeps its own buckets); the MFA budget is the bound that holds
+across replicas.
+
 Both sign-in answers carry `Cache-Control: no-store`. Refusals are
 problems (`invalid_credentials`, `mfa_refused`, `rate_limited` with
 `Retry-After`).

@@ -104,6 +104,8 @@ const (
 	EventUserMFAReset          = "user_mfa_reset"
 	EventUserBootstrapped      = "user_bootstrapped"
 	EventUserBootstrapRefused  = "user_bootstrap_refused"
+	EventMFALocked             = "mfa_locked"
+	EventUserMFAUnlocked       = "user_mfa_unlocked"
 )
 
 // DefaultCatalogue is the catalogue of this build.
@@ -136,6 +138,8 @@ func DefaultCatalogue() Catalogue {
 		EventUserMFAReset:          {},
 		EventUserBootstrapped:      {},
 		EventUserBootstrapRefused:  {},
+		EventMFALocked:             {},
+		EventUserMFAUnlocked:       {},
 	}
 }
 

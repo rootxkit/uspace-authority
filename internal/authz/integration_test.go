@@ -131,3 +131,42 @@ func writeTemp(t *testing.T, content string) string {
 	}
 	return p
 }
+
+// The MFA budget holds across api replicas: failures spent through one
+// service lock the account for another on the same database, and an
+// unlock through either clears it.
+func TestIntegrationMFALockoutAcrossReplicas(t *testing.T) {
+	u := storetest.Migrated(t, migrate.Relational)
+	db, err := pg.Open(context.Background(), store.PoolOptions{URL: u, Role: pg.AppRole})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(db.Close)
+	ctx := context.Background()
+	a, b := newFixture(t, fxOpts{}), newFixture(t, fxOpts{})
+	st := PG{DB: db, Audit: audit.NewWriter(db)}
+	a.svc.Store, b.svc.Store = st, st
+	now := time.Now().UTC().Truncate(time.Second)
+	a.clk.t, b.clk.t = now, now
+	admin, err := a.svc.CreateUser(ctx, NewUser{Username: "admin", Password: adminPW, Realm: "console", Roles: []string{"admin"}}, adminActor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.admin, b.admin = admin, admin
+	a.signIn(t, "admin", adminPW)
+	b.secrets["admin"] = a.secrets["admin"]
+	for i := range 5 {
+		a.wrongCode(t, i)
+	}
+	b.clk.t = a.clk.Now()
+	if err := b.rightCode(t); err == nil {
+		t.Fatal("the other replica ignored the lock")
+	}
+	if _, err := b.svc.UnlockMFA(ctx, admin.ID, adminActor); err != nil {
+		t.Fatal(err)
+	}
+	a.clk.t = b.clk.Now()
+	if err := a.rightCode(t); err != nil {
+		t.Fatalf("after the unlock on the other replica: %v", err)
+	}
+}

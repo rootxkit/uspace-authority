@@ -162,6 +162,20 @@ func (t memTx) UserByID(_ context.Context, id string) (User, error) {
 	return u, nil
 }
 
+func (t memTx) UserForUpdate(ctx context.Context, id string) (User, error) {
+	return t.UserByID(ctx, id)
+}
+
+func (t memTx) SetMFALock(_ context.Context, id string, l MFALock) error {
+	u, ok := t.m.users[id]
+	if !ok {
+		return ErrNotFound
+	}
+	u.MFAFailures, u.MFALockedUntil, u.MFAHardLocked = l.Failures, l.LockedUntil, l.HardLocked
+	t.m.users[id] = u
+	return nil
+}
+
 func (t memTx) UserByUsername(_ context.Context, name string) (User, error) {
 	for id := range t.m.users {
 		if t.m.users[id].Username == name {

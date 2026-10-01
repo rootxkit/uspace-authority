@@ -219,7 +219,12 @@ func (s *Service) SetStatus(ctx context.Context, id, status string, actor audit.
 // sessions: it enrols again at its next sign-in.
 func (s *Service) ResetMFA(ctx context.Context, id string, actor audit.Actor) (User, error) {
 	return s.change(ctx, id, actor, audit.EventUserMFAReset, "mfa_reset", func(tx Tx, before User) (User, error) {
-		return before, tx.DeleteMFA(ctx, id)
+		if err := tx.SetMFALock(ctx, id, MFALock{}); err != nil {
+			return User{}, err
+		}
+		u := before
+		u.MFAFailures, u.MFALockedUntil, u.MFAHardLocked = 0, nil, false
+		return u, tx.DeleteMFA(ctx, id)
 	})
 }
 

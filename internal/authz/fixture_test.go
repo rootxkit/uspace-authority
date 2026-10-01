@@ -114,7 +114,8 @@ func newFixture(t testing.TB, o fxOpts) *fixture {
 		IPLimiter:   httpx.NewRateLimiter(1, o.ipBurst, o.maxKeys, nil),
 		UserLimiter: httpx.NewRateLimiter(1, o.userBurst, o.maxKeys, nil),
 		Config: Config{OwnHost: ownHost, SessionTTL: 12 * time.Hour, IdleTimeout: 30 * time.Minute, MaxSessions: o.maxSessions,
-			ChallengeTTL: 5 * time.Minute, MaxAttempts: 3, PasswordMinLen: 12, TOTPIssuer: "uspace-authority", Now: clk.Now},
+			ChallengeTTL: 5 * time.Minute, MaxAttempts: 3, PasswordMinLen: 12, TOTPIssuer: "uspace-authority", Now: clk.Now,
+			LockoutAfter: 5, LockoutBase: time.Minute, LockoutMax: time.Hour, HardLockAfter: 12},
 	}
 	f.v, err = NewVerifier(context.Background(), VerifierConfig{SelfIssuer: testIssuer, SelfKeys: f.keys.TokenKeys,
 		Audiences: []string{ownHost, "authority"}, Now: clk.Now})

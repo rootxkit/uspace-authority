@@ -488,6 +488,33 @@ paths:
                 $ref: "#/components/schemas/User"
         default:
           $ref: "#/components/responses/Problem"
+  /v1/users/{user_id}/mfa/unlock:
+    parameters:
+      - {name: user_id, in: path, required: true, schema: {type: string, maxLength: 32}}
+    post:
+      operationId: unlockUserMFA
+      tags: [users]
+      summary: Clear the MFA lock of an account
+      description: |
+        Wrong TOTP or recovery codes count against the account across
+        challenges and addresses (NIST SP 800-63B 5.2.2): from
+        `MFA_LOCKOUT_AFTER` failures the account is locked for a time
+        that doubles with each failure, and at `MFA_HARD_LOCK_AFTER`
+        (at most 100) until an admin calls this. A success clears the
+        count.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: user_mfa_unlocked, entity_type: user, purpose: none}
+      responses:
+        "200":
+          description: The account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        default:
+          $ref: "#/components/responses/Problem"
   /v1/users/{user_id}/sessions/revoke:
     parameters:
       - {name: user_id, in: path, required: true, schema: {type: string, maxLength: 32}}
@@ -1303,6 +1330,9 @@ components:
           $ref: "#/components/schemas/Realm"
         status: {type: string, enum: [active, disabled]}
         mfa_enrolled: {type: boolean}
+        mfa_failures: {type: integer, description: Consecutive wrong MFA codes.}
+        mfa_locked_until: {type: string, format: date-time, description: MFA refused until then.}
+        mfa_hard_locked: {type: boolean, description: MFA refused until an admin unlocks the account.}
         created_at: {type: string, format: date-time}
         created_by: {type: string}
         updated_at: {type: string, format: date-time}

@@ -67,6 +67,10 @@ type Auth struct {
 	SessionSweepS     int     `env:"SESSION_SWEEP_S" default:"300" min:"10" max:"86400" help:"seconds between deletions of sessions and challenges expired a day ago"`
 	MFAChallengeTTLS  int     `env:"MFA_CHALLENGE_TTL_S" default:"300" min:"30" max:"600" help:"lifetime of the challenge between the password and the TOTP step"`
 	MFAMaxAttempts    int     `env:"MFA_MAX_ATTEMPTS" default:"5" min:"1" max:"10" help:"wrong codes a challenge allows before it is spent"`
+	MFALockoutAfter   int     `env:"MFA_LOCKOUT_AFTER" default:"5" min:"1" max:"100" help:"MFA failures of one account, across challenges and addresses, before it is locked for MFA_LOCKOUT_BASE_S"`
+	MFALockoutBaseS   int     `env:"MFA_LOCKOUT_BASE_S" default:"60" min:"1" max:"86400" help:"first MFA lock; each further failure doubles it up to MFA_LOCKOUT_MAX_S"`
+	MFALockoutMaxS    int     `env:"MFA_LOCKOUT_MAX_S" default:"3600" min:"1" max:"604800" help:"longest timed MFA lock"`
+	MFAHardLockAfter  int     `env:"MFA_HARD_LOCK_AFTER" default:"100" min:"2" max:"100" help:"consecutive MFA failures after which only an admin unlocks the account (NIST SP 800-63B: at most 100)"`
 	LoginIPPerMin     float64 `env:"LOGIN_RATE_IP_PER_MIN" default:"10" min:"1" help:"sign-in attempts per minute per client address (S-15)"`
 	LoginIPBurst      int     `env:"LOGIN_RATE_IP_BURST" default:"10" min:"1" help:"sign-in burst per client address"`
 	LoginUserPerMin   float64 `env:"LOGIN_RATE_USER_PER_MIN" default:"5" min:"1" help:"sign-in attempts per minute per username, known or not (S-15)"`
@@ -255,6 +259,12 @@ func (c *API) Validate() error {
 		if (pr[1] == "") != (pr[2] == "") {
 			errs = append(errs, core.Fieldf(pr[0], "set it together with its JWKS URL, or neither"))
 		}
+	}
+	if c.MFAHardLockAfter <= c.MFALockoutAfter {
+		errs = append(errs, core.Fieldf("MFA_HARD_LOCK_AFTER", "must exceed MFA_LOCKOUT_AFTER"))
+	}
+	if c.MFALockoutMaxS < c.MFALockoutBaseS {
+		errs = append(errs, core.Fieldf("MFA_LOCKOUT_MAX_S", "must not be shorter than MFA_LOCKOUT_BASE_S"))
 	}
 	if (c.BootstrapAdmin == "") != (c.BootstrapPassword == "") {
 		errs = append(errs, core.Fieldf("BOOTSTRAP_ADMIN_USERNAME", "set it together with BOOTSTRAP_ADMIN_PASSWORD_FILE, or neither"))

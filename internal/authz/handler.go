@@ -133,6 +133,7 @@ func userToAPI(u User, enrolled bool) gen.User {
 		Id: u.ID, Username: u.Username, DisplayName: u.DisplayName, Roles: roles, Realm: gen.Realm(u.Realm),
 		Status: gen.UserStatus(u.Status), MfaEnrolled: enrolled, CreatedAt: u.CreatedAt.UTC(), CreatedBy: u.CreatedBy,
 		UpdatedAt: u.UpdatedAt.UTC(), UpdatedBy: u.UpdatedBy,
+		MfaFailures: &u.MFAFailures, MfaHardLocked: &u.MFAHardLocked, MfaLockedUntil: u.MFALockedUntil,
 	}
 }
 
@@ -258,6 +259,20 @@ func (h Handler) RevokeUserSessions(ctx context.Context, req gen.RevokeUserSessi
 		return nil, err
 	}
 	return gen.RevokeUserSessions200JSONResponse{Revoked: n}, nil
+}
+
+// UnlockUserMFA clears the MFA lock of an account.
+func (h Handler) UnlockUserMFA(ctx context.Context, req gen.UnlockUserMFARequestObject) (gen.UnlockUserMFAResponseObject, error) {
+	actor, err := audit.ActorOf(ctx)
+	if err != nil {
+		return nil, err
+	}
+	u, err := h.Service.UnlockMFA(ctx, req.UserId, actor)
+	if err != nil {
+		return nil, err
+	}
+	out, err := h.changed(ctx, u)
+	return gen.UnlockUserMFA200JSONResponse(out), err
 }
 
 func deref(s *string) string {

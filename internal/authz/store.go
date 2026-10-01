@@ -30,6 +30,17 @@ type User struct {
 	CreatedBy   string
 	UpdatedAt   time.Time
 	UpdatedBy   string
+	// The MFA failure budget of the account (migration 00006).
+	MFAFailures    int
+	MFALockedUntil *time.Time
+	MFAHardLocked  bool
+}
+
+// MFALock is the failure state of the MFA of an account.
+type MFALock struct {
+	Failures    int
+	LockedUntil *time.Time
+	HardLocked  bool
 }
 
 // MFA is a row of user_mfa.
@@ -88,6 +99,10 @@ type Tx interface {
 	Lock(ctx context.Context, name string) error
 	Record(ctx context.Context, ev audit.Event) error
 	UserByID(ctx context.Context, id string) (User, error)
+	// UserForUpdate reads an account and locks its row to the end of
+	// the transaction.
+	UserForUpdate(ctx context.Context, id string) (User, error)
+	SetMFALock(ctx context.Context, id string, l MFALock) error
 	UserByUsername(ctx context.Context, username string) (User, error)
 	CountUsers(ctx context.Context) (int64, error)
 	CountActiveAdmins(ctx context.Context) (int64, error)
@@ -195,6 +210,23 @@ func (t pgTx) Record(ctx context.Context, ev audit.Event) error {
 
 // UserByID implements Tx.
 func (t pgTx) UserByID(ctx context.Context, id string) (User, error) { return userByID(ctx, t.q, id) }
+
+// UserForUpdate implements Tx.
+func (t pgTx) UserForUpdate(ctx context.Context, id string) (User, error) {
+	r, err := t.q.UserForUpdate(ctx, id)
+	if store.IsNoRows(err) {
+		return User{}, ErrNotFound
+	}
+	if err != nil {
+		return User{}, err
+	}
+	return userFrom(&r), nil
+}
+
+// SetMFALock implements Tx.
+func (t pgTx) SetMFALock(ctx context.Context, id string, l MFALock) error {
+	return t.q.SetMFALock(ctx, gen.SetMFALockParams{ID: id, MfaFailures: int32(l.Failures), MfaLockedUntil: l.LockedUntil, MfaHardLocked: l.HardLocked})
+}
 
 // UserByUsername implements Tx.
 func (t pgTx) UserByUsername(ctx context.Context, username string) (User, error) {
@@ -372,7 +404,8 @@ func mfaOf(ctx context.Context, q *gen.Queries, userID string) (MFA, error) {
 
 func userFrom(r *gen.User) User {
 	return User{ID: r.ID, Username: r.Username, DisplayName: r.DisplayName, Roles: slices.Clone(r.Roles), Realm: r.Realm,
-		Status: r.Status, CreatedAt: r.CreatedAt, CreatedBy: r.CreatedBy, UpdatedAt: r.UpdatedAt, UpdatedBy: r.UpdatedBy}
+		Status: r.Status, CreatedAt: r.CreatedAt, CreatedBy: r.CreatedBy, UpdatedAt: r.UpdatedAt, UpdatedBy: r.UpdatedBy,
+		MFAFailures: int(r.MfaFailures), MFALockedUntil: r.MfaLockedUntil, MFAHardLocked: r.MfaHardLocked}
 }
 
 func sessionFrom(r *gen.Session) Session {
