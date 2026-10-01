@@ -59,6 +59,123 @@ func (e HealthStatus) Valid() bool {
 	}
 }
 
+// Defines values for KeyRotationState.
+const (
+	KeyRotationStateActivated KeyRotationState = "activated"
+	KeyRotationStateRequested KeyRotationState = "requested"
+)
+
+// Valid indicates whether the value is a known member of the KeyRotationState enum.
+func (e KeyRotationState) Valid() bool {
+	switch e {
+	case KeyRotationStateActivated:
+		return true
+	case KeyRotationStateRequested:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OAuthAuthMethod.
+const (
+	OAuthAuthMethodClientSecretPost OAuthAuthMethod = "client_secret_post"
+	OAuthAuthMethodPrivateKeyJwt    OAuthAuthMethod = "private_key_jwt"
+)
+
+// Valid indicates whether the value is a known member of the OAuthAuthMethod enum.
+func (e OAuthAuthMethod) Valid() bool {
+	switch e {
+	case OAuthAuthMethodClientSecretPost:
+		return true
+	case OAuthAuthMethodPrivateKeyJwt:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OAuthClientSystem.
+const (
+	OAuthClientSystemAnsp      OAuthClientSystem = "ansp"
+	OAuthClientSystemAuthority OAuthClientSystem = "authority"
+	OAuthClientSystemCisp      OAuthClientSystem = "cisp"
+	OAuthClientSystemLab       OAuthClientSystem = "lab"
+	OAuthClientSystemUssp      OAuthClientSystem = "ussp"
+)
+
+// Valid indicates whether the value is a known member of the OAuthClientSystem enum.
+func (e OAuthClientSystem) Valid() bool {
+	switch e {
+	case OAuthClientSystemAnsp:
+		return true
+	case OAuthClientSystemAuthority:
+		return true
+	case OAuthClientSystemCisp:
+		return true
+	case OAuthClientSystemLab:
+		return true
+	case OAuthClientSystemUssp:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OAuthClientStatus.
+const (
+	OAuthClientStatusActive    OAuthClientStatus = "active"
+	OAuthClientStatusRevoked   OAuthClientStatus = "revoked"
+	OAuthClientStatusSuspended OAuthClientStatus = "suspended"
+)
+
+// Valid indicates whether the value is a known member of the OAuthClientStatus enum.
+func (e OAuthClientStatus) Valid() bool {
+	switch e {
+	case OAuthClientStatusActive:
+		return true
+	case OAuthClientStatusRevoked:
+		return true
+	case OAuthClientStatusSuspended:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OAuthProblemError.
+const (
+	OAuthProblemErrorInvalidClient          OAuthProblemError = "invalid_client"
+	OAuthProblemErrorInvalidRequest         OAuthProblemError = "invalid_request"
+	OAuthProblemErrorInvalidScope           OAuthProblemError = "invalid_scope"
+	OAuthProblemErrorInvalidTarget          OAuthProblemError = "invalid_target"
+	OAuthProblemErrorTemporarilyUnavailable OAuthProblemError = "temporarily_unavailable"
+	OAuthProblemErrorUnauthorizedClient     OAuthProblemError = "unauthorized_client"
+	OAuthProblemErrorUnsupportedGrantType   OAuthProblemError = "unsupported_grant_type"
+)
+
+// Valid indicates whether the value is a known member of the OAuthProblemError enum.
+func (e OAuthProblemError) Valid() bool {
+	switch e {
+	case OAuthProblemErrorInvalidClient:
+		return true
+	case OAuthProblemErrorInvalidRequest:
+		return true
+	case OAuthProblemErrorInvalidScope:
+		return true
+	case OAuthProblemErrorInvalidTarget:
+		return true
+	case OAuthProblemErrorTemporarilyUnavailable:
+		return true
+	case OAuthProblemErrorUnauthorizedClient:
+		return true
+	case OAuthProblemErrorUnsupportedGrantType:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PolicyHeightLimitInUspace.
 const (
 	PolicyHeightLimitInUspaceEvaluate           PolicyHeightLimitInUspace = "evaluate"
@@ -134,6 +251,66 @@ func (e Severity) Valid() bool {
 	}
 }
 
+// Defines values for SigningKeyPurpose.
+const (
+	SigningKeyPurposePublication SigningKeyPurpose = "publication"
+	SigningKeyPurposeToken       SigningKeyPurpose = "token"
+)
+
+// Valid indicates whether the value is a known member of the SigningKeyPurpose enum.
+func (e SigningKeyPurpose) Valid() bool {
+	switch e {
+	case SigningKeyPurposePublication:
+		return true
+	case SigningKeyPurposeToken:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SigningKeyState.
+const (
+	SigningKeyStateActive    SigningKeyState = "active"
+	SigningKeyStateCandidate SigningKeyState = "candidate"
+	SigningKeyStateRequested SigningKeyState = "requested"
+	SigningKeyStateRetired   SigningKeyState = "retired"
+	SigningKeyStateRetiring  SigningKeyState = "retiring"
+)
+
+// Valid indicates whether the value is a known member of the SigningKeyState enum.
+func (e SigningKeyState) Valid() bool {
+	switch e {
+	case SigningKeyStateActive:
+		return true
+	case SigningKeyStateCandidate:
+		return true
+	case SigningKeyStateRequested:
+		return true
+	case SigningKeyStateRetired:
+		return true
+	case SigningKeyStateRetiring:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TokenResponseTokenType.
+const (
+	TokenResponseTokenTypeBearer TokenResponseTokenType = "Bearer"
+)
+
+// Valid indicates whether the value is a known member of the TokenResponseTokenType enum.
+func (e TokenResponseTokenType) Valid() bool {
+	switch e {
+	case TokenResponseTokenTypeBearer:
+		return true
+	default:
+		return false
+	}
+}
+
 // AuditEvent defines model for AuditEvent.
 type AuditEvent struct {
 	ActorId    string                 `json:"actor_id"`
@@ -181,6 +358,124 @@ type Health struct {
 
 // HealthStatus defines model for Health.Status.
 type HealthStatus string
+
+// IssuerMetadata defines model for IssuerMetadata.
+type IssuerMetadata struct {
+	GrantTypesSupported                        []string `json:"grant_types_supported"`
+	Issuer                                     string   `json:"issuer"`
+	JwksUri                                    string   `json:"jwks_uri"`
+	ScopesSupported                            []string `json:"scopes_supported"`
+	TokenEndpoint                              string   `json:"token_endpoint"`
+	TokenEndpointAuthMethodsSupported          []string `json:"token_endpoint_auth_methods_supported"`
+	TokenEndpointAuthSigningAlgValuesSupported []string `json:"token_endpoint_auth_signing_alg_values_supported"`
+}
+
+// JWKS defines model for JWKS.
+type JWKS struct {
+	Keys []map[string]interface{} `json:"keys"`
+}
+
+// KeyRotation defines model for KeyRotation.
+type KeyRotation struct {
+	// ActiveKid The key that signs after this call.
+	ActiveKid     string     `json:"active_kid"`
+	ConfirmBefore *time.Time `json:"confirm_before,omitempty"`
+
+	// Kid The key requested or activated.
+	Kid         string           `json:"kid"`
+	PreviousKid *string          `json:"previous_kid,omitempty"`
+	RequestedBy *string          `json:"requested_by,omitempty"`
+	State       KeyRotationState `json:"state"`
+}
+
+// KeyRotationState defines model for KeyRotation.State.
+type KeyRotationState string
+
+// OAuthAuthMethod defines model for OAuthAuthMethod.
+type OAuthAuthMethod string
+
+// OAuthClient defines model for OAuthClient.
+type OAuthClient struct {
+	Audiences     []string          `json:"audiences"`
+	AuthMethod    OAuthAuthMethod   `json:"auth_method"`
+	CertificateId *string           `json:"certificate_id,omitempty"`
+	ClientId      string            `json:"client_id"`
+	CreatedAt     time.Time         `json:"created_at"`
+	CreatedBy     string            `json:"created_by"`
+	Jwks          *JWKS             `json:"jwks,omitempty"`
+	MtlsSubject   *string           `json:"mtls_subject,omitempty"`
+	Note          string            `json:"note"`
+	Scopes        []string          `json:"scopes"`
+	Status        OAuthClientStatus `json:"status"`
+	System        OAuthClientSystem `json:"system"`
+	UpdatedAt     time.Time         `json:"updated_at"`
+	UpdatedBy     string            `json:"updated_by"`
+}
+
+// OAuthClientSystem defines model for OAuthClient.System.
+type OAuthClientSystem string
+
+// OAuthClientCreated defines model for OAuthClientCreated.
+type OAuthClientCreated struct {
+	Client OAuthClient `json:"client"`
+
+	// ClientSecret The client_secret_post secret; shown here once and never again.
+	ClientSecret *string `json:"client_secret,omitempty"`
+}
+
+// OAuthClientInput defines model for OAuthClientInput.
+type OAuthClientInput struct {
+	// Audiences Hosts this client may name for national scopes.
+	Audiences     *[]string       `json:"audiences,omitempty"`
+	AuthMethod    OAuthAuthMethod `json:"auth_method"`
+	CertificateId *string         `json:"certificate_id,omitempty"`
+
+	// ClientId authority-01, cisp-01, ansp-01, ussp-<code>-01 or lab-01 (M24).
+	ClientId    string   `json:"client_id"`
+	Jwks        *JWKS    `json:"jwks,omitempty"`
+	MtlsSubject *string  `json:"mtls_subject,omitempty"`
+	Note        *string  `json:"note,omitempty"`
+	Scopes      []string `json:"scopes"`
+}
+
+// OAuthClientList defines model for OAuthClientList.
+type OAuthClientList struct {
+	Clients []OAuthClient `json:"clients"`
+}
+
+// OAuthClientPatch defines model for OAuthClientPatch.
+type OAuthClientPatch struct {
+	Audiences *[]string          `json:"audiences,omitempty"`
+	Note      *string            `json:"note,omitempty"`
+	Scopes    *[]string          `json:"scopes,omitempty"`
+	Status    *OAuthClientStatus `json:"status,omitempty"`
+}
+
+// OAuthClientStatus defines model for OAuthClientStatus.
+type OAuthClientStatus string
+
+// OAuthProblem A problem (M28) that also carries the RFC 6749 §5.2 members, so
+// an OAuth2 client library reads `error` and a uspace client reads
+// the problem. `error` is `invalid_request`, `invalid_client`,
+// `invalid_scope`, `invalid_target` (RFC 8707),
+// `unauthorized_client`, `unsupported_grant_type` or
+// `temporarily_unavailable` (rate limit).
+type OAuthProblem struct {
+	Detail           *string           `json:"detail,omitempty"`
+	Error            OAuthProblemError `json:"error"`
+	ErrorDescription *string           `json:"error_description,omitempty"`
+	Errors           []FieldProblem    `json:"errors"`
+	Instance         *string           `json:"instance,omitempty"`
+	Status           int               `json:"status"`
+	Title            string            `json:"title"`
+	Truncated        *bool             `json:"truncated,omitempty"`
+
+	// Type `https://schemas.uspace.ge/problems/<slug>`, slug = the counter or refusal name.
+	Type string `json:"type"`
+}
+
+// OAuthProblemError defines model for OAuthProblem.Error.
+type OAuthProblemError string
 
 // Policy defines model for Policy.
 type Policy struct {
@@ -328,6 +623,69 @@ type ReadinessStatus string
 // Severity defines model for Severity.
 type Severity string
 
+// SigningKey defines model for SigningKey.
+type SigningKey struct {
+	ActiveFrom   *time.Time        `json:"active_from,omitempty"`
+	Kid          string            `json:"kid"`
+	Purpose      SigningKeyPurpose `json:"purpose"`
+	RegisteredAt time.Time         `json:"registered_at"`
+	RequestedAt  *time.Time        `json:"requested_at,omitempty"`
+	RequestedBy  *string           `json:"requested_by,omitempty"`
+	RetiredAt    *time.Time        `json:"retired_at,omitempty"`
+
+	// State retiring: retired but still in the JWKS; retired: no longer published.
+	State SigningKeyState `json:"state"`
+}
+
+// SigningKeyPurpose defines model for SigningKey.Purpose.
+type SigningKeyPurpose string
+
+// SigningKeyState retiring: retired but still in the JWKS; retired: no longer published.
+type SigningKeyState string
+
+// SigningKeyList defines model for SigningKeyList.
+type SigningKeyList struct {
+	Keys []SigningKey `json:"keys"`
+}
+
+// TokenRequest defines model for TokenRequest.
+type TokenRequest struct {
+	// Audience The target's host or base URL; its host becomes aud (M18).
+	Audience            *string `json:"audience,omitempty"`
+	ClientAssertion     *string `json:"client_assertion,omitempty"`
+	ClientAssertionType *string `json:"client_assertion_type,omitempty"`
+	ClientId            *string `json:"client_id,omitempty"`
+	ClientSecret        *string `json:"client_secret,omitempty"`
+	GrantType           string  `json:"grant_type"`
+
+	// Resource RFC 8707 resource indicator (one), an alternative to audience.
+	Resource *[]string `json:"resource,omitempty"`
+
+	// Scope Space-separated catalogue scopes (WP-2 table B).
+	Scope *string `json:"scope,omitempty"`
+}
+
+// TokenResponse defines model for TokenResponse.
+type TokenResponse struct {
+	AccessToken string `json:"access_token"`
+
+	// ExpiresIn Seconds until exp (at most 3600).
+	ExpiresIn int                    `json:"expires_in"`
+	Scope     string                 `json:"scope"`
+	TokenType TokenResponseTokenType `json:"token_type"`
+}
+
+// TokenResponseTokenType defines model for TokenResponse.TokenType.
+type TokenResponseTokenType string
+
+// OAuthError A problem (M28) that also carries the RFC 6749 §5.2 members, so
+// an OAuth2 client library reads `error` and a uspace client reads
+// the problem. `error` is `invalid_request`, `invalid_client`,
+// `invalid_scope`, `invalid_target` (RFC 8707),
+// `unauthorized_client`, `unsupported_grant_type` or
+// `temporarily_unavailable` (rate limit).
+type OAuthError = OAuthProblem
+
 // ListAuditEventsParams defines parameters for ListAuditEvents.
 type ListAuditEventsParams struct {
 	EntityType *string `form:"entity_type,omitempty" json:"entity_type,omitempty"`
@@ -346,6 +704,15 @@ type ListAuditEventsParams struct {
 	// Purpose Why the log is read; recorded on the view event.
 	Purpose *string `form:"purpose,omitempty" json:"purpose,omitempty"`
 }
+
+// RequestTokenFormdataRequestBody defines body for RequestToken for application/x-www-form-urlencoded ContentType.
+type RequestTokenFormdataRequestBody = TokenRequest
+
+// CreateOAuthClientJSONRequestBody defines body for CreateOAuthClient for application/json ContentType.
+type CreateOAuthClientJSONRequestBody = OAuthClientInput
+
+// UpdateOAuthClientJSONRequestBody defines body for UpdateOAuthClient for application/json ContentType.
+type UpdateOAuthClientJSONRequestBody = OAuthClientPatch
 
 // CreatePolicyJSONRequestBody defines body for CreatePolicy for application/json ContentType.
 type CreatePolicyJSONRequestBody = PolicyInput
@@ -424,12 +791,82 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
+	// GetJWKS The issuer's public keys
+	//
+	// Every RS256 key a verifier may meet (`use: sig`, distinguished by
+	// `kid`): the active token-signing key, retired token-signing keys
+	// until their retirement plus the JWKS cache TTL (24 h), and this
+	// system's publication-signing key of the detached
+	// `X-JWS-Signature` (M26). Cacheable for 300 s.
+	//
+	// Corresponds with GET /.well-known/jwks.json (the `GetJWKS` operationId).
+	GetJWKS(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetIssuerMetadata Issuer metadata
+	//
+	// The issuer, its JWKS URL and token endpoint, the grant type and
+	// the client authentication methods. This is an OAuth2 issuer, not
+	// an OpenID provider: there is no authorisation endpoint.
+	//
+	// Corresponds with GET /.well-known/openid-configuration (the `GetIssuerMetadata` operationId).
+	GetIssuerMetadata(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetHealthz Liveness
 	//
 	// 200 while the process runs. Says nothing about dependencies.
 	//
 	// Corresponds with GET /healthz (the `GetHealthz` operationId).
 	GetHealthz(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RequestTokenWithBody Client credentials grant
+	//
+	// RFC 6749 §4.4 client credentials. The client authenticates with
+	// `client_secret_post` (`client_id`, `client_secret`) or
+	// `private_key_jwt` (RFC 7523: `client_assertion_type` =
+	// `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`,
+	// `client_assertion` an RS256 JWT with `iss` = `sub` = the client
+	// id, `aud` = this issuer or its token endpoint, `exp` at most
+	// 5 min ahead and a `jti` used once). Parameters in the query
+	// string are refused. `scope` names catalogue scopes (WP-2 table
+	// B), a subset of the client's. `audience`, or one RFC 8707
+	// `resource`, names the target: a host or the target's base URL,
+	// reduced to its host, which becomes `aud` (M18). For national
+	// scopes the host must be on the client's audience list; for
+	// `utm.*` and `rid.*` any host is accepted. One audience per
+	// token. Errors carry RFC 6749 `error` and `error_description`
+	// beside the problem members. Issuance is rate-limited per
+	// client (429 with `Retry-After`). Every refusal is a
+	// `token_refused` event.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /oauth/token (the `RequestToken` operationId).
+	RequestTokenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RequestTokenWithFormdataBody Client credentials grant
+	//
+	// RFC 6749 §4.4 client credentials. The client authenticates with
+	// `client_secret_post` (`client_id`, `client_secret`) or
+	// `private_key_jwt` (RFC 7523: `client_assertion_type` =
+	// `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`,
+	// `client_assertion` an RS256 JWT with `iss` = `sub` = the client
+	// id, `aud` = this issuer or its token endpoint, `exp` at most
+	// 5 min ahead and a `jti` used once). Parameters in the query
+	// string are refused. `scope` names catalogue scopes (WP-2 table
+	// B), a subset of the client's. `audience`, or one RFC 8707
+	// `resource`, names the target: a host or the target's base URL,
+	// reduced to its host, which becomes `aud` (M18). For national
+	// scopes the host must be on the client's audience list; for
+	// `utm.*` and `rid.*` any host is accepted. One audience per
+	// token. Errors carry RFC 6749 `error` and `error_description`
+	// beside the problem members. Issuance is rate-limited per
+	// client (429 with `Retry-After`). Every refusal is a
+	// `token_refused` event.
+	//
+	// Takes a body of the `application/x-www-form-urlencoded` content type.
+	//
+	// Corresponds with POST /oauth/token (the `RequestToken` operationId).
+	RequestTokenWithFormdataBody(ctx context.Context, body RequestTokenFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetReadyz Readiness
 	//
@@ -449,6 +886,84 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /v1/audit/events (the `ListAuditEvents` operationId).
 	ListAuditEvents(ctx context.Context, params *ListAuditEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListOAuthClients Registered clients
+	//
+	// Corresponds with GET /v1/oauth/clients (the `ListOAuthClients` operationId).
+	ListOAuthClients(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateOAuthClientWithBody Register a client
+	//
+	// One client per calling system (M24). Scopes must be grantable
+	// to this client (in the catalogue, not reserved, not of a USSP's
+	// issuer, `dp.observe` for `lab-01` only); audiences are hosts.
+	// For `client_secret_post` the secret is generated here and
+	// returned once; only its argon2id hash is kept. For
+	// `private_key_jwt` the client's public JWKS is given (RSA keys of
+	// at least 2048 bits, no private members).
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/oauth/clients (the `CreateOAuthClient` operationId).
+	CreateOAuthClientWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateOAuthClient Register a client
+	//
+	// One client per calling system (M24). Scopes must be grantable
+	// to this client (in the catalogue, not reserved, not of a USSP's
+	// issuer, `dp.observe` for `lab-01` only); audiences are hosts.
+	// For `client_secret_post` the secret is generated here and
+	// returned once; only its argon2id hash is kept. For
+	// `private_key_jwt` the client's public JWKS is given (RSA keys of
+	// at least 2048 bits, no private members).
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/oauth/clients (the `CreateOAuthClient` operationId).
+	CreateOAuthClient(ctx context.Context, body CreateOAuthClientJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetOAuthClient One client
+	//
+	// Corresponds with GET /v1/oauth/clients/{client_id} (the `GetOAuthClient` operationId).
+	GetOAuthClient(ctx context.Context, clientId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateOAuthClientWithBody Change a client's status, scopes, audiences or note
+	//
+	// A suspended or revoked client gets no new token; tokens already
+	// issued expire within their TTL (at most 1 h).
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /v1/oauth/clients/{client_id} (the `UpdateOAuthClient` operationId).
+	UpdateOAuthClientWithBody(ctx context.Context, clientId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateOAuthClient Change a client's status, scopes, audiences or note
+	//
+	// A suspended or revoked client gets no new token; tokens already
+	// issued expire within their TTL (at most 1 h).
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /v1/oauth/clients/{client_id} (the `UpdateOAuthClient` operationId).
+	UpdateOAuthClient(ctx context.Context, clientId string, body UpdateOAuthClientJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListSigningKeys Signing keys and their state
+	//
+	// Corresponds with GET /v1/oauth/keys (the `ListSigningKeys` operationId).
+	ListSigningKeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RotateSigningKey Activate the next token-signing key
+	//
+	// The next key is the first key of `SIGNING_KEY_FILES` never
+	// activated. With the two-person rule (`KEY_ROTATION_TWO_PERSON`,
+	// default on) the first admin's call records the request (202)
+	// and a second admin's call within `KEY_ROTATION_CONFIRM_S`
+	// (600 s) activates it (200); the same admin twice is refused
+	// (409). The previous key is retired and stays in the JWKS for
+	// `KEY_RETIRE_GRACE_S` (24 h).
+	//
+	// Corresponds with POST /v1/oauth/keys/rotate (the `RotateSigningKey` operationId).
+	RotateSigningKey(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetPolicy The active policy
 	//
@@ -490,6 +1005,46 @@ type ClientInterface interface {
 	ActivatePolicy(ctx context.Context, version int64, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
+// GetJWKS The issuer's public keys
+//
+// Every RS256 key a verifier may meet (`use: sig`, distinguished by
+// `kid`): the active token-signing key, retired token-signing keys
+// until their retirement plus the JWKS cache TTL (24 h), and this
+// system's publication-signing key of the detached
+// `X-JWS-Signature` (M26). Cacheable for 300 s.
+//
+// Corresponds with GET /.well-known/jwks.json (the `GetJWKS` operationId).
+func (c *Client) GetJWKS(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetJWKSRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetIssuerMetadata Issuer metadata
+//
+// The issuer, its JWKS URL and token endpoint, the grant type and
+// the client authentication methods. This is an OAuth2 issuer, not
+// an OpenID provider: there is no authorisation endpoint.
+//
+// Corresponds with GET /.well-known/openid-configuration (the `GetIssuerMetadata` operationId).
+func (c *Client) GetIssuerMetadata(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetIssuerMetadataRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // GetHealthz Liveness
 //
 // 200 while the process runs. Says nothing about dependencies.
@@ -497,6 +1052,76 @@ type ClientInterface interface {
 // Corresponds with GET /healthz (the `GetHealthz` operationId).
 func (c *Client) GetHealthz(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetHealthzRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RequestTokenWithBody Client credentials grant
+//
+// RFC 6749 §4.4 client credentials. The client authenticates with
+// `client_secret_post` (`client_id`, `client_secret`) or
+// `private_key_jwt` (RFC 7523: `client_assertion_type` =
+// `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`,
+// `client_assertion` an RS256 JWT with `iss` = `sub` = the client
+// id, `aud` = this issuer or its token endpoint, `exp` at most
+// 5 min ahead and a `jti` used once). Parameters in the query
+// string are refused. `scope` names catalogue scopes (WP-2 table
+// B), a subset of the client's. `audience`, or one RFC 8707
+// `resource`, names the target: a host or the target's base URL,
+// reduced to its host, which becomes `aud` (M18). For national
+// scopes the host must be on the client's audience list; for
+// `utm.*` and `rid.*` any host is accepted. One audience per
+// token. Errors carry RFC 6749 `error` and `error_description`
+// beside the problem members. Issuance is rate-limited per
+// client (429 with `Retry-After`). Every refusal is a
+// `token_refused` event.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /oauth/token (the `RequestToken` operationId).
+func (c *Client) RequestTokenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRequestTokenRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RequestTokenWithFormdataBody Client credentials grant
+//
+// RFC 6749 §4.4 client credentials. The client authenticates with
+// `client_secret_post` (`client_id`, `client_secret`) or
+// `private_key_jwt` (RFC 7523: `client_assertion_type` =
+// `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`,
+// `client_assertion` an RS256 JWT with `iss` = `sub` = the client
+// id, `aud` = this issuer or its token endpoint, `exp` at most
+// 5 min ahead and a `jti` used once). Parameters in the query
+// string are refused. `scope` names catalogue scopes (WP-2 table
+// B), a subset of the client's. `audience`, or one RFC 8707
+// `resource`, names the target: a host or the target's base URL,
+// reduced to its host, which becomes `aud` (M18). For national
+// scopes the host must be on the client's audience list; for
+// `utm.*` and `rid.*` any host is accepted. One audience per
+// token. Errors carry RFC 6749 `error` and `error_description`
+// beside the problem members. Issuance is rate-limited per
+// client (429 with `Retry-After`). Every refusal is a
+// `token_refused` event.
+//
+// Takes a body of the `application/x-www-form-urlencoded` content type.
+//
+// Corresponds with POST /oauth/token (the `RequestToken` operationId).
+func (c *Client) RequestTokenWithFormdataBody(ctx context.Context, body RequestTokenFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRequestTokenRequestWithFormdataBody(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -536,6 +1161,164 @@ func (c *Client) GetReadyz(ctx context.Context, reqEditors ...RequestEditorFn) (
 // Corresponds with GET /v1/audit/events (the `ListAuditEvents` operationId).
 func (c *Client) ListAuditEvents(ctx context.Context, params *ListAuditEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListAuditEventsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListOAuthClients Registered clients
+//
+// Corresponds with GET /v1/oauth/clients (the `ListOAuthClients` operationId).
+func (c *Client) ListOAuthClients(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListOAuthClientsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateOAuthClientWithBody Register a client
+//
+// One client per calling system (M24). Scopes must be grantable
+// to this client (in the catalogue, not reserved, not of a USSP's
+// issuer, `dp.observe` for `lab-01` only); audiences are hosts.
+// For `client_secret_post` the secret is generated here and
+// returned once; only its argon2id hash is kept. For
+// `private_key_jwt` the client's public JWKS is given (RSA keys of
+// at least 2048 bits, no private members).
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/oauth/clients (the `CreateOAuthClient` operationId).
+func (c *Client) CreateOAuthClientWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateOAuthClientRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateOAuthClient Register a client
+//
+// One client per calling system (M24). Scopes must be grantable
+// to this client (in the catalogue, not reserved, not of a USSP's
+// issuer, `dp.observe` for `lab-01` only); audiences are hosts.
+// For `client_secret_post` the secret is generated here and
+// returned once; only its argon2id hash is kept. For
+// `private_key_jwt` the client's public JWKS is given (RSA keys of
+// at least 2048 bits, no private members).
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/oauth/clients (the `CreateOAuthClient` operationId).
+func (c *Client) CreateOAuthClient(ctx context.Context, body CreateOAuthClientJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateOAuthClientRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetOAuthClient One client
+//
+// Corresponds with GET /v1/oauth/clients/{client_id} (the `GetOAuthClient` operationId).
+func (c *Client) GetOAuthClient(ctx context.Context, clientId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetOAuthClientRequest(c.Server, clientId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateOAuthClientWithBody Change a client's status, scopes, audiences or note
+//
+// A suspended or revoked client gets no new token; tokens already
+// issued expire within their TTL (at most 1 h).
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /v1/oauth/clients/{client_id} (the `UpdateOAuthClient` operationId).
+func (c *Client) UpdateOAuthClientWithBody(ctx context.Context, clientId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateOAuthClientRequestWithBody(c.Server, clientId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateOAuthClient Change a client's status, scopes, audiences or note
+//
+// A suspended or revoked client gets no new token; tokens already
+// issued expire within their TTL (at most 1 h).
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /v1/oauth/clients/{client_id} (the `UpdateOAuthClient` operationId).
+func (c *Client) UpdateOAuthClient(ctx context.Context, clientId string, body UpdateOAuthClientJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateOAuthClientRequest(c.Server, clientId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListSigningKeys Signing keys and their state
+//
+// Corresponds with GET /v1/oauth/keys (the `ListSigningKeys` operationId).
+func (c *Client) ListSigningKeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSigningKeysRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RotateSigningKey Activate the next token-signing key
+//
+// The next key is the first key of `SIGNING_KEY_FILES` never
+// activated. With the two-person rule (`KEY_ROTATION_TWO_PERSON`,
+// default on) the first admin's call records the request (202)
+// and a second admin's call within `KEY_ROTATION_CONFIRM_S`
+// (600 s) activates it (200); the same admin twice is refused
+// (409). The previous key is retired and stays in the JWKS for
+// `KEY_RETIRE_GRACE_S` (24 h).
+//
+// Corresponds with POST /v1/oauth/keys/rotate (the `RotateSigningKey` operationId).
+func (c *Client) RotateSigningKey(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRotateSigningKeyRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -625,6 +1408,60 @@ func (c *Client) ActivatePolicy(ctx context.Context, version int64, reqEditors .
 	return c.Client.Do(req)
 }
 
+// NewGetJWKSRequest constructs an http.Request for the GetJWKS method
+func NewGetJWKSRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/.well-known/jwks.json")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetIssuerMetadataRequest constructs an http.Request for the GetIssuerMetadata method
+func NewGetIssuerMetadataRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/.well-known/openid-configuration")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetHealthzRequest constructs an http.Request for the GetHealthz method
 func NewGetHealthzRequest(server string) (*http.Request, error) {
 	var err error
@@ -648,6 +1485,46 @@ func NewGetHealthzRequest(server string) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewRequestTokenRequestWithFormdataBody calls the generic RequestToken builder with application/x-www-form-urlencoded body
+func NewRequestTokenRequestWithFormdataBody(server string, body RequestTokenFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewRequestTokenRequestWithBody(server, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewRequestTokenRequestWithBody constructs an http.Request for the RequestToken method, with any body, and a specified content type
+func NewRequestTokenRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/oauth/token")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -829,6 +1706,208 @@ func NewListAuditEventsRequest(server string, params *ListAuditEventsParams) (*h
 	return req, nil
 }
 
+// NewListOAuthClientsRequest constructs an http.Request for the ListOAuthClients method
+func NewListOAuthClientsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/oauth/clients")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateOAuthClientRequest calls the generic CreateOAuthClient builder with application/json body
+func NewCreateOAuthClientRequest(server string, body CreateOAuthClientJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateOAuthClientRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateOAuthClientRequestWithBody constructs an http.Request for the CreateOAuthClient method, with any body, and a specified content type
+func NewCreateOAuthClientRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/oauth/clients")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetOAuthClientRequest constructs an http.Request for the GetOAuthClient method
+func NewGetOAuthClientRequest(server string, clientId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "client_id", clientId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/oauth/clients/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateOAuthClientRequest calls the generic UpdateOAuthClient builder with application/json body
+func NewUpdateOAuthClientRequest(server string, clientId string, body UpdateOAuthClientJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateOAuthClientRequestWithBody(server, clientId, "application/json", bodyReader)
+}
+
+// NewUpdateOAuthClientRequestWithBody constructs an http.Request for the UpdateOAuthClient method, with any body, and a specified content type
+func NewUpdateOAuthClientRequestWithBody(server string, clientId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "client_id", clientId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/oauth/clients/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListSigningKeysRequest constructs an http.Request for the ListSigningKeys method
+func NewListSigningKeysRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/oauth/keys")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRotateSigningKeyRequest constructs an http.Request for the RotateSigningKey method
+func NewRotateSigningKeyRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/oauth/keys/rotate")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetPolicyRequest constructs an http.Request for the GetPolicy method
 func NewGetPolicyRequest(server string) (*http.Request, error) {
 	var err error
@@ -974,6 +2053,30 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
+	// GetJWKSWithResponse The issuer's public keys
+	//
+	// Every RS256 key a verifier may meet (`use: sig`, distinguished by
+	// `kid`): the active token-signing key, retired token-signing keys
+	// until their retirement plus the JWKS cache TTL (24 h), and this
+	// system's publication-signing key of the detached
+	// `X-JWS-Signature` (M26). Cacheable for 300 s.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /.well-known/jwks.json (the `GetJWKS` operationId).
+	GetJWKSWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetJWKSResponse, error)
+
+	// GetIssuerMetadataWithResponse Issuer metadata
+	//
+	// The issuer, its JWKS URL and token endpoint, the grant type and
+	// the client authentication methods. This is an OAuth2 issuer, not
+	// an OpenID provider: there is no authorisation endpoint.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /.well-known/openid-configuration (the `GetIssuerMetadata` operationId).
+	GetIssuerMetadataWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetIssuerMetadataResponse, error)
+
 	// GetHealthzWithResponse Liveness
 	//
 	// 200 while the process runs. Says nothing about dependencies.
@@ -982,6 +2085,56 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /healthz (the `GetHealthz` operationId).
 	GetHealthzWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetHealthzResponse, error)
+
+	// RequestTokenWithBodyWithResponse Client credentials grant
+	//
+	// RFC 6749 §4.4 client credentials. The client authenticates with
+	// `client_secret_post` (`client_id`, `client_secret`) or
+	// `private_key_jwt` (RFC 7523: `client_assertion_type` =
+	// `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`,
+	// `client_assertion` an RS256 JWT with `iss` = `sub` = the client
+	// id, `aud` = this issuer or its token endpoint, `exp` at most
+	// 5 min ahead and a `jti` used once). Parameters in the query
+	// string are refused. `scope` names catalogue scopes (WP-2 table
+	// B), a subset of the client's. `audience`, or one RFC 8707
+	// `resource`, names the target: a host or the target's base URL,
+	// reduced to its host, which becomes `aud` (M18). For national
+	// scopes the host must be on the client's audience list; for
+	// `utm.*` and `rid.*` any host is accepted. One audience per
+	// token. Errors carry RFC 6749 `error` and `error_description`
+	// beside the problem members. Issuance is rate-limited per
+	// client (429 with `Retry-After`). Every refusal is a
+	// `token_refused` event.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /oauth/token (the `RequestToken` operationId).
+	RequestTokenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestTokenResponse, error)
+
+	// RequestTokenWithFormdataBodyWithResponse Client credentials grant
+	//
+	// RFC 6749 §4.4 client credentials. The client authenticates with
+	// `client_secret_post` (`client_id`, `client_secret`) or
+	// `private_key_jwt` (RFC 7523: `client_assertion_type` =
+	// `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`,
+	// `client_assertion` an RS256 JWT with `iss` = `sub` = the client
+	// id, `aud` = this issuer or its token endpoint, `exp` at most
+	// 5 min ahead and a `jti` used once). Parameters in the query
+	// string are refused. `scope` names catalogue scopes (WP-2 table
+	// B), a subset of the client's. `audience`, or one RFC 8707
+	// `resource`, names the target: a host or the target's base URL,
+	// reduced to its host, which becomes `aud` (M18). For national
+	// scopes the host must be on the client's audience list; for
+	// `utm.*` and `rid.*` any host is accepted. One audience per
+	// token. Errors carry RFC 6749 `error` and `error_description`
+	// beside the problem members. Issuance is rate-limited per
+	// client (429 with `Retry-After`). Every refusal is a
+	// `token_refused` event.
+	//
+	// Takes a body of the `application/x-www-form-urlencoded` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /oauth/token (the `RequestToken` operationId).
+	RequestTokenWithFormdataBodyWithResponse(ctx context.Context, body RequestTokenFormdataRequestBody, reqEditors ...RequestEditorFn) (*RequestTokenResponse, error)
 
 	// GetReadyzWithResponse Readiness
 	//
@@ -1005,6 +2158,92 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /v1/audit/events (the `ListAuditEvents` operationId).
 	ListAuditEventsWithResponse(ctx context.Context, params *ListAuditEventsParams, reqEditors ...RequestEditorFn) (*ListAuditEventsResponse, error)
+
+	// ListOAuthClientsWithResponse Registered clients
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/oauth/clients (the `ListOAuthClients` operationId).
+	ListOAuthClientsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListOAuthClientsResponse, error)
+
+	// CreateOAuthClientWithBodyWithResponse Register a client
+	//
+	// One client per calling system (M24). Scopes must be grantable
+	// to this client (in the catalogue, not reserved, not of a USSP's
+	// issuer, `dp.observe` for `lab-01` only); audiences are hosts.
+	// For `client_secret_post` the secret is generated here and
+	// returned once; only its argon2id hash is kept. For
+	// `private_key_jwt` the client's public JWKS is given (RSA keys of
+	// at least 2048 bits, no private members).
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/oauth/clients (the `CreateOAuthClient` operationId).
+	CreateOAuthClientWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateOAuthClientResponse, error)
+
+	// CreateOAuthClientWithResponse Register a client
+	//
+	// One client per calling system (M24). Scopes must be grantable
+	// to this client (in the catalogue, not reserved, not of a USSP's
+	// issuer, `dp.observe` for `lab-01` only); audiences are hosts.
+	// For `client_secret_post` the secret is generated here and
+	// returned once; only its argon2id hash is kept. For
+	// `private_key_jwt` the client's public JWKS is given (RSA keys of
+	// at least 2048 bits, no private members).
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/oauth/clients (the `CreateOAuthClient` operationId).
+	CreateOAuthClientWithResponse(ctx context.Context, body CreateOAuthClientJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateOAuthClientResponse, error)
+
+	// GetOAuthClientWithResponse One client
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/oauth/clients/{client_id} (the `GetOAuthClient` operationId).
+	GetOAuthClientWithResponse(ctx context.Context, clientId string, reqEditors ...RequestEditorFn) (*GetOAuthClientResponse, error)
+
+	// UpdateOAuthClientWithBodyWithResponse Change a client's status, scopes, audiences or note
+	//
+	// A suspended or revoked client gets no new token; tokens already
+	// issued expire within their TTL (at most 1 h).
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v1/oauth/clients/{client_id} (the `UpdateOAuthClient` operationId).
+	UpdateOAuthClientWithBodyWithResponse(ctx context.Context, clientId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateOAuthClientResponse, error)
+
+	// UpdateOAuthClientWithResponse Change a client's status, scopes, audiences or note
+	//
+	// A suspended or revoked client gets no new token; tokens already
+	// issued expire within their TTL (at most 1 h).
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v1/oauth/clients/{client_id} (the `UpdateOAuthClient` operationId).
+	UpdateOAuthClientWithResponse(ctx context.Context, clientId string, body UpdateOAuthClientJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateOAuthClientResponse, error)
+
+	// ListSigningKeysWithResponse Signing keys and their state
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/oauth/keys (the `ListSigningKeys` operationId).
+	ListSigningKeysWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSigningKeysResponse, error)
+
+	// RotateSigningKeyWithResponse Activate the next token-signing key
+	//
+	// The next key is the first key of `SIGNING_KEY_FILES` never
+	// activated. With the two-person rule (`KEY_ROTATION_TWO_PERSON`,
+	// default on) the first admin's call records the request (202)
+	// and a second admin's call within `KEY_ROTATION_CONFIRM_S`
+	// (600 s) activates it (200); the same admin twice is refused
+	// (409). The previous key is retired and stays in the JWKS for
+	// `KEY_RETIRE_GRACE_S` (24 h).
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/oauth/keys/rotate (the `RotateSigningKey` operationId).
+	RotateSigningKeyWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*RotateSigningKeyResponse, error)
 
 	// GetPolicyWithResponse The active policy
 	//
@@ -1050,6 +2289,116 @@ type ClientWithResponsesInterface interface {
 	ActivatePolicyWithResponse(ctx context.Context, version int64, reqEditors ...RequestEditorFn) (*ActivatePolicyResponse, error)
 }
 
+// GetJWKSResponse200Headers the declared response headers of an HTTP 200 response for GetJWKS
+type GetJWKSResponse200Headers struct {
+	CacheControl *string
+}
+
+type GetJWKSResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *JWKS
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetJWKSResponse200Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetJWKSResponse) GetJSON200() *JWKS {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetJWKSResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetJWKSResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetJWKSResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetJWKSResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetJWKSResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetIssuerMetadataResponse200Headers the declared response headers of an HTTP 200 response for GetIssuerMetadata
+type GetIssuerMetadataResponse200Headers struct {
+	CacheControl *string
+}
+
+type GetIssuerMetadataResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *IssuerMetadata
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetIssuerMetadataResponse200Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetIssuerMetadataResponse) GetJSON200() *IssuerMetadata {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetIssuerMetadataResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetIssuerMetadataResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetIssuerMetadataResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetIssuerMetadataResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetIssuerMetadataResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type GetHealthzResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -1092,6 +2441,90 @@ func (r GetHealthzResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetHealthzResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// RequestTokenResponse200Headers the declared response headers of an HTTP 200 response for RequestToken
+type RequestTokenResponse200Headers struct {
+	CacheControl *string
+	Pragma       *string
+}
+
+// RequestTokenResponse429Headers the declared response headers of an HTTP 429 response for RequestToken
+type RequestTokenResponse429Headers struct {
+	RetryAfter *int
+}
+
+type RequestTokenResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *TokenResponse
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *OAuthError
+	// ApplicationproblemJSON401 the response for an HTTP 401 `application/problem+json` response
+	ApplicationproblemJSON401 *OAuthError
+	// ApplicationproblemJSON429 the response for an HTTP 429 `application/problem+json` response
+	ApplicationproblemJSON429 *OAuthProblem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *RequestTokenResponse200Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *RequestTokenResponse429Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r RequestTokenResponse) GetJSON200() *TokenResponse {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r RequestTokenResponse) GetApplicationproblemJSON400() *OAuthError {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON401 returns the response for an HTTP 401 `application/problem+json` response
+func (r RequestTokenResponse) GetApplicationproblemJSON401() *OAuthError {
+	return r.ApplicationproblemJSON401
+}
+
+// GetApplicationproblemJSON429 returns the response for an HTTP 429 `application/problem+json` response
+func (r RequestTokenResponse) GetApplicationproblemJSON429() *OAuthProblem {
+	return r.ApplicationproblemJSON429
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r RequestTokenResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r RequestTokenResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RequestTokenResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RequestTokenResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RequestTokenResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -1195,6 +2628,301 @@ func (r ListAuditEventsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListAuditEventsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListOAuthClientsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *OAuthClientList
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListOAuthClientsResponse) GetJSON200() *OAuthClientList {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ListOAuthClientsResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListOAuthClientsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListOAuthClientsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListOAuthClientsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListOAuthClientsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateOAuthClientResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *OAuthClientCreated
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateOAuthClientResponse) GetJSON201() *OAuthClientCreated {
+	return r.JSON201
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r CreateOAuthClientResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateOAuthClientResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateOAuthClientResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateOAuthClientResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateOAuthClientResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetOAuthClientResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *OAuthClient
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetOAuthClientResponse) GetJSON200() *OAuthClient {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetOAuthClientResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetOAuthClientResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetOAuthClientResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetOAuthClientResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetOAuthClientResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateOAuthClientResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *OAuthClient
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateOAuthClientResponse) GetJSON200() *OAuthClient {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r UpdateOAuthClientResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateOAuthClientResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateOAuthClientResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateOAuthClientResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateOAuthClientResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListSigningKeysResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SigningKeyList
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListSigningKeysResponse) GetJSON200() *SigningKeyList {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ListSigningKeysResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListSigningKeysResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListSigningKeysResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListSigningKeysResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListSigningKeysResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type RotateSigningKeyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *KeyRotation
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *KeyRotation
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r RotateSigningKeyResponse) GetJSON200() *KeyRotation {
+	return r.JSON200
+}
+
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r RotateSigningKeyResponse) GetJSON202() *KeyRotation {
+	return r.JSON202
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r RotateSigningKeyResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r RotateSigningKeyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RotateSigningKeyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RotateSigningKeyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RotateSigningKeyResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -1345,6 +3073,42 @@ func (r ActivatePolicyResponse) ContentType() string {
 	return ""
 }
 
+// GetJWKSWithResponse The issuer's public keys
+//
+// Every RS256 key a verifier may meet (`use: sig`, distinguished by
+// `kid`): the active token-signing key, retired token-signing keys
+// until their retirement plus the JWKS cache TTL (24 h), and this
+// system's publication-signing key of the detached
+// `X-JWS-Signature` (M26). Cacheable for 300 s.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /.well-known/jwks.json (the `GetJWKS` operationId).
+func (c *ClientWithResponses) GetJWKSWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetJWKSResponse, error) {
+	rsp, err := c.GetJWKS(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetJWKSResponse(rsp)
+}
+
+// GetIssuerMetadataWithResponse Issuer metadata
+//
+// The issuer, its JWKS URL and token endpoint, the grant type and
+// the client authentication methods. This is an OAuth2 issuer, not
+// an OpenID provider: there is no authorisation endpoint.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /.well-known/openid-configuration (the `GetIssuerMetadata` operationId).
+func (c *ClientWithResponses) GetIssuerMetadataWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetIssuerMetadataResponse, error) {
+	rsp, err := c.GetIssuerMetadata(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetIssuerMetadataResponse(rsp)
+}
+
 // GetHealthzWithResponse Liveness
 //
 // 200 while the process runs. Says nothing about dependencies.
@@ -1358,6 +3122,68 @@ func (c *ClientWithResponses) GetHealthzWithResponse(ctx context.Context, reqEdi
 		return nil, err
 	}
 	return ParseGetHealthzResponse(rsp)
+}
+
+// RequestTokenWithBodyWithResponse Client credentials grant
+//
+// RFC 6749 §4.4 client credentials. The client authenticates with
+// `client_secret_post` (`client_id`, `client_secret`) or
+// `private_key_jwt` (RFC 7523: `client_assertion_type` =
+// `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`,
+// `client_assertion` an RS256 JWT with `iss` = `sub` = the client
+// id, `aud` = this issuer or its token endpoint, `exp` at most
+// 5 min ahead and a `jti` used once). Parameters in the query
+// string are refused. `scope` names catalogue scopes (WP-2 table
+// B), a subset of the client's. `audience`, or one RFC 8707
+// `resource`, names the target: a host or the target's base URL,
+// reduced to its host, which becomes `aud` (M18). For national
+// scopes the host must be on the client's audience list; for
+// `utm.*` and `rid.*` any host is accepted. One audience per
+// token. Errors carry RFC 6749 `error` and `error_description`
+// beside the problem members. Issuance is rate-limited per
+// client (429 with `Retry-After`). Every refusal is a
+// `token_refused` event.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /oauth/token (the `RequestToken` operationId).
+func (c *ClientWithResponses) RequestTokenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestTokenResponse, error) {
+	rsp, err := c.RequestTokenWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRequestTokenResponse(rsp)
+}
+
+// RequestTokenWithFormdataBodyWithResponse Client credentials grant
+//
+// RFC 6749 §4.4 client credentials. The client authenticates with
+// `client_secret_post` (`client_id`, `client_secret`) or
+// `private_key_jwt` (RFC 7523: `client_assertion_type` =
+// `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`,
+// `client_assertion` an RS256 JWT with `iss` = `sub` = the client
+// id, `aud` = this issuer or its token endpoint, `exp` at most
+// 5 min ahead and a `jti` used once). Parameters in the query
+// string are refused. `scope` names catalogue scopes (WP-2 table
+// B), a subset of the client's. `audience`, or one RFC 8707
+// `resource`, names the target: a host or the target's base URL,
+// reduced to its host, which becomes `aud` (M18). For national
+// scopes the host must be on the client's audience list; for
+// `utm.*` and `rid.*` any host is accepted. One audience per
+// token. Errors carry RFC 6749 `error` and `error_description`
+// beside the problem members. Issuance is rate-limited per
+// client (429 with `Retry-After`). Every refusal is a
+// `token_refused` event.
+//
+// Takes a body of the `application/x-www-form-urlencoded` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /oauth/token (the `RequestToken` operationId).
+func (c *ClientWithResponses) RequestTokenWithFormdataBodyWithResponse(ctx context.Context, body RequestTokenFormdataRequestBody, reqEditors ...RequestEditorFn) (*RequestTokenResponse, error) {
+	rsp, err := c.RequestTokenWithFormdataBody(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRequestTokenResponse(rsp)
 }
 
 // GetReadyzWithResponse Readiness
@@ -1393,6 +3219,140 @@ func (c *ClientWithResponses) ListAuditEventsWithResponse(ctx context.Context, p
 		return nil, err
 	}
 	return ParseListAuditEventsResponse(rsp)
+}
+
+// ListOAuthClientsWithResponse Registered clients
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/oauth/clients (the `ListOAuthClients` operationId).
+func (c *ClientWithResponses) ListOAuthClientsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListOAuthClientsResponse, error) {
+	rsp, err := c.ListOAuthClients(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListOAuthClientsResponse(rsp)
+}
+
+// CreateOAuthClientWithBodyWithResponse Register a client
+//
+// One client per calling system (M24). Scopes must be grantable
+// to this client (in the catalogue, not reserved, not of a USSP's
+// issuer, `dp.observe` for `lab-01` only); audiences are hosts.
+// For `client_secret_post` the secret is generated here and
+// returned once; only its argon2id hash is kept. For
+// `private_key_jwt` the client's public JWKS is given (RSA keys of
+// at least 2048 bits, no private members).
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/oauth/clients (the `CreateOAuthClient` operationId).
+func (c *ClientWithResponses) CreateOAuthClientWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateOAuthClientResponse, error) {
+	rsp, err := c.CreateOAuthClientWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateOAuthClientResponse(rsp)
+}
+
+// CreateOAuthClientWithResponse Register a client
+//
+// One client per calling system (M24). Scopes must be grantable
+// to this client (in the catalogue, not reserved, not of a USSP's
+// issuer, `dp.observe` for `lab-01` only); audiences are hosts.
+// For `client_secret_post` the secret is generated here and
+// returned once; only its argon2id hash is kept. For
+// `private_key_jwt` the client's public JWKS is given (RSA keys of
+// at least 2048 bits, no private members).
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/oauth/clients (the `CreateOAuthClient` operationId).
+func (c *ClientWithResponses) CreateOAuthClientWithResponse(ctx context.Context, body CreateOAuthClientJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateOAuthClientResponse, error) {
+	rsp, err := c.CreateOAuthClient(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateOAuthClientResponse(rsp)
+}
+
+// GetOAuthClientWithResponse One client
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/oauth/clients/{client_id} (the `GetOAuthClient` operationId).
+func (c *ClientWithResponses) GetOAuthClientWithResponse(ctx context.Context, clientId string, reqEditors ...RequestEditorFn) (*GetOAuthClientResponse, error) {
+	rsp, err := c.GetOAuthClient(ctx, clientId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetOAuthClientResponse(rsp)
+}
+
+// UpdateOAuthClientWithBodyWithResponse Change a client's status, scopes, audiences or note
+//
+// A suspended or revoked client gets no new token; tokens already
+// issued expire within their TTL (at most 1 h).
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v1/oauth/clients/{client_id} (the `UpdateOAuthClient` operationId).
+func (c *ClientWithResponses) UpdateOAuthClientWithBodyWithResponse(ctx context.Context, clientId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateOAuthClientResponse, error) {
+	rsp, err := c.UpdateOAuthClientWithBody(ctx, clientId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateOAuthClientResponse(rsp)
+}
+
+// UpdateOAuthClientWithResponse Change a client's status, scopes, audiences or note
+//
+// A suspended or revoked client gets no new token; tokens already
+// issued expire within their TTL (at most 1 h).
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v1/oauth/clients/{client_id} (the `UpdateOAuthClient` operationId).
+func (c *ClientWithResponses) UpdateOAuthClientWithResponse(ctx context.Context, clientId string, body UpdateOAuthClientJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateOAuthClientResponse, error) {
+	rsp, err := c.UpdateOAuthClient(ctx, clientId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateOAuthClientResponse(rsp)
+}
+
+// ListSigningKeysWithResponse Signing keys and their state
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/oauth/keys (the `ListSigningKeys` operationId).
+func (c *ClientWithResponses) ListSigningKeysWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSigningKeysResponse, error) {
+	rsp, err := c.ListSigningKeys(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListSigningKeysResponse(rsp)
+}
+
+// RotateSigningKeyWithResponse Activate the next token-signing key
+//
+// The next key is the first key of `SIGNING_KEY_FILES` never
+// activated. With the two-person rule (`KEY_ROTATION_TWO_PERSON`,
+// default on) the first admin's call records the request (202)
+// and a second admin's call within `KEY_ROTATION_CONFIRM_S`
+// (600 s) activates it (200); the same admin twice is refused
+// (409). The previous key is retired and stays in the JWKS for
+// `KEY_RETIRE_GRACE_S` (24 h).
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/oauth/keys/rotate (the `RotateSigningKey` operationId).
+func (c *ClientWithResponses) RotateSigningKeyWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*RotateSigningKeyResponse, error) {
+	rsp, err := c.RotateSigningKey(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRotateSigningKeyResponse(rsp)
 }
 
 // GetPolicyWithResponse The active policy
@@ -1462,6 +3422,98 @@ func (c *ClientWithResponses) ActivatePolicyWithResponse(ctx context.Context, ve
 	return ParseActivatePolicyResponse(rsp)
 }
 
+// ParseGetJWKSResponse parses an HTTP response from a GetJWKSWithResponse call
+func ParseGetJWKSResponse(rsp *http.Response) (*GetJWKSResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetJWKSResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest JWKS
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetJWKSResponse200Headers
+		if values := rsp.Header.Values("Cache-Control"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Cache-Control", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.CacheControl = &value
+		}
+		response.Headers200 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetIssuerMetadataResponse parses an HTTP response from a GetIssuerMetadataWithResponse call
+func ParseGetIssuerMetadataResponse(rsp *http.Response) (*GetIssuerMetadataResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetIssuerMetadataResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IssuerMetadata
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetIssuerMetadataResponse200Headers
+		if values := rsp.Header.Values("Cache-Control"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Cache-Control", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.CacheControl = &value
+		}
+		response.Headers200 = &headers
+	}
+
+	return response, nil
+}
+
 // ParseGetHealthzResponse parses an HTTP response from a GetHealthzWithResponse call
 func ParseGetHealthzResponse(rsp *http.Response) (*GetHealthzResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -1490,6 +3542,90 @@ func ParseGetHealthzResponse(rsp *http.Response) (*GetHealthzResponse, error) {
 		}
 		response.ApplicationproblemJSONDefault = &dest
 
+	}
+
+	return response, nil
+}
+
+// ParseRequestTokenResponse parses an HTTP response from a RequestTokenWithResponse call
+func ParseRequestTokenResponse(rsp *http.Response) (*RequestTokenResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RequestTokenResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest TokenResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest OAuthError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest OAuthError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest OAuthProblem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers RequestTokenResponse200Headers
+		if values := rsp.Header.Values("Cache-Control"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Cache-Control", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.CacheControl = &value
+		}
+		if values := rsp.Header.Values("Pragma"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Pragma", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.Pragma = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 429:
+		var headers RequestTokenResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
 	}
 
 	return response, nil
@@ -1555,6 +3691,211 @@ func ParseListAuditEventsResponse(rsp *http.Response) (*ListAuditEventsResponse,
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListOAuthClientsResponse parses an HTTP response from a ListOAuthClientsWithResponse call
+func ParseListOAuthClientsResponse(rsp *http.Response) (*ListOAuthClientsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListOAuthClientsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OAuthClientList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateOAuthClientResponse parses an HTTP response from a CreateOAuthClientWithResponse call
+func ParseCreateOAuthClientResponse(rsp *http.Response) (*CreateOAuthClientResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateOAuthClientResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest OAuthClientCreated
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetOAuthClientResponse parses an HTTP response from a GetOAuthClientWithResponse call
+func ParseGetOAuthClientResponse(rsp *http.Response) (*GetOAuthClientResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetOAuthClientResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OAuthClient
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateOAuthClientResponse parses an HTTP response from a UpdateOAuthClientWithResponse call
+func ParseUpdateOAuthClientResponse(rsp *http.Response) (*UpdateOAuthClientResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateOAuthClientResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OAuthClient
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListSigningKeysResponse parses an HTTP response from a ListSigningKeysWithResponse call
+func ParseListSigningKeysResponse(rsp *http.Response) (*ListSigningKeysResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListSigningKeysResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SigningKeyList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRotateSigningKeyResponse parses an HTTP response from a RotateSigningKeyWithResponse call
+func ParseRotateSigningKeyResponse(rsp *http.Response) (*RotateSigningKeyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RotateSigningKeyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest KeyRotation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest KeyRotation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Problem
@@ -1669,15 +4010,42 @@ func ParseActivatePolicyResponse(rsp *http.Response) (*ActivatePolicyResponse, e
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// GetJWKS The issuer's public keys
+	// (GET /.well-known/jwks.json)
+	GetJWKS(w http.ResponseWriter, r *http.Request)
+	// GetIssuerMetadata Issuer metadata
+	// (GET /.well-known/openid-configuration)
+	GetIssuerMetadata(w http.ResponseWriter, r *http.Request)
 	// GetHealthz Liveness
 	// (GET /healthz)
 	GetHealthz(w http.ResponseWriter, r *http.Request)
+	// RequestToken Client credentials grant
+	// (POST /oauth/token)
+	RequestToken(w http.ResponseWriter, r *http.Request)
 	// GetReadyz Readiness
 	// (GET /readyz)
 	GetReadyz(w http.ResponseWriter, r *http.Request)
 	// ListAuditEvents Audit events, newest first
 	// (GET /v1/audit/events)
 	ListAuditEvents(w http.ResponseWriter, r *http.Request, params ListAuditEventsParams)
+	// ListOAuthClients Registered clients
+	// (GET /v1/oauth/clients)
+	ListOAuthClients(w http.ResponseWriter, r *http.Request)
+	// CreateOAuthClient Register a client
+	// (POST /v1/oauth/clients)
+	CreateOAuthClient(w http.ResponseWriter, r *http.Request)
+	// GetOAuthClient One client
+	// (GET /v1/oauth/clients/{client_id})
+	GetOAuthClient(w http.ResponseWriter, r *http.Request, clientId string)
+	// UpdateOAuthClient Change a client's status, scopes, audiences or note
+	// (PATCH /v1/oauth/clients/{client_id})
+	UpdateOAuthClient(w http.ResponseWriter, r *http.Request, clientId string)
+	// ListSigningKeys Signing keys and their state
+	// (GET /v1/oauth/keys)
+	ListSigningKeys(w http.ResponseWriter, r *http.Request)
+	// RotateSigningKey Activate the next token-signing key
+	// (POST /v1/oauth/keys/rotate)
+	RotateSigningKey(w http.ResponseWriter, r *http.Request)
 	// GetPolicy The active policy
 	// (GET /v1/policy)
 	GetPolicy(w http.ResponseWriter, r *http.Request)
@@ -1698,11 +4066,53 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
+// GetJWKS operation middleware
+func (siw *ServerInterfaceWrapper) GetJWKS(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetJWKS(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetIssuerMetadata operation middleware
+func (siw *ServerInterfaceWrapper) GetIssuerMetadata(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetIssuerMetadata(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetHealthz operation middleware
 func (siw *ServerInterfaceWrapper) GetHealthz(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetHealthz(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RequestToken operation middleware
+func (siw *ServerInterfaceWrapper) RequestToken(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RequestToken(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1854,6 +4264,114 @@ func (siw *ServerInterfaceWrapper) ListAuditEvents(w http.ResponseWriter, r *htt
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListAuditEvents(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListOAuthClients operation middleware
+func (siw *ServerInterfaceWrapper) ListOAuthClients(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListOAuthClients(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateOAuthClient operation middleware
+func (siw *ServerInterfaceWrapper) CreateOAuthClient(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateOAuthClient(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetOAuthClient operation middleware
+func (siw *ServerInterfaceWrapper) GetOAuthClient(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "client_id" -------------
+	var clientId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "client_id", r.PathValue("client_id"), &clientId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "client_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetOAuthClient(w, r, clientId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateOAuthClient operation middleware
+func (siw *ServerInterfaceWrapper) UpdateOAuthClient(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "client_id" -------------
+	var clientId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "client_id", r.PathValue("client_id"), &clientId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "client_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateOAuthClient(w, r, clientId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSigningKeys operation middleware
+func (siw *ServerInterfaceWrapper) ListSigningKeys(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSigningKeys(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RotateSigningKey operation middleware
+func (siw *ServerInterfaceWrapper) RotateSigningKey(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RotateSigningKey(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2043,11 +4561,118 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/policy", wrapper.CreatePolicy)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/policy/{version}/activate", wrapper.ActivatePolicy)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/audit/events", wrapper.ListAuditEvents)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/oauth/token", wrapper.RequestToken)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/.well-known/jwks.json", wrapper.GetJWKS)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/.well-known/openid-configuration", wrapper.GetIssuerMetadata)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/oauth/clients", wrapper.ListOAuthClients)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/oauth/clients", wrapper.CreateOAuthClient)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/oauth/clients/{client_id}", wrapper.GetOAuthClient)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/v1/oauth/clients/{client_id}", wrapper.UpdateOAuthClient)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/oauth/keys", wrapper.ListSigningKeys)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/oauth/keys/rotate", wrapper.RotateSigningKey)
 
 	return m
 }
 
+type OAuthErrorApplicationProblemPlusJSONResponse OAuthProblem
+
 type ProblemApplicationProblemPlusJSONResponse Problem
+
+type GetJWKSRequestObject struct {
+}
+
+type GetJWKSResponseObject interface {
+	VisitGetJWKSResponse(w http.ResponseWriter) error
+}
+
+type GetJWKS200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetJWKS200JSONResponse struct {
+	Body    JWKS
+	Headers GetJWKS200ResponseHeaders
+}
+
+func (response GetJWKS200JSONResponse) VisitGetJWKSResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetJWKSdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetJWKSdefaultApplicationProblemPlusJSONResponse) VisitGetJWKSResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetIssuerMetadataRequestObject struct {
+}
+
+type GetIssuerMetadataResponseObject interface {
+	VisitGetIssuerMetadataResponse(w http.ResponseWriter) error
+}
+
+type GetIssuerMetadata200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetIssuerMetadata200JSONResponse struct {
+	Body    IssuerMetadata
+	Headers GetIssuerMetadata200ResponseHeaders
+}
+
+func (response GetIssuerMetadata200JSONResponse) VisitGetIssuerMetadataResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetIssuerMetadatadefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetIssuerMetadatadefaultApplicationProblemPlusJSONResponse) VisitGetIssuerMetadataResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
 
 type GetHealthzRequestObject struct {
 }
@@ -2076,6 +4701,113 @@ type GetHealthzdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response GetHealthzdefaultApplicationProblemPlusJSONResponse) VisitGetHealthzResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestTokenRequestObject struct {
+	Body *RequestTokenFormdataRequestBody
+}
+
+type RequestTokenResponseObject interface {
+	VisitRequestTokenResponse(w http.ResponseWriter) error
+}
+
+type RequestToken200ResponseHeaders struct {
+	CacheControl *string
+	Pragma       *string
+}
+
+type RequestToken200JSONResponse struct {
+	Body    TokenResponse
+	Headers RequestToken200ResponseHeaders
+}
+
+func (response RequestToken200JSONResponse) VisitRequestTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.Pragma != nil {
+		w.Header().Set("Pragma", fmt.Sprint(*response.Headers.Pragma))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestToken400ApplicationProblemPlusJSONResponse struct {
+	OAuthErrorApplicationProblemPlusJSONResponse
+}
+
+func (response RequestToken400ApplicationProblemPlusJSONResponse) VisitRequestTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestToken401ApplicationProblemPlusJSONResponse OAuthProblem
+
+func (response RequestToken401ApplicationProblemPlusJSONResponse) VisitRequestTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestToken429ResponseHeaders struct {
+	RetryAfter *int
+}
+
+type RequestToken429ApplicationProblemPlusJSONResponse struct {
+	Body    OAuthProblem
+	Headers RequestToken429ResponseHeaders
+}
+
+func (response RequestToken429ApplicationProblemPlusJSONResponse) VisitRequestTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestTokendefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response RequestTokendefaultApplicationProblemPlusJSONResponse) VisitRequestTokenResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -2167,6 +4899,252 @@ type ListAuditEventsdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response ListAuditEventsdefaultApplicationProblemPlusJSONResponse) VisitListAuditEventsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListOAuthClientsRequestObject struct {
+}
+
+type ListOAuthClientsResponseObject interface {
+	VisitListOAuthClientsResponse(w http.ResponseWriter) error
+}
+
+type ListOAuthClients200JSONResponse OAuthClientList
+
+func (response ListOAuthClients200JSONResponse) VisitListOAuthClientsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListOAuthClientsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListOAuthClientsdefaultApplicationProblemPlusJSONResponse) VisitListOAuthClientsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOAuthClientRequestObject struct {
+	Body *CreateOAuthClientJSONRequestBody
+}
+
+type CreateOAuthClientResponseObject interface {
+	VisitCreateOAuthClientResponse(w http.ResponseWriter) error
+}
+
+type CreateOAuthClient201JSONResponse OAuthClientCreated
+
+func (response CreateOAuthClient201JSONResponse) VisitCreateOAuthClientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOAuthClientdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateOAuthClientdefaultApplicationProblemPlusJSONResponse) VisitCreateOAuthClientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOAuthClientRequestObject struct {
+	ClientId string `json:"client_id"`
+}
+
+type GetOAuthClientResponseObject interface {
+	VisitGetOAuthClientResponse(w http.ResponseWriter) error
+}
+
+type GetOAuthClient200JSONResponse OAuthClient
+
+func (response GetOAuthClient200JSONResponse) VisitGetOAuthClientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOAuthClientdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetOAuthClientdefaultApplicationProblemPlusJSONResponse) VisitGetOAuthClientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateOAuthClientRequestObject struct {
+	ClientId string `json:"client_id"`
+	Body     *UpdateOAuthClientJSONRequestBody
+}
+
+type UpdateOAuthClientResponseObject interface {
+	VisitUpdateOAuthClientResponse(w http.ResponseWriter) error
+}
+
+type UpdateOAuthClient200JSONResponse OAuthClient
+
+func (response UpdateOAuthClient200JSONResponse) VisitUpdateOAuthClientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateOAuthClientdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpdateOAuthClientdefaultApplicationProblemPlusJSONResponse) VisitUpdateOAuthClientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSigningKeysRequestObject struct {
+}
+
+type ListSigningKeysResponseObject interface {
+	VisitListSigningKeysResponse(w http.ResponseWriter) error
+}
+
+type ListSigningKeys200JSONResponse SigningKeyList
+
+func (response ListSigningKeys200JSONResponse) VisitListSigningKeysResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSigningKeysdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListSigningKeysdefaultApplicationProblemPlusJSONResponse) VisitListSigningKeysResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RotateSigningKeyRequestObject struct {
+}
+
+type RotateSigningKeyResponseObject interface {
+	VisitRotateSigningKeyResponse(w http.ResponseWriter) error
+}
+
+type RotateSigningKey200JSONResponse KeyRotation
+
+func (response RotateSigningKey200JSONResponse) VisitRotateSigningKeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RotateSigningKey202JSONResponse KeyRotation
+
+func (response RotateSigningKey202JSONResponse) VisitRotateSigningKeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RotateSigningKeydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response RotateSigningKeydefaultApplicationProblemPlusJSONResponse) VisitRotateSigningKeyResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -2296,15 +5274,42 @@ func (response ActivatePolicydefaultApplicationProblemPlusJSONResponse) VisitAct
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// GetJWKS The issuer's public keys
+	// (GET /.well-known/jwks.json)
+	GetJWKS(ctx context.Context, request GetJWKSRequestObject) (GetJWKSResponseObject, error)
+	// GetIssuerMetadata Issuer metadata
+	// (GET /.well-known/openid-configuration)
+	GetIssuerMetadata(ctx context.Context, request GetIssuerMetadataRequestObject) (GetIssuerMetadataResponseObject, error)
 	// GetHealthz Liveness
 	// (GET /healthz)
 	GetHealthz(ctx context.Context, request GetHealthzRequestObject) (GetHealthzResponseObject, error)
+	// RequestToken Client credentials grant
+	// (POST /oauth/token)
+	RequestToken(ctx context.Context, request RequestTokenRequestObject) (RequestTokenResponseObject, error)
 	// GetReadyz Readiness
 	// (GET /readyz)
 	GetReadyz(ctx context.Context, request GetReadyzRequestObject) (GetReadyzResponseObject, error)
 	// ListAuditEvents Audit events, newest first
 	// (GET /v1/audit/events)
 	ListAuditEvents(ctx context.Context, request ListAuditEventsRequestObject) (ListAuditEventsResponseObject, error)
+	// ListOAuthClients Registered clients
+	// (GET /v1/oauth/clients)
+	ListOAuthClients(ctx context.Context, request ListOAuthClientsRequestObject) (ListOAuthClientsResponseObject, error)
+	// CreateOAuthClient Register a client
+	// (POST /v1/oauth/clients)
+	CreateOAuthClient(ctx context.Context, request CreateOAuthClientRequestObject) (CreateOAuthClientResponseObject, error)
+	// GetOAuthClient One client
+	// (GET /v1/oauth/clients/{client_id})
+	GetOAuthClient(ctx context.Context, request GetOAuthClientRequestObject) (GetOAuthClientResponseObject, error)
+	// UpdateOAuthClient Change a client's status, scopes, audiences or note
+	// (PATCH /v1/oauth/clients/{client_id})
+	UpdateOAuthClient(ctx context.Context, request UpdateOAuthClientRequestObject) (UpdateOAuthClientResponseObject, error)
+	// ListSigningKeys Signing keys and their state
+	// (GET /v1/oauth/keys)
+	ListSigningKeys(ctx context.Context, request ListSigningKeysRequestObject) (ListSigningKeysResponseObject, error)
+	// RotateSigningKey Activate the next token-signing key
+	// (POST /v1/oauth/keys/rotate)
+	RotateSigningKey(ctx context.Context, request RotateSigningKeyRequestObject) (RotateSigningKeyResponseObject, error)
 	// GetPolicy The active policy
 	// (GET /v1/policy)
 	GetPolicy(ctx context.Context, request GetPolicyRequestObject) (GetPolicyResponseObject, error)
@@ -2355,6 +5360,54 @@ type strictHandler struct {
 	options     StrictHTTPServerOptions
 }
 
+// GetJWKS operation middleware
+func (sh *strictHandler) GetJWKS(w http.ResponseWriter, r *http.Request) {
+	var request GetJWKSRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetJWKS(ctx, request.(GetJWKSRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetJWKS")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetJWKSResponseObject); ok {
+		if err := validResponse.VisitGetJWKSResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetIssuerMetadata operation middleware
+func (sh *strictHandler) GetIssuerMetadata(w http.ResponseWriter, r *http.Request) {
+	var request GetIssuerMetadataRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetIssuerMetadata(ctx, request.(GetIssuerMetadataRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetIssuerMetadata")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetIssuerMetadataResponseObject); ok {
+		if err := validResponse.VisitGetIssuerMetadataResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetHealthz operation middleware
 func (sh *strictHandler) GetHealthz(w http.ResponseWriter, r *http.Request) {
 	var request GetHealthzRequestObject
@@ -2372,6 +5425,41 @@ func (sh *strictHandler) GetHealthz(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetHealthzResponseObject); ok {
 		if err := validResponse.VisitGetHealthzResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RequestToken operation middleware
+func (sh *strictHandler) RequestToken(w http.ResponseWriter, r *http.Request) {
+	var request RequestTokenRequestObject
+
+	if err := r.ParseForm(); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode formdata: %w", err))
+		return
+	}
+	var body RequestTokenFormdataRequestBody
+	if err := runtime.BindForm(&body, r.Form, nil, nil); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't bind formdata: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RequestToken(ctx, request.(RequestTokenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RequestToken")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RequestTokenResponseObject); ok {
+		if err := validResponse.VisitRequestTokenResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -2422,6 +5510,168 @@ func (sh *strictHandler) ListAuditEvents(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListAuditEventsResponseObject); ok {
 		if err := validResponse.VisitListAuditEventsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListOAuthClients operation middleware
+func (sh *strictHandler) ListOAuthClients(w http.ResponseWriter, r *http.Request) {
+	var request ListOAuthClientsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListOAuthClients(ctx, request.(ListOAuthClientsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListOAuthClients")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListOAuthClientsResponseObject); ok {
+		if err := validResponse.VisitListOAuthClientsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateOAuthClient operation middleware
+func (sh *strictHandler) CreateOAuthClient(w http.ResponseWriter, r *http.Request) {
+	var request CreateOAuthClientRequestObject
+
+	var body CreateOAuthClientJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateOAuthClient(ctx, request.(CreateOAuthClientRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateOAuthClient")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateOAuthClientResponseObject); ok {
+		if err := validResponse.VisitCreateOAuthClientResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetOAuthClient operation middleware
+func (sh *strictHandler) GetOAuthClient(w http.ResponseWriter, r *http.Request, clientId string) {
+	var request GetOAuthClientRequestObject
+
+	request.ClientId = clientId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetOAuthClient(ctx, request.(GetOAuthClientRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetOAuthClient")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetOAuthClientResponseObject); ok {
+		if err := validResponse.VisitGetOAuthClientResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateOAuthClient operation middleware
+func (sh *strictHandler) UpdateOAuthClient(w http.ResponseWriter, r *http.Request, clientId string) {
+	var request UpdateOAuthClientRequestObject
+
+	request.ClientId = clientId
+
+	var body UpdateOAuthClientJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateOAuthClient(ctx, request.(UpdateOAuthClientRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateOAuthClient")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateOAuthClientResponseObject); ok {
+		if err := validResponse.VisitUpdateOAuthClientResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSigningKeys operation middleware
+func (sh *strictHandler) ListSigningKeys(w http.ResponseWriter, r *http.Request) {
+	var request ListSigningKeysRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSigningKeys(ctx, request.(ListSigningKeysRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSigningKeys")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSigningKeysResponseObject); ok {
+		if err := validResponse.VisitListSigningKeysResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RotateSigningKey operation middleware
+func (sh *strictHandler) RotateSigningKey(w http.ResponseWriter, r *http.Request) {
+	var request RotateSigningKeyRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RotateSigningKey(ctx, request.(RotateSigningKeyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RotateSigningKey")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RotateSigningKeyResponseObject); ok {
+		if err := validResponse.VisitRotateSigningKeyResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

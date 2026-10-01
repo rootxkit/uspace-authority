@@ -34,6 +34,7 @@ func TestStartWithoutTheDatabaseFailsAndSaysWhich(t *testing.T) {
 		"PG_URL": "postgres://u:p@127.0.0.1:1/absent?connect_timeout=2", "TS_URL": "postgres://u:p@127.0.0.1:1/ts",
 		"NATS_URL": "nats://127.0.0.1:1", "AUTHORITY_PUBLIC_URL": "http://localhost:8080",
 		"API_ADDR": "127.0.0.1:0", "ADMIN_ADDR": "127.0.0.1:0", "SHUTDOWN_TIMEOUT_S": "2",
+		"SIGNING_KEY_FILES": "/nonexistent/token-1.pem",
 	}
 	var out, errOut bytes.Buffer
 	code := proc.Main(context.Background(), spec(&config.API{}), nil, &out, &errOut, func(k string) (string, bool) { v, ok := m[k]; return v, ok })
@@ -42,5 +43,19 @@ func TestStartWithoutTheDatabaseFailsAndSaysWhich(t *testing.T) {
 	}
 	if strings.Contains(out.String(), "u:p@") {
 		t.Fatalf("the URL with its password reached the log: %s", out.String())
+	}
+}
+
+// E-02: the issuer with no key configured refuses to start, naming the
+// variable, before it touches anything.
+func TestStartWithoutASigningKeyNamesTheVariable(t *testing.T) {
+	m := map[string]string{
+		"PG_URL": "postgres://u:p@127.0.0.1:1/absent", "TS_URL": "postgres://u:p@127.0.0.1:1/ts",
+		"NATS_URL": "nats://127.0.0.1:1", "AUTHORITY_PUBLIC_URL": "http://localhost:8080",
+	}
+	var out, errOut bytes.Buffer
+	code := proc.Main(context.Background(), spec(&config.API{}), nil, &out, &errOut, func(k string) (string, bool) { v, ok := m[k]; return v, ok })
+	if code != proc.ExitConfig || !strings.Contains(errOut.String(), "SIGNING_KEY_FILES: required") {
+		t.Fatalf("exit %d: %s", code, errOut.String())
 	}
 }

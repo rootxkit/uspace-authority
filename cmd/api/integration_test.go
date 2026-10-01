@@ -16,6 +16,7 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/proc"
 	"github.com/rootxkit/uspace-authority/internal/store/migrate"
 	"github.com/rootxkit/uspace-authority/internal/store/storetest"
+	"github.com/rootxkit/uspace-authority/internal/tokens/tokentest"
 )
 
 // lines is a goroutine-safe stdout that the test reads JSON lines from.
@@ -64,12 +65,18 @@ func env(m map[string]string) config.LookupFunc {
 	return func(k string) (string, bool) { v, ok := m[k]; return v, ok }
 }
 
-func baseEnv(pgURL string) map[string]string {
+// baseEnv is a working configuration on pgURL with two token keys
+// generated at run time (spec 06 §4) in the test's directory.
+func baseEnv(t *testing.T, pgURL string) map[string]string {
+	t.Helper()
+	dir := t.TempDir()
 	return map[string]string{
 		"PG_URL": pgURL, "TS_URL": "postgres://unused:unused@127.0.0.1:1/unused",
 		"NATS_URL": "nats://127.0.0.1:1", "AUTHORITY_PUBLIC_URL": "http://localhost:8080",
 		"API_ADDR": "127.0.0.1:0", "ADMIN_ADDR": "127.0.0.1:0", "STATUS_INTERVAL_S": "1",
 		"POLICY_REFRESH_S": "1", "SHUTDOWN_TIMEOUT_S": "5", "AUTHORITY_MTLS_MODE": "off",
+		"SIGNING_KEY_FILES":    tokentest.WriteKey(t, dir, 0) + "," + tokentest.WriteKey(t, dir, 1),
+		"PUBLICATION_KEY_FILE": tokentest.WriteKey(t, dir, 9),
 	}
 }
 
@@ -102,13 +109,13 @@ func do(t *testing.T, method, url, body string, out any) int {
 func TestIntegrationPolicyRoundTripAndStatusLine(t *testing.T) {
 	u := storetest.Migrated(t, migrate.Relational)
 	identify := func(*http.Request) (apiserver.Identity, error) {
-		return apiserver.Identity{ActorType: "user", Subject: "admin-1", Roles: []string{apiserver.RoleAdmin}, Realm: "console"}, nil
+		return apiserver.Identity{ActorType: "user", Subject: "admin-1", Roles: []string{apiserver.RoleAdmin}, Realm: "console", Session: true}, nil
 	}
 	var stdout, stderr lines
 	ctx, cancel := context.WithCancel(context.Background())
 	exit := make(chan int, 1)
 	go func() {
-		exit <- proc.Main(ctx, specWith(&config.API{}, identify), nil, &stdout, &stderr, env(baseEnv(u)))
+		exit <- proc.Main(ctx, specWith(&config.API{}, identify), nil, &stdout, &stderr, env(baseEnv(t, u)))
 	}()
 	t.Cleanup(func() {
 		cancel()
@@ -186,19 +193,51 @@ func mustJSON(v any) string {
 	return string(b)
 }
 
-// Production identity: until WP-2 nobody is admitted, and the refusal
-// says why.
+// Production identity without a credential: nobody is admitted, and
+// the refusal says how to sign in.
 func TestIntegrationProductionSpecRefusesWithoutASession(t *testing.T) {
 	u := storetest.Migrated(t, migrate.Relational)
 	var stdout, stderr lines
 	ctx, cancel := context.WithCancel(context.Background())
 	exit := make(chan int, 1)
-	go func() { exit <- proc.Main(ctx, spec(&config.API{}), nil, &stdout, &stderr, env(baseEnv(u))) }()
+	go func() { exit <- proc.Main(ctx, spec(&config.API{}), nil, &stdout, &stderr, env(baseEnv(t, u))) }()
 	defer func() { cancel(); <-exit }()
 	listen := stdout.waitFor(t, "public listener open", nil)
 	var problem map[string]any
 	if code := do(t, http.MethodGet, "http://"+listen["addr"].(string)+"/v1/policy", "", &problem); code != http.StatusUnauthorized ||
-		!strings.Contains(problem["detail"].(string), "WP-2") {
+		!strings.Contains(problem["detail"].(string), "/v1/auth/login") {
 		t.Fatalf("%d %v", code, problem)
 	}
+}
+
+// E-02: with the database present and a key file that cannot be read,
+// api exits non-zero and names the variable; the JWKS of the working
+// twin lists both token keys' active one and the publication key.
+func TestIntegrationSigningKeyFileMissingStopsTheStart(t *testing.T) {
+	u := storetest.Migrated(t, migrate.Relational)
+	m := baseEnv(t, u)
+	m["SIGNING_KEY_FILES"] = t.TempDir() + "/absent.pem"
+	var stdout, stderr lines
+	code := proc.Main(context.Background(), spec(&config.API{}), nil, &stdout, &stderr, env(m))
+	if code != proc.ExitFailed || stdout.find("process failed", func(l map[string]any) bool {
+		return strings.Contains(l["error"].(string), "SIGNING_KEY_FILES")
+	}) == nil {
+		t.Fatalf("exit %d:\n%s", code, stdout.b.String())
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	exit := make(chan int, 1)
+	var out2, err2 lines
+	go func() { exit <- proc.Main(ctx, spec(&config.API{}), nil, &out2, &err2, env(baseEnv(t, u))) }()
+	defer func() { cancel(); <-exit }()
+	ready := out2.waitFor(t, "token service ready", nil)
+	listen := out2.waitFor(t, "public listener open", nil)
+	var jwks struct {
+		Keys []map[string]any `json:"keys"`
+	}
+	if code := do(t, http.MethodGet, "http://"+listen["addr"].(string)+"/.well-known/jwks.json", "", &jwks); code != http.StatusOK || len(jwks.Keys) != 2 ||
+		jwks.Keys[0]["kid"] != ready["signing_kid"] {
+		t.Fatalf("jwks %d %v (ready %v)", code, jwks, ready)
+	}
+	out2.waitFor(t, "status", func(l map[string]any) bool { return l["signing_kid"] == ready["signing_kid"] })
 }

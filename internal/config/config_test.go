@@ -19,6 +19,7 @@ func validAPI() map[string]string {
 		"TS_URL":               "postgres://u:pw-telemetry@db:5432/authority_ts",
 		"NATS_URL":             "nats://nats:4222",
 		"AUTHORITY_PUBLIC_URL": "https://authority.example.test",
+		"SIGNING_KEY_FILES":    "/run/keys/token-1.pem",
 	}
 }
 
@@ -200,5 +201,71 @@ func TestFieldErrorsOfNonFieldErrors(t *testing.T) {
 	wrapped := errors.Join(&core.FieldError{Field: "A", Reason: "r"}, errors.New("plain"))
 	if fes := FieldErrors(wrapped); len(fes) != 1 || fes[0].Field != "A" {
 		t.Errorf("got %v", fes)
+	}
+}
+
+// E-02: the issuer with no key configured refuses to start, naming the
+// variable; beside it the accepted configuration.
+func TestAPIRefusesAMissingSigningKeyNamingTheVariable(t *testing.T) {
+	m := validAPI()
+	delete(m, "SIGNING_KEY_FILES")
+	var c API
+	fes := FieldErrors(Load(&c, env(m)))
+	if len(fes) != 1 || fes[0].Field != "SIGNING_KEY_FILES" || fes[0].Reason != "required" {
+		t.Fatalf("got %v, want SIGNING_KEY_FILES required", fes)
+	}
+	var ok API
+	if err := Load(&ok, env(validAPI())); err != nil || len(ok.SigningKeyFiles) != 1 {
+		t.Fatalf("accepted twin: %v %v", err, ok.SigningKeyFiles)
+	}
+}
+
+func TestAPIAudiencesMustHoldTheOwnHost(t *testing.T) {
+	var c API
+	if err := Load(&c, env(validAPI())); err != nil {
+		t.Fatal(err)
+	}
+	if c.OwnHost() != "authority.example.test" || strings.Join(c.AudienceList(), ",") != "authority.example.test" {
+		t.Fatalf("own host %q audiences %v", c.OwnHost(), c.AudienceList())
+	}
+	if c.Issuer() != "https://authority.example.test" {
+		t.Fatalf("issuer default %q", c.Issuer())
+	}
+	m := validAPI()
+	m["AUTHORITY_AUDIENCES"] = "authority.example.test,authority"
+	m["ISSUER_URL"] = "https://issuer.example.test/"
+	var lab API
+	if err := Load(&lab, env(m)); err != nil {
+		t.Fatalf("own host plus a lab alias: %v", err)
+	}
+	if lab.Issuer() != "https://issuer.example.test" || len(lab.AudienceList()) != 2 {
+		t.Fatalf("issuer %q audiences %v", lab.Issuer(), lab.AudienceList())
+	}
+	for _, bad := range []string{"authority", "authority.example.test,https://x.example.test", "authority.example.test,Upper.example.test"} {
+		m["AUTHORITY_AUDIENCES"] = bad
+		var c API
+		fes := FieldErrors(Load(&c, env(m)))
+		if len(fes) == 0 || fes[0].Field != "AUTHORITY_AUDIENCES" {
+			t.Errorf("%q: got %v", bad, fes)
+		}
+	}
+	m = validAPI()
+	m["ISSUER_URL"] = "https://issuer.example.test/?x=1"
+	var q API
+	if fes := FieldErrors(Load(&q, env(m))); len(fes) != 1 || fes[0].Field != "ISSUER_URL" {
+		t.Errorf("issuer with a query: %v", fes)
+	}
+}
+
+func TestArgon2BoundsAreTheOWASPMinimum(t *testing.T) {
+	m := validAPI()
+	m["ARGON2_MEMORY_KIB"] = "8192"
+	var c API
+	if fes := FieldErrors(Load(&c, env(m))); len(fes) != 1 || fes[0].Field != "ARGON2_MEMORY_KIB" {
+		t.Fatalf("below the minimum: %v", fes)
+	}
+	var d API
+	if err := Load(&d, env(validAPI())); err != nil || d.Argon2MemoryKiB != 19456 || d.Argon2Time != 2 || d.Argon2Threads != 1 {
+		t.Fatalf("defaults: %v %+v", err, d.Argon2)
 	}
 }

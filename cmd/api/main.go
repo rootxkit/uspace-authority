@@ -16,10 +16,12 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/apiserver"
 	"github.com/rootxkit/uspace-authority/internal/audit"
 	"github.com/rootxkit/uspace-authority/internal/config"
+	"github.com/rootxkit/uspace-authority/internal/passhash"
 	"github.com/rootxkit/uspace-authority/internal/policy"
 	"github.com/rootxkit/uspace-authority/internal/proc"
 	"github.com/rootxkit/uspace-authority/internal/store"
 	"github.com/rootxkit/uspace-authority/internal/store/pg"
+	"github.com/rootxkit/uspace-authority/internal/tokens"
 )
 
 func main() {
@@ -29,8 +31,8 @@ func main() {
 	os.Exit(code)
 }
 
-// spec is the production process: no console session exists until WP-2,
-// so every /v1 route answers 401 unauthenticated.
+// spec is the production process. Console sessions arrive with the
+// authz part of WP-2; until then every role route answers 401.
 func spec(cfg *config.API) proc.Spec { return specWith(cfg, apiserver.NoSession) }
 
 func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
@@ -60,20 +62,48 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 		rt.AddStatus(follower.StatusAttrs)
 		auditWriter := audit.NewWriter(db)
 		svc := &policy.Service{DB: db, Audit: auditWriter, Publisher: follower, Logger: rt.Logger, Counters: counters}
+		// The background loops end with the body: an early error return
+		// cancels them before waiting, so a failed start cannot hang the
+		// process on its own wait group.
+		ctx, cancel := context.WithCancel(ctx)
 		var wg sync.WaitGroup
+		defer wg.Wait()
+		defer cancel()
 		wg.Go(func() {
 			follower.Run(ctx, svc.Active, time.Duration(cfg.PolicyRefreshS)*time.Second, rt.Logger)
 		})
-		defer wg.Wait()
+
+		hasher, err := passhash.New(passhash.Params{
+			MemoryKiB: uint32(cfg.Argon2MemoryKiB), Time: uint32(cfg.Argon2Time), Threads: uint8(cfg.Argon2Threads),
+		})
+		if err != nil {
+			return err
+		}
+		tok, err := tokens.Assemble(ctx, tokens.Setup{
+			Issuer: cfg.Issuer(), SigningKeyFiles: cfg.SigningKeyFiles, PublicationKeyFile: cfg.PublicationKeyFile,
+			TTL: time.Duration(cfg.TokenTTLS) * time.Second, RetireGrace: time.Duration(cfg.KeyRetireGraceS) * time.Second,
+			TwoPerson: cfg.KeyRotationTwoPerson, ConfirmWindow: time.Duration(cfg.KeyRotationConfirmS) * time.Second,
+			RatePerMin: cfg.TokenRatePerMin, RateBurst: cfg.TokenRateBurst, RateMaxClients: cfg.TokenRateMaxClients,
+			ReplayMax: cfg.AssertionReplayMax, Store: tokens.PG{DB: db, Audit: auditWriter}, Hasher: hasher, Logger: rt.Logger,
+		})
+		if err != nil {
+			return err
+		}
+		rt.AddCounters("tokens", tok.Counters)
+		rt.AddStatus(tok.StatusAttrs)
+		rt.Logger.Info("token service ready", slog.String("issuer", cfg.Issuer()), slog.String("signing_kid", tok.Keys.ActiveKID()))
+		wg.Go(func() { tok.Manager.Run(ctx, time.Duration(cfg.KeyRefreshS)*time.Second) })
 
 		mux := http.NewServeMux()
 		apiserver.Mount(mux, apiserver.Server{
-			PolicyHandler: policy.Handler{Service: svc},
-			AuditHandler:  audit.Handler{Writer: auditWriter},
+			PolicyHandler:     policy.Handler{Service: svc},
+			AuditHandler:      audit.Handler{Writer: auditWriter},
+			TokenHandler:      tok.Handler,
+			OAuthAdminHandler: tok.Handler,
 		}, apiserver.Options{
 			Logger:      rt.Logger,
-			Middlewares: []apiserver.Middleware{apiserver.RequireRole(identify, apiserver.Roles)},
-			Keep:        apiserver.PathPrefix("/v1/"),
+			Middlewares: []apiserver.Middleware{tok.Handler.FormGuard(), apiserver.Authorize(identify, apiserver.DefaultRules())},
+			Keep:        apiserver.PathPrefix("/v1/", "/oauth/", "/.well-known/"),
 		})
 		return rt.ServePublic(ctx, cfg.HTTP, cfg.Addr, mux)
 	}}

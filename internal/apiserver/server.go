@@ -31,12 +31,32 @@ type AuditHandler interface {
 	ListAuditEvents(ctx context.Context, request gen.ListAuditEventsRequestObject) (gen.ListAuditEventsResponseObject, error)
 }
 
+// TokenHandler serves the token service's public operations
+// (/oauth/token, /.well-known/*; api, WP-2).
+type TokenHandler interface {
+	RequestToken(ctx context.Context, request gen.RequestTokenRequestObject) (gen.RequestTokenResponseObject, error)
+	GetJWKS(ctx context.Context, request gen.GetJWKSRequestObject) (gen.GetJWKSResponseObject, error)
+	GetIssuerMetadata(ctx context.Context, request gen.GetIssuerMetadataRequestObject) (gen.GetIssuerMetadataResponseObject, error)
+}
+
+// OAuthAdminHandler serves /v1/oauth/* (api, WP-2).
+type OAuthAdminHandler interface {
+	ListOAuthClients(ctx context.Context, request gen.ListOAuthClientsRequestObject) (gen.ListOAuthClientsResponseObject, error)
+	CreateOAuthClient(ctx context.Context, request gen.CreateOAuthClientRequestObject) (gen.CreateOAuthClientResponseObject, error)
+	GetOAuthClient(ctx context.Context, request gen.GetOAuthClientRequestObject) (gen.GetOAuthClientResponseObject, error)
+	UpdateOAuthClient(ctx context.Context, request gen.UpdateOAuthClientRequestObject) (gen.UpdateOAuthClientResponseObject, error)
+	ListSigningKeys(ctx context.Context, request gen.ListSigningKeysRequestObject) (gen.ListSigningKeysResponseObject, error)
+	RotateSigningKey(ctx context.Context, request gen.RotateSigningKeyRequestObject) (gen.RotateSigningKeyResponseObject, error)
+}
+
 // Server implements gen.StrictServerInterface by delegating to one
 // handler per group. A group left nil must not be mounted.
 type Server struct {
 	HealthHandler
 	PolicyHandler
 	AuditHandler
+	TokenHandler
+	OAuthAdminHandler
 }
 
 var _ gen.StrictServerInterface = Server{}

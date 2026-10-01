@@ -36,7 +36,7 @@ func (s stubPolicy) ActivatePolicy(context.Context, gen.ActivatePolicyRequestObj
 
 func identity(roles ...string) IdentifyFunc {
 	return func(*http.Request) (Identity, error) {
-		return Identity{ActorType: "user", Subject: "u-1", Roles: roles, Realm: "console"}, nil
+		return Identity{ActorType: "user", Subject: "u-1", Roles: roles, Realm: "console", Session: true}, nil
 	}
 }
 
@@ -185,6 +185,115 @@ func TestRolesMatchTheContract(t *testing.T) {
 	for op := range Roles {
 		if _, ok := spec[op]; !ok {
 			t.Errorf("%s has roles in code but no x-roles in the contract", op)
+		}
+	}
+}
+
+// contractOps reads, per operation id, whether it has `security: []`
+// and whether it carries `x-session: any`.
+func contractOps(t *testing.T) (public, anySession map[string]bool) {
+	t.Helper()
+	raw, err := os.ReadFile("../../api/openapi.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	opRe := regexp.MustCompile(`^\s+operationId:\s*(\w+)`)
+	public, anySession = map[string]bool{}, map[string]bool{}
+	op := ""
+	for line := range strings.SplitSeq(string(raw), "\n") {
+		if m := opRe.FindStringSubmatch(line); m != nil {
+			op = strings.ToUpper(m[1][:1]) + m[1][1:]
+			continue
+		}
+		switch strings.TrimSpace(line) {
+		case "security: []":
+			public[op] = true
+		case "x-session: any":
+			anySession[op] = true
+		}
+	}
+	return public, anySession
+}
+
+func TestPublicAndAnySessionMatchTheContract(t *testing.T) {
+	public, anySession := contractOps(t)
+	for name, pair := range map[string][2]map[string]bool{"public": {public, Public}, "x-session": {anySession, AnySession}} {
+		for op := range pair[0] {
+			if !pair[1][op] {
+				t.Errorf("%s: %s in the contract, not in code", name, op)
+			}
+		}
+		for op := range pair[1] {
+			if !pair[0][op] {
+				t.Errorf("%s: %s in code, not in the contract", name, op)
+			}
+		}
+	}
+	for op := range Roles {
+		if Public[op] {
+			t.Errorf("%s is both public and role-guarded", op)
+		}
+	}
+}
+
+func authorized(rules Rules, id Identity, idErr error, op string) (int, bool, RequestInfo) {
+	called := false
+	var seen RequestInfo
+	h := Authorize(func(*http.Request) (Identity, error) { return id, idErr }, rules)(
+		func(ctx context.Context, _ http.ResponseWriter, _ *http.Request, _ any) (any, error) {
+			called = true
+			seen = RequestInfoFrom(ctx)
+			return nil, nil
+		}, op)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/x", nil)
+	req.Header.Set("User-Agent", "probe")
+	_, _ = h(context.Background(), rec, req, nil)
+	return rec.Code, called, seen
+}
+
+// E-01 pairs of Authorize: a public operation runs without an identity;
+// a machine token is refused on a role operation, a session admitted; a
+// police session is refused on a console operation unless the operation
+// names the police realm; an any-session operation admits a session
+// without roles and refuses a machine token.
+func TestAuthorizeRules(t *testing.T) {
+	rules := Rules{
+		Public:     map[string]bool{"Pub": true},
+		AnySession: map[string]bool{"Mine": true},
+		Roles:      map[string][]string{"Admin": {RoleAdmin}, "Police": {RoleAdmin}},
+		Realms:     map[string]string{"Police": RealmPolice},
+	}
+	session := Identity{ActorType: "user", Subject: "u", Roles: []string{RoleAdmin}, Realm: RealmConsole, Session: true}
+	machine := Identity{ActorType: "client", Subject: "cisp-01", Scopes: []string{"cis.read"}}
+	police := Identity{ActorType: "user", Subject: "p", Roles: []string{RoleAdmin}, Realm: RealmPolice, Session: true}
+	bare := Identity{ActorType: "user", Subject: "v", Realm: RealmConsole, Session: true}
+	cases := []struct {
+		name   string
+		id     Identity
+		err    error
+		op     string
+		code   int
+		called bool
+	}{
+		{"public without identity", Identity{}, ErrNoSession, "Pub", 200, true},
+		{"role op without identity", Identity{}, ErrNoSession, "Admin", 401, false},
+		{"machine on role op", machine, nil, "Admin", 403, false},
+		{"session on role op", session, nil, "Admin", 200, true},
+		{"police on console op", police, nil, "Admin", 403, false},
+		{"police on police op", police, nil, "Police", 200, true},
+		{"console on police op", session, nil, "Police", 403, false},
+		{"no roles on any-session op", bare, nil, "Mine", 200, true},
+		{"machine on any-session op", machine, nil, "Mine", 403, false},
+		{"no rule", session, nil, "Unknown", 403, false},
+	}
+	for _, c := range cases {
+		code, called, ri := authorized(rules, c.id, c.err, c.op)
+		if code != c.code || called != c.called {
+			t.Errorf("%s: %d called %v", c.name, code, called)
+		}
+		if called && ri.UserAgent != "probe" {
+			t.Errorf("%s: request info %+v", c.name, ri)
 		}
 	}
 }

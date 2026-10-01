@@ -36,6 +36,15 @@ tags:
     description: The versioned authority policy (INV-03); thresholds are data.
   - name: audit
     description: The append-only audit log with its monthly hash chain.
+  - name: tokens
+    description: |
+      The ecosystem OAuth2 token service (WP-2): client credentials,
+      the JWKS and the issuer metadata. The JWT contract and the scope
+      catalogue are the normative tables A and B of
+      `docs/WORKPACKAGES/WP-2.md`, restated in
+      `docs/runbooks/token-service.md`.
+  - name: oauth-admin
+    description: The token service's client registry and signing keys (admin).
 
 paths:
   # WP-0: health paths, served by every process on its admin port.
@@ -217,6 +226,262 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  # WP-2: the ecosystem token service. /oauth/token and /.well-known/*
+  # are public (the client authenticates in the body); /v1/oauth/* is
+  # for admins. Every issuance and every refusal is an events row
+  # (token_issued, token_refused; 06 §3).
+  /oauth/token:
+    post:
+      operationId: requestToken
+      tags: [tokens]
+      summary: Client credentials grant
+      description: |
+        RFC 6749 §4.4 client credentials. The client authenticates with
+        `client_secret_post` (`client_id`, `client_secret`) or
+        `private_key_jwt` (RFC 7523: `client_assertion_type` =
+        `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`,
+        `client_assertion` an RS256 JWT with `iss` = `sub` = the client
+        id, `aud` = this issuer or its token endpoint, `exp` at most
+        5 min ahead and a `jti` used once). Parameters in the query
+        string are refused. `scope` names catalogue scopes (WP-2 table
+        B), a subset of the client's. `audience`, or one RFC 8707
+        `resource`, names the target: a host or the target's base URL,
+        reduced to its host, which becomes `aud` (M18). For national
+        scopes the host must be on the client's audience list; for
+        `utm.*` and `rid.*` any host is accepted. One audience per
+        token. Errors carry RFC 6749 `error` and `error_description`
+        beside the problem members. Issuance is rate-limited per
+        client (429 with `Retry-After`). Every refusal is a
+        `token_refused` event.
+      security: []
+      x-audit: {event_type: token_issued, entity_type: oauth_client, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/TokenRequest"
+      responses:
+        "200":
+          description: An ecosystem machine token (table A).
+          headers:
+            Cache-Control:
+              schema: {type: string, enum: [no-store]}
+            Pragma:
+              schema: {type: string, enum: [no-cache]}
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "400":
+          $ref: "#/components/responses/OAuthError"
+        "401":
+          $ref: "#/components/responses/OAuthError"
+        "429":
+          description: The client's issuance budget is spent.
+          headers:
+            Retry-After:
+              schema: {type: integer, minimum: 1}
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/OAuthProblem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /.well-known/jwks.json:
+    get:
+      operationId: getJWKS
+      tags: [tokens]
+      summary: The issuer's public keys
+      description: |
+        Every RS256 key a verifier may meet (`use: sig`, distinguished by
+        `kid`): the active token-signing key, retired token-signing keys
+        until their retirement plus the JWKS cache TTL (24 h), and this
+        system's publication-signing key of the detached
+        `X-JWS-Signature` (M26). Cacheable for 300 s.
+      security: []
+      x-audit: none
+      responses:
+        "200":
+          description: The JWKS.
+          headers:
+            Cache-Control:
+              schema: {type: string}
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JWKS"
+        default:
+          $ref: "#/components/responses/Problem"
+  /.well-known/openid-configuration:
+    get:
+      operationId: getIssuerMetadata
+      tags: [tokens]
+      summary: Issuer metadata
+      description: |
+        The issuer, its JWKS URL and token endpoint, the grant type and
+        the client authentication methods. This is an OAuth2 issuer, not
+        an OpenID provider: there is no authorisation endpoint.
+      security: []
+      x-audit: none
+      responses:
+        "200":
+          description: The metadata.
+          headers:
+            Cache-Control:
+              schema: {type: string}
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssuerMetadata"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/oauth/clients:
+    get:
+      operationId: listOAuthClients
+      tags: [oauth-admin]
+      summary: Registered clients
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: none
+      responses:
+        "200":
+          description: Every client, by client id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthClientList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createOAuthClient
+      tags: [oauth-admin]
+      summary: Register a client
+      description: |
+        One client per calling system (M24). Scopes must be grantable
+        to this client (in the catalogue, not reserved, not of a USSP's
+        issuer, `dp.observe` for `lab-01` only); audiences are hosts.
+        For `client_secret_post` the secret is generated here and
+        returned once; only its argon2id hash is kept. For
+        `private_key_jwt` the client's public JWKS is given (RSA keys of
+        at least 2048 bits, no private members).
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: oauth_client_created, entity_type: oauth_client, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OAuthClientInput"
+      responses:
+        "201":
+          description: The client, and its secret once.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthClientCreated"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/oauth/clients/{client_id}:
+    parameters:
+      - {name: client_id, in: path, required: true, schema: {type: string, maxLength: 64}}
+    get:
+      operationId: getOAuthClient
+      tags: [oauth-admin]
+      summary: One client
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: none
+      responses:
+        "200":
+          description: The client.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthClient"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: updateOAuthClient
+      tags: [oauth-admin]
+      summary: Change a client's status, scopes, audiences or note
+      description: |
+        A suspended or revoked client gets no new token; tokens already
+        issued expire within their TTL (at most 1 h).
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: oauth_client_updated, entity_type: oauth_client, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OAuthClientPatch"
+      responses:
+        "200":
+          description: The client as changed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthClient"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/oauth/keys:
+    get:
+      operationId: listSigningKeys
+      tags: [oauth-admin]
+      summary: Signing keys and their state
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: none
+      responses:
+        "200":
+          description: Every registered key.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SigningKeyList"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/oauth/keys/rotate:
+    post:
+      operationId: rotateSigningKey
+      tags: [oauth-admin]
+      summary: Activate the next token-signing key
+      description: |
+        The next key is the first key of `SIGNING_KEY_FILES` never
+        activated. With the two-person rule (`KEY_ROTATION_TWO_PERSON`,
+        default on) the first admin's call records the request (202)
+        and a second admin's call within `KEY_ROTATION_CONFIRM_S`
+        (600 s) activates it (200); the same admin twice is refused
+        (409). The previous key is retired and stays in the JWKS for
+        `KEY_RETIRE_GRACE_S` (24 h).
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: signing_key_activated, entity_type: signing_key, purpose: none}
+      responses:
+        "200":
+          description: The next key is active.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeyRotation"
+        "202":
+          description: Requested; a second admin must confirm.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeyRotation"
+        default:
+          $ref: "#/components/responses/Problem"
+
 components:
   securitySchemes:
     sessionCookie:
@@ -236,6 +501,18 @@ components:
         Ecosystem machine token issued by a trusted issuer (RS256,
         `aud` = this system's host, scope from the catalogue in
         `docs/WORKPACKAGES/WP-2.md`), verified by uspace-core `auth`.
+        Table B, the whole catalogue: `cis.read`, `cis.publish:zones`,
+        `cis.publish:uspace`, `cis.publish:ussp_list`,
+        `cis.publish:restrictions`, `cis.publish:ats_data` (reserved,
+        never issued), `registry.validate`, `ussp.records`,
+        `occurrences.write`, `certificates.status`, `police.query`,
+        `ansp.traffic`, `ansp.coordination`, `ansp.requests`,
+        `dp.observe` (lab-01 only), `utm.strategic_coordination`,
+        `utm.constraint_processing`, `utm.constraint_management`,
+        `utm.conformance_monitoring_sa`, `utm.availability_arbitration`,
+        `rid.service_provider`, `rid.display_provider`, and at a USSP's
+        issuer only `ussp.intents`, `ussp.telemetry`, `ussp.traffic`,
+        `ussp.geo`.
     receiverKey:
       type: http
       scheme: bearer
@@ -251,6 +528,12 @@ components:
         application/problem+json:
           schema:
             $ref: "#/components/schemas/Problem"
+    OAuthError:
+      description: A refused token request (RFC 6749 §5.2 inside a problem).
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/OAuthProblem"
 
   schemas:
     Health:
@@ -442,3 +725,191 @@ components:
           type: integer
           format: int64
           description: Pass as before_id for the next page; absent on the last page.
+    OAuthProblem:
+      description: |
+        A problem (M28) that also carries the RFC 6749 §5.2 members, so
+        an OAuth2 client library reads `error` and a uspace client reads
+        the problem. `error` is `invalid_request`, `invalid_client`,
+        `invalid_scope`, `invalid_target` (RFC 8707),
+        `unauthorized_client`, `unsupported_grant_type` or
+        `temporarily_unavailable` (rate limit).
+      allOf:
+        - $ref: "#/components/schemas/Problem"
+        - type: object
+          required: [error]
+          properties:
+            error:
+              type: string
+              enum: [invalid_request, invalid_client, invalid_scope, invalid_target, unauthorized_client, unsupported_grant_type, temporarily_unavailable]
+            error_description:
+              type: string
+    TokenRequest:
+      type: object
+      required: [grant_type]
+      properties:
+        grant_type: {type: string}
+        client_id: {type: string}
+        client_secret: {type: string}
+        client_assertion_type: {type: string}
+        client_assertion: {type: string}
+        scope: {type: string, description: "Space-separated catalogue scopes (WP-2 table B)."}
+        audience: {type: string, description: "The target's host or base URL; its host becomes aud (M18)."}
+        resource:
+          type: array
+          description: RFC 8707 resource indicator (one), an alternative to audience.
+          items: {type: string}
+    TokenResponse:
+      type: object
+      required: [access_token, token_type, expires_in, scope]
+      properties:
+        access_token: {type: string}
+        token_type: {type: string, enum: [Bearer]}
+        expires_in: {type: integer, description: Seconds until exp (at most 3600).}
+        scope: {type: string}
+    JWKS:
+      type: object
+      required: [keys]
+      properties:
+        keys:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    IssuerMetadata:
+      type: object
+      required: [issuer, jwks_uri, token_endpoint, grant_types_supported, token_endpoint_auth_methods_supported, token_endpoint_auth_signing_alg_values_supported, scopes_supported]
+      properties:
+        issuer: {type: string}
+        jwks_uri: {type: string}
+        token_endpoint: {type: string}
+        grant_types_supported:
+          type: array
+          items: {type: string}
+        token_endpoint_auth_methods_supported:
+          type: array
+          items: {type: string}
+        token_endpoint_auth_signing_alg_values_supported:
+          type: array
+          items: {type: string}
+        scopes_supported:
+          type: array
+          items: {type: string}
+    OAuthClientStatus:
+      type: string
+      enum: [active, suspended, revoked]
+    OAuthAuthMethod:
+      type: string
+      enum: [client_secret_post, private_key_jwt]
+    OAuthClientInput:
+      type: object
+      required: [client_id, scopes, auth_method]
+      properties:
+        client_id:
+          type: string
+          maxLength: 64
+          description: "authority-01, cisp-01, ansp-01, ussp-<code>-01 or lab-01 (M24)."
+        scopes:
+          type: array
+          maxItems: 32
+          items: {type: string}
+        audiences:
+          type: array
+          maxItems: 32
+          description: Hosts this client may name for national scopes.
+          items: {type: string}
+        auth_method:
+          $ref: "#/components/schemas/OAuthAuthMethod"
+        jwks:
+          $ref: "#/components/schemas/JWKS"
+        mtls_subject: {type: string, maxLength: 512}
+        certificate_id: {type: string, maxLength: 64}
+        note: {type: string, maxLength: 1000}
+    OAuthClientPatch:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/OAuthClientStatus"
+        scopes:
+          type: array
+          maxItems: 32
+          items: {type: string}
+        audiences:
+          type: array
+          maxItems: 32
+          items: {type: string}
+        note: {type: string, maxLength: 1000}
+    OAuthClient:
+      type: object
+      required: [client_id, system, scopes, audiences, auth_method, status, note, created_at, created_by, updated_at, updated_by]
+      properties:
+        client_id: {type: string}
+        system: {type: string, enum: [authority, cisp, ansp, ussp, lab]}
+        scopes:
+          type: array
+          items: {type: string}
+        audiences:
+          type: array
+          items: {type: string}
+        auth_method:
+          $ref: "#/components/schemas/OAuthAuthMethod"
+        jwks:
+          $ref: "#/components/schemas/JWKS"
+        mtls_subject: {type: string}
+        certificate_id: {type: string}
+        status:
+          $ref: "#/components/schemas/OAuthClientStatus"
+        note: {type: string}
+        created_at: {type: string, format: date-time}
+        created_by: {type: string}
+        updated_at: {type: string, format: date-time}
+        updated_by: {type: string}
+    OAuthClientList:
+      type: object
+      required: [clients]
+      properties:
+        clients:
+          type: array
+          items:
+            $ref: "#/components/schemas/OAuthClient"
+    OAuthClientCreated:
+      type: object
+      required: [client]
+      properties:
+        client:
+          $ref: "#/components/schemas/OAuthClient"
+        client_secret:
+          type: string
+          description: The client_secret_post secret; shown here once and never again.
+    SigningKey:
+      type: object
+      required: [kid, purpose, state, registered_at]
+      properties:
+        kid: {type: string}
+        purpose: {type: string, enum: [token, publication]}
+        state:
+          type: string
+          enum: [candidate, requested, active, retiring, retired]
+          description: "retiring: retired but still in the JWKS; retired: no longer published."
+        registered_at: {type: string, format: date-time}
+        active_from: {type: string, format: date-time}
+        retired_at: {type: string, format: date-time}
+        requested_by: {type: string}
+        requested_at: {type: string, format: date-time}
+    SigningKeyList:
+      type: object
+      required: [keys]
+      properties:
+        keys:
+          type: array
+          items:
+            $ref: "#/components/schemas/SigningKey"
+    KeyRotation:
+      type: object
+      required: [state, kid, active_kid]
+      properties:
+        state: {type: string, enum: [requested, activated]}
+        kid: {type: string, description: The key requested or activated.}
+        active_kid: {type: string, description: The key that signs after this call.}
+        previous_kid: {type: string}
+        requested_by: {type: string}
+        confirm_before: {type: string, format: date-time}

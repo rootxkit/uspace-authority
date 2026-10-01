@@ -2,6 +2,8 @@ package config
 
 import (
 	"errors"
+	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/rootxkit/uspace-core/core"
@@ -47,6 +49,34 @@ type API struct {
 	MTLSMode  string   `env:"AUTHORITY_MTLS_MODE" default:"required" enum:"required|off" help:"mTLS on machine routes; off only in the lab and on staging"`
 	PGPool
 	PolicyRefreshS int `env:"POLICY_REFRESH_S" default:"60" min:"1" max:"3600" help:"seconds between re-reads of the active policy by its followers (the push is repaired by the re-read, G-08)"`
+	Tokens
+	Argon2
+}
+
+// Tokens is the ecosystem token service of api (WP-2, normative tables
+// A and B of docs/WORKPACKAGES/WP-2.md).
+type Tokens struct {
+	IssuerURL            string   `env:"ISSUER_URL" kind:"url" help:"iss of every token this issuer signs and the base of its jwks_uri and token_endpoint; default AUTHORITY_PUBLIC_URL"`
+	SigningKeyFiles      []string `env:"SIGNING_KEY_FILES" required:"true" help:"token-signing RSA keys (PEM, at least 2048 bits), comma-separated paths outside the repository; the first is activated on an empty key table, later ones are rotation candidates (kms: references are refused by this build)"`
+	PublicationKeyFile   string   `env:"PUBLICATION_KEY_FILE" help:"RSA key (PEM) of the detached publication JWS (M26), listed in the JWKS under its own kid; optional until WP-6"`
+	TokenTTLS            int      `env:"TOKEN_TTL_S" default:"3600" min:"60" max:"3600" help:"lifetime of an ecosystem machine token (table A: at most 1 h)"`
+	TokenRatePerMin      float64  `env:"TOKEN_RATE_LIMIT_PER_MIN" default:"60" min:"1" help:"tokens per minute per authenticated client"`
+	TokenRateBurst       int      `env:"TOKEN_RATE_LIMIT_BURST" default:"20" min:"1" help:"token burst per client"`
+	TokenRateMaxClients  int      `env:"TOKEN_RATE_LIMIT_MAX_CLIENTS" default:"1000" min:"1" help:"clients tracked by the token rate limiter; the least recently seen is evicted beyond it"`
+	AssertionReplayMax   int      `env:"ASSERTION_REPLAY_MAX" default:"100000" min:"10" help:"private_key_jwt assertion ids remembered until they expire; a full memory refuses new assertions"`
+	KeyRetireGraceS      int      `env:"KEY_RETIRE_GRACE_S" default:"86400" min:"3600" max:"604800" help:"a retired signing key stays in the JWKS this long (the verifiers' JWKS cache TTL)"`
+	KeyRotationTwoPerson bool     `env:"KEY_ROTATION_TWO_PERSON" default:"true" help:"a key rotation needs a second admin's confirmation (T4)"`
+	KeyRotationConfirmS  int      `env:"KEY_ROTATION_CONFIRM_S" default:"600" min:"60" max:"3600" help:"window for the second admin's confirmation of a rotation"`
+	KeyRefreshS          int      `env:"KEY_REFRESH_S" default:"60" min:"5" max:"3600" help:"seconds between re-reads of the signing-key table, so every api replica follows a rotation"`
+}
+
+// Argon2 holds the argon2id parameters of passwords and client secrets.
+// The defaults and lower bounds are the OWASP Password Storage Cheat
+// Sheet's argon2id minimum (19 MiB, 2 iterations, 1 lane).
+type Argon2 struct {
+	Argon2MemoryKiB int `env:"ARGON2_MEMORY_KIB" default:"19456" min:"19456" max:"4194304" help:"argon2id memory in KiB (OWASP minimum 19456)"`
+	Argon2Time      int `env:"ARGON2_TIME" default:"2" min:"2" max:"100" help:"argon2id iterations (OWASP minimum 2)"`
+	Argon2Threads   int `env:"ARGON2_THREADS" default:"1" min:"1" max:"64" help:"argon2id parallelism"`
 }
 
 // PGPool is the relational pool of api (internal/store/pg).
@@ -156,5 +186,45 @@ func (c *API) Validate() error {
 	if c.Addr == c.AdminAddr && !strings.HasSuffix(c.Addr, ":0") {
 		errs = append(errs, &core.FieldError{Field: "ADMIN_ADDR", Reason: "must differ from API_ADDR"})
 	}
+	if own := c.OwnHost(); own != "" && len(c.Audiences) > 0 && !slices.Contains(c.Audiences, own) {
+		errs = append(errs, core.Fieldf("AUTHORITY_AUDIENCES", "must contain this system's own host %q (the host of AUTHORITY_PUBLIC_URL)", own))
+	}
+	for _, a := range c.Audiences {
+		if strings.ContainsAny(a, "/:@ ") || a != strings.ToLower(a) {
+			errs = append(errs, core.Fieldf("AUTHORITY_AUDIENCES", "%q is not a lower-case host name", a))
+		}
+	}
+	if u, err := url.Parse(c.Issuer()); err == nil && (u.RawQuery != "" || u.Fragment != "") {
+		errs = append(errs, core.Fieldf("ISSUER_URL", "must have no query or fragment"))
+	}
 	return errors.Join(errs...)
+}
+
+// OwnHost is the host of AUTHORITY_PUBLIC_URL, lower-case and without a
+// port: the aud of this system's sessions and of tokens addressed to it
+// (M18).
+func (c *API) OwnHost() string {
+	u, err := url.Parse(c.PublicURL)
+	if err != nil {
+		return ""
+	}
+	return strings.ToLower(u.Hostname())
+}
+
+// AudienceList is AUTHORITY_AUDIENCES, or the own host alone when unset.
+func (c *API) AudienceList() []string {
+	if len(c.Audiences) > 0 {
+		return slices.Clone(c.Audiences)
+	}
+	return []string{c.OwnHost()}
+}
+
+// Issuer is ISSUER_URL, or AUTHORITY_PUBLIC_URL when unset, without a
+// trailing slash.
+func (c *API) Issuer() string {
+	iss := c.IssuerURL
+	if iss == "" {
+		iss = c.PublicURL
+	}
+	return strings.TrimSuffix(iss, "/")
 }

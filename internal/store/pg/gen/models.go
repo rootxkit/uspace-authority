@@ -59,3 +59,33 @@ type GooseDbVersionRelational struct {
 	IsApplied bool
 	Tstamp    pgtype.Timestamp
 }
+
+type OauthClient struct {
+	ClientID      string
+	System        string
+	Scopes        []string
+	Audiences     []string
+	AuthMethod    string
+	SecretHash    *string
+	Jwks          []byte
+	MtlsSubject   *string
+	CertificateID *string
+	Status        string
+	Note          string
+	CreatedAt     time.Time
+	CreatedBy     string
+	UpdatedAt     time.Time
+	UpdatedBy     string
+}
+
+type SigningKey struct {
+	Kid          string
+	Purpose      string
+	PublicJwk    []byte
+	PrivateRef   string
+	RegisteredAt time.Time
+	ActiveFrom   *time.Time
+	RetiredAt    *time.Time
+	RequestedBy  *string
+	RequestedAt  *time.Time
+}
