@@ -1,0 +1,248 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GOFLAGS: -mod=mod
+  GOTOOLCHAIN: local
+
+jobs:
+  # Path filter: Go jobs skip on a docs-only change. A skipped job counts
+  # as passed for branch protection, so the required checks never hang.
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      go: ${{ steps.filter.outputs.go }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            go:
+              - '**/*.go'
+              - 'go.mod'
+              - 'go.sum'
+              - 'api/**'
+              - 'migrations/**'
+              - 'scripts/**'
+              - 'Makefile'
+              - '.golangci.yml'
+              - 'Dockerfile'
+              - '.github/workflows/ci.yml'
+
+  build-vet-lint:
+    name: build, vet, fmt, lint
+    needs: changes
+    if: needs.changes.outputs.go == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: gofmt
+        run: |
+          out="$(gofmt -l .)"
+          if [ -n "$out" ]; then echo "gofmt needed:"; echo "$out"; exit 1; fi
+      - run: CGO_ENABLED=0 go build ./...
+      - run: go vet ./...
+      - name: go mod tidy is clean
+        run: |
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
+      # Pinned to the versions uspace-core pins (and the Makefile's
+      # STATICCHECK_VERSION and GOLANGCI_LINT_VERSION).
+      - name: staticcheck
+        run: go run honnef.co/go/tools/cmd/staticcheck@v0.8.1 ./...
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.14.0
+
+  test-race:
+    name: test with the race detector
+    needs: changes
+    if: needs.changes.outputs.go == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: go test -race -shuffle=on
+        run: go test -race -count=1 -shuffle=on -coverprofile=coverage.out -covermode=atomic ./...
+      - name: coverage summary
+        run: go tool cover -func=coverage.out | tail -n 1
+
+  vectors:
+    name: knowledge vectors
+    needs: changes
+    if: needs.changes.outputs.go == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: uspace-core vectors at the pinned version, then this repository's
+        run: |
+          set -o pipefail
+          { go test -count=1 -run 'Vector|Manifest|Version' -v github.com/rootxkit/uspace-core/... &&
+            go test -count=1 -run 'Vector|Manifest|Version' -v ./... ; } 2>&1 | tee vectors.log |
+            grep -E '^(--- (FAIL|SKIP)|FAIL|ok)' || { echo "vector tests failed"; exit 1; }
+
+  contract:
+    name: contract
+    needs: changes
+    if: needs.changes.outputs.go == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: generated code is up to date with api/openapi.yaml
+        run: scripts/verify-generated.sh
+
+  integration:
+    name: integration
+    needs: changes
+    if: needs.changes.outputs.go == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Only the databases WP-0 touches; NATS joins when a WP needs it.
+    services:
+      postgis:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: authority
+          POSTGRES_PASSWORD: authority
+          POSTGRES_DB: authority
+        ports: ["56432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U authority -d authority"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+      timescaledb:
+        image: timescale/timescaledb-ha:pg16
+        env:
+          POSTGRES_PASSWORD: authority
+          POSTGRES_DB: authority_ts
+        ports: ["56433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d authority_ts"
+          --health-interval 2s --health-timeout 3s --health-retries 60
+    env:
+      PG_URL: postgres://authority:authority@localhost:56432/authority?sslmode=disable
+      TS_URL: postgres://postgres:authority@localhost:56433/authority_ts?sslmode=disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      # D7: the migrate subcommand applies both trees before anything runs.
+      - name: migrate both trees
+        run: go run ./cmd/uspace-authority migrate
+      - name: integration tests
+        run: |
+          set -o pipefail
+          INTEGRATION=1 go test -count=1 -run Integration -v ./... 2>&1 | tee integration.log
+          if grep -q -- '--- SKIP' integration.log; then echo "an integration test skipped with INTEGRATION=1"; exit 1; fi
+
+  govulncheck:
+    name: govulncheck
+    needs: changes
+    if: needs.changes.outputs.go == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 -show verbose ./...
+
+  gitleaks:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_VERSION: "8.24.3"
+
+  # main and v* tags only: build, push to GHCR with an SBOM and
+  # provenance, and sign with cosign (keyless).
+  image:
+    name: image
+    if: github.event_name == 'push'
+    needs: [build-vet-lint, test-race, vectors, contract, integration, gitleaks]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=sha,prefix=sha-
+            type=ref,event=tag
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: VERSION=${{ github.ref_name }}-${{ github.sha }}
+          sbom: true
+          provenance: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - uses: sigstore/cosign-installer@v3
+      - name: sign
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: cosign sign --yes "ghcr.io/${{ github.repository }}@${DIGEST}"
