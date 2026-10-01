@@ -45,10 +45,10 @@ func TestRegistrationRefusesWhatTheTokenEndpointWouldRefuse(t *testing.T) {
 			all = append(all, s.Name)
 		}
 	}
-	if _, _, err := f.parts.Registry.Create(ctx, NewClient{ID: "lab-01", Scopes: all, AuthMethod: MethodSecretPost}, admin); err != nil {
+	if _, _, err := f.parts.Registry.Create(ctx, ClientInput{ID: "lab-01", Scopes: all, AuthMethod: MethodSecretPost}, admin); err != nil {
 		t.Fatalf("every grantable row: %v", err)
 	}
-	_, _, err := f.parts.Registry.Create(ctx, NewClient{
+	_, _, err := f.parts.Registry.Create(ctx, ClientInput{
 		ID: "cisp-1", Scopes: []string{"rid.observe", "dp.observe", "cis.read", "cis.read", "cis.publish:ats_data", "ussp.geo"},
 		Audiences: []string{"Upper.example.test", "h:1", "ok.example.test", "ok.example.test"}, AuthMethod: "client_secret_basic",
 		Note: strings.Repeat("n", MaxNoteLen+1), MTLSSubject: strings.Repeat("m", MaxMTLSSubjectLen+1),
@@ -62,11 +62,11 @@ func TestRegistrationRefusesWhatTheTokenEndpointWouldRefuse(t *testing.T) {
 		}
 	}
 	// dp.observe for a client other than lab-01 is refused by name.
-	_, _, err = f.parts.Registry.Create(ctx, NewClient{ID: "cisp-01", Scopes: []string{"dp.observe"}, AuthMethod: MethodSecretPost}, admin)
+	_, _, err = f.parts.Registry.Create(ctx, ClientInput{ID: "cisp-01", Scopes: []string{"dp.observe"}, AuthMethod: MethodSecretPost}, admin)
 	if !slices.Contains(fieldsOf(err), "scopes[0]") || !strings.Contains(err.Error(), "lab-01") {
 		t.Fatalf("dp.observe for cisp-01: %v", err)
 	}
-	for name, in := range map[string]NewClient{
+	for name, in := range map[string]ClientInput{
 		"no scopes":      {ID: "cisp-01", AuthMethod: MethodSecretPost},
 		"too many":       {ID: "cisp-01", Scopes: slices.Repeat([]string{"cis.read"}, MaxScopes+1), AuthMethod: MethodSecretPost},
 		"many audiences": {ID: "cisp-01", Scopes: []string{"cis.read"}, Audiences: slices.Repeat([]string{"a"}, MaxAudiences+1), AuthMethod: MethodSecretPost},
@@ -115,10 +115,10 @@ func TestRegistryStoreFailures(t *testing.T) {
 	f := newFixture(t, fixtureOpts{})
 	ctx := context.Background()
 	f.st.failRecord = true
-	if _, _, err := f.parts.Registry.Create(ctx, NewClient{ID: "cisp-01", Scopes: []string{"cis.read"}, AuthMethod: MethodSecretPost}, admin); err == nil {
+	if _, _, err := f.parts.Registry.Create(ctx, ClientInput{ID: "cisp-01", Scopes: []string{"cis.read"}, AuthMethod: MethodSecretPost}, admin); err == nil {
 		t.Fatal("created without its event")
 	}
-	if _, err := f.st.Client(ctx, "cisp-01"); !errors.Is(err, ErrNotFound) {
+	if _, err := f.st.ClientRecord(ctx, "cisp-01"); !errors.Is(err, ErrNotFound) {
 		t.Fatal("the client survived the rolled-back transaction")
 	}
 	f.st.failRecord = false

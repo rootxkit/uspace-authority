@@ -66,16 +66,16 @@ func eventTypes(t *testing.T, u string) map[string]int {
 func TestIntegrationTokenServiceOnPostgres(t *testing.T) {
 	parts, db, u := pgParts(t, 2, true)
 	ctx := context.Background()
-	if _, _, err := parts.Registry.Create(ctx, NewClient{ID: "lab-01", Scopes: []string{"cis.read", "dp.observe"},
+	if _, _, err := parts.Registry.Create(ctx, ClientInput{ID: "lab-01", Scopes: []string{"cis.read", "dp.observe"},
 		Audiences: []string{cispHost}, AuthMethod: MethodSecretPost}, admin); err != nil {
 		t.Fatal(err)
 	}
-	_, secret, err := parts.Registry.Create(ctx, NewClient{ID: "cisp-01", Scopes: []string{"cis.read"},
+	_, secret, err := parts.Registry.Create(ctx, ClientInput{ID: "cisp-01", Scopes: []string{"cis.read"},
 		Audiences: []string{cispHost}, AuthMethod: MethodSecretPost, CertificateID: "cert-1", MTLSSubject: "CN=cisp"}, admin)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := parts.Registry.Create(ctx, NewClient{ID: "ussp-GEO1-01", Scopes: []string{"rid.service_provider"},
+	if _, _, err := parts.Registry.Create(ctx, ClientInput{ID: "ussp-GEO1-01", Scopes: []string{"rid.service_provider"},
 		AuthMethod: MethodPrivateKeyJWT, JWKS: clientJWKS(t, 3, clientKID)}, admin); err != nil {
 		t.Fatal(err)
 	}

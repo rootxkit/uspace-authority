@@ -200,7 +200,7 @@ func (h Handler) CreateOAuthClient(ctx context.Context, req gen.CreateOAuthClien
 		return nil, httpx.Refuse(http.StatusBadRequest, httpx.SlugValidation, "", &core.FieldError{Field: "body", Reason: "required"})
 	}
 	b := req.Body
-	in := NewClient{ID: b.ClientId, Scopes: b.Scopes, AuthMethod: string(b.AuthMethod),
+	in := ClientInput{ID: b.ClientId, Scopes: b.Scopes, AuthMethod: string(b.AuthMethod),
 		MTLSSubject: deref(b.MtlsSubject), CertificateID: deref(b.CertificateId), Note: deref(b.Note)}
 	if b.Audiences != nil {
 		in.Audiences = *b.Audiences
@@ -316,7 +316,7 @@ func (h Handler) RotateSigningKey(ctx context.Context, _ gen.RotateSigningKeyReq
 	return gen.RotateSigningKey200JSONResponse(body), nil
 }
 
-func clientToAPI(c *Client) (gen.OAuthClient, error) {
+func clientToAPI(c *ClientRecord) (gen.OAuthClient, error) {
 	out := gen.OAuthClient{
 		ClientId: c.ID, System: gen.OAuthClientSystem(c.System), Scopes: nonNil(c.Scopes), Audiences: nonNil(c.Audiences),
 		AuthMethod: gen.OAuthAuthMethod(c.AuthMethod), Status: gen.OAuthClientStatus(c.Status), Note: c.Note,

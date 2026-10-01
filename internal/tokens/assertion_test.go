@@ -59,7 +59,7 @@ func assertionReq(a, scope, audience string) TokenRequest {
 func TestPrivateKeyJWTRefusalsBesideAcceptance(t *testing.T) {
 	f := newFixture(t, fixtureOpts{})
 	ctx := context.Background()
-	if _, _, err := f.parts.Registry.Create(ctx, NewClient{ID: "ussp-GEO1-01", Scopes: []string{"rid.service_provider"},
+	if _, _, err := f.parts.Registry.Create(ctx, ClientInput{ID: "ussp-GEO1-01", Scopes: []string{"rid.service_provider"},
 		AuthMethod: MethodPrivateKeyJWT, JWKS: clientJWKS(t, 3, clientKID)}, admin); err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +148,7 @@ func TestReplayMemoryIsBounded(t *testing.T) {
 func TestFullReplayMemoryRefusesTheGrant(t *testing.T) {
 	f := newFixture(t, fixtureOpts{replayMax: 1})
 	ctx := context.Background()
-	if _, _, err := f.parts.Registry.Create(ctx, NewClient{ID: "ussp-GEO1-01", Scopes: []string{"rid.service_provider"},
+	if _, _, err := f.parts.Registry.Create(ctx, ClientInput{ID: "ussp-GEO1-01", Scopes: []string{"rid.service_provider"},
 		AuthMethod: MethodPrivateKeyJWT, JWKS: clientJWKS(t, 3, clientKID)}, admin); err != nil {
 		t.Fatal(err)
 	}

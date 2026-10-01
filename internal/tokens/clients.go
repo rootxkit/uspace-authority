@@ -34,8 +34,8 @@ const (
 	SecretBytes = 32
 )
 
-// NewClient is a registration request.
-type NewClient struct {
+// ClientInput is a registration request.
+type ClientInput struct {
 	ID            string
 	Scopes        []string
 	Audiences     []string
@@ -162,7 +162,7 @@ func ValidateClientJWKS(raw json.RawMessage) (jwk.Set, error) {
 }
 
 // validateClient checks a whole client row before it is written.
-func validateClient(c *Client) error {
+func validateClient(c *ClientRecord) error {
 	var errs []error
 	sys, err := SystemOf(c.ID)
 	if err != nil {
@@ -189,9 +189,9 @@ func validateClient(c *Client) error {
 
 // Create registers a client. For client_secret_post it generates the
 // secret, stores its argon2id hash and returns the secret once.
-func (g *Registry) Create(ctx context.Context, in NewClient, actor audit.Actor) (Client, string, error) {
+func (g *Registry) Create(ctx context.Context, in ClientInput, actor audit.Actor) (ClientRecord, string, error) {
 	now := g.now()
-	c := Client{
+	c := ClientRecord{
 		ID: in.ID, Scopes: slices.Clone(in.Scopes), Audiences: slices.Clone(in.Audiences), AuthMethod: in.AuthMethod,
 		MTLSSubject: in.MTLSSubject, CertificateID: in.CertificateID, Status: StatusActive, Note: in.Note,
 		CreatedAt: now, CreatedBy: actor.ID, UpdatedAt: now, UpdatedBy: actor.ID,
@@ -208,7 +208,7 @@ func (g *Registry) Create(ctx context.Context, in NewClient, actor audit.Actor) 
 		}
 		var b [SecretBytes]byte
 		if _, err := rand.Read(b[:]); err != nil {
-			return Client{}, "", err
+			return ClientRecord{}, "", err
 		}
 		secret = base64.RawURLEncoding.EncodeToString(b[:])
 	case MethodPrivateKeyJWT:
@@ -220,18 +220,18 @@ func (g *Registry) Create(ctx context.Context, in NewClient, actor audit.Actor) 
 		errs = append(errs, core.Fieldf("auth_method", "must be client_secret_post or private_key_jwt"))
 	}
 	if err := errors.Join(errs...); err != nil {
-		return Client{}, "", err
+		return ClientRecord{}, "", err
 	}
 	if secret != "" {
 		h, err := g.Hasher.Hash(secret)
 		if err != nil {
-			return Client{}, "", err
+			return ClientRecord{}, "", err
 		}
 		c.SecretHash = h
 	}
-	var out Client
+	var out ClientRecord
 	err := g.Store.InTx(ctx, func(tx Tx) error {
-		if _, err := tx.Client(ctx, c.ID); err == nil {
+		if _, err := tx.ClientRecord(ctx, c.ID); err == nil {
 			return httpx.Refuse(http.StatusConflict, httpx.SlugConflict, "the client exists",
 				core.Fieldf("client_id", "%s is registered already", quote(c.ID)))
 		} else if !errors.Is(err, ErrNotFound) {
@@ -250,17 +250,17 @@ func (g *Registry) Create(ctx context.Context, in NewClient, actor audit.Actor) 
 		})
 	})
 	if err != nil {
-		return Client{}, "", err
+		return ClientRecord{}, "", err
 	}
 	return out, secret, nil
 }
 
 // Update applies p. A status change takes effect on the next token
 // request; issued tokens run to their exp.
-func (g *Registry) Update(ctx context.Context, id string, p ClientPatch, actor audit.Actor) (Client, error) {
-	var out Client
+func (g *Registry) Update(ctx context.Context, id string, p ClientPatch, actor audit.Actor) (ClientRecord, error) {
+	var out ClientRecord
 	err := g.Store.InTx(ctx, func(tx Tx) error {
-		c, err := tx.Client(ctx, id)
+		c, err := tx.ClientRecord(ctx, id)
 		if errors.Is(err, ErrNotFound) {
 			return notFound(id)
 		}
@@ -300,22 +300,22 @@ func (g *Registry) Update(ctx context.Context, id string, p ClientPatch, actor a
 		})
 	})
 	if err != nil {
-		return Client{}, err
+		return ClientRecord{}, err
 	}
 	return out, nil
 }
 
 // Get reads one client.
-func (g *Registry) Get(ctx context.Context, id string) (Client, error) {
-	c, err := g.Store.Client(ctx, id)
+func (g *Registry) Get(ctx context.Context, id string) (ClientRecord, error) {
+	c, err := g.Store.ClientRecord(ctx, id)
 	if errors.Is(err, ErrNotFound) {
-		return Client{}, notFound(id)
+		return ClientRecord{}, notFound(id)
 	}
 	return c, err
 }
 
 // List reads every client.
-func (g *Registry) List(ctx context.Context) ([]Client, error) { return g.Store.Clients(ctx) }
+func (g *Registry) List(ctx context.Context) ([]ClientRecord, error) { return g.Store.Clients(ctx) }
 
 func notFound(id string) error {
 	return httpx.Refuse(http.StatusNotFound, httpx.SlugNotFound, "no such client",
@@ -323,6 +323,6 @@ func notFound(id string) error {
 }
 
 // String renders a client for logs without its secret hash or keys.
-func (c Client) String() string {
+func (c ClientRecord) String() string {
 	return fmt.Sprintf("client %s (%s, %s, %s)", c.ID, c.System, c.AuthMethod, c.Status)
 }

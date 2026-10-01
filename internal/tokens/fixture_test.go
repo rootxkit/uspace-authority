@@ -102,7 +102,7 @@ var admin = audit.Actor{Type: audit.ActorUser, ID: "admin-1", Realm: "console"}
 // register creates a client_secret_post client and returns its secret.
 func (f *fixture) register(t testing.TB, id string, scopes, audiences []string) string {
 	t.Helper()
-	_, secret, err := f.parts.Registry.Create(context.Background(), NewClient{
+	_, secret, err := f.parts.Registry.Create(context.Background(), ClientInput{
 		ID: id, Scopes: scopes, Audiences: audiences, AuthMethod: MethodSecretPost,
 	}, admin)
 	if err != nil {

@@ -62,7 +62,7 @@ func UnverifiedIssuer(assertion string) string {
 // JWKS, iss and sub both the client id, aud one of audiences (this
 // issuer and its token endpoint), exp within MaxAssertionLifetime, a
 // jti. It returns the jti and exp for the replay memory.
-func VerifyAssertion(ctx context.Context, c Client, assertion string, audiences []string, now time.Time) (jti string, exp time.Time, err error) {
+func VerifyAssertion(ctx context.Context, c ClientRecord, assertion string, audiences []string, now time.Time) (jti string, exp time.Time, err error) {
 	set, err := ValidateClientJWKS(c.JWKS)
 	if err != nil {
 		return "", time.Time{}, fmt.Errorf("the client's registered JWKS is unusable: %w", err)

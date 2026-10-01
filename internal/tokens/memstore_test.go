@@ -16,7 +16,7 @@ import (
 // validated by the real audit catalogue.
 type memStore struct {
 	mu      sync.Mutex
-	clients map[string]Client
+	clients map[string]ClientRecord
 	keys    []KeyRow
 	events  []audit.Event
 	// failRecord makes Record fail (an audit outage).
@@ -25,7 +25,7 @@ type memStore struct {
 	failReads bool
 }
 
-func newMemStore() *memStore { return &memStore{clients: map[string]Client{}} }
+func newMemStore() *memStore { return &memStore{clients: map[string]ClientRecord{}} }
 
 var errStoreDown = errors.New("store down")
 
@@ -42,30 +42,30 @@ func (m *memStore) InTx(_ context.Context, fn func(Tx) error) error {
 	return nil
 }
 
-func (m *memStore) Client(_ context.Context, id string) (Client, error) {
+func (m *memStore) ClientRecord(_ context.Context, id string) (ClientRecord, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.failReads {
-		return Client{}, errStoreDown
+		return ClientRecord{}, errStoreDown
 	}
 	c, ok := m.clients[id]
 	if !ok {
-		return Client{}, ErrNotFound
+		return ClientRecord{}, ErrNotFound
 	}
 	return c, nil
 }
 
-func (m *memStore) Clients(context.Context) ([]Client, error) {
+func (m *memStore) Clients(context.Context) ([]ClientRecord, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.failReads {
 		return nil, errStoreDown
 	}
-	out := make([]Client, 0, len(m.clients))
+	out := make([]ClientRecord, 0, len(m.clients))
 	for _, id := range slices.Sorted(maps.Keys(m.clients)) {
 		out = append(out, m.clients[id])
 	}
-	slices.SortFunc(out, func(a, b Client) int {
+	slices.SortFunc(out, func(a, b ClientRecord) int {
 		if a.ID < b.ID {
 			return -1
 		}
@@ -112,26 +112,26 @@ func (t memTx) Record(_ context.Context, ev audit.Event) error {
 	return nil
 }
 
-func (t memTx) Client(_ context.Context, id string) (Client, error) {
+func (t memTx) ClientRecord(_ context.Context, id string) (ClientRecord, error) {
 	c, ok := t.m.clients[id]
 	if !ok {
-		return Client{}, ErrNotFound
+		return ClientRecord{}, ErrNotFound
 	}
 	return c, nil
 }
 
-func (t memTx) InsertClient(_ context.Context, c Client) (Client, error) {
+func (t memTx) InsertClient(_ context.Context, c ClientRecord) (ClientRecord, error) {
 	if _, dup := t.m.clients[c.ID]; dup {
-		return Client{}, errors.New("duplicate key")
+		return ClientRecord{}, errors.New("duplicate key")
 	}
 	t.m.clients[c.ID] = c
 	return c, nil
 }
 
-func (t memTx) UpdateClient(_ context.Context, c Client) (Client, error) {
+func (t memTx) UpdateClient(_ context.Context, c ClientRecord) (ClientRecord, error) {
 	old, ok := t.m.clients[c.ID]
 	if !ok {
-		return Client{}, ErrNotFound
+		return ClientRecord{}, ErrNotFound
 	}
 	old.Scopes, old.Audiences, old.Status, old.Note, old.UpdatedAt, old.UpdatedBy = c.Scopes, c.Audiences, c.Status, c.Note, c.UpdatedAt, c.UpdatedBy
 	t.m.clients[c.ID] = old

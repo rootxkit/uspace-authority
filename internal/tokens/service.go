@@ -175,72 +175,72 @@ func (s *Service) Token(ctx context.Context, req TokenRequest) (TokenResponse, *
 
 // authenticate finds the client and checks its credential. An unknown
 // client and a wrong secret take the same work and give the same answer.
-func (s *Service) authenticate(ctx context.Context, req TokenRequest, now time.Time) (Client, *OAuthError) {
+func (s *Service) authenticate(ctx context.Context, req TokenRequest, now time.Time) (ClientRecord, *OAuthError) {
 	if req.GrantType != GrantClientCredentials {
 		if req.GrantType == "" {
-			return Client{}, refuse(http.StatusBadRequest, ErrInvalidRequest, "grant_type_missing", "grant_type is required")
+			return ClientRecord{}, refuse(http.StatusBadRequest, ErrInvalidRequest, "grant_type_missing", "grant_type is required")
 		}
-		return Client{}, refuse(http.StatusBadRequest, ErrUnsupportedGrantType, "grant_type_unsupported", "only client_credentials is supported")
+		return ClientRecord{}, refuse(http.StatusBadRequest, ErrUnsupportedGrantType, "grant_type_unsupported", "only client_credentials is supported")
 	}
 	hasAssertion := req.ClientAssertion != "" || req.ClientAssertionType != ""
 	switch {
 	case hasAssertion && req.HasSecret:
-		return Client{}, refuse(http.StatusBadRequest, ErrInvalidRequest, "two_client_credentials", "use one client authentication method")
+		return ClientRecord{}, refuse(http.StatusBadRequest, ErrInvalidRequest, "two_client_credentials", "use one client authentication method")
 	case hasAssertion:
 		return s.authenticateAssertion(ctx, req, now)
 	case req.ClientID == "" || !req.HasSecret:
-		return Client{}, refuse(http.StatusUnauthorized, ErrInvalidClient, "client_credentials_missing",
+		return ClientRecord{}, refuse(http.StatusUnauthorized, ErrInvalidClient, "client_credentials_missing",
 			"client_id with client_secret, or a client assertion, is required (client_secret_basic is not supported)")
 	}
 	invalid := refuse(http.StatusUnauthorized, ErrInvalidClient, "client_authentication_failed", "client authentication failed")
-	c, err := s.Store.Client(ctx, req.ClientID)
+	c, err := s.Store.ClientRecord(ctx, req.ClientID)
 	if err != nil {
 		s.Hasher.VerifyDummy(req.ClientSecret)
 		if !errors.Is(err, ErrNotFound) {
 			logging.Error(ctx, s.logger(), "client lookup failed", err)
-			return Client{}, refuse(http.StatusInternalServerError, ErrTemporarily, "store_failed", "the client registry is unavailable")
+			return ClientRecord{}, refuse(http.StatusInternalServerError, ErrTemporarily, "store_failed", "the client registry is unavailable")
 		}
 		invalid.Reason = "client_unknown"
-		return Client{}, invalid
+		return ClientRecord{}, invalid
 	}
 	if c.AuthMethod != MethodSecretPost || c.SecretHash == "" {
 		s.Hasher.VerifyDummy(req.ClientSecret)
 		invalid.Reason = "client_auth_method_mismatch"
-		return Client{}, invalid
+		return ClientRecord{}, invalid
 	}
 	ok, err := s.Hasher.Verify(req.ClientSecret, c.SecretHash)
 	if err != nil || !ok {
 		invalid.Reason = "client_secret_wrong"
-		return Client{}, invalid
+		return ClientRecord{}, invalid
 	}
 	return c, s.checkStatus(c)
 }
 
-func (s *Service) authenticateAssertion(ctx context.Context, req TokenRequest, now time.Time) (Client, *OAuthError) {
+func (s *Service) authenticateAssertion(ctx context.Context, req TokenRequest, now time.Time) (ClientRecord, *OAuthError) {
 	invalid := refuse(http.StatusUnauthorized, ErrInvalidClient, "client_assertion_invalid", "the client assertion was not accepted")
 	if req.ClientAssertionType != AssertionType {
-		return Client{}, refuse(http.StatusBadRequest, ErrInvalidRequest, "client_assertion_type_wrong",
+		return ClientRecord{}, refuse(http.StatusBadRequest, ErrInvalidRequest, "client_assertion_type_wrong",
 			"client_assertion_type must be "+AssertionType)
 	}
 	id := UnverifiedIssuer(req.ClientAssertion)
 	if id == "" {
-		return Client{}, invalid
+		return ClientRecord{}, invalid
 	}
 	if req.ClientID != "" && req.ClientID != id {
-		return Client{}, refuse(http.StatusBadRequest, ErrInvalidRequest, "client_id_mismatch", "client_id differs from the assertion's issuer")
+		return ClientRecord{}, refuse(http.StatusBadRequest, ErrInvalidRequest, "client_id_mismatch", "client_id differs from the assertion's issuer")
 	}
-	c, err := s.Store.Client(ctx, id)
+	c, err := s.Store.ClientRecord(ctx, id)
 	if err != nil {
 		if !errors.Is(err, ErrNotFound) {
 			logging.Error(ctx, s.logger(), "client lookup failed", err)
-			return Client{}, refuse(http.StatusInternalServerError, ErrTemporarily, "store_failed", "the client registry is unavailable")
+			return ClientRecord{}, refuse(http.StatusInternalServerError, ErrTemporarily, "store_failed", "the client registry is unavailable")
 		}
 		invalid.Reason = "client_unknown"
-		return Client{}, invalid
+		return ClientRecord{}, invalid
 	}
 	if c.AuthMethod != MethodPrivateKeyJWT {
 		invalid.Reason = "client_auth_method_mismatch"
-		return Client{}, invalid
+		return ClientRecord{}, invalid
 	}
 	iss := s.Keys.Issuer()
 	jti, exp, err := VerifyAssertion(ctx, c, req.ClientAssertion, []string{iss, s.Config.TokenEndpoint}, now)
@@ -249,19 +249,19 @@ func (s *Service) authenticateAssertion(ctx context.Context, req TokenRequest, n
 		if errors.As(err, &te) {
 			invalid.Reason = "client_assertion_" + te.Counter
 		}
-		return Client{}, invalid
+		return ClientRecord{}, invalid
 	}
 	if err := s.Replay.Use(c.ID, jti, exp, now); err != nil {
 		if errors.Is(err, ErrReplayFull) {
-			return Client{}, refuse(http.StatusServiceUnavailable, ErrTemporarily, "assertion_replay_memory_full", "try again shortly")
+			return ClientRecord{}, refuse(http.StatusServiceUnavailable, ErrTemporarily, "assertion_replay_memory_full", "try again shortly")
 		}
 		invalid.Reason = "client_assertion_replayed"
-		return Client{}, invalid
+		return ClientRecord{}, invalid
 	}
 	return c, s.checkStatus(c)
 }
 
-func (s *Service) checkStatus(c Client) *OAuthError {
+func (s *Service) checkStatus(c ClientRecord) *OAuthError {
 	if c.Status != StatusActive {
 		return refuse(http.StatusUnauthorized, ErrInvalidClient, "client_"+c.Status, "the client is "+c.Status)
 	}
@@ -283,7 +283,7 @@ func (s *Service) allowRate(clientID string) *OAuthError {
 
 // authorise checks the requested scopes and audience against table B and
 // the client's registration.
-func (s *Service) authorise(c Client, req TokenRequest) ([]string, string, *OAuthError) {
+func (s *Service) authorise(c ClientRecord, req TokenRequest) ([]string, string, *OAuthError) {
 	scopes, err := ParseScopeParam(req.Scope)
 	if err != nil {
 		return nil, "", refuse(http.StatusBadRequest, ErrInvalidScope, "scope_malformed", err.Error())

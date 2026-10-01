@@ -26,8 +26,8 @@ const (
 	MethodPrivateKeyJWT = "private_key_jwt"
 )
 
-// Client is a row of oauth_clients.
-type Client struct {
+// ClientRecord is a row of oauth_clients.
+type ClientRecord struct {
 	ID            string
 	System        string
 	Scopes        []string
@@ -54,8 +54,8 @@ type Store interface {
 	// InTx runs fn in one transaction: everything fn writes, events
 	// included, commits together or not at all.
 	InTx(ctx context.Context, fn func(Tx) error) error
-	Client(ctx context.Context, id string) (Client, error)
-	Clients(ctx context.Context) ([]Client, error)
+	ClientRecord(ctx context.Context, id string) (ClientRecord, error)
+	Clients(ctx context.Context) ([]ClientRecord, error)
 	SigningKeys(ctx context.Context) ([]KeyRow, error)
 }
 
@@ -65,9 +65,9 @@ type Tx interface {
 	Lock(ctx context.Context, name string) error
 	// Record writes an events row in this transaction.
 	Record(ctx context.Context, ev audit.Event) error
-	Client(ctx context.Context, id string) (Client, error)
-	InsertClient(ctx context.Context, c Client) (Client, error)
-	UpdateClient(ctx context.Context, c Client) (Client, error)
+	ClientRecord(ctx context.Context, id string) (ClientRecord, error)
+	InsertClient(ctx context.Context, c ClientRecord) (ClientRecord, error)
+	UpdateClient(ctx context.Context, c ClientRecord) (ClientRecord, error)
 	SigningKeys(ctx context.Context) ([]KeyRow, error)
 	InsertSigningKey(ctx context.Context, r KeyRow) error
 	SetSigningKeyRef(ctx context.Context, kid, ref string) error
@@ -90,18 +90,18 @@ func (p PG) InTx(ctx context.Context, fn func(Tx) error) error {
 	return p.DB.WithTx(ctx, func(q *gen.Queries) error { return fn(pgTx{q: q, audit: p.Audit}) })
 }
 
-// Client reads one client.
-func (p PG) Client(ctx context.Context, id string) (Client, error) {
+// ClientRecord reads one client.
+func (p PG) ClientRecord(ctx context.Context, id string) (ClientRecord, error) {
 	return clientByID(ctx, p.DB.Queries(), id)
 }
 
 // Clients lists every client.
-func (p PG) Clients(ctx context.Context) ([]Client, error) {
+func (p PG) Clients(ctx context.Context) ([]ClientRecord, error) {
 	rows, err := p.DB.Queries().ListOAuthClients(ctx)
 	if err != nil {
 		return nil, err
 	}
-	out := make([]Client, 0, len(rows))
+	out := make([]ClientRecord, 0, len(rows))
 	for i := range rows {
 		out = append(out, clientFromRow(&rows[i]))
 	}
@@ -129,11 +129,13 @@ func (t pgTx) Record(ctx context.Context, ev audit.Event) error {
 	return err
 }
 
-// Client implements Tx.
-func (t pgTx) Client(ctx context.Context, id string) (Client, error) { return clientByID(ctx, t.q, id) }
+// ClientRecord implements Tx.
+func (t pgTx) ClientRecord(ctx context.Context, id string) (ClientRecord, error) {
+	return clientByID(ctx, t.q, id)
+}
 
 // InsertClient implements Tx.
-func (t pgTx) InsertClient(ctx context.Context, c Client) (Client, error) {
+func (t pgTx) InsertClient(ctx context.Context, c ClientRecord) (ClientRecord, error) {
 	r, err := t.q.InsertOAuthClient(ctx, gen.InsertOAuthClientParams{
 		ClientID: c.ID, System: c.System, Scopes: c.Scopes, Audiences: nonNil(c.Audiences),
 		AuthMethod: c.AuthMethod, SecretHash: optional(c.SecretHash), Jwks: optionalJSON(c.JWKS),
@@ -141,22 +143,22 @@ func (t pgTx) InsertClient(ctx context.Context, c Client) (Client, error) {
 		Status: c.Status, Note: c.Note, CreatedAt: c.CreatedAt, CreatedBy: c.CreatedBy,
 	})
 	if err != nil {
-		return Client{}, err
+		return ClientRecord{}, err
 	}
 	return clientFromRow(&r), nil
 }
 
 // UpdateClient implements Tx.
-func (t pgTx) UpdateClient(ctx context.Context, c Client) (Client, error) {
+func (t pgTx) UpdateClient(ctx context.Context, c ClientRecord) (ClientRecord, error) {
 	r, err := t.q.UpdateOAuthClient(ctx, gen.UpdateOAuthClientParams{
 		ClientID: c.ID, Scopes: c.Scopes, Audiences: nonNil(c.Audiences), Status: c.Status, Note: c.Note,
 		UpdatedAt: c.UpdatedAt, UpdatedBy: c.UpdatedBy,
 	})
 	if store.IsNoRows(err) {
-		return Client{}, ErrNotFound
+		return ClientRecord{}, ErrNotFound
 	}
 	if err != nil {
-		return Client{}, err
+		return ClientRecord{}, err
 	}
 	return clientFromRow(&r), nil
 }
@@ -191,13 +193,13 @@ func (t pgTx) RequestKeyRotation(ctx context.Context, kid, by string, at time.Ti
 	return t.q.RequestKeyRotation(ctx, gen.RequestKeyRotationParams{Kid: kid, RequestedBy: &by, RequestedAt: &at})
 }
 
-func clientByID(ctx context.Context, q *gen.Queries, id string) (Client, error) {
+func clientByID(ctx context.Context, q *gen.Queries, id string) (ClientRecord, error) {
 	r, err := q.OAuthClient(ctx, id)
 	if store.IsNoRows(err) {
-		return Client{}, ErrNotFound
+		return ClientRecord{}, ErrNotFound
 	}
 	if err != nil {
-		return Client{}, err
+		return ClientRecord{}, err
 	}
 	return clientFromRow(&r), nil
 }
@@ -219,8 +221,8 @@ func signingKeys(ctx context.Context, q *gen.Queries) ([]KeyRow, error) {
 	return out, nil
 }
 
-func clientFromRow(r *gen.OauthClient) Client {
-	return Client{
+func clientFromRow(r *gen.OauthClient) ClientRecord {
+	return ClientRecord{
 		ID: r.ClientID, System: r.System, Scopes: slices.Clone(r.Scopes), Audiences: slices.Clone(r.Audiences),
 		AuthMethod: r.AuthMethod, SecretHash: deref(r.SecretHash), JWKS: r.Jwks,
 		MTLSSubject: deref(r.MtlsSubject), CertificateID: deref(r.CertificateID), Status: r.Status, Note: r.Note,
