@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"strconv"
+	"strings"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib" // registers the "pgx" database/sql driver
 	"github.com/pressly/goose/v3"
@@ -114,4 +117,61 @@ func Version(ctx context.Context, db *sql.DB, tree Tree) (int64, error) {
 		return 0, err
 	}
 	return p.GetDBVersion(ctx)
+}
+
+// Latest is the newest migration version embedded in tree: the schema
+// version a process of this build needs (D7).
+func Latest(tree Tree) (int64, error) {
+	entries, err := fs.ReadDir(tree.fsys, ".")
+	if err != nil {
+		return 0, fmt.Errorf("%s: read embedded tree: %w", tree.Name, err)
+	}
+	var latest int64
+	for _, e := range entries {
+		name := e.Name()
+		if e.IsDir() || !strings.HasSuffix(name, ".sql") {
+			continue
+		}
+		digits, _, ok := strings.Cut(name, "_")
+		v, err := strconv.ParseInt(digits, 10, 64)
+		if !ok || err != nil || v <= 0 {
+			return 0, fmt.Errorf("%s: migration %s does not start with a positive version", tree.Name, name)
+		}
+		latest = max(latest, v)
+	}
+	if latest == 0 {
+		return 0, fmt.Errorf("%s: no migrations embedded", tree.Name)
+	}
+	return latest, nil
+}
+
+// MigrationStatus is one migration of a tree and whether it is applied.
+type MigrationStatus struct {
+	Version   int64
+	Source    string
+	Applied   bool
+	AppliedAt time.Time // zero when pending
+}
+
+// Status lists every migration of tree in version order with its state
+// on db.
+func Status(ctx context.Context, db *sql.DB, tree Tree) ([]MigrationStatus, error) {
+	p, err := Provider(db, tree, nil)
+	if err != nil {
+		return nil, err
+	}
+	st, err := p.Status(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("%s: status: %w", tree.Name, err)
+	}
+	out := make([]MigrationStatus, 0, len(st))
+	for _, s := range st {
+		out = append(out, MigrationStatus{
+			Version:   s.Source.Version,
+			Source:    s.Source.Path,
+			Applied:   s.State == goose.StateApplied,
+			AppliedAt: s.AppliedAt,
+		})
+	}
+	return out, nil
 }

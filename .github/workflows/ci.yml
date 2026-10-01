@@ -41,6 +41,8 @@ jobs:
               - 'go.sum'
               - 'api/**'
               - 'migrations/**'
+              - 'sqlc.yaml'
+              - 'internal/store/**/*.sql'
               - 'scripts/**'
               - 'Makefile'
               - '.golangci.yml'

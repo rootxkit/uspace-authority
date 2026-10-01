@@ -80,29 +80,47 @@ func TestIntegrationEachTreeAppliesAndRollsBack(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.tree.Name, func(t *testing.T) {
 			db := integrationDB(t, c.variable)
-			v, err := Up(ctx, db, c.tree, nil)
+			latest, err := Latest(c.tree)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if v < 1 || !extensionInstalled(t, db, c.extension) {
-				t.Fatalf("after up: version %d, %s installed %v", v, c.extension, extensionInstalled(t, db, c.extension))
-			}
-			if !tableExists(t, db, c.tree.VersionTable) {
-				t.Fatalf("version table %s missing", c.tree.VersionTable)
-			}
-			if tableExists(t, db, c.other.VersionTable) {
-				t.Fatalf("%s database holds the other tree's version table %s", c.tree.Name, c.other.VersionTable)
-			}
-			if err := DownTo(ctx, db, c.tree, 0); err != nil {
-				t.Fatal(err)
-			}
-			got, err := Version(ctx, db, c.tree)
-			if err != nil || got != 0 || extensionInstalled(t, db, c.extension) {
-				t.Fatalf("after down: version %d err %v, %s still installed %v", got, err, c.extension, extensionInstalled(t, db, c.extension))
-			}
-			// Up again after a rollback reaches the same version.
-			if v2, err := Up(ctx, db, c.tree, nil); err != nil || v2 != v {
-				t.Fatalf("re-up: %d %v", v2, err)
+			// WP-1: up and down twice, so a Down that leaves something
+			// behind (a function, a grant, a default privilege) fails the
+			// second Up.
+			for round := 1; round <= 2; round++ {
+				v, err := Up(ctx, db, c.tree, nil)
+				if err != nil {
+					t.Fatalf("round %d: %v", round, err)
+				}
+				if v != latest || !extensionInstalled(t, db, c.extension) {
+					t.Fatalf("round %d after up: version %d (latest %d), %s installed %v", round, v, latest, c.extension, extensionInstalled(t, db, c.extension))
+				}
+				if !tableExists(t, db, c.tree.VersionTable) {
+					t.Fatalf("version table %s missing", c.tree.VersionTable)
+				}
+				if tableExists(t, db, c.other.VersionTable) {
+					t.Fatalf("%s database holds the other tree's version table %s", c.tree.Name, c.other.VersionTable)
+				}
+				st, err := Status(ctx, db, c.tree)
+				if err != nil || int64(len(st)) != latest {
+					t.Fatalf("round %d status: %v %v", round, st, err)
+				}
+				for _, m := range st {
+					if !m.Applied || m.AppliedAt.IsZero() {
+						t.Fatalf("round %d: migration %d not applied: %+v", round, m.Version, m)
+					}
+				}
+				if err := DownTo(ctx, db, c.tree, 0); err != nil {
+					t.Fatalf("round %d: %v", round, err)
+				}
+				got, err := Version(ctx, db, c.tree)
+				if err != nil || got != 0 || extensionInstalled(t, db, c.extension) {
+					t.Fatalf("round %d after down: version %d err %v, %s still installed %v", round, got, err, c.extension, extensionInstalled(t, db, c.extension))
+				}
+				st, err = Status(ctx, db, c.tree)
+				if err != nil || st[0].Applied {
+					t.Fatalf("round %d status after down: %+v %v", round, st, err)
+				}
 			}
 		})
 	}

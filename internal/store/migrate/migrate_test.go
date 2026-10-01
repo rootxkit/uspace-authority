@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"testing/fstest"
 )
 
 func sqlFiles(t *testing.T, tree Tree) map[string]string {
@@ -93,5 +94,32 @@ func TestCrossTreeCheckCatchesAReference(t *testing.T) {
 	}
 	if got := tablesOf(map[string]string{"x": `create unlogged table "occurrences".occurrence_reports (x int)`}); !got["occurrence_reports"] {
 		t.Fatalf("schema-qualified table not found: %v", got)
+	}
+}
+
+func TestLatestIsTheNewestEmbeddedMigration(t *testing.T) {
+	tree := Tree{Name: "fixture", fsys: fstest.MapFS{
+		"00001_init.sql": {}, "00003_c.sql": {}, "00002_b.sql": {}, "notes.txt": {},
+	}}
+	if got, err := Latest(tree); err != nil || got != 3 {
+		t.Fatalf("got %d %v, want 3", got, err)
+	}
+	for _, tree := range Trees() {
+		files := sqlFiles(t, tree)
+		got, err := Latest(tree)
+		if err != nil || got < 1 || got > int64(len(files)) {
+			t.Errorf("%s: latest %d of %d files: %v", tree.Name, got, len(files), err)
+		}
+	}
+}
+
+func TestLatestRefusesAFileWithoutAVersion(t *testing.T) {
+	bad := Tree{Name: "bad", fsys: fstest.MapFS{"00001_init.sql": {}, "init.sql": {}}}
+	if _, err := Latest(bad); err == nil || !strings.Contains(err.Error(), "init.sql") {
+		t.Fatalf("got %v", err)
+	}
+	empty := Tree{Name: "empty", fsys: fstest.MapFS{"README": {}}}
+	if _, err := Latest(empty); err == nil {
+		t.Fatal("an empty tree has a latest version")
 	}
 }
