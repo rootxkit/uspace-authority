@@ -16,16 +16,18 @@ import (
 const ApplicabilityKey = "cis_applicability"
 
 // ErrDaylightUnavailable is the error of NoDaylight.
-var ErrDaylightUnavailable = errors.New("daylight events cannot be resolved: no sunrise and sunset source is wired (internal/ground, WP-11)")
+var ErrDaylightUnavailable = errors.New("daylight events cannot be resolved: no sunrise and sunset source is available")
 
 // SlugDaylight is the problem slug of a question that needs a daylight
 // event while none can be resolved.
 const SlugDaylight = "daylight_unavailable"
 
-// NoDaylight is the ed318.Daylight of this package until WP-11's ground
-// package supplies sunrise and sunset from position: it refuses every
-// event, naming it, so a zone scheduled by daylight is reported as not
-// evaluated, never guessed (ed318.Applies then answers "not evaluated").
+// NoDaylight is a daylight source that is not available: it refuses
+// every event, naming it, so a zone scheduled by daylight is reported as
+// not evaluated, never guessed (ed318.Applies then answers "not
+// evaluated"). The source the service and the reader use is
+// ground.Daylight (core's ed318.NOAADaylight, WP-11); NoDaylight is what
+// a caller sets to take it away.
 type NoDaylight struct{}
 
 // Event implements ed318.Daylight.

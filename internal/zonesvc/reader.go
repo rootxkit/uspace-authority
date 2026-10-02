@@ -15,6 +15,7 @@ import (
 	"github.com/rootxkit/uspace-core/zones"
 
 	"github.com/rootxkit/uspace-authority/internal/bus"
+	"github.com/rootxkit/uspace-authority/internal/ground"
 	"github.com/rootxkit/uspace-authority/internal/logging"
 	"github.com/rootxkit/uspace-authority/internal/store/ts"
 	"github.com/rootxkit/uspace-authority/internal/store/ts/gen/reader"
@@ -126,8 +127,8 @@ func nextBoundary(rows []ProjectedRow, at time.Time) time.Time {
 
 // build turns the rows in force at at into a zones.Index through
 // ed318.Parse and ed318.ToZones (the judgement view is uspace-core's).
-// A row that cannot be built (a daylight schedule while no daylight
-// source is wired, a feature that does not parse) is left out and named
+// A row that cannot be built (a daylight event the source cannot
+// resolve, a feature that does not parse) is left out and named
 // in notJudged; the rest are indexed.
 func build(rows []ProjectedRow, at time.Time, dl ed318.Daylight) built {
 	b := built{next: nextBoundary(rows, at)}
@@ -168,7 +169,8 @@ func build(rows []ProjectedRow, at time.Time, dl ed318.Daylight) built {
 // replaces the index whole on a good read, and keeps the one it holds
 // when a read fails. Before the first good read Index is nil.
 type ProjectionReader struct {
-	Source   ProjectionSource
+	Source ProjectionSource
+	// Daylight resolves daylight events; nil is ground.Daylight.
 	Daylight ed318.Daylight
 	Counters *core.Counters
 	Logger   *slog.Logger
@@ -194,7 +196,7 @@ func (r *ProjectionReader) now() time.Time {
 
 func (r *ProjectionReader) daylight() ed318.Daylight {
 	if r.Daylight == nil {
-		return NoDaylight{}
+		return ground.Daylight()
 	}
 	return r.Daylight
 }

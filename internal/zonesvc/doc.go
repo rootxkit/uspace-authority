@@ -70,10 +70,13 @@
 //     at the centre of the feature's box) and keeps what cannot be
 //     evaluated, annotated unknown; `applies_at` annotates every feature
 //     (applies, not_applicable, unknown) and filters nothing.
-//   - Daylight. Until WP-11's ground package supplies sunrise and sunset
-//     from position, NoDaylight refuses every event: the applicability
-//     preview answers 503 daylight_unavailable, an export annotates
-//     unknown, and a reader names such a zone in zones_not_judged.
+//   - Daylight. Sunrise, sunset and civil twilight come from position
+//     through ground.Daylight (core's ed318.NOAADaylight, WP-11). An
+//     event the source cannot resolve (the sun does not reach it that
+//     day) leaves the zone unknown with the reason. Without a source
+//     (NoDaylight) the applicability preview answers 503
+//     daylight_unavailable, an export annotates unknown, and a reader
+//     names such a zone in zones_not_judged.
 //   - Projection (migration 00009_zones_projection in the telemetry
 //     tree): proj_zones holds every published version whose period has
 //     not ended, written whole (upserted, every other row deleted) by

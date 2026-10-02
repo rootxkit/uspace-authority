@@ -152,4 +152,5 @@ Unreleased; the format follows Keep a Changelog.
   `proj_zones` projection written with it and repaired every 300 s, and
   `zones.v1.changed` / KV `zones_version`; export `?at=` and
   `?applies_at=` (M17); `ProjectionReader` building the `zones.Index`;
-  the ed318 round trip and zones applicability vectors through storage.
+  the ed318 round trip and zones applicability vectors through storage;
+  daylight schedules resolved through `ground.Daylight` (WP-11).

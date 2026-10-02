@@ -53,10 +53,12 @@ Rules every write follows:
 - The publication's outbox row: `pending` with `signature` null until
   WP-6 signs and sends it; its "not yet published" age is WP-6's.
 - Applicability: `unknown` is never shown as "applies" or "does not
-  apply". Until the ground package (WP-11) is wired, every zone scheduled
-  by BMCT, SR, SS or EECT is `unknown`, the preview answers 503
-  `daylight_unavailable`, and the detectors' status line names it in
-  `zones_not_judged`.
+  apply". A zone scheduled by BMCT, SR, SS or EECT is resolved from its
+  position by the ground package's daylight (core's NOAA calculator,
+  WP-11); where the sun does not reach the event that day it is
+  `unknown` with the reason. Were no daylight source available, the
+  preview would answer 503 `daylight_unavailable` and the detectors'
+  status line would name the zone in `zones_not_judged`.
 
 ## UNVERIFIED notes inherited from uspace-core ed318
 

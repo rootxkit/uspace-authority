@@ -190,7 +190,7 @@ func checkFeature(f *ed318.Feature, raw json.RawMessage, ds Dataset, path string
 // MaxEventDays, windows well formed) when a zone is written. Its times
 // are fixed hours of the day and the zones it yields are discarded:
 // nothing is judged with them. Judgement and the applicability answers
-// use the ground package's Daylight (NoDaylight until WP-11).
+// use the ground package's Daylight.
 type structuralDaylight struct{}
 
 // Event implements ed318.Daylight.

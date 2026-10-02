@@ -7,6 +7,7 @@ import (
 	"github.com/rootxkit/uspace-core/core"
 
 	"github.com/rootxkit/uspace-authority/internal/audit"
+	"github.com/rootxkit/uspace-authority/internal/ground"
 	"github.com/rootxkit/uspace-authority/internal/store/pg"
 	"github.com/rootxkit/uspace-authority/internal/store/ts"
 )
@@ -31,8 +32,8 @@ type Parts struct {
 }
 
 // Assemble builds the zone service on the relational database and the
-// projection pool. Daylight events are refused (NoDaylight) until the
-// ground package is wired (WP-11). The provider's name and language
+// projection pool. Daylight events come from ground.Daylight (core's
+// ed318.NOAADaylight, WP-11). The provider's name and language
 // must be what ED-318 holds (a text of at most 200 characters, a
 // language tag of 1 to 5).
 func Assemble(s Setup) (*Parts, error) {
@@ -49,7 +50,7 @@ func Assemble(s Setup) (*Parts, error) {
 	}
 	svc := &Service{
 		Store: PG{DB: s.DB, Audit: s.Audit}, Projection: TSProjection{P: s.Projector}, Publisher: pub,
-		Daylight: NoDaylight{}, Meta: s.Meta, Counters: counters, Logger: s.Logger,
+		Daylight: ground.Daylight(), Meta: s.Meta, Counters: counters, Logger: s.Logger,
 	}
 	return &Parts{Service: svc, Handler: Handler{Service: svc}, Counters: counters}, nil
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/rootxkit/uspace-core/ed318"
 
 	"github.com/rootxkit/uspace-authority/internal/audit"
+	"github.com/rootxkit/uspace-authority/internal/ground"
 	"github.com/rootxkit/uspace-authority/internal/httpx"
 	"github.com/rootxkit/uspace-authority/internal/logging"
 	"github.com/rootxkit/uspace-authority/internal/store"
@@ -83,7 +84,7 @@ type Service struct {
 	Projection Projection
 	Publisher  Publisher
 	// Daylight resolves daylight events for applicability answers;
-	// NoDaylight until WP-11 wires internal/ground.
+	// nil is ground.Daylight (core's ed318.NOAADaylight).
 	Daylight ed318.Daylight
 	Meta     Meta
 	Counters *core.Counters
@@ -108,7 +109,7 @@ func (s *Service) logger() *slog.Logger {
 
 func (s *Service) daylight() ed318.Daylight {
 	if s.Daylight == nil {
-		return NoDaylight{}
+		return ground.Daylight()
 	}
 	return s.Daylight
 }
@@ -733,7 +734,7 @@ func (s *Service) Applies(ctx context.Context, identifier string, zoneVersion in
 		if errors.Is(err, ErrDaylightUnavailable) {
 			s.count(CounterDaylightUnavailable)
 			return ApplicabilityAnswer{}, httpx.Refuse(http.StatusServiceUnavailable, SlugDaylight,
-				"this zone's schedule uses daylight events and no sunrise and sunset source is wired yet (WP-11); the answer is not guessed",
+				"this zone's schedule uses daylight events and no sunrise and sunset source is available; the answer is not guessed",
 				core.Fieldf("feature.properties.limitedApplicability", "%v", err))
 		}
 		out.Reason = err.Error()

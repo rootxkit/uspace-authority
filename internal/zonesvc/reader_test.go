@@ -111,7 +111,9 @@ func TestReaderNamesZonesItCannotJudgeAndThoseNeedingGround(t *testing.T) {
 		projected("AGL001", 1, feature(zoneOpts{identifier: "AGL001", upperRef: "AGL"}), t0, t1),
 		projected("ELL001", 1, feature(zoneOpts{identifier: "ELL001", upperRef: "WGS84"}), t0, t1),
 	}}
-	r := &ProjectionReader{Source: src, Counters: &core.Counters{}, Now: func() time.Time { return testNow }}
+	// Without a daylight source the daylight zone is named, not judged
+	// (TestReaderJudgesSunriseZoneWithGroundDaylight is the other half).
+	r := &ProjectionReader{Source: src, Daylight: NoDaylight{}, Counters: &core.Counters{}, Now: func() time.Time { return testNow }}
 	if err := r.Refresh(context.Background()); err != nil {
 		t.Fatal(err)
 	}
