@@ -308,10 +308,40 @@ type TSDBWriter struct {
 	Bus
 	TSURL   string `env:"TS_URL" required:"true" secret:"true" kind:"url" help:"telemetry database"`
 	NATSURL string `env:"NATS_URL" required:"true" secret:"true" kind:"url" help:"NATS JetStream"`
+	TSDBWriterTuning
+}
+
+// TSDBWriterTuning are tsdb-writer's bounds (WP-9, spec 05 §5).
+type TSDBWriterTuning struct {
+	BatchMaxRows        int `env:"TSDB_WRITER_BATCH_MAX_ROWS" default:"1000" min:"1" max:"1000" help:"rows per COPY transaction at most; a batch is written at this many rows or at TSDB_WRITER_BATCH_MAX_WAIT_MS"`
+	BatchMaxWaitMS      int `env:"TSDB_WRITER_BATCH_MAX_WAIT_MS" default:"500" min:"10" max:"10000" help:"a batch is written when its oldest row has waited this long"`
+	QueueMaxAgeS        int `env:"TSDB_WRITER_QUEUE_MAX_AGE_S" default:"10" min:"1" max:"600" help:"the in-memory queue per table holds at most this much: when its oldest row has waited this long the consumer stops pulling and the rows wait in JetStream (spilling)"`
+	QueueMaxRows        int `env:"TSDB_WRITER_QUEUE_MAX_ROWS" default:"30000" min:"1" max:"10000000" help:"the in-memory queue per table holds at most this many rows (10 s at 3000 rows/s); at it the consumer stops pulling (spilling)"`
+	MaxAckPending       int `env:"TSDB_WRITER_MAX_ACK_PENDING" default:"1000" min:"1" max:"100000" help:"TSW messages per table delivered and not yet acknowledged (max_ack_pending)"`
+	FetchMax            int `env:"TSDB_WRITER_FETCH_MAX" default:"64" min:"1" max:"1000" help:"TSW messages one pull asks for; the queue may pass its row bound by at most one pull"`
+	AckWaitS            int `env:"TSDB_WRITER_ACK_WAIT_S" default:"60" min:"5" max:"3600" help:"ack wait of the TSW consumers; a message held longer than half of it is kept with in-progress"`
+	WriteTimeoutS       int `env:"TSDB_WRITER_WRITE_TIMEOUT_S" default:"15" min:"1" max:"600" help:"bound on one COPY transaction"`
+	RetryMinMS          int `env:"TSDB_WRITER_RETRY_MIN_MS" default:"250" min:"10" max:"60000" help:"first wait after a failed write; doubled up to TSDB_WRITER_RETRY_MAX_MS"`
+	RetryMaxMS          int `env:"TSDB_WRITER_RETRY_MAX_MS" default:"5000" min:"10" max:"600000" help:"longest wait between failed writes"`
+	RetentionCheckS     int `env:"TSDB_WRITER_RETENTION_CHECK_S" default:"3600" min:"1" max:"86400" help:"interval of the check that a table with a retention period (ussp_flights, 24 h) holds nothing older"`
+	TSMaxConns          int `env:"TS_MAX_CONNS" default:"4" min:"1" max:"100" help:"maximum connections of the writer pool"`
+	TSStatementTimeoutS int `env:"TS_STATEMENT_TIMEOUT_S" default:"15" min:"1" max:"600" help:"statement_timeout of every writer connection"`
 }
 
 // String redacts secrets.
 func (c *TSDBWriter) String() string { return Describe(c) }
+
+// Validate checks what the tags cannot.
+func (c *TSDBWriter) Validate() error {
+	var errs []error
+	if c.RetryMaxMS < c.RetryMinMS {
+		errs = append(errs, &core.FieldError{Field: "TSDB_WRITER_RETRY_MAX_MS", Reason: "must be at least TSDB_WRITER_RETRY_MIN_MS"})
+	}
+	if c.AckWaitS <= c.QueueMaxAgeS {
+		errs = append(errs, &core.FieldError{Field: "TSDB_WRITER_ACK_WAIT_S", Reason: "must exceed TSDB_WRITER_QUEUE_MAX_AGE_S, or queued messages are redelivered while held"})
+	}
+	return errors.Join(errs...)
+}
 
 // PictureWS is the console feed.
 type PictureWS struct {
