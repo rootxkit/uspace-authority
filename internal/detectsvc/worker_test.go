@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 	"testing"
 	"time"
@@ -111,11 +112,11 @@ func TestNoZonesNoTerrainJudgesNothingAsClearAndSaysSo(t *testing.T) {
 		t.Fatal(r.w.MonitorCounters.Snapshot())
 	}
 	p := problems(r.in.Zones(), nil, nil, true, true)
-	if len(p) != 2 {
+	if len(p) != 3 {
 		t.Fatalf("problems %v", p)
 	}
 	s := &Shared{}
-	if s.Level().String() != "ERROR" || len(s.Problems()) != 2 {
+	if s.Level().String() != "ERROR" || len(s.Problems()) != 3 {
 		t.Fatalf("an empty Shared: %v %v", s.Level(), s.Problems())
 	}
 	r.in.env = groundAt(500)
@@ -541,5 +542,27 @@ func TestOperatorNumberIsPublishedAsItsPublicPartOnly(t *testing.T) {
 				t.Fatalf("excerpt operator_reg %v of %s", s.Identification.OperatorReg, m.Body.TrackRef)
 			}
 		}
+	}
+}
+
+// E-02, D-04: without a DEM the height limit over the ground is not
+// evaluated for any aircraft, so the status is never at info level even
+// with every projection loaded and no zone needing terrain; with terrain
+// nothing is said of it (E-01).
+func TestNoTerrainMakesTheStatusErrorEvenWithNothingElseUnjudged(t *testing.T) {
+	loaded := ZoneSet{ZonesLoaded: true, RestrictionsLoaded: true}
+	p := problems(loaded, nil, nil, true, false)
+	if len(p) != 1 || !strings.Contains(p[0], "height limit") || !strings.Contains(p[0], "terrain") {
+		t.Fatalf("no terrain: %v", p)
+	}
+	if lvl := levelOf(p); lvl < slog.LevelWarn {
+		t.Fatalf("status level %v without terrain", lvl)
+	}
+	p = problems(loaded, nil, nil, false, true)
+	if len(p) != 0 {
+		t.Fatalf("with terrain, no geoid and no zone needing one: %v", p)
+	}
+	if lvl := levelOf(p); lvl != slog.LevelInfo {
+		t.Fatalf("status level %v with everything judged", lvl)
 	}
 }

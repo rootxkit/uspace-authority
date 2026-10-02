@@ -83,6 +83,7 @@ force is not judged. Each entry says what and why:
 | `restrictions projection not loaded` | as above for `proj_restrictions` | as above |
 | `zone not judged: <dataset>/<id>@<version>: ...` | a zone in force that uspace-core cannot build (a daylight event the place cannot resolve, a feature that does not parse) | fix the zone and publish a new version |
 | `restriction not judged: ...` | the same for a dynamic restriction | the ANSP's restriction: tell the ANSP |
+| `terrain not configured: the height limit over the ground (height_120m) is not evaluated for any aircraft` | detect has no DEM: no `height_120m` violation can be raised anywhere (`height_checks_not_evaluated` counts each sample); the status is never at info level while this holds | mount the ground volume (`GROUND_DIR`; `deploy/fetch-ground.sh`, `docs/runbooks/ground.md`) |
 | `PROHIBITED zone GEO/<id> needs terrain, not configured` (or `geoid`) | the zone has an AGL limit (or a WGS84 limit) and detect has no DEM (or geoid): inside it the zone warns with `limit_not_judged` instead of its own severity (Z-09, SC-13) | mount the ground volume (`GROUND_DIR`, `GEOID_FILE`; `deploy/fetch-ground.sh`, `docs/runbooks/ground.md`) |
 
 Without terrain the height limit is not evaluated at all

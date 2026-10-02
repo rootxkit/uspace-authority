@@ -158,9 +158,10 @@ func (s *Shared) Elevation(p core.LatLon) *terrain.Elevation {
 // Problems lists everything that keeps a violation from being judged,
 // each naming what is not judged (Z-09, SC-13, SC-22, E-02): a
 // projection never read, a zone or restriction in force that could not
-// be built, and every PROHIBITED or REQ_AUTHORISATION zone with a limit
-// that needs terrain or the geoid this process does not have. Empty when
-// everything in force is judged.
+// be built, no terrain (the height limit over the ground, height_120m,
+// is then evaluated for no aircraft, D-04), and every PROHIBITED or
+// REQ_AUTHORISATION zone with a limit that needs terrain or the geoid
+// this process does not have. Empty when everything in force is judged.
 func (s *Shared) Problems() []string {
 	var zoneNJ, restrNJ []string
 	if s.ZoneReader != nil {
@@ -184,6 +185,9 @@ func problems(zs ZoneSet, zoneNotJudged, restrictionsNotJudged []string, noTerra
 	}
 	if !zs.RestrictionsLoaded {
 		out = append(out, "restrictions projection not loaded: dynamic restrictions are not judged")
+	}
+	if noTerrain {
+		out = append(out, "terrain not configured: the height limit over the ground (height_120m) is not evaluated for any aircraft")
 	}
 	for _, n := range zoneNotJudged {
 		out = append(out, "zone not judged: "+n)
@@ -211,10 +215,14 @@ func problems(zs ZoneSet, zoneNotJudged, restrictionsNotJudged []string, noTerra
 	return slices.Compact(out)
 }
 
-// Level is error while anything is not judged (Problems), and info
-// otherwise: every status line says it (Z-09, SC-13).
-func (s *Shared) Level() slog.Level {
-	if len(s.Problems()) > 0 {
+// Level is error while anything is not judged (Problems), including the
+// height limit without terrain, and info otherwise: every status line
+// says it (Z-09, SC-13, E-02).
+func (s *Shared) Level() slog.Level { return levelOf(s.Problems()) }
+
+// levelOf is the status level of problems.
+func levelOf(problems []string) slog.Level {
+	if len(problems) > 0 {
 		return slog.LevelError
 	}
 	return slog.LevelInfo

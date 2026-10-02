@@ -195,7 +195,7 @@ func TestScenarioSC13StatusIsErrorLevelWhileAZoneNeedsGroundItLacks(t *testing.T
 	in := &fakeInputs{}
 	in.setZones(zs...)
 	s := problemsOf(in, true, true)
-	if len(s) != 1 || !strings.Contains(s[0], "PROHIBITED zone GEO/AGL1 needs terrain") {
+	if len(s) != 2 || !strings.Contains(s[0], "PROHIBITED zone GEO/AGL1 needs terrain") {
 		t.Fatalf("no terrain: %v", s)
 	}
 	if s := problemsOf(in, false, false); len(s) != 0 {
