@@ -174,6 +174,20 @@ const (
 	EventPublicationConflict     = "publication_conflict"
 )
 
+// Event types of WP-12's violations (internal/violations): every
+// transition of a violation detect reports, the close of one detect no
+// longer reports, and every review.
+const (
+	EventViolationRaised          = "violation_raised"
+	EventViolationSeverityChanged = "violation_severity_changed"
+	EventViolationCleared         = "violation_cleared"
+	EventViolationRevived         = "violation_revived"
+	EventViolationReviewed        = "violation_reviewed"
+	EventViolationDismissed       = "violation_dismissed"
+	EventViolationEscalated       = "violation_escalated"
+	EventIncidentRequested        = "incident_requested"
+)
+
 // DefaultCatalogue is the catalogue of this build.
 func DefaultCatalogue() Catalogue {
 	return Catalogue{
@@ -248,6 +262,15 @@ func DefaultCatalogue() Catalogue {
 		EventPublicationRetry:        {},
 		EventPublicationFailed:       {},
 		EventPublicationConflict:     {},
+
+		EventViolationRaised:          {},
+		EventViolationSeverityChanged: {},
+		EventViolationCleared:         {},
+		EventViolationRevived:         {},
+		EventViolationReviewed:        {},
+		EventViolationDismissed:       {},
+		EventViolationEscalated:       {},
+		EventIncidentRequested:        {},
 	}
 }
 

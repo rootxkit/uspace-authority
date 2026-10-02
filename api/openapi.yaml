@@ -93,6 +93,12 @@ tags:
       publication outbox and of the CIS subscriber, and the change
       notification receiver every subscriber implements (M1).
 
+  - name: violations
+    description: |
+      Violations found from the authority's own evidence (WP-12, spec 01
+      A7, 2019/947 Art. 18(k)): raised and cleared by detect, persisted
+      with their evidence excerpt, and reviewed by inspectors.
+
 paths:
   # WP-0: health paths, served by every process on its admin port.
   /healthz:
@@ -2619,6 +2625,108 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  # WP-12: violations (spec 01 A7, 03 §1 violations, 04 §3.3
+  # violation/v1). detect raises and clears them on alrt.v1; api's
+  # consumer persists them (internal/violations). Reads carry no personal
+  # data: the serial and the operator registration number are as
+  # broadcast (registry records name them to viewers too).
+  /v1/violations:
+    get:
+      operationId: listViolations
+      tags: [violations]
+      summary: Violations, newest first
+      description: |
+        Every filter is optional. `from` and `to` bound `opened_at`;
+        `bbox` (`min_lon,min_lat,max_lon,max_lat`, WGS84 degrees, min
+        below max) selects by the first position of the evidence excerpt
+        (PostGIS). Pages are cut by `cursor` (the `next_cursor` of the
+        previous page). A violation is open while `closed_at` is null.
+      security:
+        - sessionCookie: []
+      x-roles: [inspector]
+      x-audit: none
+      parameters:
+        - {name: status, in: query, schema: {$ref: "#/components/schemas/ViolationStatus"}}
+        - {name: kind, in: query, schema: {$ref: "#/components/schemas/ViolationKind"}}
+        - {name: from, in: query, description: Inclusive lower bound of opened_at., schema: {type: string, format: date-time}}
+        - {name: to, in: query, description: Exclusive upper bound of opened_at., schema: {type: string, format: date-time}}
+        - {name: bbox, in: query, schema: {type: string, maxLength: 128}}
+        - {name: cursor, in: query, schema: {type: string, maxLength: 128}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 200, default: 50}}
+      responses:
+        "200":
+          description: One page of violations.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViolationPage"
+        "400":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/violations/{violation_id}:
+    parameters:
+      - {name: violation_id, in: path, required: true, schema: {type: string, pattern: "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"}}
+    get:
+      operationId: getViolation
+      tags: [violations]
+      summary: One violation with its evidence excerpt
+      security:
+        - sessionCookie: []
+      x-roles: [inspector]
+      x-audit: none
+      responses:
+        "200":
+          description: The violation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Violation"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/violations/{violation_id}/review:
+    parameters:
+      - {name: violation_id, in: path, required: true, schema: {type: string, pattern: "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"}}
+    post:
+      operationId: reviewViolation
+      tags: [violations]
+      summary: Review a violation (reviewed, dismissed or escalated)
+      description: |
+        `new` or `reviewed` may become `reviewed`, `dismissed` or
+        `escalated`; `dismissed` and `escalated` are final (409
+        `violation_reviewed`). Evidence that is broadcast only
+        (`evidence_trust: broadcast`) is never escalated without a
+        note (spec 06 §2 T1; 400 naming `note`). Escalation requests an
+        incident (`incident_requested`; WP-17 opens it). The review and
+        the request are `events` rows in the same transaction.
+      security:
+        - sessionCookie: []
+      x-roles: [inspector]
+      x-audit: {event_type: violation_reviewed, entity_type: violation, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ViolationReviewInput"
+      responses:
+        "200":
+          description: The violation as reviewed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Violation"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+
 components:
   securitySchemes:
     sessionCookie:
@@ -4096,3 +4204,94 @@ components:
         subscription_id: {type: [string, "null"]}
         status: {type: [string, "null"]}
         last_error: {type: [string, "null"]}
+
+    # WP-12: violations.
+    ViolationKind:
+      type: string
+      enum: [height_120m, zone_incursion, unregistered, no_authorisation, identification_mismatch, rid_absent]
+    ViolationStatus:
+      type: string
+      enum: [new, reviewed, dismissed, escalated]
+    ViolationPeak:
+      type: object
+      required: [name, value]
+      properties:
+        name: {type: string, description: "The number the violation rested on: height_agl_m for height_120m."}
+        value: {type: number, format: double}
+    ViolationSummary:
+      type: object
+      required: [violation_id, kind, severity, track_id, detector_state, opened_at, last_captured_at, policy_version, in_uspace,
+                 evidence_trust, excerpt_samples, cell5, status]
+      properties:
+        violation_id: {type: string}
+        kind: {$ref: "#/components/schemas/ViolationKind"}
+        severity: {type: string, enum: [info, warning, critical]}
+        track_id: {type: string}
+        serial: {type: [string, "null"], description: As broadcast.}
+        operator_reg: {type: [string, "null"], description: "As broadcast; the public part only (regnum.PublicPart, G-04)."}
+        zone_id: {type: [string, "null"], description: country/identifier of the zone judged.}
+        zone_type: {type: [string, "null"]}
+        detector_state: {type: string, enum: [raised, updated, cleared]}
+        opened_at: {type: string, format: date-time}
+        closed_at: {type: [string, "null"], format: date-time}
+        clear_reason:
+          type: [string, "null"]
+          description: |
+            resolved (shown false past the hysteresis), stale, landed,
+            source_disabled, flight_ended, reconfigured (the zone set or
+            policy changed and the aircraft's last sample no longer
+            raised it) or detector_silent (detect stopped republishing
+            it, a restart: closed by api, not judged).
+        last_captured_at: {type: string, format: date-time}
+        policy_version: {type: integer, format: int64, description: 0 is the documented defaults before any policy reached detect.}
+        peak: {$ref: "#/components/schemas/ViolationPeak"}
+        in_uspace: {type: boolean}
+        evidence_trust: {type: string, enum: [authenticated, provider, surveillance, broadcast, sensor]}
+        excerpt_samples: {type: integer}
+        cell5: {type: string}
+        status: {$ref: "#/components/schemas/ViolationStatus"}
+        reviewed_at: {type: [string, "null"], format: date-time}
+    Violation:
+      allOf:
+        - $ref: "#/components/schemas/ViolationSummary"
+        - type: object
+          required: [alert_key, detail, evidence_refs, evidence_track_ids, evidence_excerpt, excerpt_truncated, incident_requested]
+          properties:
+            alert_key: {type: string}
+            registry_uas_id: {type: [string, "null"]}
+            zone_version: {type: [integer, "null"], format: int64}
+            detail: {type: object, additionalProperties: true, description: "The judgement's numbers and flags as uspace-core gave them (violation/v1 detail)."}
+            clearing_detail: {type: object, additionalProperties: true}
+            terrain_source: {type: object, additionalProperties: true, description: The DEM dataset and spacing of a height over the ground (D-05).}
+            evidence_refs:
+              type: array
+              items: {type: object, additionalProperties: true}
+            evidence_track_ids:
+              type: array
+              items: {type: string}
+            evidence_excerpt:
+              type: array
+              description: The track samples copied at detection and appended while it held (violation/v1 evidence_excerpt).
+              items: {type: object, additionalProperties: true}
+            excerpt_truncated: {type: boolean, description: Samples past the bound were left out.}
+            reviewed_by: {type: [string, "null"]}
+            review_note: {type: [string, "null"]}
+            incident_requested: {type: boolean}
+    ViolationPage:
+      type: object
+      required: [violations]
+      properties:
+        violations:
+          type: array
+          items:
+            $ref: "#/components/schemas/ViolationSummary"
+        next_cursor:
+          type: string
+          description: Pass as cursor for the next page; absent on the last page.
+    ViolationReviewInput:
+      type: object
+      required: [decision]
+      additionalProperties: false
+      properties:
+        decision: {type: string, enum: [reviewed, dismissed, escalated]}
+        note: {type: string, maxLength: 4000}

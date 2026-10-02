@@ -189,3 +189,42 @@ func TestPublishedZoneReachesTheReaderIndex(t *testing.T) {
 		t.Fatalf("%v", got)
 	}
 }
+
+// WP-12, Z-12: the generation rises when the view judges differently
+// (a new version in force, a period that ends) and not on a re-read of
+// the same rows, so a detector rebuilds its monitor exactly when it must.
+func TestZoneSetGenerationRisesOnlyWhenTheViewChanges(t *testing.T) {
+	end := time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC)
+	src := &fakeSource{rows: []ProjectedRow{projected("TST001", 1, feature(zoneOpts{}), t0, end)}}
+	now := testNow
+	r := &ProjectionReader{Source: src, Counters: &core.Counters{}, Now: func() time.Time { return now }}
+	if zs := r.ZoneSet(); zs.Loaded || zs.Zones != nil {
+		t.Fatalf("loaded before the first read: %+v", zs)
+	}
+	if err := r.Refresh(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	first := r.ZoneSet()
+	if !first.Loaded || len(first.Zones) != 1 || first.Versions["TST001"] != 1 || first.Generation == 0 {
+		t.Fatalf("first %+v", first)
+	}
+	if err := r.Refresh(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if again := r.ZoneSet(); again.Generation != first.Generation {
+		t.Fatalf("a re-read of the same rows raised the generation: %d -> %d", first.Generation, again.Generation)
+	}
+	src.set([]ProjectedRow{projected("TST001", 1, feature(zoneOpts{}), t0, end), projected("TST001", 2, feature(zoneOpts{typ: "CONDITIONAL"}), t0, end)}, nil)
+	if err := r.Refresh(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	second := r.ZoneSet()
+	if second.Generation == first.Generation || second.Versions["TST001"] != 2 {
+		t.Fatalf("a new version in force: %+v", second)
+	}
+	now = end.Add(time.Second)
+	r.rebuild()
+	if third := r.ZoneSet(); third.Generation == second.Generation || len(third.Zones) != 0 {
+		t.Fatalf("a period ended: %+v", third)
+	}
+}

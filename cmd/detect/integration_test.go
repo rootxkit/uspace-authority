@@ -135,3 +135,34 @@ func TestIntegrationDetectSaysWhatGroundItHas(t *testing.T) {
 		t.Fatalf("loaded: exit %d %v\n%s", code, g, out.b.String())
 	}
 }
+
+// E-02, Z-09, SC-22: detect with no zones projection (the telemetry
+// database unreachable) and no ground says at error level that zone
+// incursions and dynamic restrictions are not judged, and keeps every
+// status line at error level; it never looks like an empty sky.
+func TestIntegrationDetectSaysWhatItCannotJudge(t *testing.T) {
+	l, code, out := run(t, map[string]string{"CELLS": "all"}, "violations not judged in full")
+	if code != proc.ExitOK || l == nil || l["level"] != "ERROR" {
+		t.Fatalf("exit %d %v\n%s", code, l, out.b.String())
+	}
+	nj, _ := l["not_judged"].([]any)
+	joined := ""
+	for _, s := range nj {
+		joined += s.(string) + "\n"
+	}
+	if !strings.Contains(joined, "zones projection not loaded") || !strings.Contains(joined, "restrictions projection not loaded") {
+		t.Fatalf("not_judged %v", nj)
+	}
+	out.mu.Lock()
+	defer out.mu.Unlock()
+	errorStatus := false
+	for line := range strings.SplitSeq(out.b.String(), "\n") {
+		var m map[string]any
+		if json.Unmarshal([]byte(line), &m) == nil && m["msg"] == "status" && m["level"] == "ERROR" {
+			errorStatus = true
+		}
+	}
+	if !errorStatus {
+		t.Fatalf("no status line at error level:\n%s", out.b.String())
+	}
+}

@@ -179,3 +179,25 @@ func TestStatusCarriesEveryAddedExtra(t *testing.T) {
 		t.Fatalf("second line %v", got[1])
 	}
 }
+
+// Z-09, SC-13: a level hook raises the status line while it says so, and
+// the line is back at info once it no longer does (E-01: both sides).
+func TestStatusLevelIsRaisedWhileAHookSaysSo(t *testing.T) {
+	var buf bytes.Buffer
+	s := &Status{Logger: slog.New(slog.NewJSONHandler(&buf, nil))}
+	raised := true
+	s.AddLevel(func() slog.Level {
+		if raised {
+			return slog.LevelError
+		}
+		return slog.LevelInfo
+	})
+	s.AddLevel(func() slog.Level { return slog.LevelDebug })
+	s.Emit(context.Background())
+	raised = false
+	s.Emit(context.Background())
+	got := lines(t, &buf)
+	if got[0]["level"] != "ERROR" || got[1]["level"] != "INFO" {
+		t.Fatalf("levels %v then %v", got[0]["level"], got[1]["level"])
+	}
+}

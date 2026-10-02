@@ -996,6 +996,219 @@ func (e UserStatus) Valid() bool {
 	}
 }
 
+// Defines values for ViolationDetectorState.
+const (
+	ViolationDetectorStateCleared ViolationDetectorState = "cleared"
+	ViolationDetectorStateRaised  ViolationDetectorState = "raised"
+	ViolationDetectorStateUpdated ViolationDetectorState = "updated"
+)
+
+// Valid indicates whether the value is a known member of the ViolationDetectorState enum.
+func (e ViolationDetectorState) Valid() bool {
+	switch e {
+	case ViolationDetectorStateCleared:
+		return true
+	case ViolationDetectorStateRaised:
+		return true
+	case ViolationDetectorStateUpdated:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ViolationEvidenceTrust.
+const (
+	ViolationEvidenceTrustAuthenticated ViolationEvidenceTrust = "authenticated"
+	ViolationEvidenceTrustBroadcast     ViolationEvidenceTrust = "broadcast"
+	ViolationEvidenceTrustProvider      ViolationEvidenceTrust = "provider"
+	ViolationEvidenceTrustSensor        ViolationEvidenceTrust = "sensor"
+	ViolationEvidenceTrustSurveillance  ViolationEvidenceTrust = "surveillance"
+)
+
+// Valid indicates whether the value is a known member of the ViolationEvidenceTrust enum.
+func (e ViolationEvidenceTrust) Valid() bool {
+	switch e {
+	case ViolationEvidenceTrustAuthenticated:
+		return true
+	case ViolationEvidenceTrustBroadcast:
+		return true
+	case ViolationEvidenceTrustProvider:
+		return true
+	case ViolationEvidenceTrustSensor:
+		return true
+	case ViolationEvidenceTrustSurveillance:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ViolationSeverity.
+const (
+	ViolationSeverityCritical ViolationSeverity = "critical"
+	ViolationSeverityInfo     ViolationSeverity = "info"
+	ViolationSeverityWarning  ViolationSeverity = "warning"
+)
+
+// Valid indicates whether the value is a known member of the ViolationSeverity enum.
+func (e ViolationSeverity) Valid() bool {
+	switch e {
+	case ViolationSeverityCritical:
+		return true
+	case ViolationSeverityInfo:
+		return true
+	case ViolationSeverityWarning:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ViolationKind.
+const (
+	ViolationKindHeight120m             ViolationKind = "height_120m"
+	ViolationKindIdentificationMismatch ViolationKind = "identification_mismatch"
+	ViolationKindNoAuthorisation        ViolationKind = "no_authorisation"
+	ViolationKindRidAbsent              ViolationKind = "rid_absent"
+	ViolationKindUnregistered           ViolationKind = "unregistered"
+	ViolationKindZoneIncursion          ViolationKind = "zone_incursion"
+)
+
+// Valid indicates whether the value is a known member of the ViolationKind enum.
+func (e ViolationKind) Valid() bool {
+	switch e {
+	case ViolationKindHeight120m:
+		return true
+	case ViolationKindIdentificationMismatch:
+		return true
+	case ViolationKindNoAuthorisation:
+		return true
+	case ViolationKindRidAbsent:
+		return true
+	case ViolationKindUnregistered:
+		return true
+	case ViolationKindZoneIncursion:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ViolationReviewInputDecision.
+const (
+	ViolationReviewInputDecisionDismissed ViolationReviewInputDecision = "dismissed"
+	ViolationReviewInputDecisionEscalated ViolationReviewInputDecision = "escalated"
+	ViolationReviewInputDecisionReviewed  ViolationReviewInputDecision = "reviewed"
+)
+
+// Valid indicates whether the value is a known member of the ViolationReviewInputDecision enum.
+func (e ViolationReviewInputDecision) Valid() bool {
+	switch e {
+	case ViolationReviewInputDecisionDismissed:
+		return true
+	case ViolationReviewInputDecisionEscalated:
+		return true
+	case ViolationReviewInputDecisionReviewed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ViolationStatus.
+const (
+	ViolationStatusDismissed ViolationStatus = "dismissed"
+	ViolationStatusEscalated ViolationStatus = "escalated"
+	ViolationStatusNew       ViolationStatus = "new"
+	ViolationStatusReviewed  ViolationStatus = "reviewed"
+)
+
+// Valid indicates whether the value is a known member of the ViolationStatus enum.
+func (e ViolationStatus) Valid() bool {
+	switch e {
+	case ViolationStatusDismissed:
+		return true
+	case ViolationStatusEscalated:
+		return true
+	case ViolationStatusNew:
+		return true
+	case ViolationStatusReviewed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ViolationSummaryDetectorState.
+const (
+	ViolationSummaryDetectorStateCleared ViolationSummaryDetectorState = "cleared"
+	ViolationSummaryDetectorStateRaised  ViolationSummaryDetectorState = "raised"
+	ViolationSummaryDetectorStateUpdated ViolationSummaryDetectorState = "updated"
+)
+
+// Valid indicates whether the value is a known member of the ViolationSummaryDetectorState enum.
+func (e ViolationSummaryDetectorState) Valid() bool {
+	switch e {
+	case ViolationSummaryDetectorStateCleared:
+		return true
+	case ViolationSummaryDetectorStateRaised:
+		return true
+	case ViolationSummaryDetectorStateUpdated:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ViolationSummaryEvidenceTrust.
+const (
+	ViolationSummaryEvidenceTrustAuthenticated ViolationSummaryEvidenceTrust = "authenticated"
+	ViolationSummaryEvidenceTrustBroadcast     ViolationSummaryEvidenceTrust = "broadcast"
+	ViolationSummaryEvidenceTrustProvider      ViolationSummaryEvidenceTrust = "provider"
+	ViolationSummaryEvidenceTrustSensor        ViolationSummaryEvidenceTrust = "sensor"
+	ViolationSummaryEvidenceTrustSurveillance  ViolationSummaryEvidenceTrust = "surveillance"
+)
+
+// Valid indicates whether the value is a known member of the ViolationSummaryEvidenceTrust enum.
+func (e ViolationSummaryEvidenceTrust) Valid() bool {
+	switch e {
+	case ViolationSummaryEvidenceTrustAuthenticated:
+		return true
+	case ViolationSummaryEvidenceTrustBroadcast:
+		return true
+	case ViolationSummaryEvidenceTrustProvider:
+		return true
+	case ViolationSummaryEvidenceTrustSensor:
+		return true
+	case ViolationSummaryEvidenceTrustSurveillance:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ViolationSummarySeverity.
+const (
+	ViolationSummarySeverityCritical ViolationSummarySeverity = "critical"
+	ViolationSummarySeverityInfo     ViolationSummarySeverity = "info"
+	ViolationSummarySeverityWarning  ViolationSummarySeverity = "warning"
+)
+
+// Valid indicates whether the value is a known member of the ViolationSummarySeverity enum.
+func (e ViolationSummarySeverity) Valid() bool {
+	switch e {
+	case ViolationSummarySeverityCritical:
+		return true
+	case ViolationSummarySeverityInfo:
+		return true
+	case ViolationSummarySeverityWarning:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ZoneApplicabilityApplicability.
 const (
 	ZoneApplicabilityApplicabilityApplies       ZoneApplicabilityApplicability = "applies"
@@ -2587,6 +2800,152 @@ type UserList struct {
 	Users []User `json:"users"`
 }
 
+// Violation defines model for Violation.
+type Violation struct {
+	AlertKey string `json:"alert_key"`
+	Cell5    string `json:"cell5"`
+
+	// ClearReason resolved (shown false past the hysteresis), stale, landed,
+	// source_disabled, flight_ended, reconfigured (the zone set or
+	// policy changed and the aircraft's last sample no longer
+	// raised it) or detector_silent (detect stopped republishing
+	// it, a restart: closed by api, not judged).
+	ClearReason    *string                 `json:"clear_reason,omitempty"`
+	ClearingDetail *map[string]interface{} `json:"clearing_detail,omitempty"`
+	ClosedAt       *time.Time              `json:"closed_at,omitempty"`
+
+	// Detail The judgement's numbers and flags as uspace-core gave them (violation/v1 detail).
+	Detail        map[string]interface{} `json:"detail"`
+	DetectorState ViolationDetectorState `json:"detector_state"`
+
+	// EvidenceExcerpt The track samples copied at detection and appended while it held (violation/v1 evidence_excerpt).
+	EvidenceExcerpt  []map[string]interface{} `json:"evidence_excerpt"`
+	EvidenceRefs     []map[string]interface{} `json:"evidence_refs"`
+	EvidenceTrackIds []string                 `json:"evidence_track_ids"`
+	EvidenceTrust    ViolationEvidenceTrust   `json:"evidence_trust"`
+	ExcerptSamples   int                      `json:"excerpt_samples"`
+
+	// ExcerptTruncated Samples past the bound were left out.
+	ExcerptTruncated  bool          `json:"excerpt_truncated"`
+	InUspace          bool          `json:"in_uspace"`
+	IncidentRequested bool          `json:"incident_requested"`
+	Kind              ViolationKind `json:"kind"`
+	LastCapturedAt    time.Time     `json:"last_captured_at"`
+	OpenedAt          time.Time     `json:"opened_at"`
+
+	// OperatorReg As broadcast; the public part only (regnum.PublicPart, G-04).
+	OperatorReg *string        `json:"operator_reg,omitempty"`
+	Peak        *ViolationPeak `json:"peak,omitempty"`
+
+	// PolicyVersion 0 is the documented defaults before any policy reached detect.
+	PolicyVersion int64      `json:"policy_version"`
+	RegistryUasId *string    `json:"registry_uas_id,omitempty"`
+	ReviewNote    *string    `json:"review_note,omitempty"`
+	ReviewedAt    *time.Time `json:"reviewed_at,omitempty"`
+	ReviewedBy    *string    `json:"reviewed_by,omitempty"`
+
+	// Serial As broadcast.
+	Serial   *string           `json:"serial,omitempty"`
+	Severity ViolationSeverity `json:"severity"`
+	Status   ViolationStatus   `json:"status"`
+
+	// TerrainSource The DEM dataset and spacing of a height over the ground (D-05).
+	TerrainSource *map[string]interface{} `json:"terrain_source,omitempty"`
+	TrackId       string                  `json:"track_id"`
+	ViolationId   string                  `json:"violation_id"`
+
+	// ZoneId country/identifier of the zone judged.
+	ZoneId      *string `json:"zone_id,omitempty"`
+	ZoneType    *string `json:"zone_type,omitempty"`
+	ZoneVersion *int64  `json:"zone_version,omitempty"`
+}
+
+// ViolationDetectorState defines model for Violation.DetectorState.
+type ViolationDetectorState string
+
+// ViolationEvidenceTrust defines model for Violation.EvidenceTrust.
+type ViolationEvidenceTrust string
+
+// ViolationSeverity defines model for Violation.Severity.
+type ViolationSeverity string
+
+// ViolationKind defines model for ViolationKind.
+type ViolationKind string
+
+// ViolationPage defines model for ViolationPage.
+type ViolationPage struct {
+	// NextCursor Pass as cursor for the next page; absent on the last page.
+	NextCursor *string            `json:"next_cursor,omitempty"`
+	Violations []ViolationSummary `json:"violations"`
+}
+
+// ViolationPeak defines model for ViolationPeak.
+type ViolationPeak struct {
+	// Name The number the violation rested on: height_agl_m for height_120m.
+	Name  string  `json:"name"`
+	Value float64 `json:"value"`
+}
+
+// ViolationReviewInput defines model for ViolationReviewInput.
+type ViolationReviewInput struct {
+	Decision ViolationReviewInputDecision `json:"decision"`
+	Note     *string                      `json:"note,omitempty"`
+}
+
+// ViolationReviewInputDecision defines model for ViolationReviewInput.Decision.
+type ViolationReviewInputDecision string
+
+// ViolationStatus defines model for ViolationStatus.
+type ViolationStatus string
+
+// ViolationSummary defines model for ViolationSummary.
+type ViolationSummary struct {
+	Cell5 string `json:"cell5"`
+
+	// ClearReason resolved (shown false past the hysteresis), stale, landed,
+	// source_disabled, flight_ended, reconfigured (the zone set or
+	// policy changed and the aircraft's last sample no longer
+	// raised it) or detector_silent (detect stopped republishing
+	// it, a restart: closed by api, not judged).
+	ClearReason    *string                       `json:"clear_reason,omitempty"`
+	ClosedAt       *time.Time                    `json:"closed_at,omitempty"`
+	DetectorState  ViolationSummaryDetectorState `json:"detector_state"`
+	EvidenceTrust  ViolationSummaryEvidenceTrust `json:"evidence_trust"`
+	ExcerptSamples int                           `json:"excerpt_samples"`
+	InUspace       bool                          `json:"in_uspace"`
+	Kind           ViolationKind                 `json:"kind"`
+	LastCapturedAt time.Time                     `json:"last_captured_at"`
+	OpenedAt       time.Time                     `json:"opened_at"`
+
+	// OperatorReg As broadcast; the public part only (regnum.PublicPart, G-04).
+	OperatorReg *string        `json:"operator_reg,omitempty"`
+	Peak        *ViolationPeak `json:"peak,omitempty"`
+
+	// PolicyVersion 0 is the documented defaults before any policy reached detect.
+	PolicyVersion int64      `json:"policy_version"`
+	ReviewedAt    *time.Time `json:"reviewed_at,omitempty"`
+
+	// Serial As broadcast.
+	Serial      *string                  `json:"serial,omitempty"`
+	Severity    ViolationSummarySeverity `json:"severity"`
+	Status      ViolationStatus          `json:"status"`
+	TrackId     string                   `json:"track_id"`
+	ViolationId string                   `json:"violation_id"`
+
+	// ZoneId country/identifier of the zone judged.
+	ZoneId   *string `json:"zone_id,omitempty"`
+	ZoneType *string `json:"zone_type,omitempty"`
+}
+
+// ViolationSummaryDetectorState defines model for ViolationSummary.DetectorState.
+type ViolationSummaryDetectorState string
+
+// ViolationSummaryEvidenceTrust defines model for ViolationSummary.EvidenceTrust.
+type ViolationSummaryEvidenceTrust string
+
+// ViolationSummarySeverity defines model for ViolationSummary.Severity.
+type ViolationSummarySeverity string
+
 // ZoneApplicability defines model for ZoneApplicability.
 type ZoneApplicability struct {
 	Applicability ZoneApplicabilityApplicability `json:"applicability"`
@@ -2844,6 +3203,21 @@ type ListUSpaceVersionsParams struct {
 	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListViolationsParams defines parameters for ListViolations.
+type ListViolationsParams struct {
+	Status *ViolationStatus `form:"status,omitempty" json:"status,omitempty"`
+	Kind   *ViolationKind   `form:"kind,omitempty" json:"kind,omitempty"`
+
+	// From Inclusive lower bound of opened_at.
+	From *time.Time `form:"from,omitempty" json:"from,omitempty"`
+
+	// To Exclusive upper bound of opened_at.
+	To     *time.Time `form:"to,omitempty" json:"to,omitempty"`
+	Bbox   *string    `form:"bbox,omitempty" json:"bbox,omitempty"`
+	Cursor *string    `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int       `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // ListZonesParams defines parameters for ListZones.
 type ListZonesParams struct {
 	State *ZoneState `form:"state,omitempty" json:"state,omitempty"`
@@ -2974,6 +3348,9 @@ type ReplaceUSpaceAirspaceJSONRequestBody = USpaceDraftInput
 
 // DesignateUSpaceAirspaceJSONRequestBody defines body for DesignateUSpaceAirspace for application/json ContentType.
 type DesignateUSpaceAirspaceJSONRequestBody = ZoneApproveInput
+
+// ReviewViolationJSONRequestBody defines body for ReviewViolation for application/json ContentType.
+type ReviewViolationJSONRequestBody = ViolationReviewInput
 
 // CreateZoneJSONRequestBody defines body for CreateZone for application/json ContentType.
 type CreateZoneJSONRequestBody = ZoneDraftInput
@@ -4278,6 +4655,52 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /v1/uspace/{identifier}/versions (the `ListUSpaceVersions` operationId).
 	ListUSpaceVersions(ctx context.Context, identifier string, params *ListUSpaceVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListViolations Violations, newest first
+	//
+	// Every filter is optional. `from` and `to` bound `opened_at`;
+	// `bbox` (`min_lon,min_lat,max_lon,max_lat`, WGS84 degrees, min
+	// below max) selects by the first position of the evidence excerpt
+	// (PostGIS). Pages are cut by `cursor` (the `next_cursor` of the
+	// previous page). A violation is open while `closed_at` is null.
+	//
+	// Corresponds with GET /v1/violations (the `ListViolations` operationId).
+	ListViolations(ctx context.Context, params *ListViolationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetViolation One violation with its evidence excerpt
+	//
+	// Corresponds with GET /v1/violations/{violation_id} (the `GetViolation` operationId).
+	GetViolation(ctx context.Context, violationId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReviewViolationWithBody Review a violation (reviewed, dismissed or escalated)
+	//
+	// `new` or `reviewed` may become `reviewed`, `dismissed` or
+	// `escalated`; `dismissed` and `escalated` are final (409
+	// `violation_reviewed`). Evidence that is broadcast only
+	// (`evidence_trust: broadcast`) is never escalated without a
+	// note (spec 06 §2 T1; 400 naming `note`). Escalation requests an
+	// incident (`incident_requested`; WP-17 opens it). The review and
+	// the request are `events` rows in the same transaction.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/violations/{violation_id}/review (the `ReviewViolation` operationId).
+	ReviewViolationWithBody(ctx context.Context, violationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReviewViolation Review a violation (reviewed, dismissed or escalated)
+	//
+	// `new` or `reviewed` may become `reviewed`, `dismissed` or
+	// `escalated`; `dismissed` and `escalated` are final (409
+	// `violation_reviewed`). Evidence that is broadcast only
+	// (`evidence_trust: broadcast`) is never escalated without a
+	// note (spec 06 §2 T1; 400 naming `note`). Escalation requests an
+	// incident (`incident_requested`; WP-17 opens it). The review and
+	// the request are `events` rows in the same transaction.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/violations/{violation_id}/review (the `ReviewViolation` operationId).
+	ReviewViolation(ctx context.Context, violationId string, body ReviewViolationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListZones The newest version of every geo-zone, in identifier order
 	//
@@ -6542,6 +6965,92 @@ func (c *Client) DesignateUSpaceAirspace(ctx context.Context, identifier string,
 // Corresponds with GET /v1/uspace/{identifier}/versions (the `ListUSpaceVersions` operationId).
 func (c *Client) ListUSpaceVersions(ctx context.Context, identifier string, params *ListUSpaceVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListUSpaceVersionsRequest(c.Server, identifier, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListViolations Violations, newest first
+//
+// Every filter is optional. `from` and `to` bound `opened_at`;
+// `bbox` (`min_lon,min_lat,max_lon,max_lat`, WGS84 degrees, min
+// below max) selects by the first position of the evidence excerpt
+// (PostGIS). Pages are cut by `cursor` (the `next_cursor` of the
+// previous page). A violation is open while `closed_at` is null.
+//
+// Corresponds with GET /v1/violations (the `ListViolations` operationId).
+func (c *Client) ListViolations(ctx context.Context, params *ListViolationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListViolationsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetViolation One violation with its evidence excerpt
+//
+// Corresponds with GET /v1/violations/{violation_id} (the `GetViolation` operationId).
+func (c *Client) GetViolation(ctx context.Context, violationId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetViolationRequest(c.Server, violationId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ReviewViolationWithBody Review a violation (reviewed, dismissed or escalated)
+//
+// `new` or `reviewed` may become `reviewed`, `dismissed` or
+// `escalated`; `dismissed` and `escalated` are final (409
+// `violation_reviewed`). Evidence that is broadcast only
+// (`evidence_trust: broadcast`) is never escalated without a
+// note (spec 06 §2 T1; 400 naming `note`). Escalation requests an
+// incident (`incident_requested`; WP-17 opens it). The review and
+// the request are `events` rows in the same transaction.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/violations/{violation_id}/review (the `ReviewViolation` operationId).
+func (c *Client) ReviewViolationWithBody(ctx context.Context, violationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReviewViolationRequestWithBody(c.Server, violationId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ReviewViolation Review a violation (reviewed, dismissed or escalated)
+//
+// `new` or `reviewed` may become `reviewed`, `dismissed` or
+// `escalated`; `dismissed` and `escalated` are final (409
+// `violation_reviewed`). Evidence that is broadcast only
+// (`evidence_trust: broadcast`) is never escalated without a
+// note (spec 06 §2 T1; 400 naming `note`). Escalation requests an
+// incident (`incident_requested`; WP-17 opens it). The review and
+// the request are `events` rows in the same transaction.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/violations/{violation_id}/review (the `ReviewViolation` operationId).
+func (c *Client) ReviewViolation(ctx context.Context, violationId string, body ReviewViolationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReviewViolationRequest(c.Server, violationId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -10289,6 +10798,213 @@ func NewListUSpaceVersionsRequest(server string, identifier string, params *List
 	return req, nil
 }
 
+// NewListViolationsRequest constructs an http.Request for the ListViolations method
+func NewListViolationsRequest(server string, params *ListViolationsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/violations")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Kind != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "kind", *params.Kind, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.From != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from", *params.From, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.To != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to", *params.To, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Bbox != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "bbox", *params.Bbox, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetViolationRequest constructs an http.Request for the GetViolation method
+func NewGetViolationRequest(server string, violationId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "violation_id", violationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/violations/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewReviewViolationRequest calls the generic ReviewViolation builder with application/json body
+func NewReviewViolationRequest(server string, violationId string, body ReviewViolationJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewReviewViolationRequestWithBody(server, violationId, "application/json", bodyReader)
+}
+
+// NewReviewViolationRequestWithBody constructs an http.Request for the ReviewViolation method, with any body, and a specified content type
+func NewReviewViolationRequestWithBody(server string, violationId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "violation_id", violationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/violations/%s/review", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListZonesRequest constructs an http.Request for the ListZones method
 func NewListZonesRequest(server string, params *ListZonesParams) (*http.Request, error) {
 	var err error
@@ -12075,6 +12791,56 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /v1/uspace/{identifier}/versions (the `ListUSpaceVersions` operationId).
 	ListUSpaceVersionsWithResponse(ctx context.Context, identifier string, params *ListUSpaceVersionsParams, reqEditors ...RequestEditorFn) (*ListUSpaceVersionsResponse, error)
+
+	// ListViolationsWithResponse Violations, newest first
+	//
+	// Every filter is optional. `from` and `to` bound `opened_at`;
+	// `bbox` (`min_lon,min_lat,max_lon,max_lat`, WGS84 degrees, min
+	// below max) selects by the first position of the evidence excerpt
+	// (PostGIS). Pages are cut by `cursor` (the `next_cursor` of the
+	// previous page). A violation is open while `closed_at` is null.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/violations (the `ListViolations` operationId).
+	ListViolationsWithResponse(ctx context.Context, params *ListViolationsParams, reqEditors ...RequestEditorFn) (*ListViolationsResponse, error)
+
+	// GetViolationWithResponse One violation with its evidence excerpt
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/violations/{violation_id} (the `GetViolation` operationId).
+	GetViolationWithResponse(ctx context.Context, violationId string, reqEditors ...RequestEditorFn) (*GetViolationResponse, error)
+
+	// ReviewViolationWithBodyWithResponse Review a violation (reviewed, dismissed or escalated)
+	//
+	// `new` or `reviewed` may become `reviewed`, `dismissed` or
+	// `escalated`; `dismissed` and `escalated` are final (409
+	// `violation_reviewed`). Evidence that is broadcast only
+	// (`evidence_trust: broadcast`) is never escalated without a
+	// note (spec 06 §2 T1; 400 naming `note`). Escalation requests an
+	// incident (`incident_requested`; WP-17 opens it). The review and
+	// the request are `events` rows in the same transaction.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/violations/{violation_id}/review (the `ReviewViolation` operationId).
+	ReviewViolationWithBodyWithResponse(ctx context.Context, violationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReviewViolationResponse, error)
+
+	// ReviewViolationWithResponse Review a violation (reviewed, dismissed or escalated)
+	//
+	// `new` or `reviewed` may become `reviewed`, `dismissed` or
+	// `escalated`; `dismissed` and `escalated` are final (409
+	// `violation_reviewed`). Evidence that is broadcast only
+	// (`evidence_trust: broadcast`) is never escalated without a
+	// note (spec 06 §2 T1; 400 naming `note`). Escalation requests an
+	// incident (`incident_requested`; WP-17 opens it). The review and
+	// the request are `events` rows in the same transaction.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/violations/{violation_id}/review (the `ReviewViolation` operationId).
+	ReviewViolationWithResponse(ctx context.Context, violationId string, body ReviewViolationJSONRequestBody, reqEditors ...RequestEditorFn) (*ReviewViolationResponse, error)
 
 	// ListZonesWithResponse The newest version of every geo-zone, in identifier order
 	//
@@ -15978,6 +16744,185 @@ func (r ListUSpaceVersionsResponse) ContentType() string {
 	return ""
 }
 
+type ListViolationsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ViolationPage
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListViolationsResponse) GetJSON200() *ViolationPage {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r ListViolationsResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ListViolationsResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListViolationsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListViolationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListViolationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListViolationsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetViolationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Violation
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetViolationResponse) GetJSON200() *Violation {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r GetViolationResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetViolationResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetViolationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetViolationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetViolationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetViolationResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ReviewViolationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Violation
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ReviewViolationResponse) GetJSON200() *Violation {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r ReviewViolationResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r ReviewViolationResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r ReviewViolationResponse) GetApplicationproblemJSON409() *Problem {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ReviewViolationResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ReviewViolationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ReviewViolationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReviewViolationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ReviewViolationResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListZonesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -18286,6 +19231,80 @@ func (c *ClientWithResponses) ListUSpaceVersionsWithResponse(ctx context.Context
 		return nil, err
 	}
 	return ParseListUSpaceVersionsResponse(rsp)
+}
+
+// ListViolationsWithResponse Violations, newest first
+//
+// Every filter is optional. `from` and `to` bound `opened_at`;
+// `bbox` (`min_lon,min_lat,max_lon,max_lat`, WGS84 degrees, min
+// below max) selects by the first position of the evidence excerpt
+// (PostGIS). Pages are cut by `cursor` (the `next_cursor` of the
+// previous page). A violation is open while `closed_at` is null.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/violations (the `ListViolations` operationId).
+func (c *ClientWithResponses) ListViolationsWithResponse(ctx context.Context, params *ListViolationsParams, reqEditors ...RequestEditorFn) (*ListViolationsResponse, error) {
+	rsp, err := c.ListViolations(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListViolationsResponse(rsp)
+}
+
+// GetViolationWithResponse One violation with its evidence excerpt
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/violations/{violation_id} (the `GetViolation` operationId).
+func (c *ClientWithResponses) GetViolationWithResponse(ctx context.Context, violationId string, reqEditors ...RequestEditorFn) (*GetViolationResponse, error) {
+	rsp, err := c.GetViolation(ctx, violationId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetViolationResponse(rsp)
+}
+
+// ReviewViolationWithBodyWithResponse Review a violation (reviewed, dismissed or escalated)
+//
+// `new` or `reviewed` may become `reviewed`, `dismissed` or
+// `escalated`; `dismissed` and `escalated` are final (409
+// `violation_reviewed`). Evidence that is broadcast only
+// (`evidence_trust: broadcast`) is never escalated without a
+// note (spec 06 §2 T1; 400 naming `note`). Escalation requests an
+// incident (`incident_requested`; WP-17 opens it). The review and
+// the request are `events` rows in the same transaction.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/violations/{violation_id}/review (the `ReviewViolation` operationId).
+func (c *ClientWithResponses) ReviewViolationWithBodyWithResponse(ctx context.Context, violationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReviewViolationResponse, error) {
+	rsp, err := c.ReviewViolationWithBody(ctx, violationId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReviewViolationResponse(rsp)
+}
+
+// ReviewViolationWithResponse Review a violation (reviewed, dismissed or escalated)
+//
+// `new` or `reviewed` may become `reviewed`, `dismissed` or
+// `escalated`; `dismissed` and `escalated` are final (409
+// `violation_reviewed`). Evidence that is broadcast only
+// (`evidence_trust: broadcast`) is never escalated without a
+// note (spec 06 §2 T1; 400 naming `note`). Escalation requests an
+// incident (`incident_requested`; WP-17 opens it). The review and
+// the request are `events` rows in the same transaction.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/violations/{violation_id}/review (the `ReviewViolation` operationId).
+func (c *ClientWithResponses) ReviewViolationWithResponse(ctx context.Context, violationId string, body ReviewViolationJSONRequestBody, reqEditors ...RequestEditorFn) (*ReviewViolationResponse, error) {
+	rsp, err := c.ReviewViolation(ctx, violationId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReviewViolationResponse(rsp)
 }
 
 // ListZonesWithResponse The newest version of every geo-zone, in identifier order
@@ -21286,6 +22305,140 @@ func ParseListUSpaceVersionsResponse(rsp *http.Response) (*ListUSpaceVersionsRes
 	return response, nil
 }
 
+// ParseListViolationsResponse parses an HTTP response from a ListViolationsWithResponse call
+func ParseListViolationsResponse(rsp *http.Response) (*ListViolationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListViolationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ViolationPage
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetViolationResponse parses an HTTP response from a GetViolationWithResponse call
+func ParseGetViolationResponse(rsp *http.Response) (*GetViolationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetViolationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Violation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReviewViolationResponse parses an HTTP response from a ReviewViolationWithResponse call
+func ParseReviewViolationResponse(rsp *http.Response) (*ReviewViolationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReviewViolationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Violation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListZonesResponse parses an HTTP response from a ListZonesWithResponse call
 func ParseListZonesResponse(rsp *http.Response) (*ListZonesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -21895,6 +23048,15 @@ type ServerInterface interface {
 	// ListUSpaceVersions A U-space airspace's versions, newest first
 	// (GET /v1/uspace/{identifier}/versions)
 	ListUSpaceVersions(w http.ResponseWriter, r *http.Request, identifier string, params ListUSpaceVersionsParams)
+	// ListViolations Violations, newest first
+	// (GET /v1/violations)
+	ListViolations(w http.ResponseWriter, r *http.Request, params ListViolationsParams)
+	// GetViolation One violation with its evidence excerpt
+	// (GET /v1/violations/{violation_id})
+	GetViolation(w http.ResponseWriter, r *http.Request, violationId string)
+	// ReviewViolation Review a violation (reviewed, dismissed or escalated)
+	// (POST /v1/violations/{violation_id}/review)
+	ReviewViolation(w http.ResponseWriter, r *http.Request, violationId string)
 	// ListZones The newest version of every geo-zone, in identifier order
 	// (GET /v1/zones)
 	ListZones(w http.ResponseWriter, r *http.Request, params ListZonesParams)
@@ -24115,6 +25277,169 @@ func (siw *ServerInterfaceWrapper) ListUSpaceVersions(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// ListViolations operation middleware
+func (siw *ServerInterfaceWrapper) ListViolations(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListViolationsParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "kind" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "kind", r.URL.Query(), &params.Kind, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "kind"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "bbox" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "bbox", r.URL.Query(), &params.Bbox, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "bbox"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "bbox", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListViolations(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetViolation operation middleware
+func (siw *ServerInterfaceWrapper) GetViolation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "violation_id" -------------
+	var violationId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "violation_id", r.PathValue("violation_id"), &violationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "violation_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetViolation(w, r, violationId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReviewViolation operation middleware
+func (siw *ServerInterfaceWrapper) ReviewViolation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "violation_id" -------------
+	var violationId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "violation_id", r.PathValue("violation_id"), &violationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "violation_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReviewViolation(w, r, violationId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListZones operation middleware
 func (siw *ServerInterfaceWrapper) ListZones(w http.ResponseWriter, r *http.Request) {
 
@@ -24712,6 +26037,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/uspace/{identifier}/designate", wrapper.DesignateUSpaceAirspace)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/uspace/{identifier}/versions", wrapper.ListUSpaceVersions)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/publications", wrapper.ListPublications)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/violations", wrapper.ListViolations)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/violations/{violation_id}", wrapper.GetViolation)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/violations/{violation_id}/review", wrapper.ReviewViolation)
 
 	return m
 }
@@ -28015,6 +29343,200 @@ func (response ListUSpaceVersionsdefaultApplicationProblemPlusJSONResponse) Visi
 	return err
 }
 
+type ListViolationsRequestObject struct {
+	Params ListViolationsParams
+}
+
+type ListViolationsResponseObject interface {
+	VisitListViolationsResponse(w http.ResponseWriter) error
+}
+
+type ListViolations200JSONResponse ViolationPage
+
+func (response ListViolations200JSONResponse) VisitListViolationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListViolations400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response ListViolations400ApplicationProblemPlusJSONResponse) VisitListViolationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListViolationsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListViolationsdefaultApplicationProblemPlusJSONResponse) VisitListViolationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetViolationRequestObject struct {
+	ViolationId string `json:"violation_id"`
+}
+
+type GetViolationResponseObject interface {
+	VisitGetViolationResponse(w http.ResponseWriter) error
+}
+
+type GetViolation200JSONResponse Violation
+
+func (response GetViolation200JSONResponse) VisitGetViolationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetViolation404ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetViolation404ApplicationProblemPlusJSONResponse) VisitGetViolationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetViolationdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetViolationdefaultApplicationProblemPlusJSONResponse) VisitGetViolationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewViolationRequestObject struct {
+	ViolationId string `json:"violation_id"`
+	Body        *ReviewViolationJSONRequestBody
+}
+
+type ReviewViolationResponseObject interface {
+	VisitReviewViolationResponse(w http.ResponseWriter) error
+}
+
+type ReviewViolation200JSONResponse Violation
+
+func (response ReviewViolation200JSONResponse) VisitReviewViolationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewViolation400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response ReviewViolation400ApplicationProblemPlusJSONResponse) VisitReviewViolationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewViolation404ApplicationProblemPlusJSONResponse Problem
+
+func (response ReviewViolation404ApplicationProblemPlusJSONResponse) VisitReviewViolationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewViolation409ApplicationProblemPlusJSONResponse Problem
+
+func (response ReviewViolation409ApplicationProblemPlusJSONResponse) VisitReviewViolationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewViolationdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ReviewViolationdefaultApplicationProblemPlusJSONResponse) VisitReviewViolationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListZonesRequestObject struct {
 	Params ListZonesParams
 }
@@ -28730,6 +30252,15 @@ type StrictServerInterface interface {
 	// ListUSpaceVersions A U-space airspace's versions, newest first
 	// (GET /v1/uspace/{identifier}/versions)
 	ListUSpaceVersions(ctx context.Context, request ListUSpaceVersionsRequestObject) (ListUSpaceVersionsResponseObject, error)
+	// ListViolations Violations, newest first
+	// (GET /v1/violations)
+	ListViolations(ctx context.Context, request ListViolationsRequestObject) (ListViolationsResponseObject, error)
+	// GetViolation One violation with its evidence excerpt
+	// (GET /v1/violations/{violation_id})
+	GetViolation(ctx context.Context, request GetViolationRequestObject) (GetViolationResponseObject, error)
+	// ReviewViolation Review a violation (reviewed, dismissed or escalated)
+	// (POST /v1/violations/{violation_id}/review)
+	ReviewViolation(ctx context.Context, request ReviewViolationRequestObject) (ReviewViolationResponseObject, error)
 	// ListZones The newest version of every geo-zone, in identifier order
 	// (GET /v1/zones)
 	ListZones(ctx context.Context, request ListZonesRequestObject) (ListZonesResponseObject, error)
@@ -30837,6 +32368,91 @@ func (sh *strictHandler) ListUSpaceVersions(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListUSpaceVersionsResponseObject); ok {
 		if err := validResponse.VisitListUSpaceVersionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListViolations operation middleware
+func (sh *strictHandler) ListViolations(w http.ResponseWriter, r *http.Request, params ListViolationsParams) {
+	var request ListViolationsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListViolations(ctx, request.(ListViolationsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListViolations")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListViolationsResponseObject); ok {
+		if err := validResponse.VisitListViolationsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetViolation operation middleware
+func (sh *strictHandler) GetViolation(w http.ResponseWriter, r *http.Request, violationId string) {
+	var request GetViolationRequestObject
+
+	request.ViolationId = violationId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetViolation(ctx, request.(GetViolationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetViolation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetViolationResponseObject); ok {
+		if err := validResponse.VisitGetViolationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReviewViolation operation middleware
+func (sh *strictHandler) ReviewViolation(w http.ResponseWriter, r *http.Request, violationId string) {
+	var request ReviewViolationRequestObject
+
+	request.ViolationId = violationId
+
+	var body ReviewViolationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReviewViolation(ctx, request.(ReviewViolationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReviewViolation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReviewViolationResponseObject); ok {
+		if err := validResponse.VisitReviewViolationResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

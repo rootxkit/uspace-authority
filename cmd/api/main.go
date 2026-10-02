@@ -30,6 +30,7 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/store"
 	"github.com/rootxkit/uspace-authority/internal/store/pg"
 	"github.com/rootxkit/uspace-authority/internal/tokens"
+	"github.com/rootxkit/uspace-authority/internal/violations"
 	"github.com/rootxkit/uspace-authority/internal/zonesvc"
 )
 
@@ -101,6 +102,12 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 		wg.Go(func() {
 			bus.EnsureUntilDone(ctx, bp.JS, bp.Topology, time.Duration(cfg.NATSTimeoutMS)*time.Millisecond, rt.Logger, rt.Limiter)
 		})
+		// The active policy on the bus (KV policy, ctl.policy; plan §6):
+		// written at activation and repaired every POLICY_REFRESH_S, so
+		// detect judges with the policy api serves (INV-03, WP-12).
+		policyKV := policy.KVOf(bp, time.Duration(cfg.NATSTimeoutMS)*time.Millisecond, "authority/api", counters)
+		svc.Publisher = policy.Publishers{follower, policyKV}
+		wg.Go(func() { policyKV.RunRepair(ctx, follower, time.Duration(cfg.PolicyRefreshS)*time.Second, rt.Limiter) })
 
 		hasher, err := passhash.New(passhash.Params{
 			MemoryKiB: uint32(cfg.Argon2MemoryKiB), Time: uint32(cfg.Argon2Time), Threads: uint8(cfg.Argon2Threads),
@@ -245,6 +252,15 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 		wg.Go(func() { statuses.Run(ctx, bp.NC, rt.Logger) })
 		rt.AddCounters("cells", cells.Counters)
 
+		// Violations (WP-12): alrt.v1 persisted, each transition audited;
+		// what detect stopped republishing closed detector_silent.
+		vio := violations.Assemble(violations.Setup{
+			DB: db, Audit: auditWriter, BP: bp, Config: cfg.Violations,
+			NATSTimeout: time.Duration(cfg.NATSTimeoutMS) * time.Millisecond, Logger: rt.Logger, Limiter: rt.Limiter,
+		})
+		rt.AddCounters("violations", vio.Counters)
+		wg.Go(func() { vio.Run(ctx) })
+
 		mux := http.NewServeMux()
 		apiserver.Mount(mux, apiserver.Server{
 			PolicyHandler:       policy.Handler{Service: svc},
@@ -259,9 +275,10 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 			SourcesHandler: switches.Handler{
 				Service: sw, Status: statuses, StaleAfter: time.Duration(cfg.SourceStatusStaleS) * time.Second,
 			},
-			ZonesHandler:  zs.Handler,
-			USpaceHandler: zs.Handler,
-			CISPHandler:   cis.Handler,
+			ZonesHandler:      zs.Handler,
+			USpaceHandler:     zs.Handler,
+			CISPHandler:       cis.Handler,
+			ViolationsHandler: vio.Handler,
 		}, apiserver.Options{
 			Logger:      rt.Logger,
 			Middlewares: []apiserver.Middleware{tok.Handler.FormGuard(), apiserver.Authorize(identify, apiserver.DefaultRules())},

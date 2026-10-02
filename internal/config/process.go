@@ -97,6 +97,20 @@ type API struct {
 	Sources
 	Zones
 	CISP
+	Violations
+}
+
+// Violations is api's consumer of alrt.v1 and its silent job (WP-12).
+type Violations struct {
+	ViolationsMaxAckPending     int `env:"VIOLATIONS_MAX_ACK_PENDING" default:"256" min:"1" max:"100000" help:"alrt.v1 messages delivered to api and not yet stored (max_ack_pending)"`
+	ViolationsAckWaitS          int `env:"VIOLATIONS_ACK_WAIT_S" default:"30" min:"1" max:"3600" help:"ack wait of the alrt.v1 consumer"`
+	ViolationsFetchMax          int `env:"VIOLATIONS_FETCH_MAX" default:"64" min:"1" max:"1000" help:"alrt.v1 messages one pull asks for"`
+	ViolationsRetryMS           int `env:"VIOLATIONS_RETRY_MS" default:"1000" min:"10" max:"600000" help:"delay before a message whose write failed is delivered again"`
+	ViolationsWriteTimeoutS     int `env:"VIOLATIONS_WRITE_TIMEOUT_S" default:"10" min:"1" max:"600" help:"bound on one violation transaction"`
+	ViolationsExcerptMaxSamples int `env:"VIOLATIONS_EXCERPT_MAX_SAMPLES" default:"600" min:"1" max:"100000" help:"track samples stored per violation; past it later samples are left out, flagged excerpt_truncated and counted (E-10)"`
+	ViolationsSilentAfterS      int `env:"VIOLATIONS_SILENT_AFTER_S" default:"30" min:"5" max:"86400" help:"an open violation detect has not republished for this long (database clock) is closed detector_silent; detect republishes every second"`
+	ViolationsSilentCheckS      int `env:"VIOLATIONS_SILENT_CHECK_S" default:"10" min:"1" max:"3600" help:"period of the detector_silent check"`
+	ViolationsSilentBatch       int `env:"VIOLATIONS_SILENT_BATCH" default:"500" min:"1" max:"100000" help:"violations one detector_silent check closes at most"`
 }
 
 // Sources is source control in api (WP-10, U-15).
@@ -452,6 +466,26 @@ type Detect struct {
 	Ground
 	WorkerID string `env:"DETECT_WORKER_ID" default:"detect-1" help:"this worker's id in the cell ownership map (KV cells, PUT /v1/cells)"`
 	Cells    string `env:"CELLS" enum:"all" help:"all: judge every cell whatever the ownership map says (the demo); empty: the cells the map gives DETECT_WORKER_ID, and refuse to start with none"`
+	DetectTuning
+}
+
+// DetectTuning are detect's bounds and periods (WP-12). The judgement's
+// thresholds are not here: they are the active authority_policy, followed
+// from KV policy (INV-03).
+type DetectTuning struct {
+	MaxAckPending       int `env:"DETECT_MAX_ACK_PENDING" default:"1000" min:"1" max:"100000" help:"tracks delivered to a worker and not yet acknowledged (max_ack_pending, 05 §5)"`
+	AckWaitS            int `env:"DETECT_ACK_WAIT_S" default:"30" min:"1" max:"3600" help:"ack wait of the track consumers"`
+	FetchMax            int `env:"DETECT_FETCH_MAX" default:"256" min:"1" max:"10000" help:"tracks one pull asks for"`
+	MaxAircraft         int `env:"DETECT_MAX_AIRCRAFT" default:"50000" min:"1" max:"10000000" help:"aircraft one monitor holds (alerting.Config.MaxAircraft, C-18); past it an aircraft without an open violation is evicted, and with none a new one is refused, counted and logged at error level (E-10)"`
+	ExcerptWindowS      int `env:"DETECT_EXCERPT_WINDOW_S" default:"10" min:"1" max:"600" help:"seconds of track samples a violation copies at its raise (evidence_excerpt, 03 §1)"`
+	ExcerptMaxSamples   int `env:"DETECT_EXCERPT_MAX_SAMPLES" default:"64" min:"1" max:"10000" help:"samples kept per aircraft for the excerpt; past it the oldest is dropped and counted (E-10)"`
+	OutboxMax           int `env:"DETECT_OUTBOX_MAX" default:"10000" min:"1" max:"10000000" help:"raises and clears waiting for the ALRT stream; past it the oldest is dropped, counted and logged at error level"`
+	PublishTimeoutMS    int `env:"DETECT_PUBLISH_TIMEOUT_MS" default:"2000" min:"10" max:"60000" help:"bound on one violation write to ALRT"`
+	TickBudgetMS        int `env:"DETECT_TICK_BUDGET_MS" default:"500" min:"10" max:"60000" help:"bound on the publishing of one tick (outbox and republication of active violations); what is left is deferred to the next tick"`
+	ZonesRefreshS       int `env:"DETECT_ZONES_REFRESH_S" default:"60" min:"1" max:"3600" help:"period of the zones projection re-read besides zones.v1.changed (G-08)"`
+	RestrictionsRefresh int `env:"DETECT_RESTRICTIONS_REFRESH_S" default:"60" min:"1" max:"3600" help:"period of the restrictions projection re-read besides cis.v1.restrictions (G-08, Z-12)"`
+	PolicyRereadS       int `env:"DETECT_POLICY_REREAD_S" default:"60" min:"1" max:"3600" help:"period of the KV policy re-read besides its watch and ctl.policy (G-08)"`
+	TSMaxConns          int `env:"TS_MAX_CONNS" default:"2" min:"1" max:"100" help:"connections of the read-only projection pool"`
 }
 
 // String redacts secrets.

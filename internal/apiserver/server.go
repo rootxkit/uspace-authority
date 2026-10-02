@@ -161,6 +161,14 @@ type CISPHandler interface {
 	ListPublications(ctx context.Context, request gen.ListPublicationsRequestObject) (gen.ListPublicationsResponseObject, error)
 }
 
+// ViolationsHandler serves /v1/violations* (api, WP-12): the violations
+// detect raised, and their review.
+type ViolationsHandler interface {
+	ListViolations(ctx context.Context, request gen.ListViolationsRequestObject) (gen.ListViolationsResponseObject, error)
+	GetViolation(ctx context.Context, request gen.GetViolationRequestObject) (gen.GetViolationResponseObject, error)
+	ReviewViolation(ctx context.Context, request gen.ReviewViolationRequestObject) (gen.ReviewViolationResponseObject, error)
+}
+
 // Server implements gen.StrictServerInterface by delegating to one
 // handler per group. A group left nil must not be mounted.
 type Server struct {
@@ -178,6 +186,7 @@ type Server struct {
 	ZonesHandler
 	USpaceHandler
 	CISPHandler
+	ViolationsHandler
 }
 
 var _ gen.StrictServerInterface = Server{}

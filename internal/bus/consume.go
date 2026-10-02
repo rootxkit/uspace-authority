@@ -26,6 +26,10 @@ type PullSpec struct {
 	// -1 (the default here) never gives up: the consumer decides when a
 	// message is shed and records it.
 	MaxDeliver int
+	// DeliverPolicy is where a new durable starts: the zero value is
+	// every message the stream holds; detect starts a new durable at new
+	// messages (history is never alerted, T-04).
+	DeliverPolicy jetstream.DeliverPolicy
 }
 
 // PullConsumer creates or updates the durable pull consumer spec names on
@@ -43,7 +47,7 @@ func PullConsumer(ctx context.Context, s jetstream.Stream, spec PullSpec) (jetst
 	c, err := s.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
 		Durable: spec.Durable, FilterSubject: spec.FilterSubject, AckPolicy: jetstream.AckExplicitPolicy,
 		AckWait: spec.AckWait, MaxAckPending: spec.MaxAckPending, MaxDeliver: spec.MaxDeliver,
-		DeliverPolicy: jetstream.DeliverAllPolicy,
+		DeliverPolicy: spec.DeliverPolicy,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("consumer %s: %w", spec.Durable, err)

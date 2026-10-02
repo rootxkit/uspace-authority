@@ -345,3 +345,36 @@ func TestHealthMapsEveryStatus(t *testing.T) {
 		}
 	}
 }
+
+// WP-12 (B-11): a state taken signals Changes and is what State answers;
+// a state ignored signals nothing (E-01: both sides).
+func TestFollowerSignalsTakenStatesOnly(t *testing.T) {
+	f := NewFollower()
+	if _, ok := f.State(); ok {
+		t.Fatal("a state before any was applied")
+	}
+	select {
+	case <-f.Changes():
+		t.Fatal("a signal before any state")
+	default:
+	}
+	if !f.Apply(doc("e1", 2, ctl(TypeDirectRID, nil, false, "admin-1"))) {
+		t.Fatal("not applied")
+	}
+	select {
+	case <-f.Changes():
+	default:
+		t.Fatal("a taken state did not signal")
+	}
+	if st, ok := f.State(); !ok || st.Version != 2 || len(st.Controls) != 1 || st.Controls[0].Enabled {
+		t.Fatalf("state %+v %v", st, ok)
+	}
+	if f.Apply(doc("e1", 1)) {
+		t.Fatal("an older state was applied")
+	}
+	select {
+	case <-f.Changes():
+		t.Fatal("an ignored state signalled")
+	default:
+	}
+}

@@ -593,7 +593,8 @@ edits another's), `CHANGELOG.md` (one line per WP under Unreleased) and
 
 ## 13. Engineering standards and CI
 
-- Go 1.27, `CGO_ENABLED=0`; `uspace-core` pinned by tag (`v1.2.0`
+- Go 1.27, `CGO_ENABLED=0`; `uspace-core` pinned by tag (`v1.3.0`
+  since WP-12, additive to `v1.2.0`: `geodesy.Destination`; `v1.2.0`
   since WP-10, additive to `v1.1.0`: the shared session signer
   `auth.Issuer.IssueSession`; `v1.1.0` since WP-2: the additive JWS
   helpers, audience lists and `StrictSessionClaims`, `geodesy/cell`,

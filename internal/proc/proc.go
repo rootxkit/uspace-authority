@@ -69,6 +69,10 @@ func (rt *Runtime) AddCounters(component string, c *core.Counters) {
 // version of a followed policy, the age of a projection.
 func (rt *Runtime) AddStatus(fn func() []slog.Attr) { rt.status.AddExtra(fn) }
 
+// AddStatusLevel raises the level of every later status line while fn
+// says so (logging.Status.AddLevel).
+func (rt *Runtime) AddStatusLevel(fn func() slog.Level) { rt.status.AddLevel(fn) }
+
 // DrainTimeout is the bound on the drain after the context ends.
 func (rt *Runtime) DrainTimeout() time.Duration {
 	return time.Duration(rt.Common.ShutdownTimeoutS) * time.Second

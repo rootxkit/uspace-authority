@@ -406,3 +406,44 @@ type UspaceAirspace struct {
 	DesignationRef        *string
 	AipRef                *string
 }
+
+type Violation struct {
+	ViolationID       string
+	Kind              string
+	Severity          string
+	AlertKey          string
+	TrackID           string
+	Serial            *string
+	OperatorReg       *string
+	RegistryUasID     *string
+	ZoneID            *string
+	ZoneVersion       *int64
+	ZoneType          *string
+	DetectorState     string
+	OpenedAt          time.Time
+	ClosedAt          *time.Time
+	ClearReason       *string
+	LastCapturedAt    time.Time
+	PolicyVersion     int64
+	PeakName          *string
+	PeakValue         *float64
+	Detail            []byte
+	ClearingDetail    []byte
+	TerrainSource     []byte
+	InUspace          bool
+	EvidenceTrust     string
+	EvidenceRefs      []byte
+	EvidenceTrackIds  []string
+	EvidenceExcerpt   []byte
+	ExcerptSamples    int32
+	ExcerptTruncated  bool
+	FirstPosition     interface{}
+	Cell5             string
+	Status            string
+	ReviewedBy        *string
+	ReviewedAt        *time.Time
+	ReviewNote        *string
+	IncidentRequested bool
+	LastMessageAt     time.Time
+	CreatedAt         time.Time
+}
