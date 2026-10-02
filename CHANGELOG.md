@@ -50,3 +50,21 @@ Unreleased; the format follows Keep a Changelog.
   `ProjectionReader` for the resolvers; `/v1/registry/*` for registrars
   with purpose-logged personal-data reads; F8 `validate` (status only,
   batch of 100) and `changes` behind scope `registry.validate`.
+- WP-7: Remote ID receivers and observation ingest
+  (`internal/receivers`, `internal/receivers/ingest`, `cmd/rid-ingest`,
+  migrations `00010_rid_receivers` and `00004_rid_observations`,
+  `schemas/rid/observation/v1.json`): the receiver registry with keys
+  shown once (argon2id bearer hash, HMAC secret sealed with the PII
+  key), audited disable, enable, rotation with grace and delete, the
+  key set projected into KV `rid_receiver_keys` inside each change and
+  repaired every 60 s; the receivers' own config and signed heartbeat
+  with the pinned-position deviation (T2); `POST /v1/rid/observations`
+  through uspace-core `auth.ReceiverVerifier` (body plus
+  `X-Report-Signature`, 30 s window, nonce memory), 503 with
+  `Retry-After` for a disabled receiver or source type, a 60 s dedupe
+  window, 202 only after the JetStream work queue `ingest.v1.<cell3>`
+  confirmed the write, the oldest shed past the queue's bound with a
+  `writer_gaps` record; every raw frame handed to tsdb-writer on
+  `tsw.v1.rid_observations` behind the `ridpipe.Sink` seam WP-8 fills;
+  `src.v1.direct_rid.<receiver>` every 2 s; loopback only without keys;
+  purpose-logged raw frames `/v1/rid/frames*`; the receivers runbook.
