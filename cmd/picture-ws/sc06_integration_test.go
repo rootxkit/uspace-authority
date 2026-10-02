@@ -116,21 +116,32 @@ func TestIntegrationSC06FourIdentificationStatusesOnThePicture(t *testing.T) {
 		rid.AircraftID(odid.IDTypeSerial, "TESTUNK0003"): core.IdentUnknownOperator,
 		rid.UnidentifiedID("AA:BB:CC:00:06:05"):          core.IdentUnidentified,
 	}
-	c.subscribe(t, 44.80, 41.70, 44.85, 41.73)
-	snap := snapshotBody(t, c.until(t, picture.SchemaSnapshot, 5*time.Second, nil))
+	// The bus delivers asynchronously: subscribe again until the
+	// snapshot holds all four (Flush says only the server has them).
 	seen := map[string]core.IdentStatus{}
-	for _, raw := range snap.Tracks {
-		tb := trackOf(t, raw)
-		w, ok := want[tb.TrackID]
-		if !ok {
-			continue
+	deadline := time.Now().Add(10 * time.Second)
+	for len(seen) < 4 && time.Now().Before(deadline) {
+		c.subscribe(t, 44.80, 41.70, 44.85, 41.73)
+		snap := snapshotBody(t, c.until(t, picture.SchemaSnapshot, 5*time.Second, nil))
+		clear(seen)
+		for _, raw := range snap.Tracks {
+			tb := trackOf(t, raw)
+			w, ok := want[tb.TrackID]
+			if !ok {
+				continue
+			}
+			id := tb.Identification
+			if id.Status != w || tb.Trust != core.TrustBroadcast || id.Basis != core.BasisAsBroadcast || tb.SourceState == "" {
+				t.Fatalf("%s: %s trust %s basis %s source_state %q", tb.TrackID, id.Status, tb.Trust, id.Basis, tb.SourceState)
+			}
+			seen[tb.TrackID] = id.Status
+			if len(seen) == 4 || time.Now().Add(300*time.Millisecond).After(deadline) {
+				t.Logf("%s: %s (%s), trust %s, basis %s, age %.1f s, source %s", tb.TrackID, id.Status, id.Reason, tb.Trust, id.Basis, tb.AgeS, tb.SourceState)
+			}
 		}
-		id := tb.Identification
-		if id.Status != w || tb.Trust != core.TrustBroadcast || id.Basis != core.BasisAsBroadcast || tb.SourceState == "" {
-			t.Fatalf("%s: %s trust %s basis %s source_state %q", tb.TrackID, id.Status, tb.Trust, id.Basis, tb.SourceState)
+		if len(seen) < 4 {
+			time.Sleep(200 * time.Millisecond)
 		}
-		seen[tb.TrackID] = id.Status
-		t.Logf("%s: %s (%s), trust %s, basis %s, age %.1f s, source %s", tb.TrackID, id.Status, id.Reason, tb.Trust, id.Basis, tb.AgeS, tb.SourceState)
 	}
 	if len(seen) != 4 {
 		t.Fatalf("the picture shows %v, want the four statuses", seen)
