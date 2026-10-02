@@ -43,11 +43,12 @@ const (
 	CounterClearedReconfigured = "violations_cleared_reconfigured"
 	CounterRepublished         = "violations_republished" // active violations republished (C-08)
 	CounterRepublishFailed     = "violations_republish_failed"
-	CounterPublishFailed       = "alrt_publish_failed"     // a raise or clear not yet on ALRT: kept in the outbox and retried every tick
-	CounterOutboxDropped       = "alrt_outbox_dropped"     // the outbox past its bound: the oldest dropped, logged at error level
-	CounterMonitorRebuilt      = "monitor_rebuilt"         // a new zone set or policy: the monitor rebuilt, each aircraft's last sample re-observed
-	CounterAircraftRefused     = "aircraft_refused"        // a new aircraft refused by the monitor's capacity: it goes unjudged
-	CounterSourceSwitches      = "source_switches_applied" // a source-control state handed to the monitor (B-11)
+	CounterRepublishDeferred   = "violations_republish_deferred" // not republished this tick: the bus failed or the tick's budget ran out; the next tick starts with them
+	CounterPublishFailed       = "alrt_publish_failed"           // a raise or clear not yet on ALRT: kept in the outbox and retried every tick
+	CounterOutboxDropped       = "alrt_outbox_dropped"           // the outbox past its bound: the oldest dropped, logged at error level
+	CounterMonitorRebuilt      = "monitor_rebuilt"               // a new zone set or policy: the monitor rebuilt, each aircraft's last sample re-observed
+	CounterAircraftRefused     = "aircraft_refused"              // a new aircraft refused by the monitor's capacity: it goes unjudged
+	CounterSourceSwitches      = "source_switches_applied"       // a source-control state handed to the monitor (B-11)
 )
 
 // Publisher writes one violation message to the ALRT stream.
@@ -89,13 +90,18 @@ type Settings struct {
 	// OutboxMax bounds the raises and clears waiting for ALRT.
 	OutboxMax      int
 	PublishTimeout time.Duration
+	// TickBudget bounds the publishing one tick does (the outbox and the
+	// republication together), so a bus that does not answer never
+	// stalls the tick, whatever the number of active violations.
+	TickBudget time.Duration
 	// Now is the process clock; nil is time.Now.
 	Now func() time.Time
 }
 
 // DefaultSettings are the defaults of config.Detect.
 func DefaultSettings() Settings {
-	return Settings{MaxAircraft: 50_000, ExcerptWindowS: 10, ExcerptMaxSamples: 64, OutboxMax: 10_000, PublishTimeout: 2 * time.Second}
+	return Settings{MaxAircraft: 50_000, ExcerptWindowS: 10, ExcerptMaxSamples: 64, OutboxMax: 10_000, PublishTimeout: 2 * time.Second,
+		TickBudget: 500 * time.Millisecond}
 }
 
 // ConfigFor is the monitor configuration for zs under thresholds t
@@ -163,6 +169,9 @@ type Worker struct {
 	excerpts   *Excerpts
 	outbox     []*violation.Message
 	rebuilding map[string]bool
+	// republishFrom is where the next republication starts in the
+	// active violations, so a tick cut short starves none of them.
+	republishFrom int
 
 	statMu sync.Mutex
 	stats  workerStats
@@ -264,11 +273,19 @@ func (w *Worker) Observe(m *track.Message) bool {
 // the monitor's ageing (the end of a condition can be silence, T-10),
 // the outbox, the republication of every active violation (C-08) and
 // the counters.
+//
+// The publishing is bounded by TickBudget: the outbox goes first and
+// stops at its first failure; the republication runs only if the outbox
+// is empty (a bus that just failed is not asked again N times) and stops
+// at its first failure or when the budget is spent, counting the rest
+// deferred.
 func (w *Worker) Tick(ctx context.Context) {
 	w.maybeRebuild()
 	w.handle(w.mon.Tick(w.wallS()))
-	w.flush(ctx)
-	w.republish(ctx)
+	bctx, cancel := context.WithTimeout(ctx, w.tickBudget())
+	w.flush(bctx)
+	w.republish(bctx)
+	cancel()
 	w.fold()
 	w.updateStats()
 }
@@ -646,7 +663,7 @@ func (w *Worker) message(ov *open, state violation.State, toS float64) *violatio
 }
 
 // enqueue puts a raise, update or clear in the outbox and tries to
-// publish at once.
+// publish at once when nothing is waiting before it.
 func (w *Worker) enqueue(ov *open, state violation.State, toS float64) {
 	m := w.message(ov, state, toS)
 	if err := violation.Validate(m); err != nil {
@@ -661,8 +678,14 @@ func (w *Worker) enqueue(ov *open, state violation.State, toS float64) {
 		w.errorf("detect_outbox_dropped", "violation outbox full: the oldest raises and clears were dropped",
 			slog.Int("dropped", over), slog.Int("outbox_max", w.set.OutboxMax))
 	}
+	// With raises or clears already waiting the bus is failing: this one
+	// waits for the tick too, rather than costing a publish timeout in
+	// the track path.
+	tryNow := len(w.outbox) == 0
 	w.outbox = append(w.outbox, m)
-	w.flush(context.Background())
+	if tryNow {
+		w.flush(context.Background())
+	}
 }
 
 // flush publishes the outbox in order and stops at the first failure.
@@ -685,6 +708,13 @@ func (w *Worker) flush(ctx context.Context) {
 	}
 }
 
+func (w *Worker) tickBudget() time.Duration {
+	if w.set.TickBudget > 0 {
+		return w.set.TickBudget
+	}
+	return 500 * time.Millisecond
+}
+
 func (w *Worker) publishTimeout() time.Duration {
 	if w.set.PublishTimeout > 0 {
 		return w.set.PublishTimeout
@@ -693,18 +723,40 @@ func (w *Worker) publishTimeout() time.Duration {
 }
 
 // republish publishes every active violation with its current numbers
-// and the samples since its last publication (C-08); a failure is
-// counted and the next second tries again.
+// and the samples since its last publication (C-08). It runs within
+// ctx (the tick's budget): with raises or clears still in the outbox
+// the bus is failing and nothing is republished; the first failure, or
+// the budget spent, stops the round. What was not republished is counted
+// deferred, and the next tick starts with it (republishFrom), so no
+// violation is starved. Nothing is lost: the next successful round
+// carries the current numbers and every sample since the last one.
 func (w *Worker) republish(ctx context.Context) {
+	var active []alerting.Alert
 	for _, a := range w.mon.Active() {
-		ov, have := w.open[a.Key]
-		if !have {
-			continue
+		if _, have := w.open[a.Key]; have {
+			active = append(active, a)
 		}
+	}
+	n := len(active)
+	if n == 0 {
+		return
+	}
+	if len(w.outbox) > 0 {
+		w.Counters.Add(CounterRepublishDeferred, uint64(n))
+		return
+	}
+	start := w.republishFrom % n
+	for i := range n {
+		a := &active[(start+i)%n]
+		if ctx.Err() != nil {
+			w.deferRepublish(n-i, (start+i)%n)
+			return
+		}
+		ov := w.open[a.Key]
 		ov.body.Severity = a.Severity
 		ov.body.Detail = a.Detail
 		ov.body.CapturedAt = stampS(a.LastTrueS)
-		ov.body.InUSpace = w.uspace[aircraftOf(&a)] != nil
+		ov.body.InUSpace = w.uspace[aircraftOf(a)] != nil
 		updatePeak(&ov.body, a.Detail)
 		upTo := ov.excerptUpToS
 		m := w.message(ov, violation.StateUpdated, math.Inf(1))
@@ -714,10 +766,23 @@ func (w *Worker) republish(ctx context.Context) {
 		if err != nil {
 			ov.excerptUpToS = upTo
 			w.Counters.Inc(CounterRepublishFailed)
-			continue
+			w.warn("detect_republish_failed", "active violations not republished to ALRT; retried next tick",
+				slog.String("error", err.Error()), slog.Int("active", n))
+			w.deferRepublish(n-i-1, (start+i)%n)
+			return
 		}
 		w.Counters.Inc(CounterRepublished)
 	}
+	w.republishFrom = start
+}
+
+// deferRepublish counts n violations left for the next tick, which
+// starts at index from.
+func (w *Worker) deferRepublish(n, from int) {
+	if n > 0 {
+		w.Counters.Add(CounterRepublishDeferred, uint64(n))
+	}
+	w.republishFrom = from
 }
 
 func (w *Worker) updateStats() {

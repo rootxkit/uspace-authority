@@ -1,6 +1,7 @@
 package detectsvc
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -392,5 +393,56 @@ func TestWallClockNeverGoesBack(t *testing.T) {
 	r.clk.set(t0)
 	if b := r.w.wallS(); b != a {
 		t.Fatalf("went back: %v -> %v", a, b)
+	}
+}
+
+// hangPub is a bus that does not answer: every publish waits for its
+// context (a NATS outage as JetStream's publish sees it).
+type hangPub struct{ calls int }
+
+func (p *hangPub) PublishViolation(ctx context.Context, _ *violation.Message) error {
+	p.calls++
+	<-ctx.Done()
+	return ctx.Err()
+}
+
+// C-08, B-08: a bus outage never stalls the tick. With many active
+// violations and a bus that does not answer, one tick costs at most one
+// publish timeout, not one per violation; when the bus answers again
+// every violation is republished, none starved (E-01).
+func TestRepublishDuringABusOutageNeverStallsTheTick(t *testing.T) {
+	const n = 12
+	timeout := 100 * time.Millisecond
+	r := newRig(t, func(s *Settings) { s.PublishTimeout = timeout })
+	r.in.setPolicy(1, nil)
+	r.in.env = groundAt(0)
+	var ss []sample
+	for i := range n {
+		ss = append(ss, sample{id: fmt.Sprintf("H%02d", i), lat: zLat, lon: zLon + float64(i)*0.01, altAMSL: f64(300)})
+	}
+	r.at(0, ss...)
+	if got := transitions(r.pub.take(), false); len(got) != n {
+		t.Fatalf("raised %s", describe(got))
+	}
+	hang := &hangPub{}
+	r.w.pub = hang
+	start := time.Now()
+	r.tick(1)
+	if d := time.Since(start); d > 3*timeout {
+		t.Fatalf("one tick with the bus down took %v for %d violations (publish timeout %v)", d, n, timeout)
+	}
+	if r.w.Counters.Get(CounterRepublishDeferred) == 0 {
+		t.Fatal(r.w.Counters.Snapshot())
+	}
+	r.w.pub = r.pub
+	r.tick(2)
+	seen := map[string]bool{}
+	for _, m := range r.pub.take() {
+		if m.Body.State == violation.StateUpdated {
+			seen[m.Body.TrackRef] = true
+		}
+	}
+	if len(seen) != n {
+		t.Fatalf("republished %d of %d after the outage", len(seen), n)
 	}
 }

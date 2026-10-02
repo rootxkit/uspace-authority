@@ -70,6 +70,7 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.Detect, bp *bus.Proc
 	set := Settings{
 		MaxAircraft: cfg.MaxAircraft, ExcerptWindowS: float64(cfg.ExcerptWindowS), ExcerptMaxSamples: cfg.ExcerptMaxSamples,
 		OutboxMax: cfg.OutboxMax, PublishTimeout: time.Duration(cfg.PublishTimeoutMS) * time.Millisecond,
+		TickBudget: time.Duration(cfg.TickBudgetMS) * time.Millisecond,
 	}
 	cs := ConsumerSettings{
 		WorkerID: cfg.WorkerID, MaxAckPending: cfg.MaxAckPending, AckWait: time.Duration(cfg.AckWaitS) * time.Second,

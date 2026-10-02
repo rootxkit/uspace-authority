@@ -276,3 +276,75 @@ func TestIntegrationSilentViolationsAreClosedNotLeftOpen(t *testing.T) {
 		t.Fatalf("second pass %d %v", n, err)
 	}
 }
+
+// Silence is not the end of a condition: a violation closed
+// detector_silent (detect's republication lost, e.g. a NATS outage) is
+// brought back by the next update of the same id, as one continuous
+// violation (same id, opened_at kept) with the silent gap audited; the
+// clear that follows closes it with its own reason. A message placed
+// before the silent close does not bring it back, and a violation
+// cleared by detect is never reopened (E-01).
+func TestIntegrationSilentCloseIsRevivedByALaterUpdate(t *testing.T) {
+	f := newPG(t)
+	ctx := context.Background()
+	id := newID()
+	raise := msg(id, violation.StateRaised, core.SeverityWarning, 1, 41.7, 44.8)
+	if _, err := f.svc.Apply(ctx, raise); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.admin.Exec(`UPDATE violations SET last_message_at = now() - interval '5 minutes' WHERE violation_id = $1`, id); err != nil {
+		t.Fatal(err)
+	}
+	if n, err := f.svc.CloseSilent(ctx, time.Minute, 100); err != nil || n != 1 {
+		t.Fatalf("silent close %d %v", n, err)
+	}
+	// A redelivered update placed at the raise is older than the close.
+	old := msg(id, violation.StateUpdated, core.SeverityWarning, 0, 41.7, 44.8)
+	old.Body.CapturedAt = raise.Body.CapturedAt
+	if got, err := f.svc.Apply(ctx, old); err != nil || got != OutcomeAfterClose {
+		t.Fatalf("an update older than the silent close: %v %v", got, err)
+	}
+	later := msg(id, violation.StateUpdated, core.SeverityCritical, 1, 41.7, 44.8)
+	later.Body.CapturedAt = bus.Stamp(time.Now().Add(time.Second))
+	got, err := f.svc.Apply(ctx, later)
+	if err != nil || got != OutcomeRevived {
+		t.Fatalf("a later update: %v %v, want %v", got, err, OutcomeRevived)
+	}
+	row, err := f.svc.Get(ctx, id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if row.ClosedAt != nil || row.ClearReason != nil || row.DetectorState != "updated" || row.Severity != "critical" ||
+		bus.Stamp(row.OpenedAt) != raise.Body.OpenedAt {
+		t.Fatalf("not open again as one violation: %+v", row)
+	}
+	want := []string{"violation_raised", "violation_cleared", "violation_revived", "violation_severity_changed"}
+	if ev := f.events(t, id); !slices.Equal(ev, want) {
+		t.Fatalf("events %v, want %v", ev, want)
+	}
+	var gap float64
+	var reason string
+	if err := f.admin.QueryRow(`SELECT (payload->>'silent_for_s')::float8, payload->>'closed_as' FROM events
+		WHERE entity_id = $1 AND event_type = 'violation_revived'`, id).Scan(&gap, &reason); err != nil {
+		t.Fatal(err)
+	}
+	if reason != ClearReasonDetectorSilent || gap < 0 {
+		t.Fatalf("revival payload %v %q", gap, reason)
+	}
+	if f.svc.Counters.Get(CounterRevived) != 1 {
+		t.Fatal(f.svc.Counters.Snapshot())
+	}
+	clr := msg(id, violation.StateCleared, core.SeverityCritical, 0, 41.7, 44.8)
+	clr.Body.CapturedAt = bus.Stamp(time.Now().Add(2 * time.Second))
+	if got, err := f.svc.Apply(ctx, clr); err != nil || got != OutcomeUpdated {
+		t.Fatalf("clear after revival %v %v", got, err)
+	}
+	if row, _ = f.svc.Get(ctx, id); row.ClosedAt == nil || *row.ClearReason != "resolved" {
+		t.Fatalf("not closed resolved: %+v", row)
+	}
+	after := msg(id, violation.StateUpdated, core.SeverityCritical, 0, 41.7, 44.8)
+	after.Body.CapturedAt = bus.Stamp(time.Now().Add(3 * time.Second))
+	if got, err := f.svc.Apply(ctx, after); err != nil || got != OutcomeAfterClose {
+		t.Fatalf("a resolved violation reopened: %v %v", got, err)
+	}
+}

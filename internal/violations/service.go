@@ -11,6 +11,7 @@ import (
 	"github.com/rootxkit/uspace-core/core"
 
 	"github.com/rootxkit/uspace-authority/internal/audit"
+	"github.com/rootxkit/uspace-authority/internal/bus"
 	"github.com/rootxkit/uspace-authority/internal/httpx"
 	"github.com/rootxkit/uspace-authority/internal/logging"
 	"github.com/rootxkit/uspace-authority/internal/store"
@@ -30,6 +31,9 @@ const (
 	CounterExcerptTruncated = "violation_excerpt_truncated"  // samples past the stored bound left out (E-10)
 	CounterClosedSilent     = "violations_closed_detector_silent"
 	CounterReviewed         = "violations_reviewed"
+	// CounterRevived counts violations closed detector_silent that a later
+	// update brought back (detect never stopped holding them).
+	CounterRevived = "violations_revived"
 )
 
 // ClearReasonDetectorSilent closes a violation detect has stopped
@@ -84,6 +88,9 @@ const (
 	OutcomeUpdated    Outcome = "updated"
 	OutcomeDuplicate  Outcome = "duplicate"
 	OutcomeAfterClose Outcome = "after_close"
+	// OutcomeRevived: an update of a violation closed detector_silent,
+	// carrying evidence newer than the close; it is open again.
+	OutcomeRevived Outcome = "revived"
 )
 
 func parseTime(field, s string) (time.Time, error) {
@@ -145,9 +152,13 @@ func trackIDs(refs []violation.EvidenceRef) []string {
 // inserts it; an update or a clear of an unknown id inserts it too (a
 // raise lost on the way, never a hole); a raise of a known id writes
 // nothing; an update refreshes the numbers and appends the samples up
-// to the bound; a clear closes it; nothing reopens a closed violation.
-// Every transition (raised, severity changed, cleared) is an events row
-// in the same transaction. A message that cannot be stored is an error
+// to the bound; a clear closes it. Nothing reopens a violation detect
+// cleared; one api closed detector_silent is revived by an update or a
+// clear carrying evidence newer than what it held (detect never stopped
+// holding it: its republication was lost, e.g. in a bus outage), as one
+// continuous violation with the silent gap audited (violation_revived).
+// Every transition (raised, revived, severity changed, cleared) is an
+// events row in the same transaction. A message that cannot be stored is an error
 // naming the field.
 func (s *Service) Apply(ctx context.Context, m *violation.Message) (Outcome, error) {
 	b := &m.Body
@@ -192,7 +203,10 @@ func (s *Service) Apply(ctx context.Context, m *violation.Message) (Outcome, err
 		if err != nil {
 			return err
 		}
+		revived := false
 		switch {
+		case row.ClosedAt != nil && revivable(&row, b.State, captured):
+			revived = true
 		case row.ClosedAt != nil:
 			outcome = OutcomeAfterClose
 			return nil
@@ -201,6 +215,16 @@ func (s *Service) Apply(ctx context.Context, m *violation.Message) (Outcome, err
 			return nil
 		}
 		outcome = OutcomeUpdated
+		if revived {
+			outcome = OutcomeRevived
+			if err := s.record(ctx, q, b, audit.EventViolationRevived, map[string]any{
+				"closed_as": ClearReasonDetectorSilent, "closed_at": bus.Stamp(*row.ClosedAt),
+				"silent_from": bus.Stamp(row.LastCapturedAt), "resumed_at": b.CapturedAt,
+				"silent_for_s": captured.Sub(row.LastCapturedAt).Seconds(), "continuous": true, "as_state": b.State,
+			}); err != nil {
+				return err
+			}
+		}
 		// The stored excerpt is rewritten only when samples are added
 		// (a republication every second usually carries none).
 		excerpt, samples, t := row.EvidenceExcerpt, int(row.ExcerptSamples), false
@@ -253,6 +277,15 @@ func (s *Service) Apply(ctx context.Context, m *violation.Message) (Outcome, err
 	return outcome, nil
 }
 
+// revivable reports whether a message for a closed row brings it back:
+// only a row api closed detector_silent, only by an update or a clear
+// (a raise of a known id is a redelivery), and only with evidence placed
+// after the newest the row held (a redelivered older message is not).
+func revivable(row *gen.GetViolationForUpdateRow, state violation.State, captured time.Time) bool {
+	return row.ClearReason != nil && *row.ClearReason == ClearReasonDetectorSilent &&
+		state != violation.StateRaised && captured.After(row.LastCapturedAt)
+}
+
 func mapOrNil(m map[string]any) any {
 	if m == nil {
 		return nil
@@ -269,6 +302,9 @@ func (s *Service) count(o Outcome, truncated bool) {
 		s.Counters.Inc(CounterInserted)
 		s.Counters.Inc(CounterApplied)
 	case OutcomeUpdated:
+		s.Counters.Inc(CounterApplied)
+	case OutcomeRevived:
+		s.Counters.Inc(CounterRevived)
 		s.Counters.Inc(CounterApplied)
 	case OutcomeDuplicate:
 		s.Counters.Inc(CounterDuplicate)

@@ -32,7 +32,7 @@ are later detectors (WP-26, plan Q-A6).
 | `track_id`, `serial`, `operator_reg` | The aircraft as identified when raised; serial and number are as broadcast or provided, never verified. |
 | `zone_id`, `zone_version`, `zone_type` | The zone judged (`country/identifier`), its published version (null for a dynamic restriction). |
 | `opened_at`, `closed_at` | When the condition was first shown true and when it cleared, on the placed clock (`captured_at`). |
-| `clear_reason` | `resolved` (shown false past the hysteresis), `stale` (not heard for `stale_after_s`), `landed`, `source_disabled` (its source switched off, B-11), `flight_ended`, `reconfigured` (the zone set or policy changed and the aircraft's last sample no longer raised it), `detector_silent` (closed by api: detect stopped republishing it, a restart; not a judgement of the aircraft). Only `resolved` rests on evidence that the condition ended. |
+| `clear_reason` | `resolved` (shown false past the hysteresis), `stale` (not heard for `stale_after_s`), `landed`, `source_disabled` (its source switched off, B-11), `flight_ended`, `reconfigured` (the zone set or policy changed and the aircraft's last sample no longer raised it), `detector_silent` (closed by api: detect stopped republishing it, a restart or a bus outage; not a judgement of the aircraft, and revived as the same violation if detect's next update for it arrives, with `violation_revived` recording the gap). Only `resolved` rests on evidence that the condition ended. |
 | `peak` | The number it rested on at its worst: `height_agl_m` for `height_120m` (there is no stored AGL column, D-02). |
 | `detail` | The judgement as uspace-core gave it: `vertical_known` (false on a pressure altitude or an unjudged limit), `within_band` (pressure altitude: inside as indicated, or only in the band widened by `pressure_uncertainty_m`), `limit_not_judged` and `not_judged` (`AGL`, `WGS84`: a limit that needs a ground or geoid this system lacks), `height_agl_m`, `alt_hae_m`, `max_height_agl_m`, `identifier`, `restriction`, `status`, `identification_reason`. |
 | `terrain_source` | The DEM dataset, spacing and attribution of a height over the ground (D-05). |
@@ -66,7 +66,9 @@ GET /v1/audit/events?entity_type=violation&entity_id=<violation_id>
 ```
 
 `violation_raised`, `violation_severity_changed`, `violation_cleared`
-(actor `detect`, or `api` for `detector_silent`), `violation_reviewed`,
+(actor `detect`, or `api` for `detector_silent`), `violation_revived`
+(a `detector_silent` close undone by a later update: `silent_from`,
+`closed_at`, `resumed_at`, `silent_for_s`), `violation_reviewed`,
 `violation_dismissed`, `violation_escalated`, `incident_requested`.
 
 ## When the status line is at error level
@@ -94,17 +96,20 @@ schema refuses, never judged), `aircraft_refused` and the monitor's
 `rejected_capacity` / `rejected_source_share` (aircraft refused for
 capacity: unjudged, logged at error level), `alrt_publish_failed`
 (violations waiting in the outbox), `alrt_outbox_dropped` (lost: error
-level), `violations_cleared_reconfigured`, `conflict_events_ignored`,
+level), `violations_republish_failed` and `violations_republish_deferred`
+(active violations not republished in a tick: the bus failed or the
+tick's `DETECT_TICK_BUDGET_MS` ran out; the next tick starts with them),
+`violations_cleared_reconfigured`, `conflict_events_ignored`,
 `rejected_late`, `rejected_backlog`, `zone_checks_not_evaluated`,
 `zone_limits_not_judged`. On api's: `violation_messages_malformed`,
 `violation_apply_failed` (redelivered), `violation_excerpt_truncated`,
-`violations_closed_detector_silent`.
+`violations_closed_detector_silent`, `violations_revived`.
 
 ## Configuration
 
 detect: `DETECT_MAX_AIRCRAFT`, `DETECT_EXCERPT_WINDOW_S`,
 `DETECT_EXCERPT_MAX_SAMPLES`, `DETECT_OUTBOX_MAX`,
-`DETECT_PUBLISH_TIMEOUT_MS`, `DETECT_ZONES_REFRESH_S`,
+`DETECT_PUBLISH_TIMEOUT_MS`, `DETECT_TICK_BUDGET_MS`, `DETECT_ZONES_REFRESH_S`,
 `DETECT_RESTRICTIONS_REFRESH_S`, `DETECT_POLICY_REREAD_S`,
 `DETECT_MAX_ACK_PENDING`, `DETECT_ACK_WAIT_S`, `DETECT_FETCH_MAX`.
 api: `VIOLATIONS_EXCERPT_MAX_SAMPLES`, `VIOLATIONS_SILENT_AFTER_S`,

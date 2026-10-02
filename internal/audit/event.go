@@ -181,6 +181,7 @@ const (
 	EventViolationRaised          = "violation_raised"
 	EventViolationSeverityChanged = "violation_severity_changed"
 	EventViolationCleared         = "violation_cleared"
+	EventViolationRevived         = "violation_revived"
 	EventViolationReviewed        = "violation_reviewed"
 	EventViolationDismissed       = "violation_dismissed"
 	EventViolationEscalated       = "violation_escalated"
@@ -265,6 +266,7 @@ func DefaultCatalogue() Catalogue {
 		EventViolationRaised:          {},
 		EventViolationSeverityChanged: {},
 		EventViolationCleared:         {},
+		EventViolationRevived:         {},
 		EventViolationReviewed:        {},
 		EventViolationDismissed:       {},
 		EventViolationEscalated:       {},

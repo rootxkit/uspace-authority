@@ -11,7 +11,7 @@
 // status new; an update refreshes the numbers and appends the samples
 // to evidence_excerpt up to VIOLATIONS_EXCERPT_MAX_SAMPLES
 // (excerpt_truncated, counted); a clear sets closed_at and clear_reason;
-// nothing reopens a closed violation. An update or a clear of an unknown
+// nothing reopens a violation detect cleared. An update or a clear of an unknown
 // id inserts it (a raise lost on the way is repaired, never a hole).
 // Every transition (violation_raised, violation_severity_changed,
 // violation_cleared) is an events row in the same transaction. A message
@@ -24,8 +24,12 @@
 // its monitor no longer holds it) is closed detector_silent, with its
 // events row, but only while the consumer is caught up, so a backlog
 // after an api outage is never taken for silence. detector_silent is not
-// a judgement of the aircraft; if the condition holds, detect raises a
-// new violation from the next live sample.
+// a judgement of the aircraft. If detect still holds the violation (its
+// republication was lost, e.g. in a bus outage), its next update or clear
+// with newer evidence revives the row: the same violation, open again,
+// with violation_revived recording the silent gap (counted
+// violations_revived). After a detect restart the condition, if it
+// holds, is raised as a new violation from the next live sample.
 //
 // Review (Handler, inspector): new or reviewed may become reviewed,
 // dismissed or escalated; dismissed and escalated are final (409).

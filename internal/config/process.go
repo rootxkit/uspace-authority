@@ -481,6 +481,7 @@ type DetectTuning struct {
 	ExcerptMaxSamples   int `env:"DETECT_EXCERPT_MAX_SAMPLES" default:"64" min:"1" max:"10000" help:"samples kept per aircraft for the excerpt; past it the oldest is dropped and counted (E-10)"`
 	OutboxMax           int `env:"DETECT_OUTBOX_MAX" default:"10000" min:"1" max:"10000000" help:"raises and clears waiting for the ALRT stream; past it the oldest is dropped, counted and logged at error level"`
 	PublishTimeoutMS    int `env:"DETECT_PUBLISH_TIMEOUT_MS" default:"2000" min:"10" max:"60000" help:"bound on one violation write to ALRT"`
+	TickBudgetMS        int `env:"DETECT_TICK_BUDGET_MS" default:"500" min:"10" max:"60000" help:"bound on the publishing of one tick (outbox and republication of active violations); what is left is deferred to the next tick"`
 	ZonesRefreshS       int `env:"DETECT_ZONES_REFRESH_S" default:"60" min:"1" max:"3600" help:"period of the zones projection re-read besides zones.v1.changed (G-08)"`
 	RestrictionsRefresh int `env:"DETECT_RESTRICTIONS_REFRESH_S" default:"60" min:"1" max:"3600" help:"period of the restrictions projection re-read besides cis.v1.restrictions (G-08, Z-12)"`
 	PolicyRereadS       int `env:"DETECT_POLICY_REREAD_S" default:"60" min:"1" max:"3600" help:"period of the KV policy re-read besides its watch and ctl.policy (G-08)"`
