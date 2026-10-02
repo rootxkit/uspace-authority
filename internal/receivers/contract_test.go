@@ -70,8 +70,11 @@ func TestReceiverOperationsMatchTheContract(t *testing.T) {
 	var excluded []string
 	for s := range strings.SplitSeq(m[1], ",") {
 		s = strings.TrimSpace(s)
-		if s != "getMetrics" {
-			excluded = append(excluded, strings.ToUpper(s[:1])+s[1:])
+		op := strings.ToUpper(s[:1]) + s[1:]
+		// getMetrics is the Prometheus handler; the CIS delivery
+		// receiver (x-cis-delivery, WP-6) has its own contract test.
+		if s != "getMetrics" && !apiserver.Delivery[op] {
+			excluded = append(excluded, op)
 		}
 	}
 	if !slices.Equal(slices.Sorted(slices.Values(excluded)), slices.Sorted(maps.Keys(ops))) {

@@ -611,6 +611,9 @@ edits another's), `CHANGELOG.md` (one line per WP under Unreleased) and
   `go.opentelemetry.io/otel` and the OTLP exporter; `alexedwards/argon2id`
   (or `golang.org/x/crypto/argon2` directly); `pquerna/otp` (TOTP);
   `coder/websocket` (WebSocket server and client, pure Go);
+  `santhosh-tekuri/jsonschema/v6` (WP-6: a publication is validated
+  against the CISP's pinned JSON Schemas before it is signed, M7; the
+  validator the CISP and the lab use);
   `google/go-cmp` and `testcontainers-go` or plain service containers
   (test only). Anything else needs a line in the PR and this section.
 - Lint: `gofmt`, `go vet`, staticcheck and golangci-lint pinned to the

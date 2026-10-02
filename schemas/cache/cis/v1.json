@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.uspace.ge/cache/cis/v1.json",
+  "title": "cache/cis/v1",
+  "description": "A CIS dataset version the authority's subscriber verified and cached, announced on cis.v1.<dataset> (JetStream CIS, 30 d; docs/PLAN.md §6) in the 04 §2 envelope so detect re-reads proj_restrictions at once (LESSONS Z-12) and picture-ws shows the version. Internal to this system (NATS never crosses a system, M30); owned by uspace-authority (WP-6). The dataset's content is not carried: it is in cis_cache and, for restrictions, in proj_restrictions.",
+  "allOf": [{ "$ref": "https://schemas.uspace.ge/envelope/v1.json" }],
+  "properties": {
+    "schema": { "const": "cache/cis/v1" },
+    "body": {
+      "type": "object",
+      "required": ["dataset", "cis_version", "etag", "feature_count", "fetched_at"],
+      "additionalProperties": false,
+      "properties": {
+        "dataset": { "enum": ["zones", "uspace_airspace", "ussp_list", "restrictions"] },
+        "cis_version": { "type": "integer", "minimum": 0 },
+        "etag": { "type": "string", "minLength": 1 },
+        "cis_updated_at": { "type": "string", "format": "date-time" },
+        "feature_count": { "type": "integer", "minimum": 0, "description": "Features of an ED-318 dataset, USSPs of the list." },
+        "fetched_at": { "type": "string", "format": "date-time", "description": "When this system read the version (its clock)." }
+      }
+    }
+  }
+}

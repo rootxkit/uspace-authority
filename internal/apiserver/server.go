@@ -154,6 +154,13 @@ type USpaceHandler interface {
 	ListUSpaceVersions(ctx context.Context, request gen.ListUSpaceVersionsRequestObject) (gen.ListUSpaceVersionsResponseObject, error)
 }
 
+// CISPHandler serves GET /v1/publications (api, WP-6): the publication
+// outbox and the CIS subscriber's state. POST /v1/cis/notifications is
+// an x-cis-delivery operation served outside the generated server.
+type CISPHandler interface {
+	ListPublications(ctx context.Context, request gen.ListPublicationsRequestObject) (gen.ListPublicationsResponseObject, error)
+}
+
 // Server implements gen.StrictServerInterface by delegating to one
 // handler per group. A group left nil must not be mounted.
 type Server struct {
@@ -170,6 +177,7 @@ type Server struct {
 	SourcesHandler
 	ZonesHandler
 	USpaceHandler
+	CISPHandler
 }
 
 var _ gen.StrictServerInterface = Server{}
