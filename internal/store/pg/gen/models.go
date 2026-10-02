@@ -60,6 +60,50 @@ type Event struct {
 	Hash       string
 }
 
+type GeoZone struct {
+	ID                    int64
+	Dataset               string
+	Identifier            string
+	ZoneVersion           int32
+	State                 string
+	Country               string
+	Name                  []byte
+	Type                  string
+	Variant               string
+	Reason                []string
+	OtherReasonInfo       []byte
+	RestrictionConditions *string
+	Region                *int32
+	RegulationExemption   *string
+	Message               []byte
+	GeometryType          string
+	Geom                  interface{}
+	Center                interface{}
+	RadiusM               *float64
+	DisplayGeom           interface{}
+	LowerM                *float64
+	LowerRef              *string
+	UpperM                *float64
+	UpperRef              *string
+	Layers                []byte
+	Ed318Extra            []byte
+	Wgs84Fields           []string
+	LimitedApplicability  []byte
+	ZoneAuthority         []byte
+	DataSource            []byte
+	ExtendedProperties    []byte
+	Feature               []byte
+	ValidFrom             time.Time
+	ValidTo               time.Time
+	PublishedVersion      *int64
+	PublishedAt           *time.Time
+	PublishedBy           *string
+	CreatedAt             time.Time
+	CreatedBy             string
+	ApprovedAt            *time.Time
+	ApprovedBy            *string
+}
+
 type GooseDbVersionRelational struct {
 	ID        int32
 	VersionID int64
@@ -102,6 +146,22 @@ type PilotCompetency struct {
 	ValidUntil     time.Time
 	RecordedAt     time.Time
 	RecordedBy     string
+}
+
+type Publication struct {
+	ID           int64
+	Dataset      string
+	Version      int64
+	Payload      []byte
+	PayloadHash  string
+	FeatureCount int32
+	Signature    *string
+	State        string
+	Attempts     int32
+	NextRetryAt  *time.Time
+	CispVersion  *int64
+	CreatedAt    time.Time
+	CreatedBy    string
 }
 
 type RegistryStatusChange struct {
@@ -296,4 +356,25 @@ type UserMfa struct {
 	LastStep       int64
 	RecoveryHashes []string
 	UpdatedAt      time.Time
+}
+
+type UspaceAirspace struct {
+	GeoZoneID             int64
+	Identifier            string
+	ZoneVersion           int32
+	Name                  string
+	ServicesRequired      []string
+	UasRequirements       []byte
+	ServicePerformance    []byte
+	OperationalConditions []byte
+	AirspaceConstraints   []byte
+	AdjacentIds           []string
+	RiskAssessmentRef     *string
+	InControlledAirspace  bool
+	AtsProviderID         *string
+	CispID                *string
+	DesignatedFrom        time.Time
+	DesignatedTo          time.Time
+	DesignationRef        *string
+	AipRef                *string
 }
