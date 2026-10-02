@@ -1,0 +1,27 @@
+# oapi-codegen configuration for internal/dp/utmapi/utmapi.gen.go: the
+# F3548-21 operations this system calls, the DSS's USS availability
+# arbitration (GET and PUT /dss/v1/uss_availability/{uss_id}, scope
+# utm.availability_arbitration; the PUT carries the version the GET
+# read), from the pinned copy
+# api/clients/dss-utm.yaml (api/clients/SOURCE). The types are
+# uspace-core's f3548 package, dot-imported. Run scripts/generate.sh;
+# never edit the output.
+package: utmapi
+generate:
+  client: true
+additional-imports:
+  - package: github.com/rootxkit/uspace-core/f3548
+    alias: .
+output-options:
+  type-mapping:
+    string:
+      formats:
+        uuid:
+          type: string
+        duration:
+          type: string
+  response-type-suffix: Reply
+  client-type-name: StdClient
+  include-operation-ids:
+    - getUssAvailability
+    - setUssAvailability

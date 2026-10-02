@@ -2,17 +2,21 @@ package picture
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
 	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rootxkit/uspace-core/auth"
 	"github.com/rootxkit/uspace-core/core"
 
 	"github.com/rootxkit/uspace-authority/internal/bus"
 	"github.com/rootxkit/uspace-authority/internal/config"
+	"github.com/rootxkit/uspace-authority/internal/dpviews"
 	"github.com/rootxkit/uspace-authority/internal/policy"
 	"github.com/rootxkit/uspace-authority/internal/proc"
 	"github.com/rootxkit/uspace-authority/internal/sources"
@@ -173,6 +177,21 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.PictureWS, o Options
 		return []slog.Attr{slog.Int(CounterBusDropped, dropped)}
 	})
 	wg.Go(func() { hub.Run(ctx) })
+
+	// The console viewports the Display Provider shows besides the
+	// oversight areas (WP-14), expiring with the console.
+	viewportCounters := &core.Counters{}
+	rt.AddCounters("dp_viewports", viewportCounters)
+	consoleBucket := dpviews.ConsoleBucketConfig(cfg.DPViewsBucket)
+	host, _ := os.Hostname()
+	reporter := &ViewportReporter{
+		Hub: hub, Instance: fmt.Sprintf("%s-%d", host, os.Getpid()),
+		Open: func(ctx context.Context) (jetstream.KeyValue, error) {
+			return bus.OpenBucket(ctx, bp.JS, consoleBucket)
+		},
+		Timeout: time.Duration(cfg.NATSTimeoutMS) * time.Millisecond, Counters: viewportCounters, Limiter: rt.Limiter,
+	}
+	wg.Go(func() { reporter.Run(ctx) })
 
 	h := &Handler{
 		Hub: hub, Sessions: checker, Origins: cfg.Origins(), SessionTimeout: time.Duration(cfg.SessionTimeoutMS) * time.Millisecond,

@@ -1,0 +1,35 @@
+# oapi-codegen configuration for internal/dp/ridapi/ridapi.gen.go: the
+# F3411-22a operations the Display Provider calls (the DSS's ISA search
+# and subscriptions, a Service Provider's flights and details) and the
+# one it serves (the ISA change notification a Service Provider posts),
+# from the pinned copy api/clients/dss-rid.yaml (api/clients/SOURCE).
+# No models: the types are uspace-core's f3411 package, which core
+# generated from the same file at the same commit; they are dot-imported
+# so that the generated code names them unqualified. Formats uuid and
+# duration map to string as in core's configuration. Operation ids are
+# the file's. Run scripts/generate.sh; never edit the output.
+package: ridapi
+generate:
+  client: true
+  std-http-server: true
+additional-imports:
+  - package: github.com/rootxkit/uspace-core/f3411
+    alias: .
+output-options:
+  type-mapping:
+    string:
+      formats:
+        uuid:
+          type: string
+        duration:
+          type: string
+  response-type-suffix: Reply
+  client-type-name: StdClient
+  include-operation-ids:
+    - searchIdentificationServiceAreas
+    - createSubscription
+    - updateSubscription
+    - deleteSubscription
+    - searchFlights
+    - getFlightDetails
+    - postIdentificationServiceArea

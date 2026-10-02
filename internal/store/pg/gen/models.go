@@ -64,6 +64,17 @@ type CisDeliveryJti struct {
 	ExpiresAt  time.Time
 }
 
+type DpView struct {
+	ID        int64
+	Label     string
+	WestDeg   float64
+	SouthDeg  float64
+	EastDeg   float64
+	NorthDeg  float64
+	CreatedBy string
+	CreatedAt time.Time
+}
+
 type Event struct {
 	ID         int64
 	Ts         time.Time

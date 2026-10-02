@@ -57,8 +57,21 @@ func TestRetentionRunWithNoChecksSaysSo(t *testing.T) {
 	logs := &syncBuf{}
 	r := &Retention{Counters: &core.Counters{}, Logger: slog.New(slog.NewJSONHandler(logs, nil)), Interval: time.Hour}
 	r.Run(context.Background())
-	if !strings.Contains(logs.String(), "no table with a retention period is registered yet") {
+	if !strings.Contains(logs.String(), "no table with a retention period is registered") {
 		t.Fatal(logs.String())
+	}
+}
+
+// WP-14: the Display Provider's cache is registered with the F3411 24 h
+// (NetDpMaxDataRetentionPeriodSeconds) on its receive time, so Run checks
+// it at start and hourly; the run with no checks above is its absence.
+func TestUSSPFlightsIsCheckedForTwentyFourHours(t *testing.T) {
+	if len(RetentionChecks) != 1 {
+		t.Fatalf("checks %+v", RetentionChecks)
+	}
+	c := RetentionChecks[0]
+	if c.Table != "ussp_flights" || c.Column != "rx_ts" || c.MaxAge != 24*time.Hour {
+		t.Fatalf("check %+v", c)
 	}
 }
 

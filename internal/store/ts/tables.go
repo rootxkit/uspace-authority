@@ -29,6 +29,8 @@ const (
 	KindFloat
 	// KindBool is a JSON boolean.
 	KindBool
+	// KindJSON is a JSON object, stored as jsonb as received (WP-14).
+	KindJSON
 )
 
 // Column is one column of a hypertable as it travels on the bus: the
@@ -156,6 +158,11 @@ func decodeValue(c Column, v json.RawMessage) (any, error) {
 			return nil, &core.FieldError{Field: c.Name, Reason: "not a boolean"}
 		}
 		return b, nil
+	case KindJSON:
+		if len(v) == 0 || v[0] != '{' || !json.Valid(v) {
+			return nil, &core.FieldError{Field: c.Name, Reason: "not a JSON object"}
+		}
+		return string(v), nil
 	}
 	return nil, core.Fieldf(c.Name, "unknown column kind %d", c.Kind)
 }
@@ -272,12 +279,30 @@ func PositionRow(table, stream string, seq uint64) []any {
 	return []any{table, stream, int64(seq)}
 }
 
+// USSPFlights is ussp_flights (timeseries 00011, WP-14): the F3411
+// Display Provider's cache, internal/dp.FlightRow's JSON, disposed of
+// within 24 h. details is personal data of the PII class (it may carry
+// the remote pilot's position).
+var USSPFlights = Table{Name: "ussp_flights", Columns: []Column{
+	{Name: "rx_ts", Kind: KindTime},
+	{Name: "dedupe_key", Kind: KindText},
+	{Name: "ussp_id", Kind: KindText},
+	{Name: "uss_base_url", Kind: KindText},
+	{Name: "isa_id", Kind: KindText, Nullable: true},
+	{Name: "flight_id", Kind: KindText},
+	{Name: "track_id", Kind: KindText},
+	{Name: "state_ts", Kind: KindTime},
+	{Name: "provider_unknown", Kind: KindBool},
+	{Name: "flight", Kind: KindJSON},
+	{Name: "details", Kind: KindJSON, Nullable: true},
+}}
+
 // Tables are the hypertables tsdb-writer consumes tsw.v1.<table> for,
-// by name. ussp_flights (WP-14) and manned_tracks (WP-15) are added by
-// their WPs with their migrations.
+// by name. manned_tracks (WP-15) is added by its WP with its migration.
 var Tables = map[string]Table{
 	RIDObservations.Name: RIDObservations,
 	Tracks.Name:          Tracks,
+	USSPFlights.Name:     USSPFlights,
 }
 
 // Gap is one writer_gaps row.

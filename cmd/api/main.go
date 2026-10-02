@@ -20,6 +20,7 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/cell"
 	"github.com/rootxkit/uspace-authority/internal/cell/assign"
 	"github.com/rootxkit/uspace-authority/internal/config"
+	"github.com/rootxkit/uspace-authority/internal/dpadmin"
 	"github.com/rootxkit/uspace-authority/internal/passhash"
 	"github.com/rootxkit/uspace-authority/internal/policy"
 	"github.com/rootxkit/uspace-authority/internal/proc"
@@ -261,6 +262,14 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 		rt.AddCounters("violations", vio.Counters)
 		wg.Go(func() { vio.Run(ctx) })
 
+		// The Display Provider's administration (WP-14).
+		dpa, err := dpadmin.Assemble(cfg, rt, db, auditWriter, bp)
+		if err != nil {
+			return err
+		}
+		wg.Go(func() { dpa.Providers.Run(ctx, bp.NC, rt.Logger) })
+		wg.Go(func() { dpa.RunRepublish(ctx, time.Duration(cfg.DPViewsRepublishS)*time.Second) })
+
 		mux := http.NewServeMux()
 		apiserver.Mount(mux, apiserver.Server{
 			PolicyHandler:       policy.Handler{Service: svc},
@@ -279,6 +288,7 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 			USpaceHandler:     zs.Handler,
 			CISPHandler:       cis.Handler,
 			ViolationsHandler: vio.Handler,
+			DPHandler:         dpa,
 		}, apiserver.Options{
 			Logger:      rt.Logger,
 			Middlewares: []apiserver.Middleware{tok.Handler.FormGuard(), apiserver.Authorize(identify, apiserver.DefaultRules())},

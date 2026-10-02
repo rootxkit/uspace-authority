@@ -98,6 +98,19 @@ type API struct {
 	Zones
 	CISP
 	Violations
+	DPAdmin
+}
+
+// DPAdmin is api's administration of the F3411 Display Provider
+// (WP-14): oversight areas, the Service Providers seen, USS availability
+// arbitration at the DSS.
+type DPAdmin struct {
+	DSSBaseURL         string `env:"DSS_BASE_URL" kind:"url" help:"InterUSS DSS base URL (F3548 under /dss/v1); its host is the audience of the arbitration token (M18); unset: arbitration is refused with 503 dss_unconfigured"`
+	DPClientID         string `env:"DP_CLIENT_ID" default:"authority-01" help:"this system's client id at its own token service for the arbitration call to the DSS (M24)"`
+	DPClientSecretFile string `env:"DP_CLIENT_SECRET_FILE" help:"file holding that client's secret; unset: arbitration is refused with 503"`
+	DPOversightBucket  string `env:"DP_OVERSIGHT_BUCKET" default:"dp_oversight" help:"KV bucket of the oversight areas dp-poller reads (the same variable there)"`
+	DPViewsRepublishS  int    `env:"DP_VIEWS_REPUBLISH_S" default:"60" min:"1" max:"3600" help:"seconds between republishes of the oversight areas from the database (repairs a lost bucket)"`
+	DPProvidersMax     int    `env:"DP_PROVIDERS_MAX" default:"256" min:"1" max:"100000" help:"Service Providers whose last dp-poller status api keeps; past it the one heard longest ago is dropped and counted (E-10)"`
 }
 
 // Violations is api's consumer of alrt.v1 and its silent job (WP-12).
@@ -431,19 +444,146 @@ func (c *RIDIngest) Validate() error {
 	return errors.Join(errs...)
 }
 
-// DPPoller is the F3411 Display Provider.
+// DPPoller is the F3411 Display Provider (WP-14).
 type DPPoller struct {
 	Common
 	Bus
 	HTTP
-	Addr       string `env:"DP_ADDR" default:":8082" help:"public listen address of /uss/* (behind Caddy)"`
-	TSURL      string `env:"TS_URL" required:"true" secret:"true" kind:"url" help:"telemetry database (projections, read only)"`
-	NATSURL    string `env:"NATS_URL" required:"true" secret:"true" kind:"url" help:"NATS JetStream"`
-	DSSBaseURL string `env:"DSS_BASE_URL" kind:"url" help:"InterUSS DSS base URL; required once WP-14 lands"`
+	Addr       string   `env:"DP_ADDR" default:":8082" help:"public listen address of /uss/* and /v1/dp/observations/* (behind Caddy)"`
+	TSURL      string   `env:"TS_URL" required:"true" secret:"true" kind:"url" help:"telemetry database (registry projection, read only)"`
+	NATSURL    string   `env:"NATS_URL" required:"true" secret:"true" kind:"url" help:"NATS JetStream"`
+	PublicURL  string   `env:"AUTHORITY_PUBLIC_URL" required:"true" kind:"url" help:"this system's published base URL; its host is the audience a Service Provider's notification and the conformance hook must carry (M18)"`
+	Audiences  []string `env:"AUTHORITY_AUDIENCES" help:"accepted JWT audiences (hosts), comma-separated: own host plus a lab alias; default the host of AUTHORITY_PUBLIC_URL"`
+	IssuerURL  string   `env:"ISSUER_URL" kind:"url" help:"this system's issuer (iss of the tokens it accepts and the base of its token endpoint); default AUTHORITY_PUBLIC_URL"`
+	JWKSURL    string   `env:"DP_JWKS_URL" kind:"url" help:"this issuer's JWKS (https; http only to a loopback host); default ISSUER_URL + /.well-known/jwks.json"`
+	DSSBaseURL string   `env:"DSS_BASE_URL" kind:"url" help:"InterUSS DSS base URL (F3411 under /rid/v2); its host is the audience of the tokens towards it (M18); unset: nothing is discovered and the status says dss_unconfigured"`
+	USSBaseURL string   `env:"DP_USS_BASE_URL" kind:"url" help:"uss_base_url of this Display Provider's DSS subscriptions, where a Service Provider posts ISA changes (POST {uss_base_url}/uss/identification_service_areas/{id}); default AUTHORITY_PUBLIC_URL"`
+	Peers
+	DPClient
+	Geoid
+	DPPollerTuning
+}
+
+// DPClient is this system's client at its own token service for the
+// Display Provider's outbound calls (M24).
+type DPClient struct {
+	DPClientID         string `env:"DP_CLIENT_ID" default:"authority-01" help:"this system's client id at its own token service for calls to the DSS and to Service Providers (M24)"`
+	DPClientSecretFile string `env:"DP_CLIENT_SECRET_FILE" help:"file holding that client's secret (client_secret_post at DP_TOKEN_URL); unset: every outbound call is refused locally and counted, and nothing is discovered or polled"`
+	DPTokenURL         string `env:"DP_TOKEN_URL" kind:"url" help:"the token endpoint the Display Provider asks; default ISSUER_URL + /oauth/token"`
+}
+
+// DPPollerTuning are the Display Provider's limits (LESSONS R-14, spec
+// 02 F7, 05 §5, 06 T9). The F3411 constants themselves (the 7 km and
+// 2 km diagonals, 24 h subscriptions, p99 3 s) are uspace-core's f3411
+// constants; dp_poll_hz and dp_view_diagonal_km are authority_policy
+// columns followed from KV policy (INV-03).
+type DPPollerTuning struct {
+	RequestTimeoutMS     int      `env:"DP_REQUEST_TIMEOUT_MS" default:"5000" min:"100" max:"60000" help:"deadline of one poll of a Service Provider; a poll past it keeps the flights already shown, which age on the picture (R-14)"`
+	MaxBodyBytes         int      `env:"DP_MAX_BODY_BYTES" default:"1048576" min:"1024" max:"4194304" help:"largest response read from a Service Provider or the DSS; a larger one is refused and counted (R-14: 1 MiB)"`
+	MaxFlights           int      `env:"DP_MAX_FLIGHTS_PER_RESPONSE" default:"500" min:"1" max:"100000" help:"flights taken from one response; the rest are counted and logged (R-14: 500)"`
+	MaxTilesPerSP        int      `env:"DP_MAX_TILES_PER_SP" default:"64" min:"1" max:"10000" help:"tiles one Service Provider is polled for; past it the tiles are counted and not polled (R-14: 64)"`
+	MaxDetailsPerPoll    int      `env:"DP_MAX_DETAILS_PER_POLL" default:"20" min:"0" max:"1000" help:"details fetches after one poll at most (R-14: 20)"`
+	DetailsConcurrency   int      `env:"DP_DETAILS_CONCURRENCY" default:"4" min:"1" max:"64" help:"details fetches in flight at once per poll (R-14: 4)"`
+	UnavailableAfterS    int      `env:"DP_UNAVAILABLE_AFTER_S" default:"10" min:"1" max:"3600" help:"a Service Provider whose polls fail for this long is shown unavailable since T, never removed (R-14: 10 s)"`
+	SlowPollHz           float64  `env:"DP_SLOW_POLL_HZ" default:"0.5" min:"0.01" max:"10" help:"poll rate of a Service Provider slower than the F3411 p99 of 3 s (05 §5: 0.5 Hz)"`
+	MaxSplitDepth        int      `env:"DP_MAX_SPLIT_DEPTH" default:"3" min:"0" max:"8" help:"a 413 from a Service Provider splits the tile into four, at most this many times (R-14: 3)"`
+	MaxViews             int      `env:"DP_MAX_VIEWS" default:"64" min:"1" max:"10000" help:"views (oversight areas and console viewports) followed; past it the rest are counted and logged"`
+	MaxTiles             int      `env:"DP_MAX_TILES" default:"512" min:"1" max:"100000" help:"tiles discovered and subscribed in all; past it the rest are counted and logged"`
+	MaxISAs              int      `env:"DP_MAX_ISAS" default:"10000" min:"1" max:"1000000" help:"identification service areas held; past it a new one is refused and counted"`
+	MaxProviders         int      `env:"DP_MAX_PROVIDERS" default:"256" min:"1" max:"100000" help:"Service Providers held; past it a new one is counted and not polled"`
+	MaxFlightsHeld       int      `env:"DP_MAX_FLIGHTS_HELD" default:"50000" min:"1" max:"10000000" help:"flights whose last published state, details and identification are remembered; past it the one seen longest ago is forgotten and counted (E-10)"`
+	DiscoveryRereadS     int      `env:"DP_DISCOVERY_REREAD_S" default:"30" min:"1" max:"3600" help:"seconds between ISA searches per tile besides the notifications (repair, G-08)"`
+	ViewsRereadS         int      `env:"DP_VIEWS_REREAD_S" default:"5" min:"1" max:"3600" help:"seconds between reads of the oversight areas and the console viewports"`
+	StatusIntervalMS     int      `env:"DP_STATUS_INTERVAL_MS" default:"2000" min:"100" max:"60000" help:"interval of src.v1.network_rid.<uss_id> status messages (04 §3.6: every 2 s)"`
+	MaxNotificationBytes int      `env:"DP_MAX_NOTIFICATION_BYTES" default:"262144" min:"1024" max:"4194304" help:"largest ISA change notification accepted"`
+	CertifiedUSSPs       []string `env:"DP_CERTIFIED_USSPS" help:"until the certificate register (WP-16) is followed: the client ids (ISA owners) of USSPs holding an operating certificate, comma-separated; a Service Provider not on it is still polled and shown provider_unknown"`
+	OversightBucket      string   `env:"DP_OVERSIGHT_BUCKET" default:"dp_oversight" help:"KV bucket of the oversight areas api publishes (POST /v1/dp/views)"`
+	ViewsBucket          string   `env:"DP_VIEWS_BUCKET" default:"dp_views" help:"KV bucket of the console viewports picture-ws reports, with a TTL so an idle console stops polling"`
+	ProjectionRefreshS   int      `env:"DP_PROJECTION_REFRESH_S" default:"5" min:"1" max:"3600" help:"period of the registry projection re-read besides registry.v1.changed (G-08)"`
+	PolicyRereadS        int      `env:"DP_POLICY_REREAD_S" default:"60" min:"1" max:"3600" help:"period of the KV policy re-read besides its watch and ctl.policy (G-08)"`
+	NATSTimeoutMS        int      `env:"DP_NATS_TIMEOUT_MS" default:"2000" min:"50" max:"60000" help:"bound on one row hand-over to tsdb-writer or one KV read"`
 }
 
 // String redacts secrets.
 func (c *DPPoller) String() string { return Describe(c) }
+
+// Validate checks what the tags cannot.
+func (c *DPPoller) Validate() error {
+	var errs []error
+	if c.Addr == c.AdminAddr && !strings.HasSuffix(c.Addr, ":0") {
+		errs = append(errs, &core.FieldError{Field: "ADMIN_ADDR", Reason: "must differ from DP_ADDR"})
+	}
+	if own := c.OwnHost(); own != "" && len(c.Audiences) > 0 && !slices.Contains(c.Audiences, own) {
+		errs = append(errs, core.Fieldf("AUTHORITY_AUDIENCES", "must contain this system's own host %q (the host of AUTHORITY_PUBLIC_URL)", own))
+	}
+	for _, a := range c.Audiences {
+		if strings.ContainsAny(a, "/:@ ") || a != strings.ToLower(a) {
+			errs = append(errs, core.Fieldf("AUTHORITY_AUDIENCES", "%q is not a lower-case host name", a))
+		}
+	}
+	for _, p := range c.TrustedProxies {
+		if _, err := netip.ParsePrefix(p); err != nil {
+			if _, err := netip.ParseAddr(p); err != nil {
+				errs = append(errs, core.Fieldf("AUTHORITY_TRUSTED_PROXIES", "%q is neither a CIDR nor an address", p))
+			}
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// OwnHost is the host of AUTHORITY_PUBLIC_URL, lower-case and without a
+// port (M18).
+func (c *DPPoller) OwnHost() string {
+	u, err := url.Parse(c.PublicURL)
+	if err != nil {
+		return ""
+	}
+	return strings.ToLower(u.Hostname())
+}
+
+// AudienceList is AUTHORITY_AUDIENCES, or the own host alone when unset.
+func (c *DPPoller) AudienceList() []string {
+	if len(c.Audiences) > 0 {
+		return slices.Clone(c.Audiences)
+	}
+	return []string{c.OwnHost()}
+}
+
+// Issuer is ISSUER_URL, or AUTHORITY_PUBLIC_URL, without a trailing
+// slash.
+func (c *DPPoller) Issuer() string {
+	iss := c.IssuerURL
+	if iss == "" {
+		iss = c.PublicURL
+	}
+	return strings.TrimSuffix(iss, "/")
+}
+
+// JWKS is DP_JWKS_URL, or the issuer's /.well-known/jwks.json.
+func (c *DPPoller) JWKS() string {
+	if c.JWKSURL != "" {
+		return c.JWKSURL
+	}
+	return c.Issuer() + "/.well-known/jwks.json"
+}
+
+// TokenURL is DP_TOKEN_URL, or the issuer's /oauth/token.
+func (c *DPPoller) TokenURL() string {
+	if c.DPTokenURL != "" {
+		return c.DPTokenURL
+	}
+	return c.Issuer() + "/oauth/token"
+}
+
+// SubscriberURL is DP_USS_BASE_URL, or AUTHORITY_PUBLIC_URL, without a
+// trailing slash.
+func (c *DPPoller) SubscriberURL() string {
+	u := c.USSBaseURL
+	if u == "" {
+		u = c.PublicURL
+	}
+	return strings.TrimSuffix(u, "/")
+}
 
 // MannedIngest is the F4 client of the ANSP manned feed.
 type MannedIngest struct {
@@ -574,6 +714,7 @@ type PictureTuning struct {
 	ProjectionRefreshS     int      `env:"PICTURE_PROJECTION_REFRESH_S" default:"5" min:"1" max:"3600" help:"seconds between reads of the projection ages and versions (database clock)"`
 	TSMaxConns             int      `env:"TS_MAX_CONNS" default:"2" min:"1" max:"100" help:"connections of the read-only projection pool"`
 	PolicyRereadS          int      `env:"PICTURE_POLICY_REREAD_S" default:"60" min:"1" max:"3600" help:"period of the KV policy re-read besides its watch and ctl.policy (G-08)"`
+	DPViewsBucket          string   `env:"DP_VIEWS_BUCKET" default:"dp_views" help:"KV bucket the consoles' viewports are reported to for the Display Provider (WP-14; the same variable in dp-poller)"`
 	SubscribeMaxBytes      int      `env:"PICTURE_SUBSCRIBE_MAX_BYTES" default:"4096" min:"256" max:"65536" help:"largest frame a console may send (console/subscribe/v1); a larger one closes the connection with 1009"`
 	SubscribeMinIntervalMS int      `env:"PICTURE_SUBSCRIBE_MIN_INTERVAL_MS" default:"100" min:"0" max:"10000" help:"subscriptions of one connection are applied at most this often; one arriving sooner waits, and those it supersedes meanwhile are never applied (subscribes_coalesced)"`
 	SnapshotMaxBytes       int      `env:"PICTURE_SNAPSHOT_MAX_BYTES" default:"8388608" min:"65536" max:"268435456" help:"bound on the items of one console/snapshot/v1 (violations first, then tracks, then manned); past it the rest is left out and the snapshot says truncated (E-10)"`

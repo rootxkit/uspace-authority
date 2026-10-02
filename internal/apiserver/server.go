@@ -169,6 +169,16 @@ type ViolationsHandler interface {
 	ReviewViolation(ctx context.Context, request gen.ReviewViolationRequestObject) (gen.ReviewViolationResponseObject, error)
 }
 
+// DPHandler serves /v1/dp/* administration (api, WP-14): oversight
+// areas, the Service Providers seen, USS availability arbitration. The
+// x-dp operations are served by dp-poller (DisplayProvider).
+type DPHandler interface {
+	ListDPViews(ctx context.Context, request gen.ListDPViewsRequestObject) (gen.ListDPViewsResponseObject, error)
+	CreateDPView(ctx context.Context, request gen.CreateDPViewRequestObject) (gen.CreateDPViewResponseObject, error)
+	ListDPProviders(ctx context.Context, request gen.ListDPProvidersRequestObject) (gen.ListDPProvidersResponseObject, error)
+	SetDPProviderAvailability(ctx context.Context, request gen.SetDPProviderAvailabilityRequestObject) (gen.SetDPProviderAvailabilityResponseObject, error)
+}
+
 // Server implements gen.StrictServerInterface by delegating to one
 // handler per group. A group left nil must not be mounted.
 type Server struct {
@@ -187,6 +197,7 @@ type Server struct {
 	USpaceHandler
 	CISPHandler
 	ViolationsHandler
+	DPHandler
 }
 
 var _ gen.StrictServerInterface = Server{}

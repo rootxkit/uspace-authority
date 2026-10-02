@@ -117,6 +117,11 @@ var Roles = map[string][]string{
 	"ListViolations":  {RoleInspector},
 	"GetViolation":    {RoleInspector},
 	"ReviewViolation": {RoleInspector},
+
+	"ListDPViews":               {RoleAdmin},
+	"CreateDPView":              {RoleAdmin},
+	"ListDPProviders":           {RoleAdmin},
+	"SetDPProviderAvailability": {RoleAdmin},
 }
 
 // Receiver lists the operations a Remote ID receiver calls (`x-receiver:
@@ -144,6 +149,15 @@ var Delivery = map[string]bool{"ReceiveCISNotification": true}
 // they are excluded from the generated server and never reach
 // Authorize. A test holds the lists to each other.
 var Picture = map[string]bool{"GetPictureWS": true, "GetPictureSnapshot": true, "GetPictureSources": true}
+
+// DisplayProvider lists the operations dp-poller serves (`x-dp: true` in
+// the contract, WP-14): the F3411 ISA change notification (through the
+// server generated from the standard's file) and the conformance
+// observation hook (Q-A7). dp-poller verifies their bearer token itself
+// with uspace-core's verifier (rid.service_provider, dp.observe), so they
+// are excluded from the generated server and never reach Authorize. A
+// test holds the lists to each other.
+var DisplayProvider = map[string]bool{"GetDPDisplayData": true, "GetDPFlightDetails": true, "PostDPISANotification": true}
 
 // PIIRoles are the only roles that may read personal data: an operation
 // whose response carries it names no other role (CLAUDE.md rule 6; a
