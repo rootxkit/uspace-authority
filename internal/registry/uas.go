@@ -79,6 +79,7 @@ func (s *Service) CreateUAS(ctx context.Context, in NewUAS, actor audit.Actor) (
 		// reaches a resolver before its owner (identify's owner_unknown).
 		cs.ops = append(cs.ops, projectOperator(&op.Operator))
 		cs.uas = append(cs.uas, projectUAS(&r))
+		cs.loosening = true // a new registration
 		out = r
 		return nil
 	})
@@ -173,6 +174,7 @@ func (s *Service) SetUASStatus(ctx context.Context, id string, to Status, reason
 			return err
 		}
 		cs.uas = append(cs.uas, projectUAS(&r))
+		cs.loosening = to == StatusActive
 		out = r
 		return nil
 	})

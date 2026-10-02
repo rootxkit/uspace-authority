@@ -133,12 +133,13 @@ func TestAFailedProjectionWriteRollsTheChangeBack(t *testing.T) {
 	}
 }
 
-// The window G-08 leaves: the projection committed and the relational
-// commit then failed. The projection is ahead of the registry (here a
-// reinstatement the registry never committed: the unsafe direction), so
-// a repair is requested at once and counted, and the repair writes the
-// registry's state over the newer row.
-func TestARelationalCommitFailureAfterTheProjectionRequestsARepair(t *testing.T) {
+// The fail-safe order of G-08. A loosening change (a reinstatement, a
+// registration) whose relational commit fails never reaches the
+// projection: no projection row ever says active while the registry
+// does not. Its tightening twin (a suspension) whose relational commit
+// fails leaves the projection stricter than the registry, counted, with
+// a repair requested at once; the repair writes the registry's state.
+func TestARelationalCommitFailureNeverLeavesTheProjectionLooser(t *testing.T) {
 	f := newFixture(t)
 	ctx := context.Background()
 	op := f.operator(t, naturalOperator(numberA))
@@ -146,11 +147,39 @@ func TestARelationalCommitFailureAfterTheProjectionRequestsARepair(t *testing.T)
 	if _, err := f.svc.SetUASStatus(ctx, u.ID, StatusSuspended, "unsafe", registrar); err != nil {
 		t.Fatal(err)
 	}
+
+	// Loosening: the reinstatement and a new registration fail to commit.
 	f.store.failCommit = true
 	if _, err := f.svc.SetUASStatus(ctx, u.ID, StatusActive, "", registrar); err == nil {
 		t.Fatal("a failed commit reported success")
 	}
+	if _, err := f.svc.CreateUAS(ctx, NewUAS{OperatorID: op.ID, Serial: serialLegacy, RIDCapability: "none"}, registrar); err == nil {
+		t.Fatal("a failed commit reported success")
+	}
 	f.store.failCommit = false
+	if p := f.proj.uas[u.ID]; p.Status != string(StatusSuspended) {
+		t.Fatalf("the projection shows %q for a reinstatement the registry never committed", p.Status)
+	}
+	if len(f.proj.uas) != 1 {
+		t.Fatalf("a registration the registry never committed is projected: %v", f.proj.uas)
+	}
+	if f.svc.Counters.Get(CounterProjectionAhead) != 0 {
+		t.Fatal("a loosening change left the projection ahead")
+	}
+
+	// Tightening twin: the suspension's projection is written first, so
+	// a failed relational commit leaves the projection stricter.
+	if _, err := f.svc.SetUASStatus(ctx, u.ID, StatusActive, "", registrar); err != nil {
+		t.Fatal(err)
+	}
+	f.store.failCommit = true
+	if _, err := f.svc.SetUASStatus(ctx, u.ID, StatusSuspended, "unsafe", registrar); err == nil {
+		t.Fatal("a failed commit reported success")
+	}
+	f.store.failCommit = false
+	if f.proj.uas[u.ID].Status != string(StatusSuspended) || f.store.uas[u.ID].Status != StatusActive {
+		t.Fatal("the tightening change did not reach the projection first (the premise)")
+	}
 	if f.svc.Counters.Get(CounterProjectionAhead) != 1 {
 		t.Fatalf("not counted: %v", f.svc.Counters.Snapshot())
 	}
@@ -159,14 +188,78 @@ func TestARelationalCommitFailureAfterTheProjectionRequestsARepair(t *testing.T)
 	default:
 		t.Fatal("no repair requested")
 	}
-	if f.proj.uas[u.ID].Status != string(StatusActive) || f.store.uas[u.ID].Status != StatusSuspended {
-		t.Fatal("the projection did not run ahead (the premise)")
-	}
 	if _, err := f.svc.Reproject(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if p := f.proj.uas[u.ID]; p.Status != string(StatusSuspended) || p.Version != f.store.uas[u.ID].RegistryVersion {
-		t.Fatalf("the repair left the projection ahead: %+v", p)
+	if p := f.proj.uas[u.ID]; p.Status != string(StatusActive) || p.Version != f.store.uas[u.ID].RegistryVersion {
+		t.Fatalf("the repair did not write the registry's state: %+v", p)
+	}
+}
+
+// A loosening change whose projection write fails after its commit
+// stands; the projection keeps the stricter state (never active early),
+// the failure is counted and a repair is requested. The twin with the
+// projection reachable is projected at once.
+func TestALooseningChangeWhoseProjectionFailsStaysStricter(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	pub := &recordingPublisher{}
+	f.svc.Publisher = pub
+	op := f.operator(t, naturalOperator(numberA))
+	u := f.uas(t, op.ID, serialC1, "C1")
+	if _, err := f.svc.SetUASStatus(ctx, u.ID, StatusSuspended, "unsafe", registrar); err != nil {
+		t.Fatal(err)
+	}
+	published := len(pub.versions)
+	f.proj.failUAS = true
+	r, err := f.svc.SetUASStatus(ctx, u.ID, StatusActive, "", registrar)
+	if err != nil || r.Status != StatusActive || f.store.uas[u.ID].Status != StatusActive {
+		t.Fatalf("the committed reinstatement was reported as %v %v", r.Status, err)
+	}
+	if f.proj.uas[u.ID].Status != string(StatusSuspended) {
+		t.Fatal("the projection moved without its write")
+	}
+	if f.svc.Counters.Get(CounterProjectionBehind) != 1 || len(pub.versions) != published {
+		t.Fatalf("counters %v, published %v", f.svc.Counters.Snapshot(), pub.versions)
+	}
+	select {
+	case <-f.svc.repairs():
+	default:
+		t.Fatal("no repair requested")
+	}
+	f.proj.failUAS = false
+	if _, err := f.svc.Reproject(ctx); err != nil || f.proj.uas[u.ID].Status != string(StatusActive) {
+		t.Fatalf("repair: %v %+v", err, f.proj.uas[u.ID])
+	}
+	// The twin: projected with the change.
+	if _, err := f.svc.SetOperatorStatus(ctx, op.ID, StatusSuspended, "x", registrar); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.SetOperatorStatus(ctx, op.ID, StatusActive, "", registrar); err != nil || f.proj.operators[op.ID].Status != "active" {
+		t.Fatalf("reinstated owner %v %+v", err, f.proj.operators[op.ID])
+	}
+}
+
+// A failed re-projection is retried with backoff, long before the
+// periodic run, and the backoff resets after a good run.
+func TestRunJobsRetriesAFailedRepair(t *testing.T) {
+	f := newFixture(t)
+	f.operator(t, naturalOperator(numberA))
+	f.proj.mu.Lock()
+	f.proj.failBegin = true
+	f.proj.mu.Unlock()
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() { defer close(done); f.svc.RunJobs(ctx, time.Hour, time.Hour, 10*time.Millisecond) }()
+	waitFor(t, func() bool { return f.svc.Counters.Get(CounterReprojectRetried) >= 2 })
+	f.proj.mu.Lock()
+	f.proj.failBegin = false
+	f.proj.mu.Unlock()
+	waitFor(t, func() bool { return f.svc.Counters.Get(CounterReprojected) >= 1 })
+	cancel()
+	<-done
+	if f.svc.Counters.Get(CounterReprojectFailed) < 2 {
+		t.Errorf("failures %v", f.svc.Counters.Snapshot())
 	}
 }
 
@@ -299,7 +392,7 @@ func TestRunJobsReprojectsAtStartAndOnRepair(t *testing.T) {
 	clear(f.proj.operators)
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
-	go func() { defer close(done); f.svc.RunJobs(ctx, time.Hour, time.Hour) }()
+	go func() { defer close(done); f.svc.RunJobs(ctx, time.Hour, time.Hour, time.Hour) }()
 	waitFor(t, func() bool { return f.svc.Counters.Get(CounterReprojected) >= 1 })
 	f.proj.mu.Lock()
 	n := len(f.proj.operators)

@@ -24,7 +24,9 @@ import (
 // one refusal, fallback or degraded state.
 const (
 	CounterProjectionWriteFailed = "registry_projection_write_failed" // a change rolled back because its projection write failed (SC-17 step 3)
-	CounterProjectionAhead       = "registry_projection_ahead"        // the projection committed, the relational commit failed; a repair was requested
+	CounterProjectionAhead       = "registry_projection_ahead"        // a tightening change: the projection committed, the relational commit failed; a repair was requested
+	CounterProjectionBehind      = "registry_projection_behind"       // a loosening change committed, its projection write failed; the stricter row stays until the repair
+	CounterReprojectRetried      = "registry_reproject_retried"       // a failed re-projection retried with backoff before the periodic run
 	CounterPublishFailed         = "registry_publish_failed"          // a change committed, its push failed; readers catch up on their 5 s re-read
 	CounterReprojected           = "registry_reprojected"             // full re-projections written
 	CounterReprojectFailed       = "registry_reproject_failed"        // a full re-projection failed; the next run repairs
@@ -164,15 +166,32 @@ type changeSet struct {
 	at      time.Time
 	ops     []ProjectedOperator
 	uas     []ProjectedUAS
+	// loosening marks a change that can make an aircraft or an operator
+	// look more valid: a registration, or a status becoming active.
+	loosening bool
 }
 
 // change runs fn in one relational transaction that holds
-// LockProjection and numbers the change, then writes the projection rows
-// fn collected, commits the projection and lets the relational
-// transaction commit. A failed projection write rolls the change back
-// and is a 503 naming the cause (G-08, SC-17 step 3). When the
-// relational commit fails after the projection committed, a repair is
-// requested at once. After the commit the new version is published.
+// LockProjection and numbers the change, and writes the projection rows
+// fn collected in the order that fails safe (G-08):
+//
+//   - a tightening or neutral change (suspend, revoke, expire, edit)
+//     writes and commits the projection before the relational commit. A
+//     failed projection write rolls the change back and is a 503 naming
+//     the cause (SC-17 step 3). If the relational commit then fails, the
+//     projection is stricter than the registry: counted, and a repair is
+//     requested at once.
+//   - a loosening change (a registration, a status becoming active)
+//     commits the relational row first and writes the projection after.
+//     If the relational commit fails, the projection never saw the
+//     change; if the projection write fails, the projection keeps the
+//     stricter state, the change stands, and a repair is requested
+//     (retried with backoff). Either way no projection row says active
+//     while the registry does not.
+//
+// A late loosening write never replaces a newer row (registry_version),
+// so a change committed after it is not undone. After the projection is
+// written the new version is published.
 func (s *Service) change(ctx context.Context, fn func(tx Tx, cs *changeSet) error) error {
 	var projected bool
 	var cs *changeSet
@@ -188,7 +207,7 @@ func (s *Service) change(ctx context.Context, fn func(tx Tx, cs *changeSet) erro
 		if err := fn(tx, cs); err != nil {
 			return err
 		}
-		if len(cs.ops) == 0 && len(cs.uas) == 0 {
+		if len(cs.ops) == 0 && len(cs.uas) == 0 || cs.loosening {
 			return nil
 		}
 		if err := s.writeProjection(ctx, cs); err != nil {
@@ -208,6 +227,16 @@ func (s *Service) change(ctx context.Context, fn func(tx Tx, cs *changeSet) erro
 			s.RequestRepair()
 		}
 		return s.refused(err)
+	}
+	if cs.loosening && (len(cs.ops) > 0 || len(cs.uas) > 0) {
+		if err := s.writeProjection(ctx, cs); err != nil {
+			s.count(CounterProjectionBehind)
+			logging.Error(ctx, s.logger(), "registry change committed but not projected; the projection keeps the stricter state until the repair", err,
+				slog.Int64("registry_version", cs.version))
+			s.RequestRepair()
+			return nil
+		}
+		projected = true
 	}
 	if projected {
 		s.publish(ctx, cs.version)

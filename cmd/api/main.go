@@ -150,7 +150,8 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 		rt.Ready.Add("telemetry", reg.Projector.Ping)
 		rt.AddCounters("registry", reg.Counters)
 		wg.Go(func() {
-			reg.Service.RunJobs(ctx, time.Duration(cfg.ReprojectS)*time.Second, time.Duration(cfg.ExpiryS)*time.Second)
+			reg.Service.RunJobs(ctx, time.Duration(cfg.ReprojectS)*time.Second, time.Duration(cfg.ExpiryS)*time.Second,
+				time.Duration(cfg.RepairRetryS)*time.Second)
 		})
 
 		mux := http.NewServeMux()

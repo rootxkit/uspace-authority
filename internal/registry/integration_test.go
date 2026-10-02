@@ -499,16 +499,38 @@ func TestIntegrationSC17RegistryChangeReachesAReaderWithinTheRefresh(t *testing.
 	t.Logf("step 2: suspended seen %.2f s after the request (transaction %.3f s, refresh %s)",
 		time.Since(start).Seconds(), txTime.Seconds(), DefaultRefresh)
 
-	// 3. A failing projection write: rolled back, the failure reported.
-	if _, err := it.tsAdmin.ExecContext(ctx, `ALTER TABLE proj_registry_uas ADD CONSTRAINT sc17 CHECK (registration_status <> 'active')`); err != nil {
+	// 3. A failing projection write on a tightening change (a revocation):
+	// rolled back, the failure reported.
+	if _, err := it.tsAdmin.ExecContext(ctx, `ALTER TABLE proj_registry_uas ADD CONSTRAINT sc17 CHECK (registration_status <> 'revoked')`); err != nil {
 		t.Fatal(err)
 	}
-	_, err := it.svc.SetUASStatus(ctx, u.ID, StatusActive, "", registrar)
+	_, err := it.svc.SetUASStatus(ctx, u.ID, StatusRevoked, "SC-17", registrar)
 	wantProblem(t, err, http.StatusServiceUnavailable, "")
 	if g, _ := it.svc.GetUAS(ctx, u.ID); g.Status != StatusSuspended {
 		t.Fatalf("half applied: %s", g.Status)
 	}
+	// The loosening twin (a reinstatement) commits first: it stands, and
+	// the projection keeps the stricter state until the repair.
+	if _, err := it.tsAdmin.ExecContext(ctx, `ALTER TABLE proj_registry_uas DROP CONSTRAINT sc17;
+		ALTER TABLE proj_registry_uas ADD CONSTRAINT sc17 CHECK (registration_status <> 'active') NOT VALID`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := it.svc.SetUASStatus(ctx, u.ID, StatusActive, "", registrar); err != nil {
+		t.Fatal(err)
+	}
+	if s, _ := it.projectedStatus(t, u.ID); s != "suspended" {
+		t.Fatalf("projected %q while its write failed", s)
+	}
 	if _, err := it.tsAdmin.ExecContext(ctx, `ALTER TABLE proj_registry_uas DROP CONSTRAINT sc17`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := it.svc.Reproject(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if s, _ := it.projectedStatus(t, u.ID); s != "active" {
+		t.Fatalf("repaired to %q", s)
+	}
+	if _, err := it.svc.SetUASStatus(ctx, u.ID, StatusSuspended, "SC-17", registrar); err != nil {
 		t.Fatal(err)
 	}
 

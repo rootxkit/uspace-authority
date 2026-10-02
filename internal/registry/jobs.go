@@ -89,19 +89,29 @@ func (s *Service) Reproject(ctx context.Context) (Reprojected, error) {
 // RunJobs runs the registry's periodic work until ctx ends: a full
 // re-projection at once and every reprojectEvery (and at once when a
 // change asks for a repair), and the expiry of registrations every
-// expiryEvery. A failed run is counted and logged; the next run repairs.
-func (s *Service) RunJobs(ctx context.Context, reprojectEvery, expiryEvery time.Duration) {
+// expiryEvery. A failed re-projection is counted, logged and retried
+// after retryMin, doubling up to reprojectEvery, rather than left to the
+// next periodic run: a projection behind a loosening change, or ahead of
+// a failed tightening one, is repaired as soon as the database allows.
+func (s *Service) RunJobs(ctx context.Context, reprojectEvery, expiryEvery, retryMin time.Duration) {
+	var retry <-chan time.Time
+	backoff := retryMin
 	reproject := func(cause string) {
 		r, err := s.Reproject(ctx)
 		switch {
 		case err != nil:
 			if ctx.Err() == nil {
-				logging.Error(ctx, s.logger(), "registry re-projection failed; the next run repairs", err, slog.String("cause", cause))
+				logging.Error(ctx, s.logger(), "registry re-projection failed; retrying", err, slog.String("cause", cause),
+					slog.Float64("retry_in_s", backoff.Seconds()))
 			}
+			retry = time.After(backoff)
+			backoff = min(2*backoff, reprojectEvery)
+			return
 		case r.Ran:
 			s.logger().Info("registry re-projected", slog.String("cause", cause), slog.Int("operators", r.Operators),
 				slog.Int("uas", r.UAS), slog.Int64("rows_marked", r.Marked))
 		}
+		retry, backoff = nil, retryMin
 	}
 	expire := func() {
 		n, err := s.ExpireDue(ctx)
@@ -128,6 +138,9 @@ func (s *Service) RunJobs(ctx context.Context, reprojectEvery, expiryEvery time.
 			reproject("periodic")
 		case <-s.repairs():
 			reproject("repair")
+		case <-retry:
+			s.count(CounterReprojectRetried)
+			reproject("retry")
 		case <-et.C:
 			expire()
 		}

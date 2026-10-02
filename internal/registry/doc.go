@@ -34,15 +34,22 @@
 //   - The projection (proj_registry_operators, proj_registry_uas in the
 //     telemetry database, written as authority_ts_projector). Every
 //     change runs in one relational transaction holding the advisory
-//     lock LockProjection and numbered by registry_version_seq; before
-//     the relational commit the change's rows are written and committed
-//     in the telemetry database; a failed projection write rolls the
-//     change back and answers 503 projection_unavailable naming the
-//     cause (SC-17 step 3). If the relational commit then fails, the
-//     projection is ahead: the failure is counted and a full
-//     re-projection is requested at once. After the commit the version
-//     is published (registry.v1.changed and KV registry_version once
-//     the bus lands, WP-10; NopPublisher until then).
+//     lock LockProjection and numbered by registry_version_seq, and its
+//     rows are written in the order that fails safe. A tightening or
+//     neutral change (suspend, revoke, expire, edit) writes and commits
+//     them in the telemetry database before the relational commit; a
+//     failed projection write rolls the change back and answers 503
+//     projection_unavailable naming the cause (SC-17 step 3); a failed
+//     relational commit after it leaves the projection stricter, counted
+//     and repaired at once. A loosening change (a registration, a status
+//     becoming active) commits the relational row first and projects
+//     after; a failed projection write leaves the stricter row, counted
+//     (registry_projection_behind) and repaired. No projection row ever
+//     says active while the registry does not. A failed repair is
+//     retried with backoff (REGISTRY_REPAIR_RETRY_S, doubling). After
+//     the projection is written the version is published
+//     (registry.v1.changed and KV registry_version once the bus lands,
+//     WP-10; NopPublisher until then).
 //   - Reproject, at api startup and every REGISTRY_REPROJECT_S (300 s),
 //     under a job lock and LockProjection held from the relational read
 //     to the projection commit, writes the registry's state over every

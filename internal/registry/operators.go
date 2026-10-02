@@ -79,6 +79,7 @@ func (s *Service) CreateOperator(ctx context.Context, in NewOperator, actor audi
 			return err
 		}
 		cs.ops = append(cs.ops, projectOperator(&r.Operator))
+		cs.loosening = true // a new registration
 		out = r.Operator
 		return nil
 	})
@@ -207,6 +208,7 @@ func (s *Service) operatorTransition(ctx context.Context, tx Tx, cs *changeSet, 
 		return Operator{}, err
 	}
 	cs.ops = append(cs.ops, projectOperator(&u.Operator))
+	cs.loosening = cs.loosening || to == StatusActive
 	return u.Operator, nil
 }
 

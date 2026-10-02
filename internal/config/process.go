@@ -65,6 +65,7 @@ type Registry struct {
 	TSProjectorRole     string   `env:"TS_PROJECTOR_ROLE" default:"authority_ts_projector" help:"role SET on api's telemetry connections that write the registry projection (migration 00003_registry_projection)"`
 	TSMaxConns          int      `env:"TS_MAX_CONNS" default:"4" min:"1" max:"100" help:"maximum connections of api's telemetry pool"`
 	ReprojectS          int      `env:"REGISTRY_REPROJECT_S" default:"300" min:"10" max:"3600" help:"seconds between full re-projections of the registry into the telemetry database (G-08: 300)"`
+	RepairRetryS        int      `env:"REGISTRY_REPAIR_RETRY_S" default:"2" min:"1" max:"300" help:"first retry of a failed re-projection; each failure doubles it up to REGISTRY_REPROJECT_S"`
 	ExpiryS             int      `env:"REGISTRY_EXPIRY_S" default:"300" min:"10" max:"86400" help:"seconds between runs of the job that marks registrations past valid_until expired"`
 	MTOMBandsG          []string `env:"REGISTRY_MTOM_BANDS_G" default:"250,900,4000,25000" help:"ascending upper bounds in grams of the MTOM bands F8 answers (under_<g>g, from_<last>g); the defaults are the 2019/945 class limits"`
 }
