@@ -52,6 +52,10 @@ type Row struct {
 	FlightID              *string          `json:"flight_id"`
 	USSPID                *string          `json:"ussp_id"`
 	Cell5                 *string          `json:"cell5"`
+	// IdentityReceiver is the receiver whose Basic ID identified a direct
+	// Remote ID track: SourceInstance itself, or the receiver that lent
+	// its fresh identity (I-03, S-35); nil when unidentified.
+	IdentityReceiver *string `json:"identity_receiver"`
 }
 
 // RowOf flattens m. dedupeKey identifies the observation across

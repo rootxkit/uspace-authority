@@ -53,7 +53,9 @@
 //     identified and rid.UnidentifiedID(transmitter) otherwise (I-06;
 //     D6: the id the DP path gives the same serial). A Location the
 //     tracker held for its identity keeps the placement of the row that
-//     carried it.
+//     carried it. The tracks row names the receiver whose Basic ID
+//     identified the track (identity_receiver: the lender when a
+//     receiver borrowed another's identity, S-35).
 //  5. Altitude (rid.AltitudeSelector per track and tracker, so a
 //     replayed poor fix never holds the live track on pressure; geoid of WP-11;
 //     R-07, R-08). alt_amsl_m is HAE minus the undulation and nothing

@@ -479,6 +479,10 @@ func (p *Pipeline) publish(st *trackerState, obs *rid.Observation, backlog bool)
 		dedupe = "direct_rid:msg:" + m.MsgID
 	}
 	row := track.RowOf(m, times, dedupe, &airborne)
+	if obs.IdentityReceiver != "" {
+		lender := obs.IdentityReceiver
+		row.IdentityReceiver = &lender
+	}
 	return &row
 }
 

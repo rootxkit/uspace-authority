@@ -111,6 +111,7 @@ type Track struct {
 	FlightID              *string
 	UsspID                *string
 	Cell5                 *string
+	IdentityReceiver      *string
 }
 
 type WriterGap struct {

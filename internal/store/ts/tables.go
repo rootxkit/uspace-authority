@@ -239,6 +239,7 @@ var Tracks = Table{Name: "tracks", Columns: []Column{
 	{Name: "flight_id", Kind: KindText, Nullable: true},
 	{Name: "ussp_id", Kind: KindText, Nullable: true},
 	{Name: "cell5", Kind: KindText, Nullable: true},
+	{Name: "identity_receiver", Kind: KindText, Nullable: true},
 }}
 
 // WriterGaps is writer_gaps (timeseries 00005): every hole, with its

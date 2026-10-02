@@ -102,7 +102,8 @@
         "registry_uas_id": { "type": ["string", "null"] },
         "flight_id": { "type": ["string", "null"] },
         "ussp_id": { "type": ["string", "null"] },
-        "cell5": { "type": ["string", "null"] }
+        "cell5": { "type": ["string", "null"] },
+        "identity_receiver": { "type": ["string", "null"] }
       }
     }
   }

@@ -1,6 +1,7 @@
 package ridpipe
 
 import (
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -125,5 +126,38 @@ func TestFailedIdentPublishIsRetried(t *testing.T) {
 	send(t0.Add(2 * time.Second))
 	if n := len(rec.idents(t)); n != 1 {
 		t.Fatalf("announced %d times after the bus returned, want 1", n)
+	}
+}
+
+// S-35 (review of PR #14): when a receiver borrows another receiver's
+// fresh identity (I-03), the stored track names the receiver that lent
+// it; a track identified by its own receiver names that receiver, and
+// an unidentified one names none.
+func TestIdentityReceiverIsStored(t *testing.T) {
+	s := DefaultSettings()
+	s.Tracker.IdentifyWithinS = -1
+	p, _ := pipe(s, Deps{})
+	observe(t, p, batchOf("rx-A", t0, false, rxRow("rx-A", "TX-1", frame(t, odid.BasicID{IDType: odid.IDTypeSerial, UAID: "TESTREG0001"}), at(t0))))
+	now := t0.Add(time.Second)
+	borrowed := batchOf("rx-B", now, false, rxRow("rx-B", "TX-1", frame(t, loc(baseLatDeg, baseLonDeg)), at(now)))
+	observe(t, p, borrowed)
+	own := batchOf("rx-A", now, false, rxRow("rx-A", "TX-1", frame(t, loc(baseLatDeg, baseLonDeg)), at(now)))
+	observe(t, p, own)
+	none := batchOf("rx-C", now, false, rxRow("rx-C", "TX-9", frame(t, loc(baseLatDeg, baseLonDeg)), at(now)))
+	observe(t, p, none)
+	for _, tc := range []struct {
+		b    *Batch
+		want any
+	}{{borrowed, "rx-A"}, {own, "rx-A"}, {none, nil}} {
+		if len(tc.b.Tracks) != 1 {
+			t.Fatalf("%s: %d rows", tc.b.ReceiverID, len(tc.b.Tracks))
+		}
+		raw, _ := json.Marshal(tc.b.Tracks[0])
+		var m map[string]any
+		_ = json.Unmarshal(raw, &m)
+		got, ok := m["identity_receiver"]
+		if !ok || got != tc.want {
+			t.Fatalf("%s: identity_receiver %v (present %v), want %v", tc.b.ReceiverID, got, ok, tc.want)
+		}
 	}
 }
