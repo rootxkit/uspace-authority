@@ -46,6 +46,20 @@ func (l *lines) find(msg string, ok func(map[string]any) bool) map[string]any {
 	return found
 }
 
+// tail is the last n lines written: printed when a process exits
+// non-zero, so a failure at shutdown names its cause in the CI log
+// (the drain overrun of TestIntegrationReceiverLifecycleThroughTheAPI
+// was first seen as a bare "exit 1").
+func (l *lines) tail(n int) string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	all := strings.Split(strings.TrimRight(l.b.String(), "\n"), "\n")
+	if len(all) > n {
+		all = all[len(all)-n:]
+	}
+	return strings.Join(all, "\n")
+}
+
 func (l *lines) waitFor(t *testing.T, msg string, ok func(map[string]any) bool) map[string]any {
 	t.Helper()
 	deadline := time.Now().Add(20 * time.Second)
@@ -126,7 +140,7 @@ func TestIntegrationPolicyRoundTripAndStatusLine(t *testing.T) {
 		select {
 		case code := <-exit:
 			if code != proc.ExitOK {
-				t.Errorf("exit %d", code)
+				t.Errorf("exit %d; last lines of stdout:\n%s\nstderr:\n%s", code, stdout.tail(40), stderr.tail(40))
 			}
 		case <-time.After(20 * time.Second):
 			t.Error("api did not stop")
