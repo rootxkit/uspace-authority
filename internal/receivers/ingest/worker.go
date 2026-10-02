@@ -15,12 +15,16 @@ import (
 
 	"github.com/rootxkit/uspace-authority/internal/logging"
 	"github.com/rootxkit/uspace-authority/internal/ridpipe"
+	"github.com/rootxkit/uspace-authority/internal/track"
 )
 
 // RowStore hands rows and gap records to tsdb-writer (tsw.v1.*); nil means
 // JetStream acknowledged them.
 type RowStore interface {
 	PutRows(ctx context.Context, b *ridpipe.Batch) error
+	// PutTracks hands over the tracks rows the pipeline published from
+	// b (b.Tracks, WP-8).
+	PutTracks(ctx context.Context, b *ridpipe.Batch) error
 	PutGap(ctx context.Context, g Gap) error
 }
 
@@ -28,6 +32,13 @@ type RowStore interface {
 type RowsMessage struct {
 	Table string        `json:"table"`
 	Rows  []ridpipe.Row `json:"rows"`
+}
+
+// TracksMessage is the tsw.v1.tracks message: the tracks rows the
+// pipeline published from one batch.
+type TracksMessage struct {
+	Table string      `json:"table"`
+	Rows  []track.Row `json:"rows"`
 }
 
 // Gap is one writer_gaps record (WP-9's table): queued observations shed
@@ -77,6 +88,15 @@ func (s JetRows) PutRows(ctx context.Context, b *ridpipe.Batch) error {
 	return s.publish(ctx, RowsSubject, "rows:"+b.ID, RowsMessage{Table: RowsTable, Rows: b.Rows})
 }
 
+// PutTracks publishes b's tracks rows under the batch id; nothing when
+// the pipeline published no track from b.
+func (s JetRows) PutTracks(ctx context.Context, b *ridpipe.Batch) error {
+	if len(b.Tracks) == 0 {
+		return nil
+	}
+	return s.publish(ctx, TracksSubject, "tracks:"+b.ID, TracksMessage{Table: TracksTable, Rows: b.Tracks})
+}
+
 // PutGap publishes one gap record.
 func (s JetRows) PutGap(ctx context.Context, g Gap) error {
 	return s.publish(ctx, GapsSubject, fmt.Sprintf("gap:%s:%d:%d", g.Cause, g.FromSeq, g.ToSeq), g)
@@ -96,6 +116,7 @@ const (
 	CounterGapsRecorded       = "gap_records_written"
 	CounterGapsWaiting        = "gap_records_waiting"
 	CounterAckFailed          = "queue_ack_failed"
+	CounterTrackRowsStored    = "track_rows_handed_to_writer"
 )
 
 // QueueMsg is what the worker needs of a delivered queue message (the
@@ -274,7 +295,13 @@ func (w *Worker) Handle(ctx context.Context, msg QueueMsg) {
 		return
 	}
 	done := w.observe(ctx, &b)
-	if err := w.Store.PutRows(ctx, done); err != nil {
+	err = w.Store.PutRows(ctx, done)
+	if err == nil {
+		// The tracks after the raw rows: a redelivery hands both over
+		// again, each stored once by its message id and its dedupe key.
+		err = w.Store.PutTracks(ctx, done)
+	}
+	if err != nil {
 		w.Counters.Inc(CounterStorageUnavailable)
 		w.Limiter.Limited("ingest_storage").Warn("rows not handed to tsdb-writer; the batch waits in the queue",
 			slog.String("receiver_id", b.ReceiverID), slog.String("error", err.Error()))
@@ -291,6 +318,7 @@ func (w *Worker) Handle(ctx context.Context, msg QueueMsg) {
 	w.forget(b.ID)
 	w.Counters.Inc(CounterBatchesStored)
 	w.Counters.Add(CounterRowsStored, uint64(len(done.Rows)))
+	w.Counters.Add(CounterTrackRowsStored, uint64(len(done.Tracks)))
 	if w.OnStored != nil {
 		w.OnStored(b.ReceiverID, len(done.Rows))
 	}

@@ -241,6 +241,27 @@ type RIDIngestTuning struct {
 	NATSTimeoutMS       int    `env:"RID_INGEST_NATS_TIMEOUT_MS" default:"2000" min:"50" max:"60000" help:"bound on one queue write, row hand-over or key-set read"`
 	KeysetBucket        string `env:"RID_KEYSET_BUCKET" default:"rid_receiver_keys" help:"KV bucket of the receiver key set, written by api (the same variable there)"`
 	KeyCheckSlots       int    `env:"RID_INGEST_KEY_CHECK_SLOTS" default:"2" min:"1" max:"64" help:"concurrent argon2id checks of bearer keys not yet seen (T8); beyond it a request waits briefly and is refused with 503"`
+	RIDPipelineTuning
+}
+
+// RIDPipelineTuning are the Remote ID pipeline's thresholds (WP-8). The
+// identity and time values are authority_policy columns (INV-03); no
+// policy is published to the hot path yet (KV policy, plan §6), so
+// rid-ingest takes them from here, with the policy's version-1 defaults,
+// and prints them at start.
+type RIDPipelineTuning struct {
+	IdentityTTLS        float64 `env:"RID_IDENTITY_TTL_S" default:"15" min:"0.1" max:"3600" help:"a Basic ID is usable this long after it was heard (I-01; policy identity_ttl_s)"`
+	MaxGapS             float64 `env:"RID_MAX_GAP_S" default:"3" min:"0.1" max:"3600" help:"a transmitter silent longer is forgotten (I-01; policy max_gap_s)"`
+	IdentifyWithinS     float64 `env:"RID_IDENTIFY_WITHIN_S" default:"4" min:"0.1" max:"3600" help:"a Location without a fresh identity waits this long before it is published unidentified (I-02; policy identify_within_s)"`
+	BroadcastToleranceS float64 `env:"RID_BROADCAST_TOLERANCE_S" default:"1" min:"0.001" max:"600" help:"how far ahead of the receipt a broadcast time may be and be believed (T-07; policy broadcast_tolerance_s)"`
+	MaxLatencyS         float64 `env:"RID_MAX_LATENCY_S" default:"5" min:"0.001" max:"3600" help:"how old a broadcast time may be at receipt and be believed (T-08; policy max_latency_s)"`
+	MinVerticalAccuracy int     `env:"RID_MIN_VERTICAL_ACCURACY" default:"2" min:"1" max:"6" help:"lowest known ODID vertical accuracy code at which the geodetic altitude is used; below it the pressure altitude stands in (R-08)"`
+	PressureHoldS       float64 `env:"RID_PRESSURE_HOLD_S" default:"10" min:"0.1" max:"3600" help:"a track stays on its pressure altitude this long after the last poor geodetic fix (R-08)"`
+	MaxBatchSpacingS    float64 `env:"RID_MAX_BATCH_SPACING_S" default:"120" min:"1" max:"3600" help:"longest spacing a row keeps within its batch before it is clamped and counted (T-02)"`
+	MaxTransmitters     int     `env:"RID_MAX_TRANSMITTERS" default:"50000" min:"1" max:"10000000" help:"transmitter addresses each identity tracker holds; beyond it the one heard longest ago is evicted and counted (E-10)"`
+	MaxTracks           int     `env:"RID_MAX_TRACKS" default:"50000" min:"1" max:"10000000" help:"tracks whose altitude hold and last identification are remembered; beyond it the least recently seen is forgotten and counted (E-10)"`
+	ProjectionRefreshS  int     `env:"RID_PROJECTION_REFRESH_S" default:"5" min:"1" max:"3600" help:"period of the registry projection re-read besides registry.v1.changed (G-08)"`
+	TickMS              int     `env:"RID_TICK_MS" default:"1000" min:"10" max:"60000" help:"period of the identity trackers' forgetting of silent transmitters (I-01)"`
 }
 
 // String redacts secrets.

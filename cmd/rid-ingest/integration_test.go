@@ -323,7 +323,14 @@ func TestIntegrationNoKeysListensOnLoopbackOnly(t *testing.T) {
 		t.Fatalf("listening on %s", h.base)
 	}
 	h.stdout.waitFor(t, "no receiver keys: listening on loopback only (R-06); restart once receivers are registered", nil)
-	h.stdout.waitFor(t, "no decode pipeline in this build (WP-8): observations are stored raw and no track is published", nil)
+	// SC-22, E-02: no geoid and no projection (TS_URL names nothing) are
+	// said at start and on the status line, never silence.
+	h.stdout.waitFor(t, "no geoid configured: Remote ID aircraft have no AMSL altitude and are not judged vertically (R-07)", nil)
+	h.stdout.waitFor(t, "registry projection not loaded yet: Remote ID tracks are identified registry_unavailable until it is (SC-22)", nil)
+	h.stdout.waitFor(t, "status", func(m map[string]any) bool {
+		geo, _ := m["geoid"].(string)
+		return m["projection_loaded"] == false && strings.Contains(geo, "not judged vertically")
+	})
 }
 
 // E-02, B-05: the success path read end to end: a signed batch is
