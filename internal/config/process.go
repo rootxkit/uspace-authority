@@ -56,6 +56,24 @@ type Bus struct {
 	SourceControlRereadS       int    `env:"SOURCE_CONTROL_REREAD_S" default:"5" min:"1" max:"3600" help:"seconds between re-reads of the source-control state by every follower, besides the watch and the push"`
 }
 
+// Geoid is the geoid grid of a process that converts heights above the
+// ellipsoid to AMSL (internal/ground, WP-11). Unset, the process has no
+// AMSL altitude from a geodetic one and says so (R-07); a grid that
+// cannot be read is the same, said as unavailable.
+type Geoid struct {
+	GeoidFile string `env:"GEOID_FILE" help:"GeographicLib geoid grid (egm2008-2_5.pgm, fetched by deploy/fetch-ground.sh); unset: no AMSL altitude from HAE, said at start and on every status line (R-07)"`
+}
+
+// Ground is the terrain and the geoid of a process that judges heights
+// over the ground (internal/ground, WP-11). Both are optional: without
+// GROUND_DIR no AGL limit and no height limit is judged (D-04, Z-09).
+type Ground struct {
+	GroundDir         string `env:"GROUND_DIR" help:"directory of the terrain tiles (<cell>.pgm) and their index.json, fetched by deploy/fetch-ground.sh; unset: AGL limits are not judged (limit_not_judged) and the height limit is not evaluated"`
+	GroundTileCache   int    `env:"GROUND_TILE_CACHE" default:"16" min:"1" max:"256" help:"terrain tiles held in memory (about 26 MB each for GLO-30), least recently used out first"`
+	GroundRetryAfterS int    `env:"GROUND_RETRY_AFTER_S" default:"60" min:"1" max:"3600" help:"a tile that could not be read is answered as unknown ground this long before it is read again (D-04)"`
+	Geoid
+}
+
 // API is the control plane.
 type API struct {
 	Common
@@ -217,6 +235,7 @@ type RIDIngest struct {
 	Addr    string `env:"RID_INGEST_ADDR" default:":8081" help:"public listen address of /v1/rid/observations (behind Caddy); with no receiver keys the host is replaced by 127.0.0.1 (R-06)"`
 	TSURL   string `env:"TS_URL" required:"true" secret:"true" kind:"url" help:"telemetry database (projections, read only)"`
 	NATSURL string `env:"NATS_URL" required:"true" secret:"true" kind:"url" help:"NATS JetStream"`
+	Geoid
 	RIDIngestTuning
 }
 
@@ -313,11 +332,11 @@ func (c *MannedIngest) String() string { return Describe(c) }
 type Detect struct {
 	Common
 	Bus
-	TSURL     string `env:"TS_URL" required:"true" secret:"true" kind:"url" help:"telemetry database (projections, read only)"`
-	NATSURL   string `env:"NATS_URL" required:"true" secret:"true" kind:"url" help:"NATS JetStream"`
-	GroundDir string `env:"GROUND_DIR" help:"directory of terrain tiles and the geoid grid; required once WP-11 lands"`
-	WorkerID  string `env:"DETECT_WORKER_ID" default:"detect-1" help:"this worker's id in the cell ownership map (KV cells, PUT /v1/cells)"`
-	Cells     string `env:"CELLS" enum:"all" help:"all: judge every cell whatever the ownership map says (the demo); empty: the cells the map gives DETECT_WORKER_ID, and refuse to start with none"`
+	TSURL   string `env:"TS_URL" required:"true" secret:"true" kind:"url" help:"telemetry database (projections, read only)"`
+	NATSURL string `env:"NATS_URL" required:"true" secret:"true" kind:"url" help:"NATS JetStream"`
+	Ground
+	WorkerID string `env:"DETECT_WORKER_ID" default:"detect-1" help:"this worker's id in the cell ownership map (KV cells, PUT /v1/cells)"`
+	Cells    string `env:"CELLS" enum:"all" help:"all: judge every cell whatever the ownership map says (the demo); empty: the cells the map gives DETECT_WORKER_ID, and refuse to start with none"`
 }
 
 // String redacts secrets.
