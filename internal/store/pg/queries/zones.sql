@@ -1,5 +1,5 @@
 -- WP-5: zone and U-space airspace versions (migration 00012_geo_zones)
--- and the publication outbox (00013_publications). Geometry columns are
+-- (the publication outbox, 00013_publications, is WP-6's: cisp.sql). Geometry columns are
 -- written from GeoJSON built by internal/zonesvc and never read back
 -- here: the feature is the master copy.
 
@@ -146,13 +146,3 @@ ORDER BY dataset, identifier, zone_version;
 
 -- name: MaxPublishedZonesVersion :one
 SELECT coalesce(max(published_version), 0)::bigint AS version FROM geo_zones;
-
--- name: SupersedePendingPublications :execrows
--- One pending snapshot per dataset (E-10): a new one supersedes it.
-UPDATE publications SET state = 'superseded' WHERE dataset = sqlc.arg(dataset) AND state = 'pending';
-
--- name: InsertPublication :one
-INSERT INTO publications (dataset, version, payload, payload_hash, feature_count, created_by)
-VALUES (sqlc.arg(dataset), sqlc.arg(version), sqlc.arg(payload), sqlc.arg(payload_hash), sqlc.arg(feature_count),
-        sqlc.arg(created_by))
-RETURNING id, dataset, version, payload_hash, feature_count, signature, state, created_at;

@@ -123,15 +123,15 @@ func publishOne(t *testing.T, s *Service, f string) Published {
 }
 
 // A-M1 zone item: author, approve, publish, and the outbox row is
-// pending with no signature until WP-6 signs it.
-func TestPublishWritesThePendingUnsignedOutboxRowTheProjectionAndTheAnnouncement(t *testing.T) {
+// pending and signed by WP-6's outbox (outbox_test.go verifies it).
+func TestPublishWritesThePendingSignedOutboxRowTheProjectionAndTheAnnouncement(t *testing.T) {
 	s, st, pr, pub := newService(t)
 	p := publishOne(t, s, feature(zoneOpts{}))
 	if p.Publication.State != "pending" {
 		t.Fatalf("state %s", p.Publication.State)
 	}
-	if p.Publication.Signature != nil {
-		t.Fatalf("signature %q: nothing here signs; WP-6 does", *p.Publication.Signature)
+	if p.Publication.Signature == nil {
+		t.Fatal("the outbox row is unsigned")
 	}
 	payload := st.payload(p.Publication.ID)
 	sum := sha256.Sum256(payload)

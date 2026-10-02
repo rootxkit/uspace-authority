@@ -56,8 +56,8 @@
 //     zones_version_seq value, the full set in force now is exported
 //     (ed318.Export, collection metadata in ed318.Metadata's names:
 //     issued, provider) into the publications outbox row (pending,
-//     signature NULL: WP-6 signs and sends it; migration
-//     00013_publications is the minimal outbox WP-6 owns), and the
+//     validated against the CISP's checks and signed by WP-6's outbox,
+//     internal/cisp, which sends it), and the
 //     projection is rewritten before the relational commit: a failed
 //     projection write rolls the publication back (503
 //     projection_unavailable); a failed relational commit after it is

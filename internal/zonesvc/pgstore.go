@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/rootxkit/uspace-authority/internal/audit"
+	"github.com/rootxkit/uspace-authority/internal/cisp"
 	"github.com/rootxkit/uspace-authority/internal/store"
 	"github.com/rootxkit/uspace-authority/internal/store/pg"
 	"github.com/rootxkit/uspace-authority/internal/store/pg/gen"
@@ -301,18 +302,12 @@ func (t pgTx) MaxPublishedVersion(ctx context.Context) (int64, error) {
 
 // EnqueuePublication implements Tx.
 func (t pgTx) EnqueuePublication(ctx context.Context, p PublicationInput) (Publication, error) {
-	if _, err := t.q.SupersedePendingPublications(ctx, string(p.Dataset)); err != nil {
-		return Publication{}, err
-	}
-	r, err := t.q.InsertPublication(ctx, gen.InsertPublicationParams{
-		Dataset: string(p.Dataset), Version: p.Version, Payload: p.Payload, PayloadHash: p.PayloadHash,
-		FeatureCount: int32(p.FeatureCount), CreatedBy: p.By,
-	})
+	r, _, err := cisp.EnqueueTx(ctx, t.q, t.audit, p.Prepared, p.Version, p.Actor)
 	if err != nil {
 		return Publication{}, mapErr(err)
 	}
 	return Publication{
 		ID: r.ID, Dataset: Dataset(r.Dataset), Version: r.Version, PayloadHash: r.PayloadHash,
-		FeatureCount: int(r.FeatureCount), Signature: r.Signature, State: r.State, CreatedAt: r.CreatedAt,
+		FeatureCount: r.FeatureCount, Signature: r.Signature, State: r.State, CreatedAt: r.CreatedAt,
 	}, nil
 }

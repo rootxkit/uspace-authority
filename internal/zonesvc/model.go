@@ -167,7 +167,8 @@ type Publication struct {
 	Version      int64
 	PayloadHash  string
 	FeatureCount int
-	// Signature is nil until WP-6 signs the payload.
+	// Signature is the detached JWS of the payload (WP-6's outbox; nil
+	// only without one, in the unit tests).
 	Signature *string
 	State     string
 	CreatedAt time.Time
