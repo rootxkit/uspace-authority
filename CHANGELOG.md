@@ -205,3 +205,25 @@ Unreleased; the format follows Keep a Changelog.
   `GET /v1/picture/snapshot` and `/v1/picture/sources`; the extras in
   `schemas/picture/`; the operator position for the console realm only;
   the picture runbook.
+- WP-14: the ASTM F3411-22a Display Provider (`cmd/dp-poller`,
+  `internal/dp`): views from the oversight areas (`/v1/dp/views`, KV
+  `dp_oversight`) and the console viewports picture-ws reports (KV
+  `dp_views`, expiring), cut into tiles within `dp_view_diagonal_km`
+  (≤ 7 km); ISA discovery per tile through the DSS with a 24 h
+  subscription renewed at 75 %; the ISA change notification
+  `POST /uss/identification_service_areas/{id}` (owner = token subject,
+  `rid.service_provider`, own audiences); one poller per (Service
+  Provider, tile) at `dp_poll_hz` with every R-14 limit counted (5 s,
+  1 MiB, 500 flights, 64 tiles, 20 details at 4 within 2 km, 413 split
+  three times, slow at 0.5 Hz past p99 3 s, unavailable since T after
+  10 s, plain HTTP only to loopback); flights on `trk.v1` as
+  `trust: provider` with the direct broadcast's track id for a CTA
+  serial (SC-06 row 3) and identification on the provider basis;
+  `ussp_flights` (timeseries 00011) disposed of within 24 h and checked
+  hourly by tsdb-writer; `src.v1.network_rid.<uss_id>` every 2 s;
+  source control per USSP (SC-16); `/v1/dp/providers` and F3548 USS
+  availability arbitration in api; the InterUSS observation hook under
+  `/v1/dp/observations` (Q-A7); the pinned F3411, F3548 and observation
+  contracts in `api/clients/` with generated clients on uspace-core's
+  types; the fake DSS and Service Provider in `internal/ltest/fakedss`;
+  the Display Provider runbook.
