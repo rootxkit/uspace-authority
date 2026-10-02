@@ -13,3 +13,18 @@ cisp-schemas/cis/uspace_requirements/v1.json rootxkit/uspace-cisp 6c29028c0439eb
 cisp-schemas/cis/uspace_requirements/examples/tbilisi.json rootxkit/uspace-cisp 6c29028c0439eb30972ffffcf2217adc534e721e schemas/cis/uspace_requirements/examples/tbilisi.json
 cisp-schemas/cis/ussp_list/v1.json rootxkit/uspace-cisp 6c29028c0439eb30972ffffcf2217adc534e721e schemas/cis/ussp_list/v1.json
 cisp-schemas/cis/ussp_list/examples/lab.json rootxkit/uspace-cisp 6c29028c0439eb30972ffffcf2217adc534e721e schemas/cis/ussp_list/examples/lab.json
+# WP-14: the standards the Display Provider calls and serves. Each is the
+# file uspace-core generated its types from (core f3411/SOURCE and
+# f3548/SOURCE, spec_repo / spec_commit / spec_path), so the generated
+# clients in internal/dp/ridapi and internal/dp/utmapi use core's types
+# unchanged; internal/dp's TestStandardCopiesAreCoresSources holds the
+# lines below to core's SOURCE files at the version go.mod pins.
+# uas_standards_commit = 6e182f43ec960b3bccf131c9006ff9979dd8a56e
+dss-rid.yaml uastech/standards dd4016b09fc8cb98f30c2a17b5a088fb2995ab54 remoteid/updated.yaml
+dss-utm.yaml interuss/astm-utm-protocol 1d3d8fbe75414e23d7e19ce35955770bea5e413f utm.yaml
+# The InterUSS Remote ID observation interface uss_qualifier calls on a
+# Display Provider (Q-A7), at the commit read for WP-14; the lab has not
+# pinned an InterUSS commit yet (WP-L7), so this is the pin until it
+# does, and the two must then be equal.
+interuss-observation/observation.yaml interuss/automated_testing_interfaces 17502448f450fd9d923577c0667b7d4cb4812620 rid/v1/observation.yaml
+interuss-observation/commons.yaml interuss/automated_testing_interfaces 17502448f450fd9d923577c0667b7d4cb4812620 rid/v1/commons.yaml

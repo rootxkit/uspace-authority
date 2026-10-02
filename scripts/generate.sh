@@ -3,6 +3,11 @@
 #   api/openapi.yaml -> api/gen/api.gen.go (oapi-codegen, api/oapi-codegen.yaml)
 #   api/clients/cisp.yaml -> internal/cisp/cispclient/client.gen.go
 #                       (oapi-codegen, api/clients/oapi-codegen.cisp.yaml; WP-6)
+#   api/clients/dss-rid.yaml -> internal/dp/ridapi/ridapi.gen.go
+#   api/clients/dss-utm.yaml -> internal/dp/utmapi/utmapi.gen.go
+#                       (oapi-codegen, api/clients/oapi-codegen.dss-*.yaml;
+#                       the F3411 and F3548 operations of WP-14, with
+#                       uspace-core's types)
 #   sqlc.yaml        -> internal/store/pg/gen, internal/store/ts/gen/{writer,reader}
 #                       (sqlc, from the migration trees and the query files)
 # openapi-typescript (web/src/api/) is added here by WP-21.
@@ -33,6 +38,12 @@ mkdir -p "$out/internal/cisp/cispclient"
   -o "$out/internal/cisp/cispclient/client.gen.go" \
   api/clients/cisp.yaml
 echo "generated: internal/cisp/cispclient/client.gen.go (oapi-codegen ${OAPI_CODEGEN_VERSION})"
+
+for std in rid utm; do
+  mkdir -p "$out/internal/dp/${std}api"
+  "$GO" run "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@${OAPI_CODEGEN_VERSION}"     -config "api/clients/oapi-codegen.dss-${std}.yaml"     -o "$out/internal/dp/${std}api/${std}api.gen.go"     "api/clients/dss-${std}.yaml"
+  echo "generated: internal/dp/${std}api/${std}api.gen.go (oapi-codegen ${OAPI_CODEGEN_VERSION})"
+done
 
 # sqlc resolves every path in sqlc.yaml against the file's directory, so
 # a scratch run copies the inputs beside a copy of the file.
