@@ -215,6 +215,14 @@ jobs:
       # D7: the migrate subcommand applies both trees before anything runs.
       - name: migrate both trees
         run: go run ./cmd/uspace-authority migrate
+      - name: scratch loop
+        run: |
+          for t in TestIntegrationCompressionJobRunsOnABackdatedChunk:./internal/store/ts/ TestIntegrationEachTreeAppliesAndRollsBack:./internal/store/migrate/; do
+            INTEGRATION=1 go test -count=30 -run "^${t%%:*}\$" -v "${t#*:}" > loop.log 2>&1 || true
+            echo "${t%%:*}: $(grep -c -- '^--- PASS' loop.log) passed, $(grep -c -- '^--- FAIL' loop.log) failed"
+            grep -m3 '_test.go:' loop.log || true
+          done
+          docker logs "${{ job.services.timescaledb.id }}" 2>&1 | grep -c 'Segmentation fault\|terminated by signal' || true
       - name: integration tests
         run: |
           set -o pipefail
