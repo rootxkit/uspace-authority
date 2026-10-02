@@ -31,6 +31,17 @@ type Status struct {
 	mu      sync.Mutex
 	started time.Time
 	extras  []func() []slog.Attr
+	levels  []func() slog.Level
+}
+
+// AddLevel raises the level of every later line while fn says so: the
+// line is written at the highest level any fn returns, Info at least
+// (Z-09, SC-13: a zone that cannot be judged keeps every status line at
+// error level). Safe while Run is running.
+func (s *Status) AddLevel(fn func() slog.Level) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.levels = append(s.levels, fn)
 }
 
 // AddExtra adds attributes to every later line (a followed policy's
@@ -60,7 +71,12 @@ func (s *Status) Emit(ctx context.Context) {
 		counters[src.Name] = src.Counters.Snapshot()
 	}
 	extras := append([]func() []slog.Attr(nil), s.extras...)
+	levels := append([]func() slog.Level(nil), s.levels...)
 	s.mu.Unlock()
+	level := slog.LevelInfo
+	for _, fn := range levels {
+		level = max(level, fn())
+	}
 	attrs := []slog.Attr{
 		slog.Int64("uptime_s", int64(time.Since(started).Seconds())),
 		slog.Any("counters", counters),
@@ -71,7 +87,7 @@ func (s *Status) Emit(ctx context.Context) {
 	for _, fn := range extras {
 		attrs = append(attrs, fn()...)
 	}
-	s.Logger.LogAttrs(ctx, slog.LevelInfo, "status", attrs...)
+	s.Logger.LogAttrs(ctx, level, "status", attrs...)
 }
 
 // Run emits a status line at once, then every Interval, until ctx ends.

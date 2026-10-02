@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -83,6 +84,12 @@ type built struct {
 	needsTerrain []string
 	needsGeoid   []string
 	next         time.Time // the next instant a period starts or ends; zero when none
+	// signature names every row in force (dataset/identifier@version) and
+	// every row left out: two views with one signature judge alike.
+	signature string
+	// versions is the zone_version of every feature indexed, by its
+	// identifier, for the evidence a violation names.
+	versions map[string]int
 }
 
 // selectInForce keeps, per dataset and identifier, the newest version
@@ -131,11 +138,13 @@ func nextBoundary(rows []ProjectedRow, at time.Time) time.Time {
 // resolve, a feature that does not parse) is left out and named
 // in notJudged; the rest are indexed.
 func build(rows []ProjectedRow, at time.Time, dl ed318.Daylight) built {
-	b := built{next: nextBoundary(rows, at)}
+	b := built{next: nextBoundary(rows, at), versions: map[string]int{}}
 	inForce := selectInForce(rows, at)
+	names := make([]string, 0, len(inForce))
 	for i := range inForce {
 		r := &inForce[i]
 		name := fmt.Sprintf("%s/%s@%d", r.Dataset, r.Identifier, r.ZoneVersion)
+		names = append(names, name)
 		fc, probs := ed318.Parse(wrapFeature(r.Feature), ed318.Limits{})
 		if probs != nil {
 			b.notJudged = append(b.notJudged, name+": "+probs.Error())
@@ -155,10 +164,13 @@ func build(rows []ProjectedRow, at time.Time, dl ed318.Daylight) built {
 			}
 		}
 		b.zones = append(b.zones, zs...)
+		b.versions[r.Identifier] = r.ZoneVersion
 	}
 	sort.Strings(b.notJudged)
 	sort.Strings(b.needsTerrain)
 	sort.Strings(b.needsGeoid)
+	sort.Strings(names)
+	b.signature = strings.Join(names, "|")
 	b.index = zones.NewIndex(b.zones)
 	return b
 }
@@ -182,6 +194,9 @@ type ProjectionReader struct {
 	view     *built
 	loadedAt time.Time
 	version  int64
+	// generation counts the views built, so a holder of Zones knows when
+	// to rebuild (WP-12, Z-12).
+	generation uint64
 
 	notifyOnce sync.Once
 	notify     chan struct{}
@@ -233,7 +248,8 @@ func (r *ProjectionReader) Refresh(ctx context.Context) error {
 	now := r.now()
 	b := build(rows, now, r.daylight())
 	r.mu.Lock()
-	r.rows, r.view, r.loadedAt, r.version = rows, &b, now, version
+	r.setView(&b)
+	r.rows, r.loadedAt, r.version = rows, now, version
 	r.mu.Unlock()
 	if r.Counters != nil {
 		r.Counters.Inc(CounterReaderLoaded)
@@ -252,8 +268,18 @@ func (r *ProjectionReader) rebuild() {
 	r.mu.RUnlock()
 	b := build(rows, r.now(), r.daylight())
 	r.mu.Lock()
-	r.view = &b
+	r.setView(&b)
 	r.mu.Unlock()
+}
+
+// setView replaces the view, and raises the generation when it judges
+// differently from the one held (another row in force or left out); r.mu
+// is held.
+func (r *ProjectionReader) setView(b *built) {
+	if r.view == nil || r.view.signature != b.signature {
+		r.generation++
+	}
+	r.view = b
 }
 
 // next is the instant of the next period boundary, zero when none.
@@ -336,6 +362,31 @@ func (r *ProjectionReader) Index() *zones.Index {
 		return nil
 	}
 	return r.view.index
+}
+
+// ZoneSet is the view a judge that builds its own index holds
+// (alerting.Config.Zones, WP-12).
+type ZoneSet struct {
+	// Zones are shared: a holder never changes them.
+	Zones []*zones.Zone
+	// Versions is the zone_version of each feature by its identifier (a
+	// zone of several layers is "<identifier>/L<n>" in Zones).
+	Versions map[string]int
+	// Generation rises whenever the view judges differently (another
+	// row in force or left out), so a holder knows when to rebuild.
+	Generation uint64
+	// Loaded is false before the first good read.
+	Loaded bool
+}
+
+// ZoneSet is the view held.
+func (r *ProjectionReader) ZoneSet() ZoneSet {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if r.view == nil {
+		return ZoneSet{Generation: r.generation}
+	}
+	return ZoneSet{Zones: r.view.zones, Versions: r.view.versions, Generation: r.generation, Loaded: true}
 }
 
 // Version is the highest zones version of the rows held.

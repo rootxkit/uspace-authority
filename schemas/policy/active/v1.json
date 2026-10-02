@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.uspace.ge/policy/active/v1.json",
+  "title": "policy/active/v1",
+  "description": "The active authority policy (INV-03; docs/PLAN.md §4.1 authority_policy, §6), in the common envelope: the value of KV bucket policy key \"active\" and the message on ctl.policy, written by api at activation and repaired every POLICY_REFRESH_S, followed by detect (WP-12). Internal to this system: NATS never crosses a system (02 §1), so this shape is this repository's own (M14, M30). A follower takes only a higher version whose thresholds validate (internal/policy Thresholds.Validate) and keeps the one it holds otherwise.",
+  "allOf": [{ "$ref": "https://schemas.uspace.ge/envelope/v1.json" }],
+  "properties": {
+    "schema": { "const": "policy/active/v1" },
+    "body": { "$ref": "#/$defs/body" }
+  },
+  "$defs": {
+    "positive": { "type": "number", "exclusiveMinimum": 0 },
+    "severity": { "enum": ["info", "warning", "critical"] },
+    "body": {
+      "type": "object",
+      "required": ["version", "height_limit_agl_m", "pressure_uncertainty_m", "zone_conditional_severity", "mismatch_severity",
+                   "identification_severity", "spoof_distance_m", "identity_ttl_s", "max_gap_s", "identify_within_s",
+                   "broadcast_tolerance_s", "max_latency_s", "live_max_age_s", "clear_after_s", "stale_after_s",
+                   "dp_view_diagonal_km", "dp_poll_hz", "cis_stale_bound_s", "height_limit_in_uspace",
+                   "registration_number_pattern", "activated_at"],
+      "properties": {
+        "version": { "type": "integer", "minimum": 1 },
+        "height_limit_agl_m": { "$ref": "#/$defs/positive" },
+        "pressure_uncertainty_m": { "$ref": "#/$defs/positive" },
+        "zone_conditional_severity": { "$ref": "#/$defs/severity" },
+        "mismatch_severity": { "$ref": "#/$defs/severity" },
+        "identification_severity": { "$ref": "#/$defs/severity" },
+        "spoof_distance_m": { "$ref": "#/$defs/positive" },
+        "identity_ttl_s": { "$ref": "#/$defs/positive" },
+        "max_gap_s": { "$ref": "#/$defs/positive" },
+        "identify_within_s": { "$ref": "#/$defs/positive" },
+        "broadcast_tolerance_s": { "$ref": "#/$defs/positive" },
+        "max_latency_s": { "$ref": "#/$defs/positive" },
+        "live_max_age_s": { "$ref": "#/$defs/positive" },
+        "clear_after_s": { "$ref": "#/$defs/positive" },
+        "stale_after_s": { "$ref": "#/$defs/positive" },
+        "dp_view_diagonal_km": { "$ref": "#/$defs/positive" },
+        "dp_poll_hz": { "$ref": "#/$defs/positive" },
+        "cis_stale_bound_s": { "$ref": "#/$defs/positive" },
+        "height_limit_in_uspace": { "enum": ["evaluate", "skip_when_authorised"] },
+        "registration_number_pattern": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "activated_at": { "type": ["string", "null"], "format": "date-time" }
+      }
+    }
+  }
+}

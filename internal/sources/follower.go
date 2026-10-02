@@ -41,6 +41,12 @@ type Follower struct {
 	mu        sync.RWMutex
 	rows      map[key]Control
 	appliedAt time.Time
+
+	// changed is signalled after every state taken (WP-12: detect hands
+	// the new state to its monitors at once, B-11); capacity one, a
+	// signal not yet read stands for every later one.
+	changedOnce sync.Once
+	changed     chan struct{}
 }
 
 // NewFollower returns a follower with no state: every source enabled.
@@ -61,8 +67,29 @@ func (f *Follower) Apply(d Document) bool {
 		f.rows[keyOf(c.SourceType, c.InstanceID)] = c
 	}
 	f.appliedAt = f.now()
+	f.signal()
 	return true
 }
+
+func (f *Follower) changes() chan struct{} {
+	f.changedOnce.Do(func() { f.changed = make(chan struct{}, 1) })
+	return f.changed
+}
+
+func (f *Follower) signal() {
+	select {
+	case f.changes() <- struct{}{}:
+	default:
+	}
+}
+
+// Changes is signalled after every state Apply takes. One reader: a
+// signal is not a copy of the state, State is read after it.
+func (f *Follower) Changes() <-chan struct{} { return f.changes() }
+
+// State is the state held as core judges it, and whether one has been
+// taken (none: every source is enabled).
+func (f *Follower) State() (coresources.State, bool) { return f.core.State() }
 
 // Offer decodes raw and applies it. A malformed value is counted and
 // ignored: the state held stays (never fail closed).

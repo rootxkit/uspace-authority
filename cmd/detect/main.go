@@ -1,8 +1,10 @@
-// Command detect is the per-cell violation detector. It is started as `uspace-authority detect`;
-// --help lists the configuration variables. It loads the terrain and the
-// geoid (GROUND_DIR, GEOID_FILE; WP-11) and says what is loaded; until
-// WP-12 it claims its cells from the ownership map (or CELLS=all) and
-// waits.
+// Command detect is the per-cell violation detector (WP-12). It is
+// started as `uspace-authority detect`; --help lists the configuration
+// variables. It loads the terrain and the geoid (GROUND_DIR, GEOID_FILE;
+// WP-11), claims its cells from the ownership map (or CELLS=all), follows
+// the zones and restrictions projections, the active policy and the
+// source switches, and runs one uspace-core alerting.Monitor per cell3
+// over trk.v1, publishing violation/v1 on alrt.v1 (internal/detectsvc).
 package main
 
 import (
@@ -16,9 +18,9 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/bus"
 	"github.com/rootxkit/uspace-authority/internal/cell"
 	"github.com/rootxkit/uspace-authority/internal/config"
+	"github.com/rootxkit/uspace-authority/internal/detectsvc"
 	"github.com/rootxkit/uspace-authority/internal/ground"
 	"github.com/rootxkit/uspace-authority/internal/proc"
-	"github.com/rootxkit/uspace-authority/internal/sources"
 )
 
 func main() {
@@ -58,12 +60,7 @@ func spec(cfg *config.Detect) proc.Spec {
 		}
 		rt.Logger.Info("cells claimed", slog.String("worker_id", cfg.WorkerID), slog.Bool("all", claim.All),
 			slog.Any("cells", cells), slog.Uint64("ownership_version", claim.Version))
-		// detect clears the alerts of a disabled source as source_disabled
-		// (WP-12); it follows the switches from the start.
-		_, followSources := sources.Follow(ctx, rt, bp, cfg.Bus)
-		done := make(chan struct{})
-		go func() { defer close(done); followSources(ctx) }()
-		defer func() { <-done }()
-		return proc.Idle("WP-12")(ctx, rt)
+
+		return detectsvc.Run(ctx, rt, cfg, bp, g, claim)
 	}}
 }
