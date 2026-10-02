@@ -119,6 +119,13 @@ type CellsHandler interface {
 	PutCellOwnership(ctx context.Context, request gen.PutCellOwnershipRequestObject) (gen.PutCellOwnershipResponseObject, error)
 }
 
+// SourcesHandler serves /v1/sources* (api, WP-10): source control.
+type SourcesHandler interface {
+	ListSources(ctx context.Context, request gen.ListSourcesRequestObject) (gen.ListSourcesResponseObject, error)
+	SwitchSourceType(ctx context.Context, request gen.SwitchSourceTypeRequestObject) (gen.SwitchSourceTypeResponseObject, error)
+	SwitchSourceInstance(ctx context.Context, request gen.SwitchSourceInstanceRequestObject) (gen.SwitchSourceInstanceResponseObject, error)
+}
+
 // Server implements gen.StrictServerInterface by delegating to one
 // handler per group. A group left nil must not be mounted.
 type Server struct {
@@ -132,6 +139,7 @@ type Server struct {
 	RegistryHandler
 	RIDReceiversHandler
 	CellsHandler
+	SourcesHandler
 }
 
 var _ gen.StrictServerInterface = Server{}

@@ -217,6 +217,13 @@ func (s *Status) Snapshot(id string, now time.Time) Body {
 			by = string(*decision.WhyDisabled)
 		}
 		b.State, b.DisabledBy = "disabled", &by
+		// B-11: who switched it off, when the gate knows (the
+		// internal/sources follower does).
+		if w, ok := s.Gate.(interface {
+			DisabledByWho(sourceType string, instanceID *string) *string
+		}); ok {
+			b.DisabledByWho = w.DisabledByWho(SourceType, &inst)
+		}
 	case st.lastSeen.IsZero():
 		b.State = "unknown"
 	case now.Sub(st.lastSeen) <= s.StaleAfter:

@@ -10,6 +10,7 @@ import (
 
 	"github.com/rootxkit/uspace-authority/internal/config"
 	"github.com/rootxkit/uspace-authority/internal/proc"
+	"github.com/rootxkit/uspace-authority/internal/sources"
 )
 
 func main() {
@@ -20,5 +21,9 @@ func main() {
 }
 
 func spec(cfg *config.PictureWS) proc.Spec {
-	return proc.Spec{Name: "picture-ws", Config: cfg, Run: proc.Idle("WP-13")}
+	return proc.Spec{Name: "picture-ws", Config: cfg, Run: func(ctx context.Context, rt *proc.Runtime) error {
+		// Until WP-13: connected to the bus, following source control
+		// like every process (WP-10), and waiting.
+		return sources.Idle("picture-ws", "WP-13", cfg.NATSURL, cfg.Bus)(ctx, rt)
+	}}
 }

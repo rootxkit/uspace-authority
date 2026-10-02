@@ -660,6 +660,90 @@ func (e SigningKeyState) Valid() bool {
 	}
 }
 
+// Defines values for SourceType.
+const (
+	SourceTypeAnspFeed   SourceType = "ansp_feed"
+	SourceTypeDirectRid  SourceType = "direct_rid"
+	SourceTypeNetworkRid SourceType = "network_rid"
+)
+
+// Valid indicates whether the value is a known member of the SourceType enum.
+func (e SourceType) Valid() bool {
+	switch e {
+	case SourceTypeAnspFeed:
+		return true
+	case SourceTypeDirectRid:
+		return true
+	case SourceTypeNetworkRid:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SourceViewDisabledBy.
+const (
+	SourceViewDisabledByDefaultDeny SourceViewDisabledBy = "default_deny"
+	SourceViewDisabledByInstance    SourceViewDisabledBy = "instance"
+	SourceViewDisabledByType        SourceViewDisabledBy = "type"
+)
+
+// Valid indicates whether the value is a known member of the SourceViewDisabledBy enum.
+func (e SourceViewDisabledBy) Valid() bool {
+	switch e {
+	case SourceViewDisabledByDefaultDeny:
+		return true
+	case SourceViewDisabledByInstance:
+		return true
+	case SourceViewDisabledByType:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SourceViewHealth.
+const (
+	SourceViewHealthHealthy    SourceViewHealth = "healthy"
+	SourceViewHealthLagging    SourceViewHealth = "lagging"
+	SourceViewHealthNeverHeard SourceViewHealth = "never_heard"
+	SourceViewHealthStale      SourceViewHealth = "stale"
+)
+
+// Valid indicates whether the value is a known member of the SourceViewHealth enum.
+func (e SourceViewHealth) Valid() bool {
+	switch e {
+	case SourceViewHealthHealthy:
+		return true
+	case SourceViewHealthLagging:
+		return true
+	case SourceViewHealthNeverHeard:
+		return true
+	case SourceViewHealthStale:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SourceViewSwitch.
+const (
+	SourceViewSwitchDisabled SourceViewSwitch = "disabled"
+	SourceViewSwitchEnabled  SourceViewSwitch = "enabled"
+)
+
+// Valid indicates whether the value is a known member of the SourceViewSwitch enum.
+func (e SourceViewSwitch) Valid() bool {
+	switch e {
+	case SourceViewSwitchDisabled:
+		return true
+	case SourceViewSwitchEnabled:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TokenResponseTokenType.
 const (
 	TokenResponseTokenTypeBearer TokenResponseTokenType = "Bearer"
@@ -1722,6 +1806,80 @@ type SigningKeyList struct {
 	Keys []SigningKey `json:"keys"`
 }
 
+// SourceControl defines model for SourceControl.
+type SourceControl struct {
+	// Actor Who switched it
+	Actor     string    `json:"actor"`
+	ChangedAt time.Time `json:"changed_at"`
+	Enabled   bool      `json:"enabled"`
+
+	// InstanceId Absent for the switch of the whole type.
+	InstanceId *string `json:"instance_id,omitempty"`
+	Reason     string  `json:"reason"`
+
+	// SourceType The adapter type (04 §2 `source`), one per adapter process.
+	SourceType SourceType `json:"source_type"`
+	Version    int64      `json:"version"`
+}
+
+// SourceOverview defines model for SourceOverview.
+type SourceOverview struct {
+	Controls    []SourceControl `json:"controls"`
+	DefaultDeny bool            `json:"default_deny"`
+	Epoch       string          `json:"epoch"`
+	Sources     []SourceView    `json:"sources"`
+	Version     int64           `json:"version"`
+}
+
+// SourceSwitchInput defines model for SourceSwitchInput.
+type SourceSwitchInput struct {
+	Enabled bool   `json:"enabled"`
+	Reason  string `json:"reason"`
+}
+
+// SourceSwitchResult defines model for SourceSwitchResult.
+type SourceSwitchResult struct {
+	// Changed False when the switch already held this state; nothing was written.
+	Changed bool          `json:"changed"`
+	Control SourceControl `json:"control"`
+	Epoch   string        `json:"epoch"`
+
+	// Version The version of the whole state after the switch.
+	Version int64 `json:"version"`
+}
+
+// SourceType The adapter type (04 §2 `source`), one per adapter process.
+type SourceType string
+
+// SourceView defines model for SourceView.
+type SourceView struct {
+	// AgeS Seconds since the adapter last heard the source.
+	AgeS           *float64              `json:"age_s,omitempty"`
+	Counters       *map[string]int64     `json:"counters,omitempty"`
+	DisabledBy     *SourceViewDisabledBy `json:"disabled_by,omitempty"`
+	DisabledByWho  *string               `json:"disabled_by_who,omitempty"`
+	DisabledReason *string               `json:"disabled_reason,omitempty"`
+	Health         SourceViewHealth      `json:"health"`
+	InstanceId     *string               `json:"instance_id,omitempty"`
+	LagS           *float64              `json:"lag_s,omitempty"`
+
+	// SourceType The adapter type (04 §2 `source`), one per adapter process.
+	SourceType SourceType `json:"source_type"`
+
+	// StatusAgeS Seconds since the adapter's last status reached api.
+	StatusAgeS *float64         `json:"status_age_s,omitempty"`
+	Switch     SourceViewSwitch `json:"switch"`
+}
+
+// SourceViewDisabledBy defines model for SourceView.DisabledBy.
+type SourceViewDisabledBy string
+
+// SourceViewHealth defines model for SourceView.Health.
+type SourceViewHealth string
+
+// SourceViewSwitch defines model for SourceView.Switch.
+type SourceViewSwitch string
+
 // TokenRequest defines model for TokenRequest.
 type TokenRequest struct {
 	// Audience The target's host or base URL; its host becomes aud (M18).
@@ -1995,6 +2153,12 @@ type RotateRIDReceiverKeysJSONRequestBody = RIDKeyRotationInput
 
 // SetRIDReceiverStatusJSONRequestBody defines body for SetRIDReceiverStatus for application/json ContentType.
 type SetRIDReceiverStatusJSONRequestBody = RIDReceiverStatusInput
+
+// SwitchSourceTypeJSONRequestBody defines body for SwitchSourceType for application/json ContentType.
+type SwitchSourceTypeJSONRequestBody = SourceSwitchInput
+
+// SwitchSourceInstanceJSONRequestBody defines body for SwitchSourceInstance for application/json ContentType.
+type SwitchSourceInstanceJSONRequestBody = SourceSwitchInput
 
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
 type CreateUserJSONRequestBody = UserInput
@@ -2877,6 +3041,79 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /v1/rid/receivers/{receiver_id}/status (the `SetRIDReceiverStatus` operationId).
 	SetRIDReceiverStatus(ctx context.Context, receiverId string, body SetRIDReceiverStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListSources Every switch and every source with its switch and its health
+	//
+	// The switches as the database holds them (the state api
+	// publishes), and every source a switch names or an adapter has
+	// reported on `src.v1.<type>.<instance>`: enabled or disabled (by
+	// type, instance or default deny, and by whom), and healthy,
+	// stale, lagging or never heard (B-11, B-03). `status_age_s` is
+	// the age of the adapter's last status; past
+	// `SOURCE_STATUS_STALE_S` the source is stale whatever it said.
+	//
+	// Corresponds with GET /v1/sources (the `ListSources` operationId).
+	ListSources(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SwitchSourceTypeWithBody Switch a whole source type on or off
+	//
+	// A type switched off disables every instance of it, even one
+	// switched on. In one transaction under the advisory lock
+	// `source_controls`: the row, its `events` row, then the KV write
+	// of the whole state (bucket `source_control`, key `state`); when
+	// the bucket cannot take it the switch is refused with 503
+	// `source_control_unavailable` and nothing is written (B-09). The
+	// state is then pushed on `ctl.sources`; adapters refuse a
+	// disabled source with 503 and Retry-After (B-10). A state past
+	// the bucket's value bound is refused with 400 naming the bound
+	// (E-10). A switch to the state already held changes and records
+	// nothing (`changed: false`).
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /v1/sources/{source_type} (the `SwitchSourceType` operationId).
+	SwitchSourceTypeWithBody(ctx context.Context, sourceType SourceType, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SwitchSourceType Switch a whole source type on or off
+	//
+	// A type switched off disables every instance of it, even one
+	// switched on. In one transaction under the advisory lock
+	// `source_controls`: the row, its `events` row, then the KV write
+	// of the whole state (bucket `source_control`, key `state`); when
+	// the bucket cannot take it the switch is refused with 503
+	// `source_control_unavailable` and nothing is written (B-09). The
+	// state is then pushed on `ctl.sources`; adapters refuse a
+	// disabled source with 503 and Retry-After (B-10). A state past
+	// the bucket's value bound is refused with 400 naming the bound
+	// (E-10). A switch to the state already held changes and records
+	// nothing (`changed: false`).
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /v1/sources/{source_type} (the `SwitchSourceType` operationId).
+	SwitchSourceType(ctx context.Context, sourceType SourceType, body SwitchSourceTypeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SwitchSourceInstanceWithBody Switch one instance (a receiver, a USSP, a feed) on or off
+	//
+	// As for a type. An instance switched off stays off under a type
+	// that is on; an instance switched on overrides default deny but
+	// not a type that is off.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /v1/sources/{source_type}/{instance_id} (the `SwitchSourceInstance` operationId).
+	SwitchSourceInstanceWithBody(ctx context.Context, sourceType SourceType, instanceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SwitchSourceInstance Switch one instance (a receiver, a USSP, a feed) on or off
+	//
+	// As for a type. An instance switched off stays off under a type
+	// that is on; an instance switched on overrides default deny but
+	// not a type that is off.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /v1/sources/{source_type}/{instance_id} (the `SwitchSourceInstance` operationId).
+	SwitchSourceInstance(ctx context.Context, sourceType SourceType, instanceId string, body SwitchSourceInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListUsers Console accounts
 	//
@@ -4505,6 +4742,129 @@ func (c *Client) SetRIDReceiverStatusWithBody(ctx context.Context, receiverId st
 // Corresponds with POST /v1/rid/receivers/{receiver_id}/status (the `SetRIDReceiverStatus` operationId).
 func (c *Client) SetRIDReceiverStatus(ctx context.Context, receiverId string, body SetRIDReceiverStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSetRIDReceiverStatusRequest(c.Server, receiverId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListSources Every switch and every source with its switch and its health
+//
+// The switches as the database holds them (the state api
+// publishes), and every source a switch names or an adapter has
+// reported on `src.v1.<type>.<instance>`: enabled or disabled (by
+// type, instance or default deny, and by whom), and healthy,
+// stale, lagging or never heard (B-11, B-03). `status_age_s` is
+// the age of the adapter's last status; past
+// `SOURCE_STATUS_STALE_S` the source is stale whatever it said.
+//
+// Corresponds with GET /v1/sources (the `ListSources` operationId).
+func (c *Client) ListSources(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSourcesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SwitchSourceTypeWithBody Switch a whole source type on or off
+//
+// A type switched off disables every instance of it, even one
+// switched on. In one transaction under the advisory lock
+// `source_controls`: the row, its `events` row, then the KV write
+// of the whole state (bucket `source_control`, key `state`); when
+// the bucket cannot take it the switch is refused with 503
+// `source_control_unavailable` and nothing is written (B-09). The
+// state is then pushed on `ctl.sources`; adapters refuse a
+// disabled source with 503 and Retry-After (B-10). A state past
+// the bucket's value bound is refused with 400 naming the bound
+// (E-10). A switch to the state already held changes and records
+// nothing (`changed: false`).
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /v1/sources/{source_type} (the `SwitchSourceType` operationId).
+func (c *Client) SwitchSourceTypeWithBody(ctx context.Context, sourceType SourceType, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSwitchSourceTypeRequestWithBody(c.Server, sourceType, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SwitchSourceType Switch a whole source type on or off
+//
+// A type switched off disables every instance of it, even one
+// switched on. In one transaction under the advisory lock
+// `source_controls`: the row, its `events` row, then the KV write
+// of the whole state (bucket `source_control`, key `state`); when
+// the bucket cannot take it the switch is refused with 503
+// `source_control_unavailable` and nothing is written (B-09). The
+// state is then pushed on `ctl.sources`; adapters refuse a
+// disabled source with 503 and Retry-After (B-10). A state past
+// the bucket's value bound is refused with 400 naming the bound
+// (E-10). A switch to the state already held changes and records
+// nothing (`changed: false`).
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /v1/sources/{source_type} (the `SwitchSourceType` operationId).
+func (c *Client) SwitchSourceType(ctx context.Context, sourceType SourceType, body SwitchSourceTypeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSwitchSourceTypeRequest(c.Server, sourceType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SwitchSourceInstanceWithBody Switch one instance (a receiver, a USSP, a feed) on or off
+//
+// As for a type. An instance switched off stays off under a type
+// that is on; an instance switched on overrides default deny but
+// not a type that is off.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /v1/sources/{source_type}/{instance_id} (the `SwitchSourceInstance` operationId).
+func (c *Client) SwitchSourceInstanceWithBody(ctx context.Context, sourceType SourceType, instanceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSwitchSourceInstanceRequestWithBody(c.Server, sourceType, instanceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SwitchSourceInstance Switch one instance (a receiver, a USSP, a feed) on or off
+//
+// As for a type. An instance switched off stays off under a type
+// that is on; an instance switched on overrides default deny but
+// not a type that is off.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /v1/sources/{source_type}/{instance_id} (the `SwitchSourceInstance` operationId).
+func (c *Client) SwitchSourceInstance(ctx context.Context, sourceType SourceType, instanceId string, body SwitchSourceInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSwitchSourceInstanceRequest(c.Server, sourceType, instanceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7232,6 +7592,134 @@ func NewSetRIDReceiverStatusRequestWithBody(server string, receiverId string, co
 	return req, nil
 }
 
+// NewListSourcesRequest constructs an http.Request for the ListSources method
+func NewListSourcesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/sources")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSwitchSourceTypeRequest calls the generic SwitchSourceType builder with application/json body
+func NewSwitchSourceTypeRequest(server string, sourceType SourceType, body SwitchSourceTypeJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSwitchSourceTypeRequestWithBody(server, sourceType, "application/json", bodyReader)
+}
+
+// NewSwitchSourceTypeRequestWithBody constructs an http.Request for the SwitchSourceType method, with any body, and a specified content type
+func NewSwitchSourceTypeRequestWithBody(server string, sourceType SourceType, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "source_type", sourceType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/sources/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewSwitchSourceInstanceRequest calls the generic SwitchSourceInstance builder with application/json body
+func NewSwitchSourceInstanceRequest(server string, sourceType SourceType, instanceId string, body SwitchSourceInstanceJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSwitchSourceInstanceRequestWithBody(server, sourceType, instanceId, "application/json", bodyReader)
+}
+
+// NewSwitchSourceInstanceRequestWithBody constructs an http.Request for the SwitchSourceInstance method, with any body, and a specified content type
+func NewSwitchSourceInstanceRequestWithBody(server string, sourceType SourceType, instanceId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "source_type", sourceType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "instance_id", instanceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/sources/%s/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListUsersRequest constructs an http.Request for the ListUsers method
 func NewListUsersRequest(server string) (*http.Request, error) {
 	var err error
@@ -8453,6 +8941,81 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /v1/rid/receivers/{receiver_id}/status (the `SetRIDReceiverStatus` operationId).
 	SetRIDReceiverStatusWithResponse(ctx context.Context, receiverId string, body SetRIDReceiverStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*SetRIDReceiverStatusResponse, error)
+
+	// ListSourcesWithResponse Every switch and every source with its switch and its health
+	//
+	// The switches as the database holds them (the state api
+	// publishes), and every source a switch names or an adapter has
+	// reported on `src.v1.<type>.<instance>`: enabled or disabled (by
+	// type, instance or default deny, and by whom), and healthy,
+	// stale, lagging or never heard (B-11, B-03). `status_age_s` is
+	// the age of the adapter's last status; past
+	// `SOURCE_STATUS_STALE_S` the source is stale whatever it said.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/sources (the `ListSources` operationId).
+	ListSourcesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSourcesResponse, error)
+
+	// SwitchSourceTypeWithBodyWithResponse Switch a whole source type on or off
+	//
+	// A type switched off disables every instance of it, even one
+	// switched on. In one transaction under the advisory lock
+	// `source_controls`: the row, its `events` row, then the KV write
+	// of the whole state (bucket `source_control`, key `state`); when
+	// the bucket cannot take it the switch is refused with 503
+	// `source_control_unavailable` and nothing is written (B-09). The
+	// state is then pushed on `ctl.sources`; adapters refuse a
+	// disabled source with 503 and Retry-After (B-10). A state past
+	// the bucket's value bound is refused with 400 naming the bound
+	// (E-10). A switch to the state already held changes and records
+	// nothing (`changed: false`).
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /v1/sources/{source_type} (the `SwitchSourceType` operationId).
+	SwitchSourceTypeWithBodyWithResponse(ctx context.Context, sourceType SourceType, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SwitchSourceTypeResponse, error)
+
+	// SwitchSourceTypeWithResponse Switch a whole source type on or off
+	//
+	// A type switched off disables every instance of it, even one
+	// switched on. In one transaction under the advisory lock
+	// `source_controls`: the row, its `events` row, then the KV write
+	// of the whole state (bucket `source_control`, key `state`); when
+	// the bucket cannot take it the switch is refused with 503
+	// `source_control_unavailable` and nothing is written (B-09). The
+	// state is then pushed on `ctl.sources`; adapters refuse a
+	// disabled source with 503 and Retry-After (B-10). A state past
+	// the bucket's value bound is refused with 400 naming the bound
+	// (E-10). A switch to the state already held changes and records
+	// nothing (`changed: false`).
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /v1/sources/{source_type} (the `SwitchSourceType` operationId).
+	SwitchSourceTypeWithResponse(ctx context.Context, sourceType SourceType, body SwitchSourceTypeJSONRequestBody, reqEditors ...RequestEditorFn) (*SwitchSourceTypeResponse, error)
+
+	// SwitchSourceInstanceWithBodyWithResponse Switch one instance (a receiver, a USSP, a feed) on or off
+	//
+	// As for a type. An instance switched off stays off under a type
+	// that is on; an instance switched on overrides default deny but
+	// not a type that is off.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /v1/sources/{source_type}/{instance_id} (the `SwitchSourceInstance` operationId).
+	SwitchSourceInstanceWithBodyWithResponse(ctx context.Context, sourceType SourceType, instanceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SwitchSourceInstanceResponse, error)
+
+	// SwitchSourceInstanceWithResponse Switch one instance (a receiver, a USSP, a feed) on or off
+	//
+	// As for a type. An instance switched off stays off under a type
+	// that is on; an instance switched on overrides default deny but
+	// not a type that is off.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /v1/sources/{source_type}/{instance_id} (the `SwitchSourceInstance` operationId).
+	SwitchSourceInstanceWithResponse(ctx context.Context, sourceType SourceType, instanceId string, body SwitchSourceInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*SwitchSourceInstanceResponse, error)
 
 	// ListUsersWithResponse Console accounts
 	//
@@ -11267,6 +11830,164 @@ func (r SetRIDReceiverStatusResponse) ContentType() string {
 	return ""
 }
 
+type ListSourcesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SourceOverview
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListSourcesResponse) GetJSON200() *SourceOverview {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ListSourcesResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListSourcesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListSourcesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListSourcesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListSourcesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SwitchSourceTypeResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SourceSwitchResult
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r SwitchSourceTypeResponse) GetJSON200() *SourceSwitchResult {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r SwitchSourceTypeResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r SwitchSourceTypeResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r SwitchSourceTypeResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SwitchSourceTypeResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SwitchSourceTypeResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SwitchSourceTypeResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SwitchSourceInstanceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SourceSwitchResult
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r SwitchSourceInstanceResponse) GetJSON200() *SourceSwitchResult {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r SwitchSourceInstanceResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r SwitchSourceInstanceResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r SwitchSourceInstanceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SwitchSourceInstanceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SwitchSourceInstanceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SwitchSourceInstanceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListUsersResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -13007,6 +13728,111 @@ func (c *ClientWithResponses) SetRIDReceiverStatusWithResponse(ctx context.Conte
 		return nil, err
 	}
 	return ParseSetRIDReceiverStatusResponse(rsp)
+}
+
+// ListSourcesWithResponse Every switch and every source with its switch and its health
+//
+// The switches as the database holds them (the state api
+// publishes), and every source a switch names or an adapter has
+// reported on `src.v1.<type>.<instance>`: enabled or disabled (by
+// type, instance or default deny, and by whom), and healthy,
+// stale, lagging or never heard (B-11, B-03). `status_age_s` is
+// the age of the adapter's last status; past
+// `SOURCE_STATUS_STALE_S` the source is stale whatever it said.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/sources (the `ListSources` operationId).
+func (c *ClientWithResponses) ListSourcesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSourcesResponse, error) {
+	rsp, err := c.ListSources(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListSourcesResponse(rsp)
+}
+
+// SwitchSourceTypeWithBodyWithResponse Switch a whole source type on or off
+//
+// A type switched off disables every instance of it, even one
+// switched on. In one transaction under the advisory lock
+// `source_controls`: the row, its `events` row, then the KV write
+// of the whole state (bucket `source_control`, key `state`); when
+// the bucket cannot take it the switch is refused with 503
+// `source_control_unavailable` and nothing is written (B-09). The
+// state is then pushed on `ctl.sources`; adapters refuse a
+// disabled source with 503 and Retry-After (B-10). A state past
+// the bucket's value bound is refused with 400 naming the bound
+// (E-10). A switch to the state already held changes and records
+// nothing (`changed: false`).
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /v1/sources/{source_type} (the `SwitchSourceType` operationId).
+func (c *ClientWithResponses) SwitchSourceTypeWithBodyWithResponse(ctx context.Context, sourceType SourceType, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SwitchSourceTypeResponse, error) {
+	rsp, err := c.SwitchSourceTypeWithBody(ctx, sourceType, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSwitchSourceTypeResponse(rsp)
+}
+
+// SwitchSourceTypeWithResponse Switch a whole source type on or off
+//
+// A type switched off disables every instance of it, even one
+// switched on. In one transaction under the advisory lock
+// `source_controls`: the row, its `events` row, then the KV write
+// of the whole state (bucket `source_control`, key `state`); when
+// the bucket cannot take it the switch is refused with 503
+// `source_control_unavailable` and nothing is written (B-09). The
+// state is then pushed on `ctl.sources`; adapters refuse a
+// disabled source with 503 and Retry-After (B-10). A state past
+// the bucket's value bound is refused with 400 naming the bound
+// (E-10). A switch to the state already held changes and records
+// nothing (`changed: false`).
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /v1/sources/{source_type} (the `SwitchSourceType` operationId).
+func (c *ClientWithResponses) SwitchSourceTypeWithResponse(ctx context.Context, sourceType SourceType, body SwitchSourceTypeJSONRequestBody, reqEditors ...RequestEditorFn) (*SwitchSourceTypeResponse, error) {
+	rsp, err := c.SwitchSourceType(ctx, sourceType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSwitchSourceTypeResponse(rsp)
+}
+
+// SwitchSourceInstanceWithBodyWithResponse Switch one instance (a receiver, a USSP, a feed) on or off
+//
+// As for a type. An instance switched off stays off under a type
+// that is on; an instance switched on overrides default deny but
+// not a type that is off.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /v1/sources/{source_type}/{instance_id} (the `SwitchSourceInstance` operationId).
+func (c *ClientWithResponses) SwitchSourceInstanceWithBodyWithResponse(ctx context.Context, sourceType SourceType, instanceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SwitchSourceInstanceResponse, error) {
+	rsp, err := c.SwitchSourceInstanceWithBody(ctx, sourceType, instanceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSwitchSourceInstanceResponse(rsp)
+}
+
+// SwitchSourceInstanceWithResponse Switch one instance (a receiver, a USSP, a feed) on or off
+//
+// As for a type. An instance switched off stays off under a type
+// that is on; an instance switched on overrides default deny but
+// not a type that is off.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /v1/sources/{source_type}/{instance_id} (the `SwitchSourceInstance` operationId).
+func (c *ClientWithResponses) SwitchSourceInstanceWithResponse(ctx context.Context, sourceType SourceType, instanceId string, body SwitchSourceInstanceJSONRequestBody, reqEditors ...RequestEditorFn) (*SwitchSourceInstanceResponse, error) {
+	rsp, err := c.SwitchSourceInstance(ctx, sourceType, instanceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSwitchSourceInstanceResponse(rsp)
 }
 
 // ListUsersWithResponse Console accounts
@@ -15194,6 +16020,119 @@ func ParseSetRIDReceiverStatusResponse(rsp *http.Response) (*SetRIDReceiverStatu
 	return response, nil
 }
 
+// ParseListSourcesResponse parses an HTTP response from a ListSourcesWithResponse call
+func ParseListSourcesResponse(rsp *http.Response) (*ListSourcesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListSourcesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SourceOverview
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSwitchSourceTypeResponse parses an HTTP response from a SwitchSourceTypeWithResponse call
+func ParseSwitchSourceTypeResponse(rsp *http.Response) (*SwitchSourceTypeResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SwitchSourceTypeResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SourceSwitchResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSwitchSourceInstanceResponse parses an HTTP response from a SwitchSourceInstanceWithResponse call
+func ParseSwitchSourceInstanceResponse(rsp *http.Response) (*SwitchSourceInstanceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SwitchSourceInstanceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SourceSwitchResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListUsersResponse parses an HTTP response from a ListUsersWithResponse call
 func ParseListUsersResponse(rsp *http.Response) (*ListUsersResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -15649,6 +16588,15 @@ type ServerInterface interface {
 	// SetRIDReceiverStatus Disable or enable a receiver
 	// (POST /v1/rid/receivers/{receiver_id}/status)
 	SetRIDReceiverStatus(w http.ResponseWriter, r *http.Request, receiverId string)
+	// ListSources Every switch and every source with its switch and its health
+	// (GET /v1/sources)
+	ListSources(w http.ResponseWriter, r *http.Request)
+	// SwitchSourceType Switch a whole source type on or off
+	// (PUT /v1/sources/{source_type})
+	SwitchSourceType(w http.ResponseWriter, r *http.Request, sourceType SourceType)
+	// SwitchSourceInstance Switch one instance (a receiver, a USSP, a feed) on or off
+	// (PUT /v1/sources/{source_type}/{instance_id})
+	SwitchSourceInstance(w http.ResponseWriter, r *http.Request, sourceType SourceType, instanceId string)
 	// ListUsers Console accounts
 	// (GET /v1/users)
 	ListUsers(w http.ResponseWriter, r *http.Request)
@@ -17299,6 +18247,81 @@ func (siw *ServerInterfaceWrapper) SetRIDReceiverStatus(w http.ResponseWriter, r
 	handler.ServeHTTP(w, r)
 }
 
+// ListSources operation middleware
+func (siw *ServerInterfaceWrapper) ListSources(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSources(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SwitchSourceType operation middleware
+func (siw *ServerInterfaceWrapper) SwitchSourceType(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "source_type" -------------
+	var sourceType SourceType
+
+	err = runtime.BindStyledParameterWithOptions("simple", "source_type", r.PathValue("source_type"), &sourceType, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source_type", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SwitchSourceType(w, r, sourceType)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SwitchSourceInstance operation middleware
+func (siw *ServerInterfaceWrapper) SwitchSourceInstance(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "source_type" -------------
+	var sourceType SourceType
+
+	err = runtime.BindStyledParameterWithOptions("simple", "source_type", r.PathValue("source_type"), &sourceType, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source_type", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "instance_id" -------------
+	var instanceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instance_id", r.PathValue("instance_id"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instance_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SwitchSourceInstance(w, r, sourceType, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListUsers operation middleware
 func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Request) {
 
@@ -17690,6 +18713,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/rid/frames/{frame_id}", wrapper.GetRIDFrame)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/cells", wrapper.GetCellOwnership)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/v1/cells", wrapper.PutCellOwnership)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/sources", wrapper.ListSources)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/v1/sources/{source_type}", wrapper.SwitchSourceType)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/v1/sources/{source_type}/{instance_id}", wrapper.SwitchSourceInstance)
 
 	return m
 }
@@ -20161,6 +21187,157 @@ func (response SetRIDReceiverStatusdefaultApplicationProblemPlusJSONResponse) Vi
 	return err
 }
 
+type ListSourcesRequestObject struct {
+}
+
+type ListSourcesResponseObject interface {
+	VisitListSourcesResponse(w http.ResponseWriter) error
+}
+
+type ListSources200JSONResponse SourceOverview
+
+func (response ListSources200JSONResponse) VisitListSourcesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSourcesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListSourcesdefaultApplicationProblemPlusJSONResponse) VisitListSourcesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SwitchSourceTypeRequestObject struct {
+	SourceType SourceType `json:"source_type"`
+	Body       *SwitchSourceTypeJSONRequestBody
+}
+
+type SwitchSourceTypeResponseObject interface {
+	VisitSwitchSourceTypeResponse(w http.ResponseWriter) error
+}
+
+type SwitchSourceType200JSONResponse SourceSwitchResult
+
+func (response SwitchSourceType200JSONResponse) VisitSwitchSourceTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SwitchSourceType503ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response SwitchSourceType503ApplicationProblemPlusJSONResponse) VisitSwitchSourceTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SwitchSourceTypedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response SwitchSourceTypedefaultApplicationProblemPlusJSONResponse) VisitSwitchSourceTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SwitchSourceInstanceRequestObject struct {
+	SourceType SourceType `json:"source_type"`
+	InstanceId string     `json:"instance_id"`
+	Body       *SwitchSourceInstanceJSONRequestBody
+}
+
+type SwitchSourceInstanceResponseObject interface {
+	VisitSwitchSourceInstanceResponse(w http.ResponseWriter) error
+}
+
+type SwitchSourceInstance200JSONResponse SourceSwitchResult
+
+func (response SwitchSourceInstance200JSONResponse) VisitSwitchSourceInstanceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SwitchSourceInstance503ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response SwitchSourceInstance503ApplicationProblemPlusJSONResponse) VisitSwitchSourceInstanceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SwitchSourceInstancedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response SwitchSourceInstancedefaultApplicationProblemPlusJSONResponse) VisitSwitchSourceInstanceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListUsersRequestObject struct {
 }
 
@@ -20670,6 +21847,15 @@ type StrictServerInterface interface {
 	// SetRIDReceiverStatus Disable or enable a receiver
 	// (POST /v1/rid/receivers/{receiver_id}/status)
 	SetRIDReceiverStatus(ctx context.Context, request SetRIDReceiverStatusRequestObject) (SetRIDReceiverStatusResponseObject, error)
+	// ListSources Every switch and every source with its switch and its health
+	// (GET /v1/sources)
+	ListSources(ctx context.Context, request ListSourcesRequestObject) (ListSourcesResponseObject, error)
+	// SwitchSourceType Switch a whole source type on or off
+	// (PUT /v1/sources/{source_type})
+	SwitchSourceType(ctx context.Context, request SwitchSourceTypeRequestObject) (SwitchSourceTypeResponseObject, error)
+	// SwitchSourceInstance Switch one instance (a receiver, a USSP, a feed) on or off
+	// (PUT /v1/sources/{source_type}/{instance_id})
+	SwitchSourceInstance(ctx context.Context, request SwitchSourceInstanceRequestObject) (SwitchSourceInstanceResponseObject, error)
 	// ListUsers Console accounts
 	// (GET /v1/users)
 	ListUsers(ctx context.Context, request ListUsersRequestObject) (ListUsersResponseObject, error)
@@ -22210,6 +23396,97 @@ func (sh *strictHandler) SetRIDReceiverStatus(w http.ResponseWriter, r *http.Req
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SetRIDReceiverStatusResponseObject); ok {
 		if err := validResponse.VisitSetRIDReceiverStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSources operation middleware
+func (sh *strictHandler) ListSources(w http.ResponseWriter, r *http.Request) {
+	var request ListSourcesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSources(ctx, request.(ListSourcesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSources")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSourcesResponseObject); ok {
+		if err := validResponse.VisitListSourcesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SwitchSourceType operation middleware
+func (sh *strictHandler) SwitchSourceType(w http.ResponseWriter, r *http.Request, sourceType SourceType) {
+	var request SwitchSourceTypeRequestObject
+
+	request.SourceType = sourceType
+
+	var body SwitchSourceTypeJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SwitchSourceType(ctx, request.(SwitchSourceTypeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SwitchSourceType")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SwitchSourceTypeResponseObject); ok {
+		if err := validResponse.VisitSwitchSourceTypeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SwitchSourceInstance operation middleware
+func (sh *strictHandler) SwitchSourceInstance(w http.ResponseWriter, r *http.Request, sourceType SourceType, instanceId string) {
+	var request SwitchSourceInstanceRequestObject
+
+	request.SourceType = sourceType
+	request.InstanceId = instanceId
+
+	var body SwitchSourceInstanceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SwitchSourceInstance(ctx, request.(SwitchSourceInstanceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SwitchSourceInstance")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SwitchSourceInstanceResponseObject); ok {
+		if err := validResponse.VisitSwitchSourceInstanceResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

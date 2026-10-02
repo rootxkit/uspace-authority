@@ -71,3 +71,24 @@ Unreleased; the format follows Keep a Changelog.
   The type-level (and instance-level) `direct_rid` source-control switch
   has no effect until WP-10 feeds rid-ingest's follower; the registry
   disable is the working switch until then.
+- WP-10: uspace-core v1.2.0; `internal/bus` (per-process NATS
+  credentials, reconnect for ever, three start attempts then a degraded
+  start that says so; `bus.Ensure` run by api for the streams TRK, ALRT,
+  IDENT, CIS, INGEST and TSW and the KV buckets source_control, policy,
+  cells, registry_version, zones_version and rid_receiver_keys, each
+  with an explicit size bound, idempotent; typed subjects that refuse a
+  widening token, the 04 §2 envelope, bounded pull consumers and a
+  push-then-reread KV follower), which replaces WP-7's stand-ins;
+  `internal/cell` over core `geodesy/cell` (subject tokens, viewport with
+  a one-cell margin, the cell3 ownership map with `GET/PUT /v1/cells`,
+  and detect refusing to start without cells unless `CELLS=all`);
+  source control (`source_controls` with a version sequence and an
+  epoch, audited switches by type and instance in one transaction with
+  the KV write and 503 without it, the push on `ctl.sources`, the 60 s
+  republish and a new epoch for a restored database, `/v1/sources*` for
+  admins, every process following the state and starting enabled when
+  it cannot read it, rid-ingest refusing a disabled `direct_rid` and
+  saying who disabled it, api keeping every adapter's status for the
+  console); `schemas/source/control/v1.json`; the source-control
+  runbook. The drain closes connections that never sent a request, so a
+  spare client dial no longer makes a shutdown overrun its bound.

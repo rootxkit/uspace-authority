@@ -87,6 +87,10 @@ var Roles = map[string][]string{
 
 	"GetCellOwnership": {RoleAdmin},
 	"PutCellOwnership": {RoleAdmin},
+
+	"ListSources":          {RoleAdmin},
+	"SwitchSourceType":     {RoleAdmin},
+	"SwitchSourceInstance": {RoleAdmin},
 }
 
 // Receiver lists the operations a Remote ID receiver calls (`x-receiver:

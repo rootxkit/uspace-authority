@@ -194,6 +194,24 @@ type SigningKey struct {
 	CompromiseReason *string
 }
 
+type SourceControl struct {
+	SourceType string
+	InstanceID *string
+	Enabled    bool
+	Reason     string
+	Actor      string
+	ChangedAt  time.Time
+	Version    int64
+	Epoch      string
+}
+
+type SourceControlEpoch struct {
+	Singleton bool
+	Epoch     string
+	Version   int64
+	CreatedAt time.Time
+}
+
 type UAS struct {
 	ID               string
 	OperatorID       string

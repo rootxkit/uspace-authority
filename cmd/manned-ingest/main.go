@@ -10,6 +10,7 @@ import (
 
 	"github.com/rootxkit/uspace-authority/internal/config"
 	"github.com/rootxkit/uspace-authority/internal/proc"
+	"github.com/rootxkit/uspace-authority/internal/sources"
 )
 
 func main() {
@@ -20,5 +21,9 @@ func main() {
 }
 
 func spec(cfg *config.MannedIngest) proc.Spec {
-	return proc.Spec{Name: "manned-ingest", Config: cfg, Run: proc.Idle("WP-15")}
+	return proc.Spec{Name: "manned-ingest", Config: cfg, Run: func(ctx context.Context, rt *proc.Runtime) error {
+		// Until WP-15: connected to the bus, following source control
+		// like every process (WP-10), and waiting.
+		return sources.Idle("manned-ingest", "WP-15", cfg.NATSURL, cfg.Bus)(ctx, rt)
+	}}
 }

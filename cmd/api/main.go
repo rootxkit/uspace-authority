@@ -25,6 +25,8 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/proc"
 	"github.com/rootxkit/uspace-authority/internal/receivers"
 	"github.com/rootxkit/uspace-authority/internal/registry"
+	"github.com/rootxkit/uspace-authority/internal/sources"
+	"github.com/rootxkit/uspace-authority/internal/sources/switches"
 	"github.com/rootxkit/uspace-authority/internal/store"
 	"github.com/rootxkit/uspace-authority/internal/store/pg"
 	"github.com/rootxkit/uspace-authority/internal/tokens"
@@ -199,6 +201,18 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 		})
 
 		cells := assign.New(db, auditWriter, cell.StoreOf(bp), rt.Logger)
+
+		// Source control (U-15): api writes the switches, republishes
+		// them from the database, keeps every adapter's last status, and
+		// follows the published state like every process.
+		sw := switches.NewService(db, auditWriter, bp, cfg.Bus, cfg.Sources, rt.Logger, rt.Limiter)
+		rt.AddCounters("source_switches", sw.Counters)
+		statuses := sources.NewStatusStore(cfg.SourceStatusMax)
+		rt.AddCounters("source_status", statuses.Counters)
+		_, followSources := sources.Follow(ctx, rt, bp, cfg.Bus)
+		wg.Go(func() { followSources(ctx) })
+		wg.Go(func() { sw.RunRepublish(ctx, time.Duration(cfg.SourceControlRepublishS)*time.Second) })
+		wg.Go(func() { statuses.Run(ctx, bp.NC, rt.Logger) })
 		rt.AddCounters("cells", cells.Counters)
 
 		mux := http.NewServeMux()
@@ -212,6 +226,9 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 			RegistryHandler:     reg.Handler,
 			RIDReceiversHandler: rx.Handler,
 			CellsHandler:        assign.Handler{Service: cells},
+			SourcesHandler: switches.Handler{
+				Service: sw, Status: statuses, StaleAfter: time.Duration(cfg.SourceStatusStaleS) * time.Second,
+			},
 		}, apiserver.Options{
 			Logger:      rt.Logger,
 			Middlewares: []apiserver.Middleware{tok.Handler.FormGuard(), apiserver.Authorize(identify, apiserver.DefaultRules())},

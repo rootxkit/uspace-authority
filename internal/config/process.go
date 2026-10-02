@@ -76,6 +76,15 @@ type API struct {
 	Peers
 	Registry
 	Receivers
+	Sources
+}
+
+// Sources is source control in api (WP-10, U-15).
+type Sources struct {
+	SourcesDefaultDeny      bool `env:"SOURCES_DEFAULT_DENY" default:"false" help:"an instance with no switch of its own is disabled (by default deny) unless its type is switched on; the flag travels in the published state"`
+	SourceControlRepublishS int  `env:"SOURCE_CONTROL_REPUBLISH_S" default:"60" min:"1" max:"3600" help:"seconds between republishes of the source-control state from the database (repairs a lost bucket)"`
+	SourceStatusStaleS      int  `env:"SOURCE_STATUS_STALE_S" default:"10" min:"1" max:"3600" help:"an adapter whose last src.v1 status is older is silent: its sources are shown stale"`
+	SourceStatusMax         int  `env:"SOURCE_STATUS_MAX" default:"10000" min:"1" max:"1000000" help:"sources whose last status api keeps; past it the one heard longest ago is dropped and counted (E-10)"`
 }
 
 // Receivers is the Remote ID receiver registry of api (WP-7). The

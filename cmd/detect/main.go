@@ -15,6 +15,7 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/cell"
 	"github.com/rootxkit/uspace-authority/internal/config"
 	"github.com/rootxkit/uspace-authority/internal/proc"
+	"github.com/rootxkit/uspace-authority/internal/sources"
 )
 
 func main() {
@@ -45,6 +46,12 @@ func spec(cfg *config.Detect) proc.Spec {
 		}
 		rt.Logger.Info("cells claimed", slog.String("worker_id", cfg.WorkerID), slog.Bool("all", claim.All),
 			slog.Any("cells", cells), slog.Uint64("ownership_version", claim.Version))
+		// detect clears the alerts of a disabled source as source_disabled
+		// (WP-12); it follows the switches from the start.
+		_, followSources := sources.Follow(ctx, rt, bp, cfg.Bus)
+		done := make(chan struct{})
+		go func() { defer close(done); followSources(ctx) }()
+		defer func() { <-done }()
 		return proc.Idle("WP-12")(ctx, rt)
 	}}
 }
