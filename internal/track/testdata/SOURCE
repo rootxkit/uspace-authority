@@ -1,0 +1,8 @@
+# Verbatim copies of uspace-lab schemas/common (envelope/v1, track/telemetry/v1
+# and its examples). This repository consumes these shapes and does not
+# define them (decision record M14). Refresh by copying again; never edit.
+repo = https://github.com/rootxkit/uspace-lab.git
+commit = e62f076
+paths = schemas/common/envelope/v1/schema.json -> envelope/v1.json
+        schemas/common/track/telemetry/v1/schema.json -> track/telemetry/v1.json
+        schemas/common/track/telemetry/v1/examples/ -> examples/
