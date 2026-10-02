@@ -65,14 +65,15 @@ func env(m map[string]string) config.LookupFunc {
 	return func(k string) (string, bool) { v, ok := m[k]; return v, ok }
 }
 
-// baseEnv is a working configuration on pgURL with two token keys and
-// the PII and registry hash keys generated at run time (spec 06 §4) in
-// the test's directory.
+// baseEnv is a working configuration on pgURL and a migrated scratch
+// telemetry database (the registry projection, WP-3) with two token keys
+// and the PII and registry hash keys generated at run time (spec 06 §4)
+// in the test's directory.
 func baseEnv(t *testing.T, pgURL string) map[string]string {
 	t.Helper()
 	dir := t.TempDir()
 	return map[string]string{
-		"PG_URL": pgURL, "TS_URL": "postgres://unused:unused@127.0.0.1:1/unused",
+		"PG_URL": pgURL, "TS_URL": storetest.Migrated(t, migrate.Timeseries),
 		"REGISTRY_HASH_KEY_FILE": writeKey(t, dir, "registry-hash.key"),
 		"NATS_URL":               "nats://127.0.0.1:1", "AUTHORITY_PUBLIC_URL": "http://localhost:8080",
 		"API_ADDR": "127.0.0.1:0", "ADMIN_ADDR": "127.0.0.1:0", "STATUS_INTERVAL_S": "1",

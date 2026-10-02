@@ -78,6 +78,7 @@ func (s *Service) CreateOperator(ctx context.Context, in NewOperator, actor audi
 		}); err != nil {
 			return err
 		}
+		cs.ops = append(cs.ops, projectOperator(&r.Operator))
 		out = r.Operator
 		return nil
 	})
@@ -159,6 +160,7 @@ func (s *Service) UpdateOperator(ctx context.Context, id string, p OperatorPatch
 		}); err != nil {
 			return err
 		}
+		cs.ops = append(cs.ops, projectOperator(&u.Operator))
 		out = u.Operator
 		return nil
 	})
@@ -204,6 +206,7 @@ func (s *Service) operatorTransition(ctx context.Context, tx Tx, cs *changeSet, 
 	}); err != nil {
 		return Operator{}, err
 	}
+	cs.ops = append(cs.ops, projectOperator(&u.Operator))
 	return u.Operator, nil
 }
 

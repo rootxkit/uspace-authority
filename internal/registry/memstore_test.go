@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/rootxkit/uspace-authority/internal/audit"
+	"github.com/rootxkit/uspace-authority/internal/store/ts/gen/reader"
 )
 
 // memStore is an in-memory Store whose transactions roll back: a failing
@@ -26,9 +27,10 @@ type memStore struct {
 	version   int64
 	locks     []string
 	// failRecord makes Record fail (an audit outage); failReads the
-	// reads outside a transaction.
+	// reads outside a transaction; failFacts the re-projection's read.
 	failRecord bool
 	failReads  bool
+	failFacts  bool
 	// lockHeld makes TryLock report another holder.
 	lockHeld bool
 	// failCommit makes the commit fail after fn succeeded.
@@ -432,4 +434,141 @@ func (t memTx) InsertChange(_ context.Context, c Change) (int64, error) {
 	c.Seq = int64(len(t.m.changes)) + 1
 	t.m.changes = append(t.m.changes, c)
 	return c.Seq, nil
+}
+
+func (t memTx) Facts(context.Context) (Facts, error) {
+	if t.m.failFacts {
+		return Facts{}, errStoreDown
+	}
+	var f Facts
+	ops := sortedValues(t.m.operators, func(r OperatorRecord) string { return r.ID })
+	for i := range ops {
+		f.Operators = append(f.Operators, projectOperator(&ops[i].Operator))
+	}
+	uas := sortedValues(t.m.uas, func(u UAS) string { return u.ID })
+	for i := range uas {
+		f.UAS = append(f.UAS, projectUAS(&uas[i]))
+	}
+	return f, nil
+}
+
+// memProjection is a Projection in memory with the projection tables'
+// semantics: a change's upsert never replaces a newer row, a repair's
+// replaces any, nothing is deleted.
+type memProjection struct {
+	mu        sync.Mutex
+	operators map[string]ProjectedOperator
+	uas       map[string]ProjectedUAS
+	inReg     map[string]bool
+	// failBegin, failUAS and failCommit inject the failures of SC-17
+	// step 3 at each point of the write.
+	failBegin  bool
+	failUAS    bool
+	failCommit bool
+	writes     int
+}
+
+func newMemProjection() *memProjection {
+	return &memProjection{operators: map[string]ProjectedOperator{}, uas: map[string]ProjectedUAS{}, inReg: map[string]bool{}}
+}
+
+var errProjectionDown = errors.New("telemetry database down")
+
+func (p *memProjection) Begin(context.Context) (ProjectionTx, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.failBegin {
+		return nil, errProjectionDown
+	}
+	return &memProjectionTx{p: p, ops: maps.Clone(p.operators), uas: maps.Clone(p.uas), inReg: maps.Clone(p.inReg)}, nil
+}
+
+type memProjectionTx struct {
+	p     *memProjection
+	ops   map[string]ProjectedOperator
+	uas   map[string]ProjectedUAS
+	inReg map[string]bool
+}
+
+func (t *memProjectionTx) UpsertOperators(_ context.Context, rows []ProjectedOperator, _ time.Time, repair bool) error {
+	for _, r := range rows {
+		if old, ok := t.ops[r.OperatorID]; repair || !ok || old.Version <= r.Version {
+			t.ops[r.OperatorID] = r
+		}
+	}
+	return nil
+}
+
+func (t *memProjectionTx) UpsertUAS(_ context.Context, rows []ProjectedUAS, _ time.Time, repair bool) error {
+	if t.p.failUAS && len(rows) > 0 {
+		return errProjectionDown
+	}
+	for _, r := range rows {
+		if old, ok := t.uas[r.UASID]; repair || !ok || old.Version <= r.Version {
+			t.uas[r.UASID] = r
+			t.inReg[r.UASID] = true
+		}
+	}
+	return nil
+}
+
+func (t *memProjectionTx) MarkMissing(_ context.Context, operatorIDs, uasIDs []string, _ time.Time) (int64, error) {
+	var n int64
+	for id, o := range t.ops {
+		if !slices.Contains(operatorIDs, id) && o.Status != StatusUnregistered {
+			o.Status = StatusUnregistered
+			t.ops[id] = o
+			n++
+		}
+	}
+	for id := range t.uas {
+		if !slices.Contains(uasIDs, id) && t.inReg[id] {
+			t.inReg[id] = false
+			n++
+		}
+	}
+	return n, nil
+}
+
+func (t *memProjectionTx) Commit(context.Context) error {
+	t.p.mu.Lock()
+	defer t.p.mu.Unlock()
+	if t.p.failCommit {
+		return errProjectionDown
+	}
+	t.p.operators, t.p.uas, t.p.inReg = t.ops, t.uas, t.inReg
+	t.p.writes++
+	return nil
+}
+
+func (t *memProjectionTx) Rollback(context.Context) {}
+
+// LoadProjection makes memProjection a ProjectionSource too: its rows
+// go through toLoaded, the mapping TSSource uses, so a reader is driven
+// from what the service wrote.
+func (p *memProjection) LoadProjection(context.Context) (Loaded, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.failBegin {
+		return Loaded{}, errProjectionDown
+	}
+	ops := []reader.ProjRegistryOperator{}
+	for _, o := range sortedValues(p.operators, func(o ProjectedOperator) string { return o.OperatorID }) {
+		ops = append(ops, reader.ProjRegistryOperator{
+			OperatorID: o.OperatorID, RegistrationNumberPublic: o.RegistrationNumber, Status: o.Status, RegistryVersion: o.Version,
+		})
+	}
+	uas := []reader.ProjRegistryUAS{}
+	for _, u := range sortedValues(p.uas, func(u ProjectedUAS) string { return u.UASID }) {
+		var op *string
+		if u.OperatorID != "" {
+			id := u.OperatorID
+			op = &id
+		}
+		uas = append(uas, reader.ProjRegistryUAS{
+			UasID: u.UASID, Label: u.Label, Serial: u.Serial, SerialFold: u.SerialFold, RegistrationStatus: u.Status,
+			OperatorID: op, InRegistry: p.inReg[u.UASID], RegistryVersion: u.Version,
+		})
+	}
+	return toLoaded(ops, uas), nil
 }

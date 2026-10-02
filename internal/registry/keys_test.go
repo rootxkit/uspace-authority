@@ -2,11 +2,15 @@ package registry
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/rootxkit/uspace-authority/internal/store/migrate"
+	"github.com/rootxkit/uspace-authority/internal/store/storetest"
 )
 
 func writeFile(t *testing.T, name, body string) string {
@@ -46,5 +50,31 @@ func TestLoadHasher(t *testing.T) {
 	salt2, hash2, _ := h.NewSecretPart("x9z")
 	if hash2 == hash || bytes.Equal(salt2, salt) {
 		t.Fatal("the secret part is not salted per row")
+	}
+}
+
+// Assemble refuses a missing key before it opens anything, and on the
+// real telemetry database opens the projector pool (E-02 both ways).
+func TestIntegrationAssemble(t *testing.T) {
+	tsURL := storetest.Migrated(t, migrate.Timeseries)
+	pii := writeFile(t, "pii.key", base64.StdEncoding.EncodeToString(randomKey(t)))
+	hash := writeFile(t, "hash.key", base64.StdEncoding.EncodeToString(randomKey(t)))
+	ctx := context.Background()
+	if _, err := Assemble(ctx, Setup{PIIKeyID: "pii-1", PIIKeyFile: pii, HashKeyFile: filepath.Join(t.TempDir(), "absent")}); err == nil {
+		t.Fatal("assembled without a hash key")
+	}
+	if _, err := Assemble(ctx, Setup{PIIKeyID: "pii-1", PIIKeyFile: filepath.Join(t.TempDir(), "absent"), HashKeyFile: hash}); err == nil {
+		t.Fatal("assembled without a PII key")
+	}
+	if _, err := Assemble(ctx, Setup{PIIKeyID: "pii-1", PIIKeyFile: pii, HashKeyFile: hash, TSURL: "postgres://u:p@127.0.0.1:1/x?connect_timeout=1"}); err == nil {
+		t.Fatal("assembled without the telemetry database")
+	}
+	p, err := Assemble(ctx, Setup{PIIKeyID: "pii-1", PIIKeyFile: pii, HashKeyFile: hash, TSURL: tsURL, TSRole: "authority_ts_projector", TSMaxConns: 2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+	if err := p.Projector.Ping(ctx); err != nil || p.Service.Publisher == nil || p.Handler.Service != p.Service {
+		t.Fatalf("parts %+v %v", p, err)
 	}
 }

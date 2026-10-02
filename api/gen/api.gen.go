@@ -7405,6 +7405,8 @@ type CreateRegistryOperatorResponse struct {
 	HTTPResponse *http.Response
 	// JSON201 the response for an HTTP 201 `application/json` response
 	JSON201 *RegistryOperator
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
 	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
 	ApplicationproblemJSONDefault *Problem
 }
@@ -7412,6 +7414,11 @@ type CreateRegistryOperatorResponse struct {
 // GetJSON201 returns the response for an HTTP 201 `application/json` response
 func (r CreateRegistryOperatorResponse) GetJSON201() *RegistryOperator {
 	return r.JSON201
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r CreateRegistryOperatorResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
 }
 
 // GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
@@ -7604,6 +7611,8 @@ type SetRegistryOperatorStatusResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *RegistryOperator
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
 	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
 	ApplicationproblemJSONDefault *Problem
 }
@@ -7611,6 +7620,11 @@ type SetRegistryOperatorStatusResponse struct {
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r SetRegistryOperatorStatusResponse) GetJSON200() *RegistryOperator {
 	return r.JSON200
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r SetRegistryOperatorStatusResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
 }
 
 // GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
@@ -8043,6 +8057,8 @@ type CreateRegistryUASResponse struct {
 	HTTPResponse *http.Response
 	// JSON201 the response for an HTTP 201 `application/json` response
 	JSON201 *RegistryUAS
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
 	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
 	ApplicationproblemJSONDefault *Problem
 }
@@ -8050,6 +8066,11 @@ type CreateRegistryUASResponse struct {
 // GetJSON201 returns the response for an HTTP 201 `application/json` response
 func (r CreateRegistryUASResponse) GetJSON201() *RegistryUAS {
 	return r.JSON201
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r CreateRegistryUASResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
 }
 
 // GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
@@ -8139,6 +8160,8 @@ type UpdateRegistryUASResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *RegistryUAS
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
 	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
 	ApplicationproblemJSONDefault *Problem
 }
@@ -8146,6 +8169,11 @@ type UpdateRegistryUASResponse struct {
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r UpdateRegistryUASResponse) GetJSON200() *RegistryUAS {
 	return r.JSON200
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r UpdateRegistryUASResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
 }
 
 // GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
@@ -8187,6 +8215,8 @@ type SetRegistryUASStatusResponse struct {
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *RegistryUAS
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
 	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
 	ApplicationproblemJSONDefault *Problem
 }
@@ -8194,6 +8224,11 @@ type SetRegistryUASStatusResponse struct {
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r SetRegistryUASStatusResponse) GetJSON200() *RegistryUAS {
 	return r.JSON200
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r SetRegistryUASStatusResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
 }
 
 // GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
@@ -10643,6 +10678,13 @@ func ParseCreateRegistryOperatorResponse(rsp *http.Response) (*CreateRegistryOpe
 		}
 		response.JSON201 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Problem
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -10787,6 +10829,13 @@ func ParseSetRegistryOperatorStatusResponse(rsp *http.Response) (*SetRegistryOpe
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Problem
@@ -11098,6 +11147,13 @@ func ParseCreateRegistryUASResponse(rsp *http.Response) (*CreateRegistryUASRespo
 		}
 		response.JSON201 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Problem
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -11164,6 +11220,13 @@ func ParseUpdateRegistryUASResponse(rsp *http.Response) (*UpdateRegistryUASRespo
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Problem
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -11196,6 +11259,13 @@ func ParseSetRegistryUASStatusResponse(rsp *http.Response) (*SetRegistryUASStatu
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Problem
@@ -14121,6 +14191,22 @@ func (response CreateRegistryOperator201JSONResponse) VisitCreateRegistryOperato
 	return err
 }
 
+type CreateRegistryOperator503ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response CreateRegistryOperator503ApplicationProblemPlusJSONResponse) VisitCreateRegistryOperatorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CreateRegistryOperatordefaultApplicationProblemPlusJSONResponse struct {
 	Body       Problem
 	StatusCode int
@@ -14286,6 +14372,22 @@ func (response SetRegistryOperatorStatus200JSONResponse) VisitSetRegistryOperato
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetRegistryOperatorStatus503ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response SetRegistryOperatorStatus503ApplicationProblemPlusJSONResponse) VisitSetRegistryOperatorStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -14655,6 +14757,22 @@ func (response CreateRegistryUAS201JSONResponse) VisitCreateRegistryUASResponse(
 	return err
 }
 
+type CreateRegistryUAS503ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response CreateRegistryUAS503ApplicationProblemPlusJSONResponse) VisitCreateRegistryUASResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CreateRegistryUASdefaultApplicationProblemPlusJSONResponse struct {
 	Body       Problem
 	StatusCode int
@@ -14734,6 +14852,22 @@ func (response UpdateRegistryUAS200JSONResponse) VisitUpdateRegistryUASResponse(
 	return err
 }
 
+type UpdateRegistryUAS503ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response UpdateRegistryUAS503ApplicationProblemPlusJSONResponse) VisitUpdateRegistryUASResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type UpdateRegistryUASdefaultApplicationProblemPlusJSONResponse struct {
 	Body       Problem
 	StatusCode int
@@ -14770,6 +14904,22 @@ func (response SetRegistryUASStatus200JSONResponse) VisitSetRegistryUASStatusRes
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetRegistryUASStatus503ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response SetRegistryUASStatus503ApplicationProblemPlusJSONResponse) VisitSetRegistryUASStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
 	_, err := buf.WriteTo(w)
 	return err
 }

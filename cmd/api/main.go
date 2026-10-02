@@ -128,9 +128,10 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 		wg.Go(func() { tok.Manager.Run(ctx, time.Duration(cfg.KeyRefreshS)*time.Second) })
 		wg.Go(func() { az.Run(ctx, time.Duration(cfg.SessionSweepS)*time.Second) })
 
-		reg, err := registry.Assemble(registry.Setup{
+		reg, err := registry.Assemble(ctx, registry.Setup{
 			DB: db, Audit: auditWriter, PIIKeyID: cfg.PIIKeyID, PIIKeyFile: cfg.PIIKeyFile, HashKeyFile: cfg.RegistryHashKeyFile,
-			Logger: rt.Logger,
+			TSURL: cfg.TSURL, TSRole: cfg.TSProjectorRole, TSMaxConns: cfg.TSMaxConns,
+			StatementTimeout: time.Duration(cfg.PGStatementTimeoutS) * time.Second, Logger: rt.Logger,
 			// The registration-number format of the policy api follows (G-07).
 			Pattern: func() (string, bool) {
 				p, ok := follower.Current()
@@ -140,7 +141,13 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 		if err != nil {
 			return err
 		}
+		// The pool closes after the jobs that use it have stopped.
+		defer func() { cancel(); wg.Wait(); reg.Close() }()
+		rt.Ready.Add("telemetry", reg.Projector.Ping)
 		rt.AddCounters("registry", reg.Counters)
+		wg.Go(func() {
+			reg.Service.RunJobs(ctx, time.Duration(cfg.ReprojectS)*time.Second, time.Duration(cfg.ExpiryS)*time.Second)
+		})
 
 		mux := http.NewServeMux()
 		apiserver.Mount(mux, apiserver.Server{

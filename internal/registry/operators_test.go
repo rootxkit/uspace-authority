@@ -52,8 +52,8 @@ func TestOperatorRegistrationRefusalsAndTheirAcceptance(t *testing.T) {
 			c.edit(&in)
 			_, err := f.svc.CreateOperator(context.Background(), in, registrar)
 			wantProblem(t, err, http.StatusBadRequest, c.field)
-			if len(f.store.operators) != 0 || len(f.store.events) != 0 {
-				t.Fatal("a refused registration left a row or an event")
+			if len(f.store.operators) != 0 || len(f.store.events) != 0 || f.proj.writes != 0 {
+				t.Fatal("a refused registration left a row, an event or a projection write")
 			}
 			if f.svc.Counters.Get(CounterRefused) != 1 {
 				t.Errorf("refusal not counted: %v", f.svc.Counters.Snapshot())
@@ -314,7 +314,7 @@ func TestOperatorRenewalNeedsAFutureValidUntil(t *testing.T) {
 }
 
 // The expiry job marks only what is due, as the system, with a feed
-// entry (presence and absence, E-01); a
+// entry and the projection's status (presence and absence, E-01); a
 // held job lock skips the run.
 func TestExpiryMarksOnlyWhatIsDue(t *testing.T) {
 	f := newFixture(t)
@@ -342,6 +342,9 @@ func TestExpiryMarksOnlyWhatIsDue(t *testing.T) {
 	ev := f.store.events[len(f.store.events)-1]
 	if ev.Actor.Type != audit.ActorSystem || ev.EventType != audit.EventRegistryStatusChanged {
 		t.Fatalf("expiry event %+v", ev)
+	}
+	if f.proj.operators[due.ID].Status != string(StatusExpired) {
+		t.Fatalf("projection %+v", f.proj.operators[due.ID])
 	}
 	if f.svc.Counters.Get(CounterExpired) != 1 {
 		t.Error("expiry not counted")

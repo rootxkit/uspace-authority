@@ -44,7 +44,7 @@ type API struct {
 	HTTP
 	Addr      string   `env:"API_ADDR" default:":8080" help:"public listen address (behind Caddy)"`
 	PGURL     string   `env:"PG_URL" required:"true" secret:"true" kind:"url" help:"relational database (PostgreSQL + PostGIS); only api opens it"`
-	TSURL     string   `env:"TS_URL" required:"true" secret:"true" kind:"url" help:"telemetry database (TimescaleDB)"`
+	TSURL     string   `env:"TS_URL" required:"true" secret:"true" kind:"url" help:"telemetry database (TimescaleDB): api writes the registry projection there (WP-3)"`
 	NATSURL   string   `env:"NATS_URL" required:"true" secret:"true" kind:"url" help:"NATS JetStream; may carry credentials"`
 	PublicURL string   `env:"AUTHORITY_PUBLIC_URL" required:"true" kind:"url" help:"this system's published base URL; its host is the token audience and the issuer"`
 	Audiences []string `env:"AUTHORITY_AUDIENCES" help:"accepted JWT audiences (hosts), comma-separated: own host plus a lab alias"`
@@ -61,6 +61,10 @@ type API struct {
 // Registry is the registry of api (WP-3).
 type Registry struct {
 	RegistryHashKeyFile string `env:"REGISTRY_HASH_KEY_FILE" required:"true" help:"key (one line of base64, openssl rand -base64 32) of the keyed hashes of a registration number's secret part and a pilot's national id (spec 06 §5); outside the repository, never rotated without re-registering"`
+	TSProjectorRole     string `env:"TS_PROJECTOR_ROLE" default:"authority_ts_projector" help:"role SET on api's telemetry connections that write the registry projection (migration 00003_registry_projection)"`
+	TSMaxConns          int    `env:"TS_MAX_CONNS" default:"4" min:"1" max:"100" help:"maximum connections of api's telemetry pool"`
+	ReprojectS          int    `env:"REGISTRY_REPROJECT_S" default:"300" min:"10" max:"3600" help:"seconds between full re-projections of the registry into the telemetry database (G-08: 300)"`
+	ExpiryS             int    `env:"REGISTRY_EXPIRY_S" default:"300" min:"10" max:"86400" help:"seconds between runs of the job that marks registrations past valid_until expired"`
 }
 
 // Auth is console sign-in and sessions of api (WP-2).

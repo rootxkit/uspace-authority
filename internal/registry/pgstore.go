@@ -464,3 +464,26 @@ func (t pgTx) InsertChange(ctx context.Context, c Change) (int64, error) {
 		EntityType: c.EntityType, EntityID: c.EntityID, PublicKey: c.PublicKey, Status: string(c.Status), At: c.At,
 	})
 }
+
+// Facts implements Tx.
+func (t pgTx) Facts(ctx context.Context) (Facts, error) {
+	ops, err := t.q.AllOperatorFacts(ctx)
+	if err != nil {
+		return Facts{}, err
+	}
+	uas, err := t.q.AllUASFacts(ctx)
+	if err != nil {
+		return Facts{}, err
+	}
+	f := Facts{Operators: make([]ProjectedOperator, 0, len(ops)), UAS: make([]ProjectedUAS, 0, len(uas))}
+	for _, o := range ops {
+		f.Operators = append(f.Operators, ProjectedOperator{OperatorID: o.ID, RegistrationNumber: o.RegistrationNumberPublic, Status: o.Status, Version: o.RegistryVersion})
+	}
+	for _, u := range uas {
+		f.UAS = append(f.UAS, ProjectedUAS{
+			UASID: u.ID, Label: u.Label, Serial: u.Serial, SerialFold: u.SerialFold, Status: u.Status,
+			OperatorID: u.OperatorID, Version: u.RegistryVersion,
+		})
+	}
+	return f, nil
+}

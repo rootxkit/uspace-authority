@@ -29,7 +29,7 @@ func foldConflict(sn string, existing []UAS) error {
 
 // CreateUAS registers an aircraft of a registered operator. The serial
 // is kept as given and validated for its class by uspace-core serial
-// (G-05, G-06).
+// (G-05, G-06); the aircraft and its owner are projected with it.
 func (s *Service) CreateUAS(ctx context.Context, in NewUAS, actor audit.Actor) (UAS, error) {
 	u, err := checkNewUAS(in)
 	if err != nil {
@@ -75,6 +75,10 @@ func (s *Service) CreateUAS(ctx context.Context, in NewUAS, actor audit.Actor) (
 		}); err != nil {
 			return err
 		}
+		// The owner is projected with its aircraft, so the aircraft never
+		// reaches a resolver before its owner (identify's owner_unknown).
+		cs.ops = append(cs.ops, projectOperator(&op.Operator))
+		cs.uas = append(cs.uas, projectUAS(&r))
 		out = r
 		return nil
 	})
@@ -137,6 +141,7 @@ func (s *Service) UpdateUAS(ctx context.Context, id string, p UASPatch, actor au
 		}); err != nil {
 			return err
 		}
+		cs.uas = append(cs.uas, projectUAS(&r))
 		out = r
 		return nil
 	})
@@ -167,6 +172,7 @@ func (s *Service) SetUASStatus(ctx context.Context, id string, to Status, reason
 		}); err != nil {
 			return err
 		}
+		cs.uas = append(cs.uas, projectUAS(&r))
 		out = r
 		return nil
 	})

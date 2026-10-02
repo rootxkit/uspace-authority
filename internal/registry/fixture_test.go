@@ -3,6 +3,7 @@ package registry
 import (
 	"context"
 	"crypto/rand"
+	"errors"
 	"testing"
 	"time"
 
@@ -37,6 +38,7 @@ var (
 type fixture struct {
 	svc   *Service
 	store *memStore
+	proj  *memProjection
 	now   time.Time
 }
 
@@ -59,9 +61,9 @@ func newFixture(t *testing.T) *fixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f := &fixture{store: newMemStore(), now: t0}
+	f := &fixture{store: newMemStore(), proj: newMemProjection(), now: t0}
 	f.svc = &Service{
-		Store: f.store, Sealer: sealer, Hasher: hasher,
+		Store: f.store, Projection: f.proj, Sealer: sealer, Hasher: hasher,
 		Pattern:  func() (string, bool) { return regnum.DefaultPattern, true },
 		Counters: &core.Counters{},
 		Now:      func() time.Time { return f.now },
@@ -137,3 +139,5 @@ func wantProblem(t *testing.T, err error, status int, field string) {
 	}
 	t.Fatalf("no error on %q: %+v", field, p.Errors)
 }
+
+var errInjected = errors.New("injected")

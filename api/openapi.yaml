@@ -841,7 +841,10 @@ paths:
   # personal data is served only by the `personal-data` operations, to
   # the registrar and inspector roles, with a `purpose`, each read an
   # events row (`registry_pii_viewed`). A viewer, a USSP and the public
-  # never reach them (CLAUDE.md rule 6).
+  # never reach them (CLAUDE.md rule 6). Every change writes the
+  # registry projection the resolvers read inside the same change; a
+  # failed projection write rolls the change back and answers 503
+  # `projection_unavailable` (LESSONS G-08).
   /v1/registry/operators:
     get:
       operationId: listRegistryOperators
@@ -898,6 +901,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RegistryOperator"
+        "503":
+          $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
   /v1/registry/operators/{operator_id}:
@@ -979,6 +984,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RegistryOperator"
+        "503":
+          $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
   /v1/registry/operators/{operator_id}/personal-data:
@@ -1065,6 +1072,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RegistryUAS"
+        "503":
+          $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
   /v1/registry/uas/{uas_id}:
@@ -1109,6 +1118,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RegistryUAS"
+        "503":
+          $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
   /v1/registry/uas/{uas_id}/status:
@@ -1136,6 +1147,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RegistryUAS"
+        "503":
+          $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
   /v1/registry/pilots:

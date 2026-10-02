@@ -116,10 +116,13 @@ func TestUASUpdateAndStatus(t *testing.T) {
 	if err != nil || got.ClassLabel != "C4" || got.RegistrationMark != mark || *got.MTOMG != mtom {
 		t.Fatalf("update %+v %v", got, err)
 	}
+	if f.proj.uas[u.ID].Label != mark {
+		t.Errorf("projected label %q, want the registration mark", f.proj.uas[u.ID].Label)
+	}
 	_, err = f.svc.UpdateUAS(ctx, "0123456789abcdef0123456789abcdef", UASPatch{ClassLabel: &c4}, registrar)
 	wantProblem(t, err, http.StatusNotFound, "id")
 	s, err := f.svc.SetUASStatus(ctx, u.ID, StatusSuspended, "unsafe", registrar)
-	if err != nil || s.Status != StatusSuspended {
+	if err != nil || s.Status != StatusSuspended || f.proj.uas[u.ID].Status != string(StatusSuspended) {
 		t.Fatalf("suspend %+v %v", s, err)
 	}
 	_, err = f.svc.SetUASStatus(ctx, u.ID, StatusSuspended, "again", registrar)
@@ -235,5 +238,9 @@ func TestPilotRegistrationAndCompetencies(t *testing.T) {
 	list, err := f.svc.ListPilots(ctx, "", StatusRevoked, Page{})
 	if err != nil || len(list) != 1 {
 		t.Fatalf("list %v %v", list, err)
+	}
+	// Pilots are not identification facts: nothing of theirs is projected.
+	if len(f.proj.uas) != 0 || len(f.proj.operators) != 1 {
+		t.Fatalf("projection %d operators %d uas", len(f.proj.operators), len(f.proj.uas))
 	}
 }

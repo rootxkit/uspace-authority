@@ -68,6 +68,34 @@ type Change struct {
 	At         time.Time
 }
 
+// ProjectedOperator is one operator as the projection holds it
+// (identify.OperatorFacts plus the version).
+type ProjectedOperator struct {
+	OperatorID         string
+	RegistrationNumber string
+	Status             string
+	Version            int64
+}
+
+// ProjectedUAS is one aircraft as the projection holds it
+// (identify.UASFacts plus the version; every row written here is in
+// the registry).
+type ProjectedUAS struct {
+	UASID      string
+	Label      string
+	Serial     string
+	SerialFold string
+	Status     string
+	OperatorID string
+	Version    int64
+}
+
+// Facts is what a full re-projection writes.
+type Facts struct {
+	Operators []ProjectedOperator
+	UAS       []ProjectedUAS
+}
+
 // Page selects one page in id order.
 type Page struct {
 	After string
@@ -146,4 +174,6 @@ type Tx interface {
 	UpsertCompetency(ctx context.Context, pilotID string, c Competency) error
 
 	InsertChange(ctx context.Context, c Change) (int64, error)
+	// Facts reads every operator and aircraft for a re-projection.
+	Facts(ctx context.Context) (Facts, error)
 }

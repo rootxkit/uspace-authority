@@ -4,30 +4,56 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/rootxkit/uspace-core/core"
 	"github.com/rootxkit/uspace-core/regnum"
 
 	"github.com/rootxkit/uspace-authority/internal/httpx"
+	"github.com/rootxkit/uspace-authority/internal/logging"
 	"github.com/rootxkit/uspace-authority/internal/pii"
+	"github.com/rootxkit/uspace-authority/internal/store"
 )
 
 // Counters of the registry (status line and /metrics, E-09). Each names
 // one refusal, fallback or degraded state.
 const (
-	CounterExpired           = "registry_expired"            // registrations the expiry job marked expired
-	CounterExpiryFailed      = "registry_expiry_failed"      // an expiry run failed
-	CounterRefused           = "registry_change_refused"     // a registration or change refused (validation, conflict, transition)
-	CounterPolicyUnavailable = "registry_policy_unavailable" // a registration refused because no active policy was known
+	CounterProjectionWriteFailed = "registry_projection_write_failed" // a change rolled back because its projection write failed (SC-17 step 3)
+	CounterProjectionAhead       = "registry_projection_ahead"        // the projection committed, the relational commit failed; a repair was requested
+	CounterPublishFailed         = "registry_publish_failed"          // a change committed, its push failed; readers catch up on their 5 s re-read
+	CounterReprojected           = "registry_reprojected"             // full re-projections written
+	CounterReprojectFailed       = "registry_reproject_failed"        // a full re-projection failed; the next run repairs
+	CounterReprojectSkipped      = "registry_reproject_skipped"       // another replica held the job lock
+	CounterProjectionMarked      = "registry_projection_rows_marked"  // projection rows the registry does not hold, marked (in_registry false, unregistered)
+	CounterExpired               = "registry_expired"                 // registrations the expiry job marked expired
+	CounterExpiryFailed          = "registry_expiry_failed"           // an expiry run failed
+	CounterRefused               = "registry_change_refused"          // a registration or change refused (validation, conflict, transition)
+	CounterPolicyUnavailable     = "registry_policy_unavailable"      // a registration refused because no active policy was known
 )
 
-// LockExpiryJob keeps two api replicas from running the expiry job at
-// once.
-const LockExpiryJob = "registry_expiry_job"
+// Advisory locks. LockProjection is taken by every change that writes
+// the projection and by the full re-projection from its relational read
+// to its projection write, so a change waits for a running
+// re-projection and is never overwritten by its older read (SC-17 step
+// 5). The job locks keep two api replicas from running one job at once.
+const (
+	LockProjection   = "registry_projection"
+	LockReprojectJob = "registry_reprojection_job"
+	LockExpiryJob    = "registry_expiry_job"
+)
+
+// SlugProjection is the problem slug of a change refused because the
+// projection could not be written.
+const SlugProjection = "projection_unavailable"
+
+// ErrProjection marks a change rolled back because its projection write
+// failed.
+var ErrProjection = errors.New("registry projection not written")
 
 // MaxPageSize bounds a registry page.
 const MaxPageSize = 500
@@ -40,16 +66,35 @@ const expiryBatch = 500
 // and whether a policy is known.
 type PatternSource func() (string, bool)
 
+// Publisher announces a new registry version after a commit: subject
+// registry.v1.changed and KV registry_version once the bus lands
+// (WP-10). Until then api publishes nowhere, and the readers' periodic
+// re-read carries every change (G-08).
+type Publisher interface {
+	PublishRegistryVersion(ctx context.Context, version int64) error
+}
+
+// NopPublisher publishes nowhere.
+type NopPublisher struct{}
+
+// PublishRegistryVersion does nothing.
+func (NopPublisher) PublishRegistryVersion(context.Context, int64) error { return nil }
+
 // Service is the registry (api only).
 type Service struct {
-	Store    Store
-	Sealer   *pii.Sealer
-	Hasher   *Hasher
-	Pattern  PatternSource
-	Counters *core.Counters
-	Logger   *slog.Logger
+	Store      Store
+	Projection Projection
+	Sealer     *pii.Sealer
+	Hasher     *Hasher
+	Pattern    PatternSource
+	Publisher  Publisher
+	Counters   *core.Counters
+	Logger     *slog.Logger
 	// Now is the clock; nil is time.Now.
 	Now func() time.Time
+
+	repairOnce sync.Once
+	repair     chan struct{}
 }
 
 func (s *Service) now() time.Time {
@@ -62,6 +107,26 @@ func (s *Service) now() time.Time {
 func (s *Service) count(name string) {
 	if s.Counters != nil {
 		s.Counters.Inc(name)
+	}
+}
+
+func (s *Service) logger() *slog.Logger {
+	if s.Logger == nil {
+		return logging.Discard()
+	}
+	return s.Logger
+}
+
+func (s *Service) repairs() chan struct{} {
+	s.repairOnce.Do(func() { s.repair = make(chan struct{}, 1) })
+	return s.repair
+}
+
+// RequestRepair asks the job loop for a full re-projection now.
+func (s *Service) RequestRepair() {
+	select {
+	case s.repairs() <- struct{}{}:
+	default:
 	}
 }
 
@@ -88,26 +153,89 @@ func (s *Service) validator() (*regnum.Validator, error) {
 	return regnum.NewValidator(p)
 }
 
-// changeSet is one numbered change.
+// changeSet collects the projection rows of one change.
 type changeSet struct {
 	version int64
 	at      time.Time
+	ops     []ProjectedOperator
+	uas     []ProjectedUAS
 }
 
-// change runs fn in one relational transaction numbered by
-// registry_version_seq.
+// change runs fn in one relational transaction that holds
+// LockProjection and numbers the change, then writes the projection rows
+// fn collected, commits the projection and lets the relational
+// transaction commit. A failed projection write rolls the change back
+// and is a 503 naming the cause (G-08, SC-17 step 3). When the
+// relational commit fails after the projection committed, a repair is
+// requested at once. After the commit the new version is published.
 func (s *Service) change(ctx context.Context, fn func(tx Tx, cs *changeSet) error) error {
+	var projected bool
+	var cs *changeSet
 	err := s.Store.InTx(ctx, func(tx Tx) error {
+		if err := tx.Lock(ctx, LockProjection); err != nil {
+			return err
+		}
 		v, err := tx.NextVersion(ctx)
 		if err != nil {
 			return err
 		}
-		return fn(tx, &changeSet{version: v, at: s.now()})
+		cs = &changeSet{version: v, at: s.now()}
+		if err := fn(tx, cs); err != nil {
+			return err
+		}
+		if len(cs.ops) == 0 && len(cs.uas) == 0 {
+			return nil
+		}
+		if err := s.writeProjection(ctx, cs); err != nil {
+			s.count(CounterProjectionWriteFailed)
+			logging.Error(ctx, s.logger(), "registry change rolled back: the projection was not written", err,
+				slog.Int64("registry_version", cs.version))
+			return projectionRefusal(err)
+		}
+		projected = true
+		return nil
 	})
 	if err != nil {
+		if projected {
+			s.count(CounterProjectionAhead)
+			logging.Error(ctx, s.logger(), "registry change not committed after its projection was; re-projecting now", err,
+				slog.Int64("registry_version", cs.version))
+			s.RequestRepair()
+		}
 		return s.refused(err)
 	}
+	if projected {
+		s.publish(ctx, cs.version)
+	}
 	return nil
+}
+
+func (s *Service) writeProjection(ctx context.Context, cs *changeSet) error {
+	ptx, err := s.Projection.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	if err := ptx.UpsertOperators(ctx, cs.ops, cs.at, false); err != nil {
+		ptx.Rollback(ctx)
+		return err
+	}
+	if err := ptx.UpsertUAS(ctx, cs.uas, cs.at, false); err != nil {
+		ptx.Rollback(ctx)
+		return err
+	}
+	return ptx.Commit(ctx)
+}
+
+func (s *Service) publish(ctx context.Context, version int64) {
+	pub := s.Publisher
+	if pub == nil {
+		pub = NopPublisher{}
+	}
+	if err := pub.PublishRegistryVersion(ctx, version); err != nil {
+		s.count(CounterPublishFailed)
+		logging.Error(ctx, s.logger(), "registry change committed but not announced; readers apply it on their next re-read", err,
+			slog.Int64("registry_version", version))
+	}
 }
 
 // refused counts a refusal (a problem below 500) and passes err on.
@@ -116,6 +244,21 @@ func (s *Service) refused(err error) error {
 		s.count(CounterRefused)
 	}
 	return err
+}
+
+// projectionRefusal is the 503 of a change whose projection write
+// failed. The detail names the cause (SQLSTATE and constraint, or an
+// unreachable database) without echoing the driver's message.
+func projectionRefusal(err error) error {
+	reason := "the telemetry database could not be reached"
+	if state := store.SQLState(err); state != "" {
+		reason = "the telemetry database refused the write (SQLSTATE " + state + ")"
+		if c := store.Constraint(err); c != "" {
+			reason += " on " + c
+		}
+	}
+	return errors.Join(ErrProjection, httpx.Refuse(http.StatusServiceUnavailable, SlugProjection,
+		"the registry projection could not be written, so the change was rolled back: "+reason))
 }
 
 func notFound(entity, id string) error {
