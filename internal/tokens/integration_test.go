@@ -198,3 +198,29 @@ func TestIntegrationAssertionReplayAcrossReplicas(t *testing.T) {
 		t.Fatalf("a fresh assertion on the other replica: %v", oerr)
 	}
 }
+
+// The emergency retirement on PostgreSQL as authority_app: the grants and
+// the constraint allow it, the next key signs, and a fresh assembly
+// (another replica) neither publishes nor signs with the dropped key.
+func TestIntegrationCompromiseOnPostgres(t *testing.T) {
+	parts, db, _ := pgParts(t, 2, true)
+	ctx := context.Background()
+	old := parts.Keys.ActiveKID()
+	if _, err := parts.Manager.Compromise(ctx, old, "leaked", admin); err != nil {
+		t.Fatal(err)
+	}
+	other := &KeyManager{Store: PG{DB: db, Audit: audit.NewWriter(db)}, Keys: parts.Keys}
+	if err := other.Refresh(ctx); err != nil {
+		t.Fatal(err)
+	}
+	set, _ := parts.Keys.JWKS(time.Now())
+	if _, ok := set.LookupKeyID(old); ok || parts.Keys.ActiveKID() == old {
+		t.Fatal("the compromised key is still in use")
+	}
+	rows, _ := other.Store.SigningKeys(ctx)
+	for _, r := range rows {
+		if r.KID == old && (r.CompromisedAt == nil || r.RetiredAt == nil || r.CompromiseReason != "leaked") {
+			t.Fatalf("row %+v", r)
+		}
+	}
+}

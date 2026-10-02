@@ -213,6 +213,17 @@ func TestClientRegistryOverHTTP(t *testing.T) {
 	if ks := r.body["keys"].([]any); ks[0].(map[string]any)["state"] != "retiring" || ks[1].(map[string]any)["state"] != "active" {
 		t.Fatalf("keys after: %v", r.body)
 	}
+	retiring := r.body["keys"].([]any)[0].(map[string]any)["kid"].(string)
+	if r = do(t, http.MethodPost, srv.URL+"/v1/oauth/keys/"+retiring+"/compromised", "application/json", `{"reason":"leaked"}`); r.code != 200 ||
+		r.body["state"] != "compromised" || r.body["compromise_reason"] != "leaked" {
+		t.Fatalf("compromise: %d %v", r.code, r.body)
+	}
+	if r = do(t, http.MethodPost, srv.URL+"/v1/oauth/keys/"+retiring+"/compromised", "application/json", `{"reason":"again"}`); r.code != 409 {
+		t.Fatalf("compromise twice: %d", r.code)
+	}
+	if r = do(t, http.MethodPost, anon.URL+"/v1/oauth/keys/"+retiring+"/compromised", "application/json", `{"reason":"x"}`); r.code != 401 {
+		t.Fatalf("anonymous compromise: %d", r.code)
+	}
 }
 
 func TestAdminHandlersRefuseWithoutIdentityOrBody(t *testing.T) {

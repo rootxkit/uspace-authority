@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/rootxkit/uspace-core/core"
@@ -21,6 +23,7 @@ const (
 	CounterKeyFileMissing    = "signing_key_file_missing"     // the active kid's file is not configured on this replica
 	CounterKeyRotated        = "signing_key_rotated"          // a rotation activated the next key
 	CounterKeyRotationRefuse = "signing_key_rotation_refused" // a rotation was refused (no candidate, same admin)
+	CounterKeyCompromised    = "signing_key_compromised"      // a key dropped in an emergency
 )
 
 // keyLock serialises key registration and rotation across replicas.
@@ -186,16 +189,16 @@ func (m *KeyManager) Refresh(ctx context.Context) error {
 		m.count(CounterKeyRefreshFailed)
 		return fmt.Errorf("read signing keys: %w", err)
 	}
-	if err := m.Keys.Apply(rows); err != nil {
-		if errors.Is(err, ErrNoActiveKey) {
-			m.count(CounterKeyFileMissing)
-		}
-		return err
+	err = m.Keys.Apply(rows)
+	if errors.Is(err, ErrNoActiveKey) {
+		m.count(CounterKeyFileMissing)
 	}
+	// The published rows changed even when no key may sign: the
+	// verifier of this issuer's own tokens follows them either way.
 	if m.OnChange != nil {
 		m.OnChange()
 	}
-	return nil
+	return err
 }
 
 // Run refreshes every interval until ctx ends, so every replica follows
@@ -314,6 +317,84 @@ func (m *KeyManager) Rotate(ctx context.Context, actor audit.Actor) (Rotation, e
 		if err := m.Refresh(ctx); err != nil {
 			return out, err
 		}
+	}
+	return out, nil
+}
+
+// Compromise is the emergency retirement of the key kid (token or
+// publication): it leaves the JWKS at once, never signs again and is
+// never a rotation candidate. An active token key is replaced by the
+// next candidate in the same transaction; without one, this issuer
+// stops issuing tokens and sessions until a key is added. One admin
+// suffices (an emergency must not wait for a second), and the act is a
+// signing_key_compromised event naming the reason. Other replicas
+// follow within KEY_REFRESH_S; verifiers that cached the JWKS keep the
+// key until their cache expires, which is why this is not the routine
+// rotation.
+func (m *KeyManager) Compromise(ctx context.Context, kid, reason string, actor audit.Actor) (KeyRow, error) {
+	reason = strings.TrimSpace(reason)
+	if reason == "" || len(reason) > 1000 {
+		return KeyRow{}, httpx.Refuse(http.StatusBadRequest, httpx.SlugValidation, "", core.Fieldf("reason", "required, at most 1000 bytes"))
+	}
+	now := m.now()
+	var out KeyRow
+	err := m.Store.InTx(ctx, func(tx Tx) error {
+		if err := tx.Lock(ctx, keyLock); err != nil {
+			return err
+		}
+		rows, err := tx.SigningKeys(ctx)
+		if err != nil {
+			return err
+		}
+		i := slices.IndexFunc(rows, func(r KeyRow) bool { return r.KID == kid })
+		if i < 0 {
+			return httpx.Refuse(http.StatusNotFound, httpx.SlugNotFound, "no such key", core.Fieldf("kid", "%s is not registered", quote(kid)))
+		}
+		row := rows[i]
+		if row.CompromisedAt != nil {
+			return httpx.Refuse(http.StatusConflict, httpx.SlugConflict, "the key is marked compromised already", core.Fieldf("kid", "%s", quote(kid)))
+		}
+		if err := tx.CompromiseSigningKey(ctx, kid, now, actor.ID, reason); err != nil {
+			return err
+		}
+		replacement := ""
+		if row.Purpose == PurposeToken && row.Active() {
+			order := make([]string, 0, len(m.Keys.Files()))
+			for _, f := range m.Keys.Files() {
+				order = append(order, f.KID)
+			}
+			if next, ok := NextCandidate(order, rows); ok {
+				if err := tx.ActivateSigningKey(ctx, next.KID, now); err != nil {
+					return err
+				}
+				replacement = next.KID
+				if err := tx.Record(ctx, audit.Event{
+					Actor: actor, EntityType: "signing_key", EntityID: next.KID, EventType: audit.EventSigningKeyActivated,
+					Payload: map[string]any{"kid": next.KID, "purpose": PurposeToken, "previous_kid": kid, "reason": "compromise"},
+				}); err != nil {
+					return err
+				}
+			}
+		}
+		if err := tx.Record(ctx, audit.Event{
+			Actor: actor, EntityType: "signing_key", EntityID: kid, EventType: audit.EventSigningKeyCompromised,
+			Payload: map[string]any{"kid": kid, "purpose": row.Purpose, "reason": reason, "was_active": row.Active(), "replacement_kid": replacement},
+		}); err != nil {
+			return err
+		}
+		after, err := tx.SigningKeys(ctx)
+		if err != nil {
+			return err
+		}
+		out = after[slices.IndexFunc(after, func(r KeyRow) bool { return r.KID == kid })]
+		return nil
+	})
+	if err != nil {
+		return KeyRow{}, err
+	}
+	m.count(CounterKeyCompromised)
+	if err := m.Refresh(ctx); err != nil && !errors.Is(err, ErrNoActiveKey) {
+		return out, err
 	}
 	return out, nil
 }

@@ -334,11 +334,12 @@ func (e SigningKeyPurpose) Valid() bool {
 
 // Defines values for SigningKeyState.
 const (
-	SigningKeyStateActive    SigningKeyState = "active"
-	SigningKeyStateCandidate SigningKeyState = "candidate"
-	SigningKeyStateRequested SigningKeyState = "requested"
-	SigningKeyStateRetired   SigningKeyState = "retired"
-	SigningKeyStateRetiring  SigningKeyState = "retiring"
+	SigningKeyStateActive      SigningKeyState = "active"
+	SigningKeyStateCandidate   SigningKeyState = "candidate"
+	SigningKeyStateCompromised SigningKeyState = "compromised"
+	SigningKeyStateRequested   SigningKeyState = "requested"
+	SigningKeyStateRetired     SigningKeyState = "retired"
+	SigningKeyStateRetiring    SigningKeyState = "retiring"
 )
 
 // Valid indicates whether the value is a known member of the SigningKeyState enum.
@@ -347,6 +348,8 @@ func (e SigningKeyState) Valid() bool {
 	case SigningKeyStateActive:
 		return true
 	case SigningKeyStateCandidate:
+		return true
+	case SigningKeyStateCompromised:
 		return true
 	case SigningKeyStateRequested:
 		return true
@@ -787,13 +790,16 @@ type Severity string
 
 // SigningKey defines model for SigningKey.
 type SigningKey struct {
-	ActiveFrom   *time.Time        `json:"active_from,omitempty"`
-	Kid          string            `json:"kid"`
-	Purpose      SigningKeyPurpose `json:"purpose"`
-	RegisteredAt time.Time         `json:"registered_at"`
-	RequestedAt  *time.Time        `json:"requested_at,omitempty"`
-	RequestedBy  *string           `json:"requested_by,omitempty"`
-	RetiredAt    *time.Time        `json:"retired_at,omitempty"`
+	ActiveFrom       *time.Time        `json:"active_from,omitempty"`
+	CompromiseReason *string           `json:"compromise_reason,omitempty"`
+	CompromisedAt    *time.Time        `json:"compromised_at,omitempty"`
+	CompromisedBy    *string           `json:"compromised_by,omitempty"`
+	Kid              string            `json:"kid"`
+	Purpose          SigningKeyPurpose `json:"purpose"`
+	RegisteredAt     time.Time         `json:"registered_at"`
+	RequestedAt      *time.Time        `json:"requested_at,omitempty"`
+	RequestedBy      *string           `json:"requested_by,omitempty"`
+	RetiredAt        *time.Time        `json:"retired_at,omitempty"`
 
 	// State retiring: retired but still in the JWKS; retired: no longer published.
 	State SigningKeyState `json:"state"`
@@ -914,6 +920,11 @@ type ListAuditEventsParams struct {
 	Purpose *string `form:"purpose,omitempty" json:"purpose,omitempty"`
 }
 
+// CompromiseSigningKeyJSONBody defines parameters for CompromiseSigningKey.
+type CompromiseSigningKeyJSONBody struct {
+	Reason string `json:"reason"`
+}
+
 // RequestTokenFormdataRequestBody defines body for RequestToken for application/x-www-form-urlencoded ContentType.
 type RequestTokenFormdataRequestBody = TokenRequest
 
@@ -928,6 +939,9 @@ type CreateOAuthClientJSONRequestBody = OAuthClientInput
 
 // UpdateOAuthClientJSONRequestBody defines body for UpdateOAuthClient for application/json ContentType.
 type UpdateOAuthClientJSONRequestBody = OAuthClientPatch
+
+// CompromiseSigningKeyJSONRequestBody defines body for CompromiseSigningKey for application/json ContentType.
+type CompromiseSigningKeyJSONRequestBody CompromiseSigningKeyJSONBody
 
 // CreatePolicyJSONRequestBody defines body for CreatePolicy for application/json ContentType.
 type CreatePolicyJSONRequestBody = PolicyInput
@@ -1255,6 +1269,38 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /v1/oauth/keys/rotate (the `RotateSigningKey` operationId).
 	RotateSigningKey(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CompromiseSigningKeyWithBody Drop a compromised key now
+	//
+	// The emergency retirement: the key leaves the JWKS at once (no
+	// 24 h overlap), never signs again and is never a rotation
+	// candidate. An active token key is replaced by the next
+	// candidate; without one this issuer stops issuing until a key is
+	// added. One admin suffices; the act is a `signing_key_compromised`
+	// event with the reason. Other replicas follow within
+	// `KEY_REFRESH_S`; verifiers drop the key when their JWKS cache
+	// refreshes.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/oauth/keys/{kid}/compromised (the `CompromiseSigningKey` operationId).
+	CompromiseSigningKeyWithBody(ctx context.Context, kid string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CompromiseSigningKey Drop a compromised key now
+	//
+	// The emergency retirement: the key leaves the JWKS at once (no
+	// 24 h overlap), never signs again and is never a rotation
+	// candidate. An active token key is replaced by the next
+	// candidate; without one this issuer stops issuing until a key is
+	// added. One admin suffices; the act is a `signing_key_compromised`
+	// event with the reason. Other replicas follow within
+	// `KEY_REFRESH_S`; verifiers drop the key when their JWKS cache
+	// refreshes.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/oauth/keys/{kid}/compromised (the `CompromiseSigningKey` operationId).
+	CompromiseSigningKey(ctx context.Context, kid string, body CompromiseSigningKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetPolicy The active policy
 	//
@@ -1824,6 +1870,58 @@ func (c *Client) ListSigningKeys(ctx context.Context, reqEditors ...RequestEdito
 // Corresponds with POST /v1/oauth/keys/rotate (the `RotateSigningKey` operationId).
 func (c *Client) RotateSigningKey(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRotateSigningKeyRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CompromiseSigningKeyWithBody Drop a compromised key now
+//
+// The emergency retirement: the key leaves the JWKS at once (no
+// 24 h overlap), never signs again and is never a rotation
+// candidate. An active token key is replaced by the next
+// candidate; without one this issuer stops issuing until a key is
+// added. One admin suffices; the act is a `signing_key_compromised`
+// event with the reason. Other replicas follow within
+// `KEY_REFRESH_S`; verifiers drop the key when their JWKS cache
+// refreshes.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/oauth/keys/{kid}/compromised (the `CompromiseSigningKey` operationId).
+func (c *Client) CompromiseSigningKeyWithBody(ctx context.Context, kid string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCompromiseSigningKeyRequestWithBody(c.Server, kid, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CompromiseSigningKey Drop a compromised key now
+//
+// The emergency retirement: the key leaves the JWKS at once (no
+// 24 h overlap), never signs again and is never a rotation
+// candidate. An active token key is replaced by the next
+// candidate; without one this issuer stops issuing until a key is
+// added. One admin suffices; the act is a `signing_key_compromised`
+// event with the reason. Other replicas follow within
+// `KEY_REFRESH_S`; verifiers drop the key when their JWKS cache
+// refreshes.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/oauth/keys/{kid}/compromised (the `CompromiseSigningKey` operationId).
+func (c *Client) CompromiseSigningKey(ctx context.Context, kid string, body CompromiseSigningKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCompromiseSigningKeyRequest(c.Server, kid, body)
 	if err != nil {
 		return nil, err
 	}
@@ -2741,6 +2839,53 @@ func NewRotateSigningKeyRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewCompromiseSigningKeyRequest calls the generic CompromiseSigningKey builder with application/json body
+func NewCompromiseSigningKeyRequest(server string, kid string, body CompromiseSigningKeyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCompromiseSigningKeyRequestWithBody(server, kid, "application/json", bodyReader)
+}
+
+// NewCompromiseSigningKeyRequestWithBody constructs an http.Request for the CompromiseSigningKey method, with any body, and a specified content type
+func NewCompromiseSigningKeyRequestWithBody(server string, kid string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "kid", kid, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/oauth/keys/%s/compromised", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewGetPolicyRequest constructs an http.Request for the GetPolicy method
 func NewGetPolicyRequest(server string) (*http.Request, error) {
 	var err error
@@ -3469,6 +3614,38 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /v1/oauth/keys/rotate (the `RotateSigningKey` operationId).
 	RotateSigningKeyWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*RotateSigningKeyResponse, error)
+
+	// CompromiseSigningKeyWithBodyWithResponse Drop a compromised key now
+	//
+	// The emergency retirement: the key leaves the JWKS at once (no
+	// 24 h overlap), never signs again and is never a rotation
+	// candidate. An active token key is replaced by the next
+	// candidate; without one this issuer stops issuing until a key is
+	// added. One admin suffices; the act is a `signing_key_compromised`
+	// event with the reason. Other replicas follow within
+	// `KEY_REFRESH_S`; verifiers drop the key when their JWKS cache
+	// refreshes.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/oauth/keys/{kid}/compromised (the `CompromiseSigningKey` operationId).
+	CompromiseSigningKeyWithBodyWithResponse(ctx context.Context, kid string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompromiseSigningKeyResponse, error)
+
+	// CompromiseSigningKeyWithResponse Drop a compromised key now
+	//
+	// The emergency retirement: the key leaves the JWKS at once (no
+	// 24 h overlap), never signs again and is never a rotation
+	// candidate. An active token key is replaced by the next
+	// candidate; without one this issuer stops issuing until a key is
+	// added. One admin suffices; the act is a `signing_key_compromised`
+	// event with the reason. Other replicas follow within
+	// `KEY_REFRESH_S`; verifiers drop the key when their JWKS cache
+	// refreshes.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/oauth/keys/{kid}/compromised (the `CompromiseSigningKey` operationId).
+	CompromiseSigningKeyWithResponse(ctx context.Context, kid string, body CompromiseSigningKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*CompromiseSigningKeyResponse, error)
 
 	// GetPolicyWithResponse The active policy
 	//
@@ -4479,6 +4656,54 @@ func (r RotateSigningKeyResponse) ContentType() string {
 	return ""
 }
 
+type CompromiseSigningKeyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SigningKey
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CompromiseSigningKeyResponse) GetJSON200() *SigningKey {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r CompromiseSigningKeyResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CompromiseSigningKeyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CompromiseSigningKeyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CompromiseSigningKeyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CompromiseSigningKeyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type GetPolicyResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -5447,6 +5672,50 @@ func (c *ClientWithResponses) RotateSigningKeyWithResponse(ctx context.Context, 
 	return ParseRotateSigningKeyResponse(rsp)
 }
 
+// CompromiseSigningKeyWithBodyWithResponse Drop a compromised key now
+//
+// The emergency retirement: the key leaves the JWKS at once (no
+// 24 h overlap), never signs again and is never a rotation
+// candidate. An active token key is replaced by the next
+// candidate; without one this issuer stops issuing until a key is
+// added. One admin suffices; the act is a `signing_key_compromised`
+// event with the reason. Other replicas follow within
+// `KEY_REFRESH_S`; verifiers drop the key when their JWKS cache
+// refreshes.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/oauth/keys/{kid}/compromised (the `CompromiseSigningKey` operationId).
+func (c *ClientWithResponses) CompromiseSigningKeyWithBodyWithResponse(ctx context.Context, kid string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompromiseSigningKeyResponse, error) {
+	rsp, err := c.CompromiseSigningKeyWithBody(ctx, kid, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCompromiseSigningKeyResponse(rsp)
+}
+
+// CompromiseSigningKeyWithResponse Drop a compromised key now
+//
+// The emergency retirement: the key leaves the JWKS at once (no
+// 24 h overlap), never signs again and is never a rotation
+// candidate. An active token key is replaced by the next
+// candidate; without one this issuer stops issuing until a key is
+// added. One admin suffices; the act is a `signing_key_compromised`
+// event with the reason. Other replicas follow within
+// `KEY_REFRESH_S`; verifiers drop the key when their JWKS cache
+// refreshes.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/oauth/keys/{kid}/compromised (the `CompromiseSigningKey` operationId).
+func (c *ClientWithResponses) CompromiseSigningKeyWithResponse(ctx context.Context, kid string, body CompromiseSigningKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*CompromiseSigningKeyResponse, error) {
+	rsp, err := c.CompromiseSigningKey(ctx, kid, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCompromiseSigningKeyResponse(rsp)
+}
+
 // GetPolicyWithResponse The active policy
 //
 // The one active policy version and its thresholds.
@@ -6353,6 +6622,39 @@ func ParseRotateSigningKeyResponse(rsp *http.Response) (*RotateSigningKeyRespons
 	return response, nil
 }
 
+// ParseCompromiseSigningKeyResponse parses an HTTP response from a CompromiseSigningKeyWithResponse call
+func ParseCompromiseSigningKeyResponse(rsp *http.Response) (*CompromiseSigningKeyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CompromiseSigningKeyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SigningKey
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetPolicyResponse parses an HTTP response from a GetPolicyWithResponse call
 func ParseGetPolicyResponse(rsp *http.Response) (*GetPolicyResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -6799,6 +7101,9 @@ type ServerInterface interface {
 	// RotateSigningKey Activate the next token-signing key
 	// (POST /v1/oauth/keys/rotate)
 	RotateSigningKey(w http.ResponseWriter, r *http.Request)
+	// CompromiseSigningKey Drop a compromised key now
+	// (POST /v1/oauth/keys/{kid}/compromised)
+	CompromiseSigningKey(w http.ResponseWriter, r *http.Request, kid string)
 	// GetPolicy The active policy
 	// (GET /v1/policy)
 	GetPolicy(w http.ResponseWriter, r *http.Request)
@@ -7208,6 +7513,32 @@ func (siw *ServerInterfaceWrapper) RotateSigningKey(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RotateSigningKey(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CompromiseSigningKey operation middleware
+func (siw *ServerInterfaceWrapper) CompromiseSigningKey(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "kid" -------------
+	var kid string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "kid", r.PathValue("kid"), &kid, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kid", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CompromiseSigningKey(w, r, kid)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7628,6 +7959,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/oauth/clients/{client_id}", wrapper.GetOAuthClient)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/v1/oauth/clients/{client_id}", wrapper.UpdateOAuthClient)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/oauth/keys", wrapper.ListSigningKeys)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/oauth/keys/{kid}/compromised", wrapper.CompromiseSigningKey)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/oauth/keys/rotate", wrapper.RotateSigningKey)
 
 	return m
@@ -8430,6 +8762,46 @@ func (response RotateSigningKeydefaultApplicationProblemPlusJSONResponse) VisitR
 	return err
 }
 
+type CompromiseSigningKeyRequestObject struct {
+	Kid  string `json:"kid"`
+	Body *CompromiseSigningKeyJSONRequestBody
+}
+
+type CompromiseSigningKeyResponseObject interface {
+	VisitCompromiseSigningKeyResponse(w http.ResponseWriter) error
+}
+
+type CompromiseSigningKey200JSONResponse SigningKey
+
+func (response CompromiseSigningKey200JSONResponse) VisitCompromiseSigningKeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompromiseSigningKeydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CompromiseSigningKeydefaultApplicationProblemPlusJSONResponse) VisitCompromiseSigningKeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetPolicyRequestObject struct {
 }
 
@@ -8947,6 +9319,9 @@ type StrictServerInterface interface {
 	// RotateSigningKey Activate the next token-signing key
 	// (POST /v1/oauth/keys/rotate)
 	RotateSigningKey(ctx context.Context, request RotateSigningKeyRequestObject) (RotateSigningKeyResponseObject, error)
+	// CompromiseSigningKey Drop a compromised key now
+	// (POST /v1/oauth/keys/{kid}/compromised)
+	CompromiseSigningKey(ctx context.Context, request CompromiseSigningKeyRequestObject) (CompromiseSigningKeyResponseObject, error)
 	// GetPolicy The active policy
 	// (GET /v1/policy)
 	GetPolicy(ctx context.Context, request GetPolicyRequestObject) (GetPolicyResponseObject, error)
@@ -9446,6 +9821,39 @@ func (sh *strictHandler) RotateSigningKey(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RotateSigningKeyResponseObject); ok {
 		if err := validResponse.VisitRotateSigningKeyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CompromiseSigningKey operation middleware
+func (sh *strictHandler) CompromiseSigningKey(w http.ResponseWriter, r *http.Request, kid string) {
+	var request CompromiseSigningKeyRequestObject
+
+	request.Kid = kid
+
+	var body CompromiseSigningKeyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CompromiseSigningKey(ctx, request.(CompromiseSigningKeyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CompromiseSigningKey")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CompromiseSigningKeyResponseObject); ok {
+		if err := validResponse.VisitCompromiseSigningKeyResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

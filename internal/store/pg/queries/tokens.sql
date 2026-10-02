@@ -58,3 +58,10 @@ DELETE FROM assertion_jtis WHERE expires_at < sqlc.arg(before);
 INSERT INTO assertion_jtis (client_id, jti, expires_at)
 VALUES (sqlc.arg(client_id), sqlc.arg(jti), sqlc.arg(expires_at))
 ON CONFLICT (client_id, jti) DO NOTHING;
+
+-- name: CompromiseSigningKey :exec
+UPDATE signing_keys
+SET compromised_at = sqlc.arg(at), compromised_by = sqlc.arg(compromised_by), compromise_reason = sqlc.arg(reason),
+    retired_at = CASE WHEN active_from IS NOT NULL THEN COALESCE(retired_at, sqlc.arg(at)) END,
+    requested_by = NULL, requested_at = NULL
+WHERE kid = sqlc.arg(kid) AND compromised_at IS NULL;

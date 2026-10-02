@@ -166,15 +166,23 @@ type KeyRow struct {
 	RetiredAt    *time.Time
 	RequestedBy  string
 	RequestedAt  *time.Time
+	// CompromisedAt marks a key dropped in an emergency: never published,
+	// never signing, never a candidate.
+	CompromisedAt    *time.Time
+	CompromisedBy    string
+	CompromiseReason string
 }
 
-// Active reports whether the key signs (activated, not retired).
-func (r KeyRow) Active() bool { return r.ActiveFrom != nil && r.RetiredAt == nil }
+// Active reports whether the key signs (activated, not retired, not
+// compromised).
+func (r KeyRow) Active() bool {
+	return r.ActiveFrom != nil && r.RetiredAt == nil && r.CompromisedAt == nil
+}
 
 // Published reports whether the JWKS lists the key at now: active, or
 // retired less than grace ago.
 func (r KeyRow) Published(now time.Time, grace time.Duration) bool {
-	if r.ActiveFrom == nil {
+	if r.ActiveFrom == nil || r.CompromisedAt != nil {
 		return false
 	}
 	return r.RetiredAt == nil || now.Before(r.RetiredAt.Add(grace))
@@ -183,6 +191,8 @@ func (r KeyRow) Published(now time.Time, grace time.Duration) bool {
 // State names the row's state at now for the admin listing.
 func (r KeyRow) State(now time.Time, grace time.Duration) string {
 	switch {
+	case r.CompromisedAt != nil:
+		return "compromised"
 	case r.Active():
 		return "active"
 	case r.ActiveFrom != nil && r.Published(now, grace):
@@ -338,6 +348,9 @@ func (k *Keys) PublicationRing() (*auth.KeyRing, error) {
 	if k.pub == nil {
 		return nil, nil
 	}
+	if compromised(k.Rows(), k.pub.KID) {
+		return nil, errors.New("the publication key is marked compromised; configure a new PUBLICATION_KEY_FILE")
+	}
 	return auth.NewKeyRing(auth.SigningKey{KID: k.pub.KID, Key: k.pub.Key})
 }
 
@@ -359,10 +372,21 @@ func (k *Keys) Apply(rows []KeyRow) error {
 		}
 	}
 	if act == nil {
+		// Nothing may sign: drop the signer too, so that a key retired
+		// as compromised stops signing on this replica at once.
+		k.mu.Lock()
+		k.rows, k.active = slices.Clone(rows), nil
+		k.mu.Unlock()
 		return fmt.Errorf("%w: no token key is active in signing_keys", ErrNoActiveKey)
 	}
 	f, ok := k.files[act.KID]
 	if !ok {
+		k.mu.Lock()
+		k.rows = slices.Clone(rows)
+		if k.active != nil && compromised(rows, k.active.file.KID) {
+			k.active = nil
+		}
+		k.mu.Unlock()
 		return fmt.Errorf("%w: the active kid %s is not in SIGNING_KEY_FILES", ErrNoActiveKey, act.KID)
 	}
 	k.mu.RLock()
@@ -390,6 +414,10 @@ func (k *Keys) Apply(rows []KeyRow) error {
 		k.active = ak
 	}
 	return nil
+}
+
+func compromised(rows []KeyRow, kid string) bool {
+	return slices.ContainsFunc(rows, func(r KeyRow) bool { return r.KID == kid && r.CompromisedAt != nil })
 }
 
 // Rows returns the signing_keys rows last applied.
@@ -516,7 +544,7 @@ func (k *Keys) JWKS(now time.Time) (jwk.Set, error) {
 	if err != nil {
 		return nil, err
 	}
-	if k.pubJWK != nil {
+	if k.pubJWK != nil && !compromised(k.Rows(), k.pub.KID) {
 		c, err := k.pubJWK.Clone()
 		if err != nil {
 			return nil, err
@@ -561,7 +589,7 @@ func NextCandidate(order []string, rows []KeyRow) (KeyRow, bool) {
 	for _, kid := range order {
 		for ri := range rows {
 			r := &rows[ri]
-			if r.KID == kid && r.Purpose == PurposeToken && r.ActiveFrom == nil {
+			if r.KID == kid && r.Purpose == PurposeToken && r.ActiveFrom == nil && r.CompromisedAt == nil {
 				return *r, true
 			}
 		}

@@ -77,14 +77,15 @@ const (
 // Event types of WP-2's token service (internal/tokens): every issuance
 // and every refusal (06 §3), the client registry and the signing keys.
 const (
-	EventTokenIssued          = "token_issued"
-	EventTokenRefused         = "token_refused"
-	EventOAuthClientCreated   = "oauth_client_created"
-	EventOAuthClientUpdated   = "oauth_client_updated"
-	EventSigningKeyRegistered = "signing_key_registered"
-	EventSigningKeyActivated  = "signing_key_activated"
-	EventKeyRotationRequested = "key_rotation_requested"
-	EventKeyRotationRefused   = "key_rotation_refused"
+	EventTokenIssued           = "token_issued"
+	EventTokenRefused          = "token_refused"
+	EventOAuthClientCreated    = "oauth_client_created"
+	EventOAuthClientUpdated    = "oauth_client_updated"
+	EventSigningKeyRegistered  = "signing_key_registered"
+	EventSigningKeyActivated   = "signing_key_activated"
+	EventKeyRotationRequested  = "key_rotation_requested"
+	EventKeyRotationRefused    = "key_rotation_refused"
+	EventSigningKeyCompromised = "signing_key_compromised"
 )
 
 // Event types of WP-2's console accounts (internal/authz): every login,
@@ -115,14 +116,15 @@ func DefaultCatalogue() Catalogue {
 		EventPolicyActivated:   {},
 		EventAuditEventsViewed: {},
 
-		EventTokenIssued:          {},
-		EventTokenRefused:         {},
-		EventOAuthClientCreated:   {},
-		EventOAuthClientUpdated:   {},
-		EventSigningKeyRegistered: {},
-		EventSigningKeyActivated:  {},
-		EventKeyRotationRequested: {},
-		EventKeyRotationRefused:   {},
+		EventTokenIssued:           {},
+		EventTokenRefused:          {},
+		EventOAuthClientCreated:    {},
+		EventOAuthClientUpdated:    {},
+		EventSigningKeyRegistered:  {},
+		EventSigningKeyActivated:   {},
+		EventKeyRotationRequested:  {},
+		EventKeyRotationRefused:    {},
+		EventSigningKeyCompromised: {},
 
 		EventLoginPasswordAccepted: {},
 		EventLoginRefused:          {},

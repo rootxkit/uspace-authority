@@ -196,6 +196,17 @@ func (t memTx) UseAssertionJTI(_ context.Context, client, jti string, expires, n
 	return true, nil
 }
 
+func (t memTx) CompromiseSigningKey(_ context.Context, kid string, at time.Time, by, reason string) error {
+	if r := t.row(kid); r != nil && r.CompromisedAt == nil {
+		r.CompromisedAt, r.CompromisedBy, r.CompromiseReason = &at, by, reason
+		if r.ActiveFrom != nil && r.RetiredAt == nil {
+			r.RetiredAt = &at
+		}
+		r.RequestedBy, r.RequestedAt = "", nil
+	}
+	return nil
+}
+
 func (t memTx) RequestKeyRotation(_ context.Context, kid, by string, at time.Time) error {
 	if r := t.row(kid); r != nil && r.ActiveFrom == nil {
 		r.RequestedBy, r.RequestedAt = by, &at

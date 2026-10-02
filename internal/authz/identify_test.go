@@ -346,3 +346,28 @@ func FuzzParsePurpose(f *testing.F) {
 }
 
 var _ = apiserver.Identity{}
+
+// After the last key is dropped as compromised the own key set is
+// empty, and the rebuilt verifier refuses the tokens it accepted.
+func TestRebuildWithNoKeyRefusesOwnTokens(t *testing.T) {
+	now := time.Now()
+	a := mustKeyFile(t, 0)
+	k, _ := tokens.NewKeys(testIssuer, 24*time.Hour, []tokens.KeyFile{a}, nil)
+	from := now.Add(-time.Hour)
+	_ = k.Apply([]tokens.KeyRow{{KID: a.KID, Purpose: tokens.PurposeToken, PublicJWK: a.PublicJWK, ActiveFrom: &from}})
+	v, err := NewVerifier(context.Background(), VerifierConfig{SelfIssuer: testIssuer, SelfKeys: k.TokenKeys, Audiences: []string{ownHost}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tok, _ := k.Issue("x", ownHost, nil, time.Hour, now)
+	if _, err := v.Verify(context.Background(), tok.Token); err != nil {
+		t.Fatalf("before: %v", err)
+	}
+	_ = k.Apply([]tokens.KeyRow{{KID: a.KID, Purpose: tokens.PurposeToken, PublicJWK: a.PublicJWK, ActiveFrom: &from, RetiredAt: &now, CompromisedAt: &now}})
+	if err := v.Rebuild(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := v.Verify(context.Background(), tok.Token); err == nil {
+		t.Fatal("a token of the compromised key verified")
+	}
+}

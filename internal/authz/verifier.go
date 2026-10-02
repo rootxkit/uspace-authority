@@ -99,6 +99,9 @@ func NewVerifier(ctx context.Context, c VerifierConfig) (*Verifier, error) {
 	if err := v.Rebuild(); err != nil {
 		return nil, err
 	}
+	if set, _ := c.SelfKeys(c.now()); set == nil || set.Len() == 0 {
+		return nil, errors.New("this issuer publishes no token key")
+	}
 	for iss := range c.Peers {
 		v.tryPeer(ctx, iss)
 	}
@@ -112,14 +115,13 @@ func (v *Verifier) config(issuers map[string]auth.IssuerConfig) auth.Config {
 	}
 }
 
-// Rebuild installs this issuer's current token keys. The signing-key
-// manager calls it after every refresh, so a rotation on any replica and
-// the end of a retired key's 24 h are followed.
+// Rebuild installs the current token keys of this issuer. The
+// signing-key manager calls it after every refresh, so a rotation on
+// any replica, the end of a retired key's 24 h and an emergency
+// retirement are followed. An empty set is installed too: after the
+// last key is marked compromised no token of this issuer verifies.
 func (v *Verifier) Rebuild() error {
 	set, err := v.cfg.SelfKeys(v.cfg.now())
-	if err == nil && set.Len() == 0 {
-		err = errors.New("this issuer publishes no token key")
-	}
 	var sv *auth.Verifier
 	if err == nil {
 		sv, err = auth.NewVerifier(context.Background(), v.config(map[string]auth.IssuerConfig{v.cfg.SelfIssuer: {Keys: set}}))

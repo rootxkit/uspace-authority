@@ -26,6 +26,31 @@ func (q *Queries) ActivateSigningKey(ctx context.Context, arg ActivateSigningKey
 	return err
 }
 
+const compromiseSigningKey = `-- name: CompromiseSigningKey :exec
+UPDATE signing_keys
+SET compromised_at = $1, compromised_by = $2, compromise_reason = $3,
+    retired_at = CASE WHEN active_from IS NOT NULL THEN COALESCE(retired_at, $1) END,
+    requested_by = NULL, requested_at = NULL
+WHERE kid = $4 AND compromised_at IS NULL
+`
+
+type CompromiseSigningKeyParams struct {
+	At            *time.Time
+	CompromisedBy *string
+	Reason        *string
+	Kid           string
+}
+
+func (q *Queries) CompromiseSigningKey(ctx context.Context, arg CompromiseSigningKeyParams) error {
+	_, err := q.db.Exec(ctx, compromiseSigningKey,
+		arg.At,
+		arg.CompromisedBy,
+		arg.Reason,
+		arg.Kid,
+	)
+	return err
+}
+
 const deleteExpiredAssertionJTIs = `-- name: DeleteExpiredAssertionJTIs :execrows
 DELETE FROM assertion_jtis WHERE expires_at < $1
 `
@@ -266,7 +291,7 @@ func (q *Queries) SetSigningKeyRef(ctx context.Context, arg SetSigningKeyRefPara
 }
 
 const signingKeys = `-- name: SigningKeys :many
-SELECT kid, purpose, public_jwk, private_ref, registered_at, active_from, retired_at, requested_by, requested_at FROM signing_keys ORDER BY registered_at, kid
+SELECT kid, purpose, public_jwk, private_ref, registered_at, active_from, retired_at, requested_by, requested_at, compromised_at, compromised_by, compromise_reason FROM signing_keys ORDER BY registered_at, kid
 `
 
 func (q *Queries) SigningKeys(ctx context.Context) ([]SigningKey, error) {
@@ -288,6 +313,9 @@ func (q *Queries) SigningKeys(ctx context.Context) ([]SigningKey, error) {
 			&i.RetiredAt,
 			&i.RequestedBy,
 			&i.RequestedAt,
+			&i.CompromisedAt,
+			&i.CompromisedBy,
+			&i.CompromiseReason,
 		); err != nil {
 			return nil, err
 		}

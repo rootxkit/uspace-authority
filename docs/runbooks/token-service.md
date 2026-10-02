@@ -135,6 +135,27 @@ the public JWK and the file path.
    whose active kid has no file keeps signing with the key it had and
    counts `signing_key_file_missing` on every refresh.
 
+## Emergency: a key is compromised
+
+Rotation keeps the old key published for 24 h; a compromised key must
+not be. `POST /v1/oauth/keys/{kid}/compromised` with `{"reason": "..."}`
+(one admin; a `signing_key_compromised` event with the reason):
+
+- the key leaves the JWKS at once and never signs again; it is never a
+  rotation candidate again;
+- if it was the active token key, the next candidate of
+  `SIGNING_KEY_FILES` becomes active in the same transaction; if there
+  is none, this issuer stops issuing tokens and sessions until a key is
+  added and the replicas restarted;
+- this replica's own verifier drops it at once, the other replicas
+  within `KEY_REFRESH_S`; other systems drop it when their JWKS cache
+  refreshes (core refetches an unknown kid at most once a minute and
+  the whole set within its cache TTL), so tell the sibling operators to
+  restart their verifiers or flush their JWKS cache.
+
+Then remove the file, generate a new key, and review the
+`token_issued` events signed with the compromised `kid`.
+
 ## Client onboarding
 
 1. Pick the client id (M24) and the scopes from table B (least

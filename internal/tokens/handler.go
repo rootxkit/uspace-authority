@@ -271,21 +271,36 @@ func (h Handler) ListSigningKeys(ctx context.Context, _ gen.ListSigningKeysReque
 	if err != nil {
 		return nil, err
 	}
-	now, grace := h.now(), h.Manager.Keys.Grace()
 	out := gen.ListSigningKeys200JSONResponse{Keys: make([]gen.SigningKey, 0, len(rows))}
-	for ri := range rows {
-		r := &rows[ri]
-		k := gen.SigningKey{
-			Kid: r.KID, Purpose: gen.SigningKeyPurpose(r.Purpose), State: gen.SigningKeyState(r.State(now, grace)),
-			RegisteredAt: r.RegisteredAt.UTC(), ActiveFrom: utc(r.ActiveFrom), RetiredAt: utc(r.RetiredAt), RequestedAt: utc(r.RequestedAt),
-		}
-		if r.RequestedBy != "" {
-			by := r.RequestedBy
-			k.RequestedBy = &by
-		}
-		out.Keys = append(out.Keys, k)
+	for i := range rows {
+		out.Keys = append(out.Keys, h.keyToAPI(&rows[i]))
 	}
 	return out, nil
+}
+
+func (h Handler) keyToAPI(r *KeyRow) gen.SigningKey {
+	return gen.SigningKey{
+		Kid: r.KID, Purpose: gen.SigningKeyPurpose(r.Purpose), State: gen.SigningKeyState(r.State(h.now(), h.Manager.Keys.Grace())),
+		RegisteredAt: r.RegisteredAt.UTC(), ActiveFrom: utc(r.ActiveFrom), RetiredAt: utc(r.RetiredAt), RequestedAt: utc(r.RequestedAt),
+		RequestedBy: optional(r.RequestedBy), CompromisedAt: utc(r.CompromisedAt), CompromisedBy: optional(r.CompromisedBy),
+		CompromiseReason: optional(r.CompromiseReason),
+	}
+}
+
+// CompromiseSigningKey drops a key now.
+func (h Handler) CompromiseSigningKey(ctx context.Context, req gen.CompromiseSigningKeyRequestObject) (gen.CompromiseSigningKeyResponseObject, error) {
+	actor, err := audit.ActorOf(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if req.Body == nil {
+		return nil, httpx.Refuse(http.StatusBadRequest, httpx.SlugValidation, "", &core.FieldError{Field: "body", Reason: "required"})
+	}
+	row, err := h.Manager.Compromise(ctx, req.Kid, req.Body.Reason, actor)
+	if err != nil {
+		return nil, err
+	}
+	return gen.CompromiseSigningKey200JSONResponse(h.keyToAPI(&row)), nil
 }
 
 // RotateSigningKey runs one half of the two-person rotation, or the

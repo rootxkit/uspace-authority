@@ -47,6 +47,7 @@ type OAuthAdminHandler interface {
 	UpdateOAuthClient(ctx context.Context, request gen.UpdateOAuthClientRequestObject) (gen.UpdateOAuthClientResponseObject, error)
 	ListSigningKeys(ctx context.Context, request gen.ListSigningKeysRequestObject) (gen.ListSigningKeysResponseObject, error)
 	RotateSigningKey(ctx context.Context, request gen.RotateSigningKeyRequestObject) (gen.RotateSigningKeyResponseObject, error)
+	CompromiseSigningKey(ctx context.Context, request gen.CompromiseSigningKeyRequestObject) (gen.CompromiseSigningKeyResponseObject, error)
 }
 
 // AuthHandler serves /v1/auth/* (api, WP-2).

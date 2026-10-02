@@ -759,6 +759,44 @@ paths:
                 $ref: "#/components/schemas/SigningKeyList"
         default:
           $ref: "#/components/responses/Problem"
+  /v1/oauth/keys/{kid}/compromised:
+    parameters:
+      - {name: kid, in: path, required: true, schema: {type: string, maxLength: 128}}
+    post:
+      operationId: compromiseSigningKey
+      tags: [oauth-admin]
+      summary: Drop a compromised key now
+      description: |
+        The emergency retirement: the key leaves the JWKS at once (no
+        24 h overlap), never signs again and is never a rotation
+        candidate. An active token key is replaced by the next
+        candidate; without one this issuer stops issuing until a key is
+        added. One admin suffices; the act is a `signing_key_compromised`
+        event with the reason. Other replicas follow within
+        `KEY_REFRESH_S`; verifiers drop the key when their JWKS cache
+        refreshes.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: signing_key_compromised, entity_type: signing_key, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: {type: string, maxLength: 1000}
+      responses:
+        "200":
+          description: The key as marked.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SigningKey"
+        default:
+          $ref: "#/components/responses/Problem"
   /v1/oauth/keys/rotate:
     post:
       operationId: rotateSigningKey
@@ -1207,13 +1245,16 @@ components:
         purpose: {type: string, enum: [token, publication]}
         state:
           type: string
-          enum: [candidate, requested, active, retiring, retired]
+          enum: [candidate, requested, active, retiring, retired, compromised]
           description: "retiring: retired but still in the JWKS; retired: no longer published."
         registered_at: {type: string, format: date-time}
         active_from: {type: string, format: date-time}
         retired_at: {type: string, format: date-time}
         requested_by: {type: string}
         requested_at: {type: string, format: date-time}
+        compromised_at: {type: string, format: date-time}
+        compromised_by: {type: string}
+        compromise_reason: {type: string}
     SigningKeyList:
       type: object
       required: [keys]

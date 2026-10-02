@@ -78,6 +78,7 @@ type Tx interface {
 	// records client's jti until expires; false when it was recorded
 	// already (a replay), on this replica or another.
 	UseAssertionJTI(ctx context.Context, clientID, jti string, expires, now time.Time) (bool, error)
+	CompromiseSigningKey(ctx context.Context, kid string, at time.Time, by, reason string) error
 }
 
 // PG is Store on the relational database, recording events through the
@@ -197,6 +198,11 @@ func (t pgTx) RequestKeyRotation(ctx context.Context, kid, by string, at time.Ti
 	return t.q.RequestKeyRotation(ctx, gen.RequestKeyRotationParams{Kid: kid, RequestedBy: &by, RequestedAt: &at})
 }
 
+// CompromiseSigningKey implements Tx.
+func (t pgTx) CompromiseSigningKey(ctx context.Context, kid string, at time.Time, by, reason string) error {
+	return t.q.CompromiseSigningKey(ctx, gen.CompromiseSigningKeyParams{Kid: kid, At: &at, CompromisedBy: &by, Reason: &reason})
+}
+
 // UseAssertionJTI implements Tx.
 func (t pgTx) UseAssertionJTI(ctx context.Context, clientID, jti string, expires, now time.Time) (bool, error) {
 	if _, err := t.q.DeleteExpiredAssertionJTIs(ctx, now); err != nil {
@@ -229,6 +235,7 @@ func signingKeys(ctx context.Context, q *gen.Queries) ([]KeyRow, error) {
 			KID: r.Kid, Purpose: r.Purpose, PublicJWK: r.PublicJwk, PrivateRef: r.PrivateRef,
 			RegisteredAt: r.RegisteredAt, ActiveFrom: r.ActiveFrom, RetiredAt: r.RetiredAt,
 			RequestedBy: deref(r.RequestedBy), RequestedAt: r.RequestedAt,
+			CompromisedAt: r.CompromisedAt, CompromisedBy: deref(r.CompromisedBy), CompromiseReason: deref(r.CompromiseReason),
 		})
 	}
 	return out, nil

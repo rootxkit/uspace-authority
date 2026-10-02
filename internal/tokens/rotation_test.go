@@ -252,3 +252,80 @@ func TestKeyManagerRunStopsWithItsContext(t *testing.T) {
 		t.Fatal("Run never refreshed")
 	}
 }
+
+// The emergency retirement: the compromised active key leaves the JWKS
+// at once (a routine rotation keeps it 24 h, tested above), the next
+// candidate signs, a token of the old key no longer verifies, and the
+// act is an event; each refusal (no reason, unknown kid, twice) beside.
+func TestCompromiseDropsTheKeyAtOnce(t *testing.T) {
+	f := newFixture(t, fixtureOpts{keys: 2, publication: true})
+	ctx := context.Background()
+	m := f.parts.Manager
+	old := f.parts.Keys.ActiveKID()
+	before, _ := f.parts.Keys.Issue("x", cispHost, nil, time.Hour, f.clock.Now())
+	var pe *httpx.ProblemError
+	if _, err := m.Compromise(ctx, old, " ", admin); !errors.As(err, &pe) || pe.Problem.Status != http.StatusBadRequest {
+		t.Fatalf("no reason: %v", err)
+	}
+	if _, err := m.Compromise(ctx, "nope", "leak", admin); !errors.As(err, &pe) || pe.Problem.Status != http.StatusNotFound {
+		t.Fatalf("unknown kid: %v", err)
+	}
+	row, err := m.Compromise(ctx, old, "the PEM file was copied to a laptop", admin)
+	if err != nil || row.State(f.clock.Now(), 24*time.Hour) != "compromised" || row.CompromisedBy != "admin-1" {
+		t.Fatalf("compromise: %+v %v", row, err)
+	}
+	if f.parts.Keys.ActiveKID() == old || f.parts.Keys.ActiveKID() != f.parts.Keys.Files()[1].KID {
+		t.Fatal("the next candidate does not sign")
+	}
+	set, _ := f.parts.Keys.JWKS(f.clock.Now())
+	if _, ok := set.LookupKeyID(old); ok || set.Len() != 2 {
+		t.Fatalf("the compromised key is still published (%d keys)", set.Len())
+	}
+	var te *auth.TokenError
+	if _, err := f.verifier(t, cispHost).Verify(ctx, before.Token); !errors.As(err, &te) || te.Counter != auth.CounterRejectedKID {
+		t.Fatalf("a token of the compromised key: %v", err)
+	}
+	if ev := f.st.eventsOf(audit.EventSigningKeyCompromised); len(ev) != 1 || ev[0].Payload.(map[string]any)["replacement_kid"] != f.parts.Keys.ActiveKID() {
+		t.Fatalf("events %+v", ev)
+	}
+	if _, err := m.Compromise(ctx, old, "again", admin); !errors.As(err, &pe) || pe.Problem.Status != http.StatusConflict {
+		t.Fatalf("twice: %v", err)
+	}
+	// The publication key: dropped from the JWKS, no ring to sign with.
+	pub := f.parts.Keys.Publication().KID
+	if _, err := m.Compromise(ctx, pub, "leak", admin); err != nil {
+		t.Fatal(err)
+	}
+	set, _ = f.parts.Keys.JWKS(f.clock.Now())
+	if _, ok := set.LookupKeyID(pub); ok {
+		t.Fatal("the compromised publication key is still published")
+	}
+	if _, err := f.parts.Keys.PublicationRing(); err == nil {
+		t.Fatal("a ring for a compromised publication key")
+	}
+}
+
+// Without a candidate the issuer stops signing rather than keep the
+// compromised key.
+func TestCompromiseOfTheLastKeyStopsSigning(t *testing.T) {
+	f := newFixture(t, fixtureOpts{})
+	ctx := context.Background()
+	changed := 0
+	f.parts.Manager.OnChange = func() { changed++ }
+	if _, err := f.parts.Manager.Compromise(ctx, f.parts.Keys.ActiveKID(), "leak", admin); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.parts.Keys.Issue("x", cispHost, nil, time.Hour, f.clock.Now()); !errors.Is(err, ErrNoActiveKey) {
+		t.Fatalf("still signing: %v", err)
+	}
+	if set, _ := f.parts.Keys.TokenKeys(f.clock.Now()); set.Len() != 0 {
+		t.Fatal("a token key is still published")
+	}
+	if changed == 0 {
+		t.Fatal("the verifier was not told")
+	}
+	secret := f.register(t, "cisp-01", []string{"cis.read"}, []string{cispHost})
+	if _, oerr := f.token(secretReq("cisp-01", secret, "cis.read", cispHost)); oerr == nil || oerr.Reason != "signing_failed" {
+		t.Fatalf("issued without a key: %+v", oerr)
+	}
+}

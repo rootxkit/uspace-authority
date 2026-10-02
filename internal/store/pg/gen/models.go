@@ -110,15 +110,18 @@ type Session struct {
 }
 
 type SigningKey struct {
-	Kid          string
-	Purpose      string
-	PublicJwk    []byte
-	PrivateRef   string
-	RegisteredAt time.Time
-	ActiveFrom   *time.Time
-	RetiredAt    *time.Time
-	RequestedBy  *string
-	RequestedAt  *time.Time
+	Kid              string
+	Purpose          string
+	PublicJwk        []byte
+	PrivateRef       string
+	RegisteredAt     time.Time
+	ActiveFrom       *time.Time
+	RetiredAt        *time.Time
+	RequestedBy      *string
+	RequestedAt      *time.Time
+	CompromisedAt    *time.Time
+	CompromisedBy    *string
+	CompromiseReason *string
 }
 
 type User struct {
