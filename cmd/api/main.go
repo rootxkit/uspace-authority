@@ -30,6 +30,7 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/store"
 	"github.com/rootxkit/uspace-authority/internal/store/pg"
 	"github.com/rootxkit/uspace-authority/internal/tokens"
+	"github.com/rootxkit/uspace-authority/internal/zonesvc"
 )
 
 func main() {
@@ -177,6 +178,22 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 				time.Duration(cfg.RepairRetryS)*time.Second)
 		})
 
+		// Zones and U-space airspaces (WP-5): the projection shares the
+		// registry's projector pool; publications are announced on the bus.
+		zs, err := zonesvc.Assemble(zonesvc.Setup{
+			DB: db, Audit: auditWriter, Projector: reg.Projector, Logger: rt.Logger,
+			Publisher: zonesvc.NewBusPublisher(bp, time.Duration(cfg.NATSTimeoutMS)*time.Millisecond),
+			Meta:      zonesvc.Meta{ProviderName: cfg.ZonesProviderName, ProviderLang: cfg.ZonesProviderLang},
+		})
+		if err != nil {
+			return err
+		}
+		rt.AddCounters("zones", zs.Counters)
+		rt.Logger.Warn("daylight events cannot be resolved until the ground package is wired (WP-11): zones scheduled by BMCT, SR, SS or EECT answer unknown")
+		wg.Go(func() {
+			zs.Service.RunJobs(ctx, time.Duration(cfg.ZonesReprojectS)*time.Second, time.Duration(cfg.ZonesRepairRetryS)*time.Second)
+		})
+
 		rx, err := receivers.Assemble(ctx, receivers.Setup{
 			DB: db, Audit: auditWriter, Hasher: hasher, PIIKeyID: cfg.PIIKeyID, PIIKeyFile: cfg.PIIKeyFile,
 			JS: bp.JS, Limits: bp.Limits, KVTimeout: time.Duration(cfg.RIDKVTimeoutMS) * time.Millisecond,
@@ -229,10 +246,18 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 			SourcesHandler: switches.Handler{
 				Service: sw, Status: statuses, StaleAfter: time.Duration(cfg.SourceStatusStaleS) * time.Second,
 			},
+			ZonesHandler:  zs.Handler,
+			USpaceHandler: zs.Handler,
 		}, apiserver.Options{
 			Logger:      rt.Logger,
 			Middlewares: []apiserver.Middleware{tok.Handler.FormGuard(), apiserver.Authorize(identify, apiserver.DefaultRules())},
 			Keep:        apiserver.PathPrefix("/v1/", "/oauth/", "/.well-known/"),
+			// A zone file may be as large as uspace-core's parsers accept.
+			BodyLimits: map[string]int64{
+				"POST /v1/zones/import":                 int64(zonesvc.MaxDocumentBytes),
+				"POST /v1/zones/import/airspace-gov-ge": int64(zonesvc.MaxDocumentBytes) * 2,
+			},
+			BodyCounters: zs.Counters,
 		})
 		// The receivers' own config and heartbeat (x-receiver): bearer key
 		// and body HMAC, outside the generated server.

@@ -77,6 +77,7 @@ type API struct {
 	Registry
 	Receivers
 	Sources
+	Zones
 }
 
 // Sources is source control in api (WP-10, U-15).
@@ -101,6 +102,14 @@ type Receivers struct {
 	RIDKVTimeoutMS               int     `env:"RID_KV_TIMEOUT_MS" default:"2000" min:"50" max:"60000" help:"bound on one write of the receiver key set; a change whose write fails is refused with 503"`
 	RIDKeysetBucket              string  `env:"RID_KEYSET_BUCKET" default:"rid_receiver_keys" help:"KV bucket of the receiver key set that rid-ingest reads (the same variable there)"`
 	TSReaderRole                 string  `env:"TS_READER_ROLE" default:"authority_ts_reader" help:"role SET on api's telemetry connections that read the raw Remote ID frames (SELECT only)"`
+}
+
+// Zones is the zone and U-space airspace service of api (WP-5).
+type Zones struct {
+	ZonesReprojectS   int    `env:"ZONES_REPROJECT_S" default:"300" min:"10" max:"3600" help:"seconds between full re-projections of the published zones into the telemetry database (G-08: 300)"`
+	ZonesRepairRetryS int    `env:"ZONES_REPAIR_RETRY_S" default:"2" min:"1" max:"300" help:"first retry of a failed zones re-projection; each failure doubles it up to ZONES_REPROJECT_S"`
+	ZonesProviderName string `env:"ZONES_PROVIDER_NAME" help:"the provider named in the metadata of every ED-318 export and publication (the authority's name, spec 06 §4); absent when empty"`
+	ZonesProviderLang string `env:"ZONES_PROVIDER_LANG" default:"en-GB" help:"language tag of ZONES_PROVIDER_NAME (at most five characters)"`
 }
 
 // Registry is the registry of api (WP-3).
