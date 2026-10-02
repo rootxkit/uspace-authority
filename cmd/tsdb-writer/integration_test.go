@@ -453,6 +453,55 @@ func TestIntegrationForcedSequenceGapIsRecorded(t *testing.T) {
 	h.lastStatus(10*time.Second, func(s status) bool { return s.Counters[tswriter.CounterGapsObserved] == 2 })
 }
 
+// B-13, WP-8: a purge of the TSW stream while the writer is stopped
+// moves its consumers past the purged messages, so the writer is
+// delivered no step; the floor is compared with the position the table
+// was written to (writer_positions) and the purge recorded as a
+// stream_purge gap at restart. The twin first: a restart without a
+// purge records nothing (E-01).
+func TestIntegrationPurgeWhileStoppedIsRecorded(t *testing.T) {
+	h := newHarness(t)
+	ctx := context.Background()
+	h.start(nil, tswriter.Options{})
+	h.put(h.batch(2)) // seq 1
+	waitUntil(t, 20*time.Second, "first rows", func() bool { n, _ := h.rows(); return n == 2 })
+	waitUntil(t, 10*time.Second, "position", func() bool {
+		return h.count(`SELECT count(*) FROM writer_positions WHERE table_name = 'rid_observations' AND stream = 'TSW' AND last_seq = 1`) == 1
+	})
+	h.stop()
+	h.start(nil, tswriter.Options{})
+	h.put(h.batch(2)) // seq 2
+	waitUntil(t, 20*time.Second, "rows after a clean restart", func() bool { n, _ := h.rows(); return n == 4 })
+	if g := h.gapRows(); len(g) != 0 {
+		t.Fatalf("a restart without a purge recorded %v", g)
+	}
+	h.stop()
+	for range 3 {
+		h.put(h.batch(2)) // seq 3, 4, 5: never delivered
+	}
+	s, err := h.js.Stream(ctx, bus.StreamTSW)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Purge(ctx); err != nil {
+		t.Fatal(err)
+	}
+	h.start(nil, tswriter.Options{})
+	waitUntil(t, 10*time.Second, "purge gap", func() bool { return h.count(`SELECT count(*) FROM writer_gaps`) >= 1 })
+	want := "rid_observations TSW 3-5 3 messages stream_purge"
+	if got := h.gapRows(); len(got) != 1 || got[0] != want {
+		t.Fatalf("gaps %v, want %s", got, want)
+	}
+	h.stdout.waitFor(t, 5*time.Second, "TSW stream purged: messages never delivered to this table were removed; recorded as a gap", nil)
+	h.put(h.batch(2)) // seq 6: written, no further gap
+	waitUntil(t, 20*time.Second, "rows after the purge", func() bool { n, _ := h.rows(); return n == 6 })
+	time.Sleep(500 * time.Millisecond)
+	if got := h.gapRows(); len(got) != 1 {
+		t.Fatalf("gaps after the purge %v", got)
+	}
+	h.lastStatus(10*time.Second, func(s status) bool { return s.Counters[tswriter.CounterPurgesObserved] == 1 })
+}
+
 // SC-18 as the writer sees it, E-02: the database is stopped for 60 s
 // while rows keep arriving, then started. The queue fills to its bound
 // and the writer spills (stops pulling, counted); after recovery every

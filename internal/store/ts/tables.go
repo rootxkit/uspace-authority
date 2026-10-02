@@ -46,6 +46,10 @@ type Column struct {
 type Table struct {
 	Name    string
 	Columns []Column
+	// OnConflict is the conflict clause of the insert ("DO NOTHING" when
+	// empty: a row whose dedupe key is stored is counted, not written
+	// twice). Only writer_positions, which is updated, sets it.
+	OnConflict string
 }
 
 // ColumnNames lists the columns in COPY order.
@@ -252,6 +256,20 @@ var WriterGaps = Table{Name: "writer_gaps", Columns: []Column{
 	{Name: "receiver_id", Kind: KindText, Nullable: true},
 	{Name: "detail", Kind: KindText, Nullable: true},
 }}
+
+// WriterPositions is writer_positions (timeseries 00007): the highest
+// TSW sequence written per table, raised in the transaction of the rows
+// it covers, never lowered.
+var WriterPositions = Table{Name: "writer_positions", Columns: []Column{
+	{Name: "table_name", Kind: KindText},
+	{Name: "stream", Kind: KindText},
+	{Name: "last_seq", Kind: KindInt},
+}, OnConflict: "(table_name, stream) DO UPDATE SET last_seq = GREATEST(writer_positions.last_seq, EXCLUDED.last_seq), updated_at = now()"}
+
+// PositionRow is the writer_positions row of table at seq on stream.
+func PositionRow(table, stream string, seq uint64) []any {
+	return []any{table, stream, int64(seq)}
+}
 
 // Tables are the hypertables tsdb-writer consumes tsw.v1.<table> for,
 // by name. ussp_flights (WP-14) and manned_tracks (WP-15) are added by

@@ -29,6 +29,14 @@
 //     longer holds were aged out (or deleted) before the writer read
 //     them. One stream carries every table, so the count is of TSW
 //     messages, an upper bound for the table recording it;
+//   - stream_purge: the consumer's ack floor moved past sequences never
+//     delivered to it, which only a purge (or a delete) does. Seen when
+//     the next delivery steps over them or, on an idle consumer, by a
+//     floor check every PurgeCheck (10 s); and after a restart by
+//     comparing the floor the consumer starts from with the position
+//     the table was written to, which every write commits with its rows
+//     (writer_positions). Nothing is written until that position has
+//     been read. The count is of TSW messages, an upper bound;
 //   - malformed: a message the writer cannot read, with its row count
 //     when that much can be read;
 //   - rejected: a message whose rows the database refused (a data error);

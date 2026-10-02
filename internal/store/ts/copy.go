@@ -64,7 +64,11 @@ func (w *WriterPool) Write(ctx context.Context, parts ...Part) ([]Written, error
 		if err != nil {
 			return nil, fmt.Errorf("telemetry write %s: copy: %w", p.Table.Name, err)
 		}
-		tag, err := tx.Exec(ctx, "INSERT INTO "+target+" ("+list+") SELECT "+list+" FROM "+stage+" ON CONFLICT DO NOTHING")
+		conflict := "DO NOTHING"
+		if p.Table.OnConflict != "" {
+			conflict = p.Table.OnConflict
+		}
+		tag, err := tx.Exec(ctx, "INSERT INTO "+target+" ("+list+") SELECT "+list+" FROM "+stage+" ON CONFLICT "+conflict)
 		if err != nil {
 			return nil, fmt.Errorf("telemetry write %s: insert: %w", p.Table.Name, err)
 		}
@@ -79,6 +83,20 @@ func (w *WriterPool) Write(ctx context.Context, parts ...Part) ([]Written, error
 		return nil, fmt.Errorf("telemetry write: commit: %w", err)
 	}
 	return out, nil
+}
+
+// Position is the highest stream sequence written for table on stream
+// (writer_positions), and false when none is recorded yet.
+func (w *WriterPool) Position(ctx context.Context, table, stream string) (uint64, bool, error) {
+	var seq int64
+	err := w.pool.QueryRow(ctx, "SELECT last_seq FROM writer_positions WHERE table_name = $1 AND stream = $2", table, stream).Scan(&seq)
+	switch {
+	case store.IsNoRows(err):
+		return 0, false, nil
+	case err != nil:
+		return 0, false, fmt.Errorf("writer position %s: %w", table, err)
+	}
+	return uint64(seq), true, nil
 }
 
 // IsDataError reports whether err is the database refusing the data

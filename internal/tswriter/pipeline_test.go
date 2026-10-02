@@ -104,7 +104,18 @@ func (s *fakeSource) Fetch(ctx context.Context, n int, wait time.Duration) ([]Ms
 	return out, nil
 }
 
-func (s *fakeSource) AckFloor(context.Context) (uint64, error) { return s.floor, nil }
+func (s *fakeSource) AckFloor(context.Context) (uint64, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.floor, nil
+}
+
+// setFloor moves the consumer's ack floor, as a purge does.
+func (s *fakeSource) setFloor(f uint64) {
+	s.mu.Lock()
+	s.floor = f
+	s.mu.Unlock()
+}
 
 func (s *fakeSource) Holes(_ context.Context, jumps []Jump) ([]Hole, error) {
 	s.mu.Lock()
@@ -136,6 +147,11 @@ type fakeStore struct {
 	commits [][]ts.Part
 	calls   int
 	dupes   map[string]bool
+	// preset is a position stored before the test (presetKnown), posErr
+	// a position that cannot be read.
+	preset      uint64
+	presetKnown bool
+	posErr      error
 }
 
 func (s *fakeStore) Write(_ context.Context, parts ...ts.Part) ([]ts.Written, error) {
@@ -164,6 +180,30 @@ func (s *fakeStore) Write(_ context.Context, parts ...ts.Part) ([]ts.Written, er
 	}
 	s.commits = append(s.commits, parts)
 	return out, nil
+}
+
+// Position is the highest writer_positions row committed for table,
+// or what preset says before any.
+func (s *fakeStore) Position(_ context.Context, table, _ string) (uint64, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.posErr != nil {
+		return 0, false, s.posErr
+	}
+	seq, known := s.preset, s.presetKnown
+	for _, c := range s.commits {
+		for _, p := range c {
+			if p.Table.Name != ts.WriterPositions.Name {
+				continue
+			}
+			for _, r := range p.Rows {
+				if r[0] == table {
+					seq, known = max(seq, uint64(r[2].(int64))), true
+				}
+			}
+		}
+	}
+	return seq, known, nil
 }
 
 func (s *fakeStore) setFail(f func([]ts.Part) error) {
@@ -444,7 +484,9 @@ func TestHoleInTheStreamIsRecordedWithTheNextRows(t *testing.T) {
 	k.store.mu.Lock()
 	var together bool
 	for _, c := range k.store.commits {
-		if len(c) == 2 && len(c[1].Rows) == 1 && len(c[0].Rows) >= 1 && c[0].Rows[len(c[0].Rows)-1][0] == "b" {
+		// rows, gaps, and the table's position (writer_positions)
+		if len(c) == 3 && len(c[1].Rows) == 1 && len(c[0].Rows) >= 1 && c[0].Rows[len(c[0].Rows)-1][0] == "b" &&
+			c[2].Table.Name == ts.WriterPositions.Name {
 			together = true
 		}
 	}
@@ -655,7 +697,8 @@ func TestGapsPipelineWritesGapRecordsOnly(t *testing.T) {
 	k.store.mu.Lock()
 	defer k.store.mu.Unlock()
 	for _, c := range k.store.commits {
-		if len(c) != 1 || c[0].Table.Name != ts.WriterGaps.Name {
+		// gap records, and the table's position
+		if len(c) != 2 || c[0].Table.Name != ts.WriterGaps.Name || c[1].Table.Name != ts.WriterPositions.Name {
 			t.Fatalf("commit %v", c)
 		}
 	}
@@ -753,4 +796,165 @@ func TestStatusNamesTheWorstState(t *testing.T) {
 	if state(ok) != StateOK || state(ok, fail) != StateWriteFailing || state(fail, spill) != StateSpilling || state(spill, fail) != StateSpilling {
 		t.Fatal("state")
 	}
+}
+
+// purgeGaps are the committed stream_purge records.
+func (s *fakeStore) purgeGaps() []map[string]any {
+	var out []map[string]any
+	for _, g := range s.gaps() {
+		if g["cause"] == CauseStreamPurge {
+			out = append(out, g)
+		}
+	}
+	return out
+}
+
+// Every batch commits the table's position with its rows: the highest
+// stream sequence it covers.
+func TestEveryWriteCommitsTheTablePosition(t *testing.T) {
+	k := newKit(t, nil)
+	k.src.add(rowsMsg(t, 1, "a"), rowsMsg(t, 2, "b"))
+	k.run(t)
+	eventually(t, "rows", func() bool { return len(k.store.rows(probeTable.Name)) == 2 })
+	eventually(t, "position", func() bool {
+		seq, known, _ := k.store.Position(context.Background(), probeTable.Name, "TSW")
+		return known && seq == 2
+	})
+	if len(k.store.purgeGaps()) != 0 || k.c.Get(CounterRowsWritten) != 2 {
+		t.Fatalf("gaps %v counters %v", k.store.gaps(), k.c.Snapshot())
+	}
+}
+
+// A purge while the writer was down (B-13): the consumer's ack floor is
+// past the position written, so the purged sequences are a stream_purge
+// gap, committed with the new position before anything is pulled. The
+// twin: a floor equal to the position records nothing (E-01).
+func TestPurgeWhileDownIsRecordedAtStart(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		floor uint64
+		purge bool
+	}{{"purged", 7, true}, {"not purged", 3, false}} {
+		t.Run(tc.name, func(t *testing.T) {
+			k := newKit(t, nil)
+			k.store.preset, k.store.presetKnown = 3, true
+			k.src.setFloor(tc.floor)
+			k.src.add(rowsMsg(t, tc.floor+1, "a"))
+			k.run(t)
+			eventually(t, "rows", func() bool { return len(k.store.rows(probeTable.Name)) == 1 })
+			gaps := k.store.purgeGaps()
+			if !tc.purge {
+				if len(gaps) != 0 || k.c.Get(CounterPurgesObserved) != 0 {
+					t.Fatalf("purge recorded without a purge: %v", gaps)
+				}
+				return
+			}
+			if len(gaps) != 1 {
+				t.Fatalf("gaps %v", k.store.gaps())
+			}
+			g := gaps[0]
+			if g["from_seq"] != int64(4) || g["to_seq"] != int64(7) || g["count"] != int64(4) || g["count_unit"] != ts.UnitMessages ||
+				g["stream"] != "TSW" || g["dedupe_key"] != "tsw:stream_purge:probe:4-7" || k.c.Get(CounterPurgesObserved) != 1 {
+				t.Fatalf("gap %v counters %v", g, k.c.Snapshot())
+			}
+			k.store.mu.Lock()
+			first := k.store.commits[0]
+			k.store.mu.Unlock()
+			if len(first) != 2 || first[0].Table.Name != ts.WriterGaps.Name || first[1].Rows[0][2] != int64(7) {
+				t.Fatalf("the purge record and the position are not one commit: %v", first)
+			}
+			if k.src.fetchCount() == 0 {
+				t.Fatal("not pulled after the record")
+			}
+		})
+	}
+}
+
+// A purge while the writer runs: messages never delivered are skipped by
+// the consumer's floor, the next delivery steps over them. The step up to
+// the floor is a stream_purge gap and only what lies beyond it is checked
+// for retention.
+func TestPurgeWhileRunningIsRecordedAtTheNextDelivery(t *testing.T) {
+	k := newKit(t, func(c *Config) { c.PurgeCheck = time.Hour })
+	k.src.add(rowsMsg(t, 1, "a"))
+	k.run(t)
+	eventually(t, "first", func() bool { return len(k.store.rows(probeTable.Name)) == 1 })
+	k.src.setFloor(5) // 2..5 purged before delivery
+	k.src.add(rowsMsg(t, 6, "b"))
+	eventually(t, "second", func() bool { return len(k.store.rows(probeTable.Name)) == 2 })
+	gaps := k.store.purgeGaps()
+	if len(gaps) != 1 || gaps[0]["from_seq"] != int64(2) || gaps[0]["to_seq"] != int64(5) {
+		t.Fatalf("gaps %v", k.store.gaps())
+	}
+	k.src.mu.Lock()
+	jumps := append([]Jump(nil), k.src.jumps...)
+	k.src.mu.Unlock()
+	if len(jumps) != 1 || jumps[0] != (Jump{After: 5, Before: 6}) {
+		t.Fatalf("retention checked over %v, want only past the floor", jumps)
+	}
+}
+
+// A purge of undelivered messages with nothing after it: the idle
+// consumer's floor check records it.
+func TestIdlePurgeIsRecorded(t *testing.T) {
+	k := newKit(t, func(c *Config) { c.PurgeCheck = time.Millisecond })
+	k.src.add(rowsMsg(t, 1, "a"))
+	k.run(t)
+	eventually(t, "first", func() bool { return len(k.store.rows(probeTable.Name)) == 1 })
+	if len(k.store.purgeGaps()) != 0 {
+		t.Fatal("purge recorded on an idle consumer with no purge")
+	}
+	k.src.setFloor(4)
+	eventually(t, "purge", func() bool { return len(k.store.purgeGaps()) == 1 })
+	if g := k.store.purgeGaps()[0]; g["from_seq"] != int64(2) || g["to_seq"] != int64(4) {
+		t.Fatalf("gap %v", g)
+	}
+	if k.p.Snapshot().LastSeq != 4 {
+		t.Fatalf("last_seq %d", k.p.Snapshot().LastSeq)
+	}
+}
+
+// A position that cannot be read holds the writes, never silently: the
+// state is write_failing and it is counted, so a purge while the writer
+// was down cannot slip by; once it can be read the rows are written.
+func TestUnreadablePositionHoldsTheWrites(t *testing.T) {
+	k := newKit(t, nil)
+	k.store.mu.Lock()
+	k.store.posErr = errors.New("database unavailable")
+	k.store.mu.Unlock()
+	k.src.add(rowsMsg(t, 1, "a"))
+	k.run(t)
+	eventually(t, "counted", func() bool { return k.c.Get(CounterPositionFailed) > 0 && k.p.Snapshot().State == StateWriteFailing })
+	if len(k.store.rows(probeTable.Name)) != 0 {
+		t.Fatal("written without the position check")
+	}
+	k.store.mu.Lock()
+	k.store.posErr = nil
+	k.store.mu.Unlock()
+	eventually(t, "rows", func() bool { return len(k.store.rows(probeTable.Name)) == 1 && k.p.Snapshot().State == StateOK })
+}
+
+// A purge whose record cannot be written gives the delivered messages
+// back and advances nothing; it is recorded once the store returns.
+func TestUnwrittenPurgeRecordGivesTheMessagesBack(t *testing.T) {
+	k := newKit(t, func(c *Config) { c.PurgeCheck = time.Hour })
+	k.src.add(rowsMsg(t, 1, "a"))
+	k.run(t)
+	eventually(t, "first", func() bool { return len(k.store.rows(probeTable.Name)) == 1 })
+	k.store.setFail(func(parts []ts.Part) error {
+		if parts[0].Table.Name == ts.WriterGaps.Name && len(parts[0].Rows) > 0 && parts[0].Rows[0][5] == CauseStreamPurge {
+			return errors.New("connection reset")
+		}
+		return nil
+	})
+	k.src.setFloor(3)
+	m := rowsMsg(t, 4, "b")
+	k.src.add(m)
+	eventually(t, "nak", func() bool { _, n, _ := m.counts(); return n >= 1 })
+	if len(k.store.purgeGaps()) != 0 || k.p.Snapshot().LastSeq != 1 {
+		t.Fatalf("advanced past an unrecorded purge: %v", k.p.Snapshot())
+	}
+	k.store.setFail(nil)
+	k.src.add(m)
+	eventually(t, "recorded", func() bool { return len(k.store.purgeGaps()) == 1 && len(k.store.rows(probeTable.Name)) == 2 })
 }

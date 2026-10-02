@@ -83,10 +83,11 @@ causes.
 |---|---|---|---|
 | `ingest_queue_full`, `ingest_queue_age`, `ingest_queue_corrupt` | rid-ingest | Queued receiver batches were shed before they were handed over (`docs/runbooks/receivers.md`). `stream` is `INGEST`. | rows |
 | `stream_retention` | tsdb-writer | TSW messages left the stream before this table's consumer reached them: the sequences the consumer was delivered stepped over sequences the stream no longer holds. | messages |
+| `stream_purge` | tsdb-writer | The TSW stream was purged (or messages deleted) before this table's consumer was delivered them: the consumer's acknowledgement floor moved past sequences the writer never wrote. Seen at the next delivery or within 10 s on an idle table while the writer runs, and at start by comparing the floor with the position the table was written to (`writer_positions`) when the purge happened while it was stopped. | messages |
 | `malformed` | tsdb-writer | A TSW message could not be read (`detail` says why). It is acknowledged with the record. | rows when countable, else messages |
 | `rejected` | tsdb-writer | The database refused a message's rows (a CHECK or type error, in `detail`). The rest of the batch is written. | rows |
 
-A `stream_retention` count is of TSW messages, not rows. It is an upper
+A `stream_retention` or `stream_purge` count is of TSW messages, not rows. It is an upper
 bound for the table that records it: one stream carries every table,
 and a lost message's table cannot be read once the message is gone.
 Each table's consumer records the hole it saw, so one outage can appear
@@ -112,10 +113,17 @@ FROM writer_gaps ORDER BY at DESC LIMIT 50;
   was refused too. Those rows are lost and only counted; the log line
   has the stream sequence. Report it.
 
-**Not observed.** `nats stream purge TSW` moves every consumer past the
-purged messages, so the writer sees no step and records nothing. Never
-purge `TSW`. If it has been purged, record the hole by hand from the
-purge's sequence range.
+- `stream_purge`: someone purged `TSW` (`nats stream purge TSW`) or
+  deleted messages from it. Never purge `TSW`: every message in it is a
+  row not yet written. Find who did it; the rows in the range are lost
+  and the record is their only trace. The log line is "TSW stream
+  purged: messages never delivered to this table were removed; recorded
+  as a gap".
+
+**Position.** Every write commits the highest TSW sequence it covers in
+`writer_positions` (one row per table). At start nothing is written
+until that position has been read; while it cannot be (the database is
+down) the state is `write_failing` and `position_read_failed` rises.
 
 ## deduplicated
 

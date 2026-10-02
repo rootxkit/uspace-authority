@@ -55,14 +55,19 @@ type Source interface {
 	Holes(ctx context.Context, jumps []Jump) ([]Hole, error)
 }
 
-// Store writes parts in one transaction (ts.WriterPool.Write).
+// Store writes parts in one transaction (ts.WriterPool.Write) and reads
+// back how far a table was written (ts.WriterPool.Position).
 type Store interface {
 	Write(ctx context.Context, parts ...ts.Part) ([]ts.Written, error)
+	// Position is the highest stream sequence written for table; false
+	// when none is recorded.
+	Position(ctx context.Context, table, stream string) (uint64, bool, error)
 }
 
 // Gap causes this package records (writer_gaps.cause).
 const (
 	CauseStreamRetention = "stream_retention"
+	CauseStreamPurge     = "stream_purge"
 	CauseMalformed       = "malformed"
 	CauseRejected        = "rejected"
 )
@@ -84,6 +89,8 @@ const (
 	CounterHoleCheckFailed    = "hole_check_failed"
 	CounterAckFailed          = "ack_failed"
 	CounterRedelivered        = "redelivered_while_queued"
+	CounterPurgesObserved     = "purges_observed"
+	CounterPositionFailed     = "position_read_failed"
 )
 
 // Pipeline states (the status line's per-table state).
@@ -116,6 +123,9 @@ type Config struct {
 	// AckWait is the consumer's; a message held longer than half of it
 	// is kept from redelivery with InProgress.
 	AckWait time.Duration
+	// PurgeCheck is how often an idle consumer reads its ack floor to
+	// notice a purge of messages it was never delivered (default 10 s).
+	PurgeCheck time.Duration
 }
 
 // item is one delivered message in the queue.
@@ -157,6 +167,13 @@ type Pipeline struct {
 	failedAt time.Time
 	wake     chan struct{}
 	once     sync.Once
+	// lastPurgeCheck belongs to the pull loop (checkPurge).
+	lastPurgeCheck time.Time
+	// startFloor is the ack floor at start, compared once with the
+	// written position (checkPosition, the write loop's).
+	startFloor      uint64
+	started         bool
+	positionChecked bool
 }
 
 func (p *Pipeline) now() time.Time {
@@ -239,14 +256,17 @@ func sleep(ctx context.Context, d time.Duration) {
 
 // start reads the consumer's ack floor: the first delivery after a
 // restart is compared with it, so a hole opened while the writer was
-// down is recorded too.
+// down is recorded too. The floor is also kept for the writer's position
+// check (checkPosition): a purge while the writer was down moved it past
+// messages never written, with no step left to see.
 func (p *Pipeline) start(ctx context.Context) bool {
 	for ctx.Err() == nil {
 		floor, err := p.Source.AckFloor(ctx)
 		if err == nil {
 			p.mu.Lock()
-			p.lastSeq = floor
+			p.lastSeq, p.startFloor, p.started = floor, floor, true
 			p.mu.Unlock()
+			p.lastPurgeCheck = p.now()
 			return true
 		}
 		p.Counters.Inc(CounterFetchFailed)
@@ -255,6 +275,106 @@ func (p *Pipeline) start(ctx context.Context) bool {
 		sleep(ctx, p.Config.RetryMin)
 	}
 	return false
+}
+
+// checkPosition compares the ack floor the consumer started from with
+// the position this table was written to (writer_positions), once,
+// before the first batch is written. The floor moves past what the
+// writer wrote only by a purge, so a floor beyond the position is a
+// purge while the writer was down, recorded as a stream_purge gap. It
+// returns false until the check is done; meanwhile the state is
+// write_failing and nothing is written.
+func (p *Pipeline) checkPosition(ctx context.Context) bool {
+	p.mu.Lock()
+	started, floor := p.started, p.startFloor
+	p.mu.Unlock()
+	if !started {
+		return false
+	}
+	pos, known, err := p.Store.Position(ctx, p.Table.Name, bus.StreamTSW)
+	if err != nil {
+		p.Counters.Inc(CounterPositionFailed)
+		p.mu.Lock()
+		if !p.failing {
+			p.failing, p.failedAt = true, p.now()
+		}
+		p.mu.Unlock()
+		p.Limiter.Limited("tsw_position:"+p.Table.Name).Warn("written position unreadable; nothing is written until it is, so a purge while the writer was down is not missed",
+			slog.String("table", p.Table.Name), slog.String("error", err.Error()))
+		return false
+	}
+	if known && floor > pos && !p.recordPurge(ctx, pos, floor) {
+		return false
+	}
+	p.mu.Lock()
+	p.failing = false
+	p.mu.Unlock()
+	return true
+}
+
+// recordPurge writes, in one transaction, the stream_purge gap of the
+// sequences (after, floor] and the table's position at floor. The
+// consumer's ack floor reached floor without this writer being delivered
+// those sequences: they were purged (or deleted) from the stream. One
+// stream carries every table, so the count is of TSW messages, an upper
+// bound for this table. It reports whether the record is durable.
+func (p *Pipeline) recordPurge(ctx context.Context, after, floor uint64) bool {
+	g := ts.Gap{
+		DedupeKey: fmt.Sprintf("tsw:%s:%s:%d-%d", CauseStreamPurge, p.Table.Name, after+1, floor),
+		Table:     p.Table.Name, Stream: bus.StreamTSW, FromSeq: after + 1, ToSeq: floor,
+		Cause: CauseStreamPurge, Count: int64(floor - after), CountUnit: ts.UnitMessages, At: p.now().UTC(),
+		Detail: "the consumer's acknowledgement floor moved past TSW messages never delivered to this table's consumer: the stream was purged; it carries every table, so the count is an upper bound for this one",
+	}
+	wctx, cancel := context.WithTimeout(ctx, p.Config.WriteTimeout)
+	defer cancel()
+	written, err := p.Store.Write(wctx, ts.Part{Table: ts.WriterGaps, Rows: [][]any{g.Row()}}, p.positionPart(floor))
+	if err != nil {
+		p.failed(err)
+		return false
+	}
+	p.Counters.Inc(CounterPurgesObserved)
+	if len(written) > 0 {
+		p.Counters.Add(CounterGaps, uint64(written[0].Inserted))
+		p.Counters.Add(CounterGapsDeduplicated, uint64(written[0].Duplicates))
+	}
+	p.Logger.Warn("TSW stream purged: messages never delivered to this table were removed; recorded as a gap",
+		slog.String("table", p.Table.Name), slog.Uint64("from_seq", g.FromSeq), slog.Uint64("to_seq", g.ToSeq),
+		slog.Uint64("messages", floor-after))
+	return true
+}
+
+// positionPart raises the table's written position to seq.
+func (p *Pipeline) positionPart(seq uint64) ts.Part {
+	return ts.Part{Table: ts.WriterPositions, Rows: [][]any{ts.PositionRow(p.Table.Name, bus.StreamTSW, seq)}}
+}
+
+// checkPurge reads the ack floor of an idle consumer, at most every
+// PurgeCheck, and records a purge when the floor has passed the last
+// sequence delivered: a purge of messages never delivered, with nothing
+// delivered after it to show a step.
+func (p *Pipeline) checkPurge(ctx context.Context) {
+	every := p.Config.PurgeCheck
+	if every <= 0 {
+		every = 10 * time.Second
+	}
+	now := p.now()
+	if now.Sub(p.lastPurgeCheck) < every {
+		return
+	}
+	p.lastPurgeCheck = now
+	floor, err := p.Source.AckFloor(ctx)
+	if err != nil {
+		return // the next fetch says so
+	}
+	p.mu.Lock()
+	last := p.lastSeq
+	p.mu.Unlock()
+	if floor <= last || !p.recordPurge(ctx, last, floor) {
+		return
+	}
+	p.mu.Lock()
+	p.lastSeq = max(p.lastSeq, floor)
+	p.mu.Unlock()
 }
 
 // setSpilling records the transition into or out of spilling.
@@ -305,6 +425,8 @@ func (p *Pipeline) pull(ctx context.Context) {
 		}
 		if len(msgs) > 0 {
 			p.take(ctx, msgs)
+		} else {
+			p.checkPurge(ctx)
 		}
 	}
 }
@@ -325,6 +447,7 @@ func (p *Pipeline) take(ctx context.Context, msgs []Msg) {
 	}
 	p.mu.Lock()
 	last := p.lastSeq
+	before := last
 	queued := make(map[uint64]*item, len(p.queue))
 	for _, it := range p.queue {
 		queued[it.seq] = it
@@ -361,8 +484,21 @@ func (p *Pipeline) take(ctx context.Context, msgs []Msg) {
 	}
 	var holes []Hole
 	if len(jumps) > 0 {
-		var err error
-		holes, err = p.Source.Holes(ctx, jumps)
+		// A purge moves the ack floor past sequences never delivered
+		// here: those are recorded as stream_purge, and only what lies
+		// beyond the floor is checked for retention.
+		floor, err := p.Source.AckFloor(ctx)
+		if err == nil && floor > before && !p.recordPurge(ctx, before, floor) {
+			err = errPurgeNotRecorded
+		}
+		if err == nil {
+			for i := range jumps {
+				if jumps[i].After < floor {
+					jumps[i].After = min(floor, jumps[i].Before-1)
+				}
+			}
+			holes, err = p.Source.Holes(ctx, jumps)
+		}
 		if err != nil || len(holes) != len(jumps) {
 			p.Counters.Inc(CounterHoleCheckFailed)
 			p.Limiter.Limited("tsw_holes:"+p.Table.Name).Warn("could not check the TSW stream for a hole; the messages are given back",
@@ -437,6 +573,10 @@ func (p *Pipeline) decode(m Msg, seq uint64, now time.Time) *item {
 	return it
 }
 
+// errPurgeNotRecorded: a purge was seen and its gap record could not be
+// written yet; the messages are given back.
+var errPurgeNotRecorded = errors.New("purge gap record not written")
+
 // errNoSequence: a message without JetStream metadata has nothing to
 // place it by.
 var errNoSequence = errors.New("message without a stream sequence")
@@ -494,6 +634,16 @@ func (p *Pipeline) write(ctx context.Context) {
 	defer tick.Stop()
 	retry := p.Config.RetryMin
 	for ctx.Err() == nil {
+		if !p.positionChecked {
+			if !p.checkPosition(ctx) {
+				p.keepAlive()
+				sleep(ctx, retry)
+				retry = min(2*retry, p.Config.RetryMax)
+				continue
+			}
+			p.positionChecked = true
+			retry = p.Config.RetryMin
+		}
 		if !p.ready(p.now()) {
 			select {
 			case <-ctx.Done():
@@ -529,10 +679,21 @@ func (p *Pipeline) parts(batch []*item) []ts.Part {
 			gaps = append(gaps, it.gaps[i].Row())
 		}
 	}
-	if p.Table.Name == ts.WriterGaps.Name {
-		return []ts.Part{{Table: ts.WriterGaps, Rows: append(rows, gaps...)}}
+	var top uint64
+	for _, it := range batch {
+		top = max(top, it.seq)
 	}
-	return []ts.Part{{Table: p.Table, Rows: rows}, {Table: ts.WriterGaps, Rows: gaps}}
+	var out []ts.Part
+	if p.Table.Name == ts.WriterGaps.Name {
+		out = []ts.Part{{Table: ts.WriterGaps, Rows: append(rows, gaps...)}}
+	} else {
+		out = []ts.Part{{Table: p.Table, Rows: rows}, {Table: ts.WriterGaps, Rows: gaps}}
+	}
+	if top > 0 {
+		// The position commits with the rows it covers (writer_positions).
+		out = append(out, p.positionPart(top))
+	}
+	return out
 }
 
 func (p *Pipeline) store(ctx context.Context, batch []*item) ([]ts.Written, error) {
