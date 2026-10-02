@@ -40,8 +40,12 @@
 //     floor check every PurgeCheck (10 s); and after a restart by
 //     comparing the floor the consumer starts from with the position
 //     the table was written to, which every write commits with its rows
-//     (writer_positions). Nothing is written until that position has
-//     been read. The count is of TSW messages, an upper bound;
+//     (writer_positions), which a caught-up idle consumer with nothing
+//     waiting to be written also raises to the stream's last sequence.
+//     Nothing is pulled or written until that position has been read.
+//     A purge seen while the consumer is caught up removed none of its
+//     messages: counted (purge_steps_while_caught_up), not recorded. The
+//     count is of TSW messages, an upper bound;
 //   - malformed: a message the writer cannot read, with its row count
 //     when that much can be read;
 //   - rejected: a message whose rows the database refused (a data error);

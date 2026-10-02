@@ -914,22 +914,42 @@ func TestPurgeWhileRunningIsRecordedAtTheNextDelivery(t *testing.T) {
 }
 
 // A purge of undelivered messages with nothing after it: the idle
-// consumer's floor check records it.
+// consumer's floor check records it while the consumer is behind
+// (messages of its table undelivered, here held back as by
+// max_ack_pending). The twin (review of PR #14): a purge while the
+// consumer is caught up removes none of its messages; it is counted,
+// not recorded, so a quiet table never records a purge.
 func TestIdlePurgeIsRecorded(t *testing.T) {
-	k := newKit(t, func(c *Config) { c.PurgeCheck = time.Millisecond })
-	k.src.add(rowsMsg(t, 1, "a"))
-	k.run(t)
-	eventually(t, "first", func() bool { return len(k.store.rows(probeTable.Name)) == 1 })
-	if len(k.store.purgeGaps()) != 0 {
-		t.Fatal("purge recorded on an idle consumer with no purge")
-	}
-	k.src.setFloor(4)
-	eventually(t, "purge", func() bool { return len(k.store.purgeGaps()) == 1 })
-	if g := k.store.purgeGaps()[0]; g["from_seq"] != int64(2) || g["to_seq"] != int64(4) {
-		t.Fatalf("gap %v", g)
-	}
-	if k.p.Snapshot().LastSeq != 4 {
-		t.Fatalf("last_seq %d", k.p.Snapshot().LastSeq)
+	for _, tc := range []struct {
+		name    string
+		pending uint64
+		record  bool
+	}{{"behind", 3, true}, {"caught up", 0, false}} {
+		t.Run(tc.name, func(t *testing.T) {
+			k := newKit(t, func(c *Config) { c.PurgeCheck = time.Millisecond })
+			k.src.add(rowsMsg(t, 1, "a"))
+			k.src.setLast(1, tc.pending)
+			k.run(t)
+			eventually(t, "first", func() bool { return len(k.store.rows(probeTable.Name)) == 1 })
+			eventually(t, "idle checks", func() bool { return k.src.fetchCount() > 10 })
+			if len(k.store.purgeGaps()) != 0 {
+				t.Fatal("purge recorded on an idle consumer with no purge")
+			}
+			k.src.setLast(4, 0)
+			k.src.setFloor(4)
+			if tc.record {
+				eventually(t, "purge", func() bool { return len(k.store.purgeGaps()) == 1 })
+				if g := k.store.purgeGaps()[0]; g["from_seq"] != int64(2) || g["to_seq"] != int64(4) {
+					t.Fatalf("gap %v", g)
+				}
+			} else {
+				eventually(t, "counted", func() bool { return k.c.Get(CounterPurgeCaughtUp) == 1 })
+				if len(k.store.purgeGaps()) != 0 {
+					t.Fatalf("a caught-up consumer recorded %v", k.store.purgeGaps())
+				}
+			}
+			eventually(t, "last_seq", func() bool { return k.p.Snapshot().LastSeq == 4 })
+		})
 	}
 }
 

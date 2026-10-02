@@ -122,8 +122,21 @@ FROM writer_gaps ORDER BY at DESC LIMIT 50;
   purged: messages never delivered to this table were removed; recorded
   as a gap".
 
+**Quiet tables.** A table whose consumer is caught up (an idle check
+every 10 s finds nothing of it undelivered) records neither a
+`stream_retention` nor a `stream_purge` gap: none of its messages can
+have been aged out or purged unseen. A purge seen while caught up is
+counted (`purge_steps_while_caught_up`) and logged at info. Measured on
+the compose stack's nats-server (`TestIntegrationQuietTableRecordsNoGap`):
+a filtered consumer's ack floor does not move when its own or other
+tables' messages age out, also across a server restart. Messages that
+age out while the writer is stopped cannot be told apart by table and
+are recorded as an upper bound.
+
 **Position.** Every write commits the highest TSW sequence it covers in
-`writer_positions` (one row per table). At start nothing is written
+`writer_positions` (one row per table); a caught-up idle consumer with
+nothing waiting to be written also stores the stream's last sequence
+there, and a restart measures steps from it. At start nothing is written
 until that position has been read; while it cannot be (the database is
 down) the state is `write_failing` and `position_read_failed` rises.
 

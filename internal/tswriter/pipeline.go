@@ -102,6 +102,7 @@ const (
 	CounterRedelivered        = "redelivered_while_queued"
 	CounterPurgesObserved     = "purges_observed"
 	CounterPositionFailed     = "position_read_failed"
+	CounterPurgeCaughtUp      = "purge_steps_while_caught_up"
 )
 
 // Pipeline states (the status line's per-table state).
@@ -190,6 +191,11 @@ type Pipeline struct {
 	startFloor      uint64
 	started         bool
 	positionChecked bool
+	// posKnown: the written position was read (checkPosition); nothing
+	// is pulled before, so no step is measured from the floor alone. persisted is the last sequence accounted for that is stored
+	// in writer_positions (raised by idle while caught up).
+	posKnown  bool
+	persisted uint64
 }
 
 func (p *Pipeline) now() time.Time {
@@ -324,6 +330,12 @@ func (p *Pipeline) checkPosition(ctx context.Context) bool {
 	}
 	p.mu.Lock()
 	p.failing = false
+	// Every sequence up to the position is accounted for: written, or,
+	// for a caught-up consumer, known to hold none of this table's
+	// messages (idle). A step after a restart is measured from there.
+	p.lastSeq = max(p.lastSeq, pos)
+	p.persisted = max(p.persisted, pos)
+	p.posKnown = true
 	p.mu.Unlock()
 	return true
 }
@@ -389,9 +401,12 @@ func (p *Pipeline) idle(ctx context.Context) {
 		return
 	}
 	p.mu.Lock()
-	last := p.lastSeq
+	last, known := p.lastSeq, p.posKnown
 	p.mu.Unlock()
-	if cur.AckFloor > last && !p.recordPurge(ctx, last, cur.AckFloor) {
+	if !known {
+		return
+	}
+	if cur.AckFloor > last && !p.purgeStep(ctx, p.caughtUp, last, cur.AckFloor) {
 		p.caughtUp = false
 		return
 	}
@@ -402,7 +417,38 @@ func (p *Pipeline) idle(ctx context.Context) {
 	}
 	p.mu.Lock()
 	p.lastSeq = max(p.lastSeq, mark)
+	settled := len(p.queue) == 0
+	persisted := p.persisted
 	p.mu.Unlock()
+	// Keep the mark across a restart, but only while nothing delivered
+	// waits to be written: a purge while the writer is down must still
+	// find what it removed of this table above the stored position.
+	if p.caughtUp && settled && mark > persisted {
+		wctx, cancel := context.WithTimeout(ctx, p.Config.WriteTimeout)
+		defer cancel()
+		if _, err := p.Store.Write(wctx, p.positionPart(mark)); err == nil {
+			p.mu.Lock()
+			p.persisted = max(p.persisted, mark)
+			p.mu.Unlock()
+		}
+	}
+}
+
+// purgeStep handles an ack floor that passed the last sequence
+// accounted for. A consumer caught up (nothing of this table undelivered
+// at the previous idle check, and fetching ever since) was delivered
+// every message of its table published before the purge, so the step is
+// counted and logged, not recorded: a quiet table records no purge.
+// Otherwise it is a stream_purge gap. It reports whether the step is
+// settled.
+func (p *Pipeline) purgeStep(ctx context.Context, caughtUp bool, after, floor uint64) bool {
+	if !caughtUp {
+		return p.recordPurge(ctx, after, floor)
+	}
+	p.Counters.Inc(CounterPurgeCaughtUp)
+	p.Limiter.Limited("tsw_purge_caught_up:"+p.Table.Name).Info("TSW stream purged; this table's consumer was caught up, so none of its messages was removed",
+		slog.String("table", p.Table.Name), slog.Uint64("from_seq", after+1), slog.Uint64("to_seq", floor))
+	return true
 }
 
 // setSpilling records the transition into or out of spilling.
@@ -426,6 +472,18 @@ func (p *Pipeline) setSpilling(on bool) {
 func (p *Pipeline) pull(ctx context.Context) {
 	if !p.start(ctx) {
 		return
+	}
+	// Steps after a restart are measured from the written position
+	// (checkPosition, the write loop's): nothing is pulled before it has
+	// been read; the rows wait in JetStream meanwhile.
+	for ctx.Err() == nil {
+		p.mu.Lock()
+		known := p.posKnown
+		p.mu.Unlock()
+		if known {
+			break
+		}
+		sleep(ctx, p.Config.RetryMin)
 	}
 	tick := time.NewTicker(50 * time.Millisecond)
 	defer tick.Stop()
@@ -523,7 +581,7 @@ func (p *Pipeline) take(ctx context.Context, msgs []Msg) {
 		// here: those are recorded as stream_purge, and only what lies
 		// beyond the floor is checked for retention.
 		floor, err := p.Source.AckFloor(ctx)
-		if err == nil && floor > before && !p.recordPurge(ctx, before, floor) {
+		if err == nil && floor > before && !p.purgeStep(ctx, wasCaughtUp, before, floor) {
 			err = errPurgeNotRecorded
 		}
 		if err == nil {
