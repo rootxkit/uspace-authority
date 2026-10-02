@@ -92,3 +92,23 @@ Unreleased; the format follows Keep a Changelog.
   console); `schemas/source/control/v1.json`; the source-control
   runbook. The drain closes connections that never sent a request, so a
   spare client dial no longer makes a shutdown overrun its bound.
+- WP-9: tsdb-writer (`internal/tswriter`): a durable pull consumer per
+  table on `tsw.v1.<table>` (explicit ack, bounded `max_ack_pending`), a
+  queue bounded to 10 s or 30000 rows that stops pulling at its bound
+  (`spilling`), batches of at most 1000 rows or 500 ms written by COPY
+  into a staging table and `INSERT .. ON CONFLICT DO NOTHING`, messages
+  acknowledged only after the commit; `writer_gaps` with the producers'
+  records, `stream_retention` holes seen as sequence steps the TSW stream
+  no longer holds, `malformed` messages and `rejected` rows, each in the
+  transaction of the rows beside it; the counters `rows_written`,
+  `rows_deduplicated`, `batches`, `spills` and `gaps`; a degraded start
+  with the database down and a stop on an older schema; the hourly
+  retention check. `internal/store/ts`: the adapters' `Writer`
+  (`Enqueue`, `EnqueueGap`), the table registry, `WriterPool.Write` and
+  `OlderThan` (the pool type is now `WriterPool`). Timeseries `00005`:
+  `writer_gaps`, the `(frame_id, ingest_ts)` dedupe index, 1-day chunks
+  and compression after 7 days for `rid_observations` (no 90-day
+  retention until WP-27's archive), `authority_hypertable_policies` for
+  the later hypertables, `TEMPORARY` for the writer role;
+  `schemas/tsw/rows/v1.json`, `schemas/tsw/gap/v1.json`; the tsdb-writer
+  runbook.
