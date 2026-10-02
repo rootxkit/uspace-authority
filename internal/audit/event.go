@@ -188,6 +188,16 @@ const (
 	EventIncidentRequested        = "incident_requested"
 )
 
+// The F3411 Display Provider's events (WP-14): an oversight area added,
+// and a USS availability arbitration requested (before the DSS call),
+// set or failed (after it).
+const (
+	EventDPViewCreated           = "dp_view_created"
+	EventDPAvailabilityRequested = "dp_availability_requested"
+	EventDPAvailabilitySet       = "dp_availability_set"
+	EventDPAvailabilityFailed    = "dp_availability_failed"
+)
+
 // DefaultCatalogue is the catalogue of this build.
 func DefaultCatalogue() Catalogue {
 	return Catalogue{
@@ -271,6 +281,11 @@ func DefaultCatalogue() Catalogue {
 		EventViolationDismissed:       {},
 		EventViolationEscalated:       {},
 		EventIncidentRequested:        {},
+
+		EventDPViewCreated:           {},
+		EventDPAvailabilityRequested: {},
+		EventDPAvailabilitySet:       {},
+		EventDPAvailabilityFailed:    {},
 	}
 }
 

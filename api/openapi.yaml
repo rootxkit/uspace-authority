@@ -34,7 +34,9 @@ info:
     them (WP-7), and they are served outside the generated server.
     The CIS change-notification receiver carries `x-cis-delivery: true`:
     the compact JWS of its body is its credential (WP-6), and it is
-    served outside the generated server too.
+    served outside the generated server too. The operations dp-poller
+    serves carry `x-dp: true` (WP-14): it verifies their bearer token
+    itself, and they are served outside the generated server.
 
     Work packages add their path groups below under a `# WP-k` comment
     and regenerate `api/gen/` with `scripts/generate.sh`.
@@ -99,6 +101,13 @@ tags:
       A7, 2019/947 Art. 18(k)): raised and cleared by detect, persisted
       with their evidence excerpt, and reviewed by inspectors.
 
+  - name: dp
+    description: |
+      The ASTM F3411-22a Display Provider (WP-14, spec 02 F7):
+      oversight areas, the Service Providers seen and their state, USS
+      availability arbitration (F3548), the ISA change notification a
+      Service Provider posts, and the conformance observation hook
+      (Q-A7).
   - name: picture
     description: |
       The console picture (WP-13, served by picture-ws, not api): the
@@ -2848,6 +2857,252 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  # WP-14: the F3411 Display Provider. Administration is api's (admin);
+  # the ISA change notification and the conformance hook are served by
+  # dp-poller (`x-dp: true`), which verifies the token itself with
+  # uspace-core's verifier and never reaches api's Authorize.
+  /v1/dp/views:
+    get:
+      operationId: listDPViews
+      tags: [dp]
+      summary: The oversight areas the Display Provider shows
+      description: |
+        Every oversight area, oldest first. The Display Provider shows
+        these areas whether or not a console looks at them, beside the
+        console viewports picture-ws reports (which expire with the
+        console).
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: none
+      responses:
+        "200":
+          description: The areas.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DPViewList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createDPView
+      tags: [dp]
+      summary: Add an oversight area
+      description: |
+        A WGS84 box `[west, south, east, north]` that never crosses the
+        antimeridian. The row and its `events` row are one transaction;
+        after the commit every area is published to KV bucket
+        `dp_oversight` (key `views`) with the table's version, never
+        replacing a higher one (two api replicas never move it back), and
+        republished periodically. dp-poller covers each area with tiles of
+        at most `dp_view_diagonal_km` (F3411 7 km). At most 256 areas
+        (E-10): one more is refused with 409.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: dp_view_created, entity_type: dp_view, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DPViewInput"
+      responses:
+        "201":
+          description: The area as stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DPView"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/dp/providers:
+    get:
+      operationId: listDPProviders
+      tags: [dp]
+      summary: The Service Providers the Display Provider has seen, with their state
+      description: |
+        Every Service Provider an ISA named (its owner is its id and the
+        source instance of its tracks), from dp-poller's last
+        `src.v1.network_rid.<uss_id>` status: live, down (`unavailable
+        since T`: its polls fail for 10 s; never removed), disabled (by
+        whom), or unknown; slow (polled at 0.5 Hz past the F3411 p99 of
+        3 s) with p95 and p99; the ISAs and tiles it is polled for; and
+        `provider_unknown` when it matches no operating certificate (it
+        is still polled and shown). `status_age_s` is the age of the
+        status itself.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: none
+      responses:
+        "200":
+          description: The providers.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DPProviderList"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/dp/providers/{uss_id}/availability:
+    parameters:
+      - {name: uss_id, in: path, required: true, schema: {type: string, pattern: "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}$"}}
+    put:
+      operationId: setDPProviderAvailability
+      tags: [dp]
+      summary: Arbitrate a USS's availability at the DSS (F3548)
+      description: |
+        `PUT /dss/v1/uss_availability/{uss_id}` at the DSS with scope
+        `utm.availability_arbitration` (F3548-21, through the client
+        generated from `api/clients/dss-utm.yaml` with uspace-core's
+        types). The request is recorded first (`dp_availability_requested`,
+        committed), then the DSS is called with the arbitration of this
+        USS held by an advisory lock (a concurrent arbitration of the
+        same USS is refused with 409), and the outcome is recorded
+        (`dp_availability_set` or `dp_availability_failed`). A DSS that
+        refuses or cannot be reached answers 502 with its status.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: dp_availability_set, entity_type: uss_availability, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DPAvailabilityInput"
+      responses:
+        "200":
+          description: The availability as the DSS now holds it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DPAvailabilityResult"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "502":
+          $ref: "#/components/responses/Problem"
+        "503":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/dp/observations/display_data:
+    get:
+      operationId: getDPDisplayData
+      tags: [dp]
+      summary: "Conformance hook: what the Display Provider shows in a view (dp-poller)"
+      description: |
+        The InterUSS Remote ID observation interface `GET
+        {base}/display_data?view=` with base `/v1/dp/observations`, its
+        shape read from `api/clients/interuss-observation/observation.yaml`
+        at the commit `api/clients/SOURCE` records (Q-A7). A bearer
+        ecosystem token granting `dp.observe` (issued to `lab-01` only)
+        with `aud` one of this system's hosts. A view within the F3411
+        details diagonal (2 km) is answered with flights, a wider one with
+        clusters only. A conformance hook, not a product endpoint.
+      security:
+        - ecosystemToken: []
+      x-dp: true
+      x-audit: none
+      parameters:
+        - {name: view, in: query, required: true, schema: {type: string, maxLength: 256}, description: "lat1,lng1,lat2,lng2"}
+      responses:
+        "200":
+          description: The observation interface's GetDisplayDataResponse.
+          content:
+            application/json:
+              schema:
+                type: object
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "503":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/dp/observations/display_data/{id}:
+    get:
+      operationId: getDPFlightDetails
+      tags: [dp]
+      summary: "Conformance hook: a flight's details (dp-poller)"
+      description: |
+        The observation interface's `GET {base}/display_data/{id}`: the
+        operator id's public part only (the secret part of a registration
+        number never leaves), the operator location and the serial.
+        Same token as `getDPDisplayData`.
+      security:
+        - ecosystemToken: []
+      x-dp: true
+      x-audit: none
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: The observation interface's GetDetailsResponse.
+          content:
+            application/json:
+              schema:
+                type: object
+        "401":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /uss/identification_service_areas/{id}:
+    post:
+      operationId: postDPISANotification
+      tags: [dp]
+      summary: F3411 ISA change notification from a Service Provider (dp-poller)
+      description: |
+        ASTM F3411-22a `postIdentificationServiceArea`
+        (`api/clients/dss-rid.yaml`), served by dp-poller through the
+        server generated from that file: the Service Provider that owns
+        an ISA posts its creation, change or deletion to every subscriber
+        the DSS named. A bearer token from an allow-listed issuer (this
+        system's, or the lab's in the lab) granting `rid.service_provider`
+        with `aud` one of `AUTHORITY_AUDIENCES` (M6, M18); the service
+        area's owner must be the token's subject (403 otherwise). Body:
+        F3411 `PutIdentificationServiceAreaNotificationParameters`, at most
+        `DP_MAX_NOTIFICATION_BYTES`. Errors are F3411 `ErrorResponse`
+        bodies.
+      security:
+        - ecosystemToken: []
+      x-dp: true
+      x-audit: none
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "204":
+          description: Applied.
+        "400":
+          description: Malformed (F3411 ErrorResponse).
+        "401":
+          description: No token, or a token refused (F3411 ErrorResponse).
+        "403":
+          description: The token does not grant rid.service_provider, or its subject does not own the ISA (F3411 ErrorResponse).
+        "413":
+          description: Larger than the bound (F3411 ErrorResponse).
+        "503":
+          description: The token cannot be verified yet (F3411 ErrorResponse).
+
 components:
   securitySchemes:
     sessionCookie:
@@ -4464,3 +4719,78 @@ components:
       properties:
         decision: {type: string, enum: [reviewed, dismissed, escalated]}
         note: {type: string, maxLength: 4000}
+    DPViewInput:
+      type: object
+      required: [label, bbox]
+      properties:
+        label: {type: string, minLength: 1, maxLength: 200, description: What the area is (an airport, a city).}
+        bbox:
+          type: array
+          description: "[west, south, east, north] in WGS84 degrees; west < east (never across the antimeridian)."
+          minItems: 4
+          maxItems: 4
+          items: {type: number, format: double}
+    DPView:
+      type: object
+      required: [id, label, bbox, created_by, created_at]
+      properties:
+        id: {type: integer, format: int64}
+        label: {type: string}
+        bbox:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items: {type: number, format: double}
+        created_by: {type: string}
+        created_at: {type: string, format: date-time}
+    DPViewList:
+      type: object
+      required: [views]
+      properties:
+        views:
+          type: array
+          items: {$ref: "#/components/schemas/DPView"}
+    DPProvider:
+      type: object
+      required: [uss_id, state, isas, tiles, flights, slow, provider_unknown, status_age_s]
+      properties:
+        uss_id: {type: string, description: "The ISA owner (its client id at the DSS); the source instance of its tracks."}
+        uss_base_url: {type: string}
+        state: {type: string, enum: [live, stale, down, disabled, unknown]}
+        since: {type: string, format: date-time}
+        age_s: {type: number, format: double, description: Seconds since its last successful poll.}
+        isas: {type: integer}
+        tiles: {type: integer}
+        flights: {type: integer}
+        p95_s: {type: number, format: double}
+        p99_s: {type: number, format: double}
+        slow: {type: boolean}
+        unavailable_since: {type: string, format: date-time}
+        provider_unknown: {type: boolean, description: It matches no operating certificate; still polled and shown.}
+        disabled_by: {type: string}
+        disabled_by_who: {type: string}
+        dss: {type: string, enum: [ok, dss_unavailable, dss_unconfigured]}
+        counters:
+          type: object
+          additionalProperties: {type: integer, format: int64}
+        status_age_s: {type: number, format: double, description: Age of dp-poller's last status of it.}
+    DPProviderList:
+      type: object
+      required: [providers]
+      properties:
+        providers:
+          type: array
+          items: {$ref: "#/components/schemas/DPProvider"}
+    DPAvailabilityInput:
+      type: object
+      required: [availability, reason]
+      properties:
+        availability: {type: string, enum: [Unknown, Normal, Down], description: "F3548 UssAvailabilityState."}
+        reason: {type: string, minLength: 1, maxLength: 500}
+    DPAvailabilityResult:
+      type: object
+      required: [uss_id, availability, version]
+      properties:
+        uss_id: {type: string}
+        availability: {type: string, enum: [Unknown, Normal, Down]}
+        version: {type: string, description: The DSS's version of the USS's availability.}

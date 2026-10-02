@@ -16,8 +16,11 @@ output-options:
   # which a generated handler has already decoded; internal/receivers
   # serves them, and a test holds this list to the contract. The
   # x-picture operations (WP-13) are served by picture-ws
-  # (internal/picture), a WebSocket upgrade among them.
-  exclude-operation-ids: [getMetrics, getRIDReceiverConfig, postRIDReceiverHeartbeat, postRIDObservations, receiveCISNotification, getPictureWS, getPictureSnapshot, getPictureSources]
+  # (internal/picture), a WebSocket upgrade among them. The x-dp
+  # operations (WP-14) are served by dp-poller (internal/dp): the F3411
+  # notification through the server generated from the standard's own
+  # file, the observation hook in the InterUSS interface's shape.
+  exclude-operation-ids: [getMetrics, getRIDReceiverConfig, postRIDReceiverHeartbeat, postRIDObservations, receiveCISNotification, getPictureWS, getPictureSnapshot, getPictureSources, getDPDisplayData, getDPFlightDetails, postDPISANotification]
 compatibility:
   # Enum constants carry their type name (AuditEventActorTypeClient, not
   # Client), so an enum value never collides with a generated type.

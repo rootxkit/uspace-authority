@@ -102,6 +102,96 @@ func (e ClassLabel) Valid() bool {
 	}
 }
 
+// Defines values for DPAvailabilityInputAvailability.
+const (
+	DPAvailabilityInputAvailabilityDown    DPAvailabilityInputAvailability = "Down"
+	DPAvailabilityInputAvailabilityNormal  DPAvailabilityInputAvailability = "Normal"
+	DPAvailabilityInputAvailabilityUnknown DPAvailabilityInputAvailability = "Unknown"
+)
+
+// Valid indicates whether the value is a known member of the DPAvailabilityInputAvailability enum.
+func (e DPAvailabilityInputAvailability) Valid() bool {
+	switch e {
+	case DPAvailabilityInputAvailabilityDown:
+		return true
+	case DPAvailabilityInputAvailabilityNormal:
+		return true
+	case DPAvailabilityInputAvailabilityUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DPAvailabilityResultAvailability.
+const (
+	DPAvailabilityResultAvailabilityDown    DPAvailabilityResultAvailability = "Down"
+	DPAvailabilityResultAvailabilityNormal  DPAvailabilityResultAvailability = "Normal"
+	DPAvailabilityResultAvailabilityUnknown DPAvailabilityResultAvailability = "Unknown"
+)
+
+// Valid indicates whether the value is a known member of the DPAvailabilityResultAvailability enum.
+func (e DPAvailabilityResultAvailability) Valid() bool {
+	switch e {
+	case DPAvailabilityResultAvailabilityDown:
+		return true
+	case DPAvailabilityResultAvailabilityNormal:
+		return true
+	case DPAvailabilityResultAvailabilityUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DPProviderDss.
+const (
+	DPProviderDssDssUnavailable  DPProviderDss = "dss_unavailable"
+	DPProviderDssDssUnconfigured DPProviderDss = "dss_unconfigured"
+	DPProviderDssOk              DPProviderDss = "ok"
+)
+
+// Valid indicates whether the value is a known member of the DPProviderDss enum.
+func (e DPProviderDss) Valid() bool {
+	switch e {
+	case DPProviderDssDssUnavailable:
+		return true
+	case DPProviderDssDssUnconfigured:
+		return true
+	case DPProviderDssOk:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DPProviderState.
+const (
+	DPProviderStateDisabled DPProviderState = "disabled"
+	DPProviderStateDown     DPProviderState = "down"
+	DPProviderStateLive     DPProviderState = "live"
+	DPProviderStateStale    DPProviderState = "stale"
+	DPProviderStateUnknown  DPProviderState = "unknown"
+)
+
+// Valid indicates whether the value is a known member of the DPProviderState enum.
+func (e DPProviderState) Valid() bool {
+	switch e {
+	case DPProviderStateDisabled:
+		return true
+	case DPProviderStateDown:
+		return true
+	case DPProviderStateLive:
+		return true
+	case DPProviderStateStale:
+		return true
+	case DPProviderStateUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for GovGeKindRuleLowerReference.
 const (
 	GovGeKindRuleLowerReferenceAGL   GovGeKindRuleLowerReference = "AGL"
@@ -1540,6 +1630,91 @@ type ClassLabel string
 type CompetencyValidity struct {
 	Competency string    `json:"competency"`
 	ValidUntil time.Time `json:"valid_until"`
+}
+
+// DPAvailabilityInput defines model for DPAvailabilityInput.
+type DPAvailabilityInput struct {
+	// Availability F3548 UssAvailabilityState.
+	Availability DPAvailabilityInputAvailability `json:"availability"`
+	Reason       string                          `json:"reason"`
+}
+
+// DPAvailabilityInputAvailability F3548 UssAvailabilityState.
+type DPAvailabilityInputAvailability string
+
+// DPAvailabilityResult defines model for DPAvailabilityResult.
+type DPAvailabilityResult struct {
+	Availability DPAvailabilityResultAvailability `json:"availability"`
+	UssId        string                           `json:"uss_id"`
+
+	// Version The DSS's version of the USS's availability.
+	Version string `json:"version"`
+}
+
+// DPAvailabilityResultAvailability defines model for DPAvailabilityResult.Availability.
+type DPAvailabilityResultAvailability string
+
+// DPProvider defines model for DPProvider.
+type DPProvider struct {
+	// AgeS Seconds since its last successful poll.
+	AgeS          *float64          `json:"age_s,omitempty"`
+	Counters      *map[string]int64 `json:"counters,omitempty"`
+	DisabledBy    *string           `json:"disabled_by,omitempty"`
+	DisabledByWho *string           `json:"disabled_by_who,omitempty"`
+	Dss           *DPProviderDss    `json:"dss,omitempty"`
+	Flights       int               `json:"flights"`
+	Isas          int               `json:"isas"`
+	P95S          *float64          `json:"p95_s,omitempty"`
+	P99S          *float64          `json:"p99_s,omitempty"`
+
+	// ProviderUnknown It matches no operating certificate; still polled and shown.
+	ProviderUnknown bool            `json:"provider_unknown"`
+	Since           *time.Time      `json:"since,omitempty"`
+	Slow            bool            `json:"slow"`
+	State           DPProviderState `json:"state"`
+
+	// StatusAgeS Age of dp-poller's last status of it.
+	StatusAgeS       float64    `json:"status_age_s"`
+	Tiles            int        `json:"tiles"`
+	UnavailableSince *time.Time `json:"unavailable_since,omitempty"`
+	UssBaseUrl       *string    `json:"uss_base_url,omitempty"`
+
+	// UssId The ISA owner (its client id at the DSS); the source instance of its tracks.
+	UssId string `json:"uss_id"`
+}
+
+// DPProviderDss defines model for DPProvider.Dss.
+type DPProviderDss string
+
+// DPProviderState defines model for DPProvider.State.
+type DPProviderState string
+
+// DPProviderList defines model for DPProviderList.
+type DPProviderList struct {
+	Providers []DPProvider `json:"providers"`
+}
+
+// DPView defines model for DPView.
+type DPView struct {
+	Bbox      []float64 `json:"bbox"`
+	CreatedAt time.Time `json:"created_at"`
+	CreatedBy string    `json:"created_by"`
+	Id        int64     `json:"id"`
+	Label     string    `json:"label"`
+}
+
+// DPViewInput defines model for DPViewInput.
+type DPViewInput struct {
+	// Bbox [west, south, east, north] in WGS84 degrees; west < east (never across the antimeridian).
+	Bbox []float64 `json:"bbox"`
+
+	// Label What the area is (an airport
+	Label string `json:"label"`
+}
+
+// DPViewList defines model for DPViewList.
+type DPViewList struct {
+	Views []DPView `json:"views"`
 }
 
 // ED318Collection An ED-318 FeatureCollection exactly as uspace-core ed318.Export writes it.
@@ -3397,6 +3572,12 @@ type VerifyMFAJSONRequestBody = MFARequest
 // PutCellOwnershipJSONRequestBody defines body for PutCellOwnership for application/json ContentType.
 type PutCellOwnershipJSONRequestBody = CellOwnershipInput
 
+// SetDPProviderAvailabilityJSONRequestBody defines body for SetDPProviderAvailability for application/json ContentType.
+type SetDPProviderAvailabilityJSONRequestBody = DPAvailabilityInput
+
+// CreateDPViewJSONRequestBody defines body for CreateDPView for application/json ContentType.
+type CreateDPViewJSONRequestBody = DPViewInput
+
 // CreateOAuthClientJSONRequestBody defines body for CreateOAuthClient for application/json ContentType.
 type CreateOAuthClientJSONRequestBody = OAuthClientInput
 
@@ -3929,6 +4110,97 @@ type ClientInterface interface {
 	//
 	// Corresponds with PUT /v1/cells (the `PutCellOwnership` operationId).
 	PutCellOwnership(ctx context.Context, body PutCellOwnershipJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListDPProviders The Service Providers the Display Provider has seen, with their state
+	//
+	// Every Service Provider an ISA named (its owner is its id and the
+	// source instance of its tracks), from dp-poller's last
+	// `src.v1.network_rid.<uss_id>` status: live, down (`unavailable
+	// since T`: its polls fail for 10 s; never removed), disabled (by
+	// whom), or unknown; slow (polled at 0.5 Hz past the F3411 p99 of
+	// 3 s) with p95 and p99; the ISAs and tiles it is polled for; and
+	// `provider_unknown` when it matches no operating certificate (it
+	// is still polled and shown). `status_age_s` is the age of the
+	// status itself.
+	//
+	// Corresponds with GET /v1/dp/providers (the `ListDPProviders` operationId).
+	ListDPProviders(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetDPProviderAvailabilityWithBody Arbitrate a USS's availability at the DSS (F3548)
+	//
+	// `PUT /dss/v1/uss_availability/{uss_id}` at the DSS with scope
+	// `utm.availability_arbitration` (F3548-21, through the client
+	// generated from `api/clients/dss-utm.yaml` with uspace-core's
+	// types). The request is recorded first (`dp_availability_requested`,
+	// committed), then the DSS is called with the arbitration of this
+	// USS held by an advisory lock (a concurrent arbitration of the
+	// same USS is refused with 409), and the outcome is recorded
+	// (`dp_availability_set` or `dp_availability_failed`). A DSS that
+	// refuses or cannot be reached answers 502 with its status.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /v1/dp/providers/{uss_id}/availability (the `SetDPProviderAvailability` operationId).
+	SetDPProviderAvailabilityWithBody(ctx context.Context, ussId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetDPProviderAvailability Arbitrate a USS's availability at the DSS (F3548)
+	//
+	// `PUT /dss/v1/uss_availability/{uss_id}` at the DSS with scope
+	// `utm.availability_arbitration` (F3548-21, through the client
+	// generated from `api/clients/dss-utm.yaml` with uspace-core's
+	// types). The request is recorded first (`dp_availability_requested`,
+	// committed), then the DSS is called with the arbitration of this
+	// USS held by an advisory lock (a concurrent arbitration of the
+	// same USS is refused with 409), and the outcome is recorded
+	// (`dp_availability_set` or `dp_availability_failed`). A DSS that
+	// refuses or cannot be reached answers 502 with its status.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /v1/dp/providers/{uss_id}/availability (the `SetDPProviderAvailability` operationId).
+	SetDPProviderAvailability(ctx context.Context, ussId string, body SetDPProviderAvailabilityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListDPViews The oversight areas the Display Provider shows
+	//
+	// Every oversight area, oldest first. The Display Provider shows
+	// these areas whether or not a console looks at them, beside the
+	// console viewports picture-ws reports (which expire with the
+	// console).
+	//
+	// Corresponds with GET /v1/dp/views (the `ListDPViews` operationId).
+	ListDPViews(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateDPViewWithBody Add an oversight area
+	//
+	// A WGS84 box `[west, south, east, north]` that never crosses the
+	// antimeridian. The row and its `events` row are one transaction;
+	// after the commit every area is published to KV bucket
+	// `dp_oversight` (key `views`) with the table's version, never
+	// replacing a higher one (two api replicas never move it back), and
+	// republished periodically. dp-poller covers each area with tiles of
+	// at most `dp_view_diagonal_km` (F3411 7 km). At most 256 areas
+	// (E-10): one more is refused with 409.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/dp/views (the `CreateDPView` operationId).
+	CreateDPViewWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateDPView Add an oversight area
+	//
+	// A WGS84 box `[west, south, east, north]` that never crosses the
+	// antimeridian. The row and its `events` row are one transaction;
+	// after the commit every area is published to KV bucket
+	// `dp_oversight` (key `views`) with the table's version, never
+	// replacing a higher one (two api replicas never move it back), and
+	// republished periodically. dp-poller covers each area with tiles of
+	// at most `dp_view_diagonal_km` (F3411 7 km). At most 256 areas
+	// (E-10): one more is refused with 409.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/dp/views (the `CreateDPView` operationId).
+	CreateDPView(ctx context.Context, body CreateDPViewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListOAuthClients Registered clients
 	//
@@ -5381,6 +5653,157 @@ func (c *Client) PutCellOwnershipWithBody(ctx context.Context, contentType strin
 // Corresponds with PUT /v1/cells (the `PutCellOwnership` operationId).
 func (c *Client) PutCellOwnership(ctx context.Context, body PutCellOwnershipJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPutCellOwnershipRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListDPProviders The Service Providers the Display Provider has seen, with their state
+//
+// Every Service Provider an ISA named (its owner is its id and the
+// source instance of its tracks), from dp-poller's last
+// `src.v1.network_rid.<uss_id>` status: live, down (`unavailable
+// since T`: its polls fail for 10 s; never removed), disabled (by
+// whom), or unknown; slow (polled at 0.5 Hz past the F3411 p99 of
+// 3 s) with p95 and p99; the ISAs and tiles it is polled for; and
+// `provider_unknown` when it matches no operating certificate (it
+// is still polled and shown). `status_age_s` is the age of the
+// status itself.
+//
+// Corresponds with GET /v1/dp/providers (the `ListDPProviders` operationId).
+func (c *Client) ListDPProviders(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListDPProvidersRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetDPProviderAvailabilityWithBody Arbitrate a USS's availability at the DSS (F3548)
+//
+// `PUT /dss/v1/uss_availability/{uss_id}` at the DSS with scope
+// `utm.availability_arbitration` (F3548-21, through the client
+// generated from `api/clients/dss-utm.yaml` with uspace-core's
+// types). The request is recorded first (`dp_availability_requested`,
+// committed), then the DSS is called with the arbitration of this
+// USS held by an advisory lock (a concurrent arbitration of the
+// same USS is refused with 409), and the outcome is recorded
+// (`dp_availability_set` or `dp_availability_failed`). A DSS that
+// refuses or cannot be reached answers 502 with its status.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /v1/dp/providers/{uss_id}/availability (the `SetDPProviderAvailability` operationId).
+func (c *Client) SetDPProviderAvailabilityWithBody(ctx context.Context, ussId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetDPProviderAvailabilityRequestWithBody(c.Server, ussId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetDPProviderAvailability Arbitrate a USS's availability at the DSS (F3548)
+//
+// `PUT /dss/v1/uss_availability/{uss_id}` at the DSS with scope
+// `utm.availability_arbitration` (F3548-21, through the client
+// generated from `api/clients/dss-utm.yaml` with uspace-core's
+// types). The request is recorded first (`dp_availability_requested`,
+// committed), then the DSS is called with the arbitration of this
+// USS held by an advisory lock (a concurrent arbitration of the
+// same USS is refused with 409), and the outcome is recorded
+// (`dp_availability_set` or `dp_availability_failed`). A DSS that
+// refuses or cannot be reached answers 502 with its status.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /v1/dp/providers/{uss_id}/availability (the `SetDPProviderAvailability` operationId).
+func (c *Client) SetDPProviderAvailability(ctx context.Context, ussId string, body SetDPProviderAvailabilityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetDPProviderAvailabilityRequest(c.Server, ussId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListDPViews The oversight areas the Display Provider shows
+//
+// Every oversight area, oldest first. The Display Provider shows
+// these areas whether or not a console looks at them, beside the
+// console viewports picture-ws reports (which expire with the
+// console).
+//
+// Corresponds with GET /v1/dp/views (the `ListDPViews` operationId).
+func (c *Client) ListDPViews(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListDPViewsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateDPViewWithBody Add an oversight area
+//
+// A WGS84 box `[west, south, east, north]` that never crosses the
+// antimeridian. The row and its `events` row are one transaction;
+// after the commit every area is published to KV bucket
+// `dp_oversight` (key `views`) with the table's version, never
+// replacing a higher one (two api replicas never move it back), and
+// republished periodically. dp-poller covers each area with tiles of
+// at most `dp_view_diagonal_km` (F3411 7 km). At most 256 areas
+// (E-10): one more is refused with 409.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/dp/views (the `CreateDPView` operationId).
+func (c *Client) CreateDPViewWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateDPViewRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateDPView Add an oversight area
+//
+// A WGS84 box `[west, south, east, north]` that never crosses the
+// antimeridian. The row and its `events` row are one transaction;
+// after the commit every area is published to KV bucket
+// `dp_oversight` (key `views`) with the table's version, never
+// replacing a higher one (two api replicas never move it back), and
+// republished periodically. dp-poller covers each area with tiles of
+// at most `dp_view_diagonal_km` (F3411 7 km). At most 256 areas
+// (E-10): one more is refused with 409.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/dp/views (the `CreateDPView` operationId).
+func (c *Client) CreateDPView(ctx context.Context, body CreateDPViewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateDPViewRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -8052,6 +8475,147 @@ func NewPutCellOwnershipRequestWithBody(server string, contentType string, body 
 	}
 
 	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListDPProvidersRequest constructs an http.Request for the ListDPProviders method
+func NewListDPProvidersRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/dp/providers")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSetDPProviderAvailabilityRequest calls the generic SetDPProviderAvailability builder with application/json body
+func NewSetDPProviderAvailabilityRequest(server string, ussId string, body SetDPProviderAvailabilityJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetDPProviderAvailabilityRequestWithBody(server, ussId, "application/json", bodyReader)
+}
+
+// NewSetDPProviderAvailabilityRequestWithBody constructs an http.Request for the SetDPProviderAvailability method, with any body, and a specified content type
+func NewSetDPProviderAvailabilityRequestWithBody(server string, ussId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "uss_id", ussId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/dp/providers/%s/availability", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListDPViewsRequest constructs an http.Request for the ListDPViews method
+func NewListDPViewsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/dp/views")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateDPViewRequest calls the generic CreateDPView builder with application/json body
+func NewCreateDPViewRequest(server string, body CreateDPViewJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateDPViewRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateDPViewRequestWithBody constructs an http.Request for the CreateDPView method, with any body, and a specified content type
+func NewCreateDPViewRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/dp/views")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -12029,6 +12593,101 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PUT /v1/cells (the `PutCellOwnership` operationId).
 	PutCellOwnershipWithResponse(ctx context.Context, body PutCellOwnershipJSONRequestBody, reqEditors ...RequestEditorFn) (*PutCellOwnershipResponse, error)
 
+	// ListDPProvidersWithResponse The Service Providers the Display Provider has seen, with their state
+	//
+	// Every Service Provider an ISA named (its owner is its id and the
+	// source instance of its tracks), from dp-poller's last
+	// `src.v1.network_rid.<uss_id>` status: live, down (`unavailable
+	// since T`: its polls fail for 10 s; never removed), disabled (by
+	// whom), or unknown; slow (polled at 0.5 Hz past the F3411 p99 of
+	// 3 s) with p95 and p99; the ISAs and tiles it is polled for; and
+	// `provider_unknown` when it matches no operating certificate (it
+	// is still polled and shown). `status_age_s` is the age of the
+	// status itself.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/dp/providers (the `ListDPProviders` operationId).
+	ListDPProvidersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListDPProvidersResponse, error)
+
+	// SetDPProviderAvailabilityWithBodyWithResponse Arbitrate a USS's availability at the DSS (F3548)
+	//
+	// `PUT /dss/v1/uss_availability/{uss_id}` at the DSS with scope
+	// `utm.availability_arbitration` (F3548-21, through the client
+	// generated from `api/clients/dss-utm.yaml` with uspace-core's
+	// types). The request is recorded first (`dp_availability_requested`,
+	// committed), then the DSS is called with the arbitration of this
+	// USS held by an advisory lock (a concurrent arbitration of the
+	// same USS is refused with 409), and the outcome is recorded
+	// (`dp_availability_set` or `dp_availability_failed`). A DSS that
+	// refuses or cannot be reached answers 502 with its status.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /v1/dp/providers/{uss_id}/availability (the `SetDPProviderAvailability` operationId).
+	SetDPProviderAvailabilityWithBodyWithResponse(ctx context.Context, ussId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetDPProviderAvailabilityResponse, error)
+
+	// SetDPProviderAvailabilityWithResponse Arbitrate a USS's availability at the DSS (F3548)
+	//
+	// `PUT /dss/v1/uss_availability/{uss_id}` at the DSS with scope
+	// `utm.availability_arbitration` (F3548-21, through the client
+	// generated from `api/clients/dss-utm.yaml` with uspace-core's
+	// types). The request is recorded first (`dp_availability_requested`,
+	// committed), then the DSS is called with the arbitration of this
+	// USS held by an advisory lock (a concurrent arbitration of the
+	// same USS is refused with 409), and the outcome is recorded
+	// (`dp_availability_set` or `dp_availability_failed`). A DSS that
+	// refuses or cannot be reached answers 502 with its status.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /v1/dp/providers/{uss_id}/availability (the `SetDPProviderAvailability` operationId).
+	SetDPProviderAvailabilityWithResponse(ctx context.Context, ussId string, body SetDPProviderAvailabilityJSONRequestBody, reqEditors ...RequestEditorFn) (*SetDPProviderAvailabilityResponse, error)
+
+	// ListDPViewsWithResponse The oversight areas the Display Provider shows
+	//
+	// Every oversight area, oldest first. The Display Provider shows
+	// these areas whether or not a console looks at them, beside the
+	// console viewports picture-ws reports (which expire with the
+	// console).
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/dp/views (the `ListDPViews` operationId).
+	ListDPViewsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListDPViewsResponse, error)
+
+	// CreateDPViewWithBodyWithResponse Add an oversight area
+	//
+	// A WGS84 box `[west, south, east, north]` that never crosses the
+	// antimeridian. The row and its `events` row are one transaction;
+	// after the commit every area is published to KV bucket
+	// `dp_oversight` (key `views`) with the table's version, never
+	// replacing a higher one (two api replicas never move it back), and
+	// republished periodically. dp-poller covers each area with tiles of
+	// at most `dp_view_diagonal_km` (F3411 7 km). At most 256 areas
+	// (E-10): one more is refused with 409.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/dp/views (the `CreateDPView` operationId).
+	CreateDPViewWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDPViewResponse, error)
+
+	// CreateDPViewWithResponse Add an oversight area
+	//
+	// A WGS84 box `[west, south, east, north]` that never crosses the
+	// antimeridian. The row and its `events` row are one transaction;
+	// after the commit every area is published to KV bucket
+	// `dp_oversight` (key `views`) with the table's version, never
+	// replacing a higher one (two api replicas never move it back), and
+	// republished periodically. dp-poller covers each area with tiles of
+	// at most `dp_view_diagonal_km` (F3411 7 km). At most 256 areas
+	// (E-10): one more is refused with 409.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/dp/views (the `CreateDPView` operationId).
+	CreateDPViewWithResponse(ctx context.Context, body CreateDPViewJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDPViewResponse, error)
+
 	// ListOAuthClientsWithResponse Registered clients
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -13884,6 +14543,240 @@ func (r PutCellOwnershipResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r PutCellOwnershipResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListDPProvidersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *DPProviderList
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListDPProvidersResponse) GetJSON200() *DPProviderList {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ListDPProvidersResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListDPProvidersResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListDPProvidersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListDPProvidersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListDPProvidersResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SetDPProviderAvailabilityResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *DPAvailabilityResult
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *Problem
+	// ApplicationproblemJSON502 the response for an HTTP 502 `application/problem+json` response
+	ApplicationproblemJSON502 *Problem
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r SetDPProviderAvailabilityResponse) GetJSON200() *DPAvailabilityResult {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r SetDPProviderAvailabilityResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r SetDPProviderAvailabilityResponse) GetApplicationproblemJSON409() *Problem {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSON502 returns the response for an HTTP 502 `application/problem+json` response
+func (r SetDPProviderAvailabilityResponse) GetApplicationproblemJSON502() *Problem {
+	return r.ApplicationproblemJSON502
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r SetDPProviderAvailabilityResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r SetDPProviderAvailabilityResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r SetDPProviderAvailabilityResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SetDPProviderAvailabilityResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetDPProviderAvailabilityResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetDPProviderAvailabilityResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListDPViewsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *DPViewList
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListDPViewsResponse) GetJSON200() *DPViewList {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ListDPViewsResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListDPViewsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListDPViewsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListDPViewsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListDPViewsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateDPViewResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *DPView
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateDPViewResponse) GetJSON201() *DPView {
+	return r.JSON201
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r CreateDPViewResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r CreateDPViewResponse) GetApplicationproblemJSON409() *Problem {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r CreateDPViewResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateDPViewResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateDPViewResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateDPViewResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateDPViewResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -17956,6 +18849,137 @@ func (c *ClientWithResponses) PutCellOwnershipWithResponse(ctx context.Context, 
 	return ParsePutCellOwnershipResponse(rsp)
 }
 
+// ListDPProvidersWithResponse The Service Providers the Display Provider has seen, with their state
+//
+// Every Service Provider an ISA named (its owner is its id and the
+// source instance of its tracks), from dp-poller's last
+// `src.v1.network_rid.<uss_id>` status: live, down (`unavailable
+// since T`: its polls fail for 10 s; never removed), disabled (by
+// whom), or unknown; slow (polled at 0.5 Hz past the F3411 p99 of
+// 3 s) with p95 and p99; the ISAs and tiles it is polled for; and
+// `provider_unknown` when it matches no operating certificate (it
+// is still polled and shown). `status_age_s` is the age of the
+// status itself.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/dp/providers (the `ListDPProviders` operationId).
+func (c *ClientWithResponses) ListDPProvidersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListDPProvidersResponse, error) {
+	rsp, err := c.ListDPProviders(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListDPProvidersResponse(rsp)
+}
+
+// SetDPProviderAvailabilityWithBodyWithResponse Arbitrate a USS's availability at the DSS (F3548)
+//
+// `PUT /dss/v1/uss_availability/{uss_id}` at the DSS with scope
+// `utm.availability_arbitration` (F3548-21, through the client
+// generated from `api/clients/dss-utm.yaml` with uspace-core's
+// types). The request is recorded first (`dp_availability_requested`,
+// committed), then the DSS is called with the arbitration of this
+// USS held by an advisory lock (a concurrent arbitration of the
+// same USS is refused with 409), and the outcome is recorded
+// (`dp_availability_set` or `dp_availability_failed`). A DSS that
+// refuses or cannot be reached answers 502 with its status.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /v1/dp/providers/{uss_id}/availability (the `SetDPProviderAvailability` operationId).
+func (c *ClientWithResponses) SetDPProviderAvailabilityWithBodyWithResponse(ctx context.Context, ussId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetDPProviderAvailabilityResponse, error) {
+	rsp, err := c.SetDPProviderAvailabilityWithBody(ctx, ussId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetDPProviderAvailabilityResponse(rsp)
+}
+
+// SetDPProviderAvailabilityWithResponse Arbitrate a USS's availability at the DSS (F3548)
+//
+// `PUT /dss/v1/uss_availability/{uss_id}` at the DSS with scope
+// `utm.availability_arbitration` (F3548-21, through the client
+// generated from `api/clients/dss-utm.yaml` with uspace-core's
+// types). The request is recorded first (`dp_availability_requested`,
+// committed), then the DSS is called with the arbitration of this
+// USS held by an advisory lock (a concurrent arbitration of the
+// same USS is refused with 409), and the outcome is recorded
+// (`dp_availability_set` or `dp_availability_failed`). A DSS that
+// refuses or cannot be reached answers 502 with its status.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /v1/dp/providers/{uss_id}/availability (the `SetDPProviderAvailability` operationId).
+func (c *ClientWithResponses) SetDPProviderAvailabilityWithResponse(ctx context.Context, ussId string, body SetDPProviderAvailabilityJSONRequestBody, reqEditors ...RequestEditorFn) (*SetDPProviderAvailabilityResponse, error) {
+	rsp, err := c.SetDPProviderAvailability(ctx, ussId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetDPProviderAvailabilityResponse(rsp)
+}
+
+// ListDPViewsWithResponse The oversight areas the Display Provider shows
+//
+// Every oversight area, oldest first. The Display Provider shows
+// these areas whether or not a console looks at them, beside the
+// console viewports picture-ws reports (which expire with the
+// console).
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/dp/views (the `ListDPViews` operationId).
+func (c *ClientWithResponses) ListDPViewsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListDPViewsResponse, error) {
+	rsp, err := c.ListDPViews(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListDPViewsResponse(rsp)
+}
+
+// CreateDPViewWithBodyWithResponse Add an oversight area
+//
+// A WGS84 box `[west, south, east, north]` that never crosses the
+// antimeridian. The row and its `events` row are one transaction;
+// after the commit every area is published to KV bucket
+// `dp_oversight` (key `views`) with the table's version, never
+// replacing a higher one (two api replicas never move it back), and
+// republished periodically. dp-poller covers each area with tiles of
+// at most `dp_view_diagonal_km` (F3411 7 km). At most 256 areas
+// (E-10): one more is refused with 409.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/dp/views (the `CreateDPView` operationId).
+func (c *ClientWithResponses) CreateDPViewWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDPViewResponse, error) {
+	rsp, err := c.CreateDPViewWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateDPViewResponse(rsp)
+}
+
+// CreateDPViewWithResponse Add an oversight area
+//
+// A WGS84 box `[west, south, east, north]` that never crosses the
+// antimeridian. The row and its `events` row are one transaction;
+// after the commit every area is published to KV bucket
+// `dp_oversight` (key `views`) with the table's version, never
+// replacing a higher one (two api replicas never move it back), and
+// republished periodically. dp-poller covers each area with tiles of
+// at most `dp_view_diagonal_km` (F3411 7 km). At most 256 areas
+// (E-10): one more is refused with 409.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/dp/views (the `CreateDPView` operationId).
+func (c *ClientWithResponses) CreateDPViewWithResponse(ctx context.Context, body CreateDPViewJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDPViewResponse, error) {
+	rsp, err := c.CreateDPView(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateDPViewResponse(rsp)
+}
+
 // ListOAuthClientsWithResponse Registered clients
 //
 // Returns a wrapper object for the known response body format(s).
@@ -20301,6 +21325,180 @@ func ParsePutCellOwnershipResponse(rsp *http.Response) (*PutCellOwnershipRespons
 			return nil, err
 		}
 		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListDPProvidersResponse parses an HTTP response from a ListDPProvidersWithResponse call
+func ParseListDPProvidersResponse(rsp *http.Response) (*ListDPProvidersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListDPProvidersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DPProviderList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSetDPProviderAvailabilityResponse parses an HTTP response from a SetDPProviderAvailabilityWithResponse call
+func ParseSetDPProviderAvailabilityResponse(rsp *http.Response) (*SetDPProviderAvailabilityResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetDPProviderAvailabilityResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DPAvailabilityResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 502:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON502 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListDPViewsResponse parses an HTTP response from a ListDPViewsWithResponse call
+func ParseListDPViewsResponse(rsp *http.Response) (*ListDPViewsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListDPViewsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DPViewList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateDPViewResponse parses an HTTP response from a CreateDPViewWithResponse call
+func ParseCreateDPViewResponse(rsp *http.Response) (*CreateDPViewResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateDPViewResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest DPView
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Problem
@@ -23029,6 +24227,18 @@ type ServerInterface interface {
 	// PutCellOwnership Replace the ownership map (an operator's rebalance)
 	// (PUT /v1/cells)
 	PutCellOwnership(w http.ResponseWriter, r *http.Request)
+	// ListDPProviders The Service Providers the Display Provider has seen, with their state
+	// (GET /v1/dp/providers)
+	ListDPProviders(w http.ResponseWriter, r *http.Request)
+	// SetDPProviderAvailability Arbitrate a USS's availability at the DSS (F3548)
+	// (PUT /v1/dp/providers/{uss_id}/availability)
+	SetDPProviderAvailability(w http.ResponseWriter, r *http.Request, ussId string)
+	// ListDPViews The oversight areas the Display Provider shows
+	// (GET /v1/dp/views)
+	ListDPViews(w http.ResponseWriter, r *http.Request)
+	// CreateDPView Add an oversight area
+	// (POST /v1/dp/views)
+	CreateDPView(w http.ResponseWriter, r *http.Request)
 	// ListOAuthClients Registered clients
 	// (GET /v1/oauth/clients)
 	ListOAuthClients(w http.ResponseWriter, r *http.Request)
@@ -23563,6 +24773,74 @@ func (siw *ServerInterfaceWrapper) PutCellOwnership(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PutCellOwnership(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDPProviders operation middleware
+func (siw *ServerInterfaceWrapper) ListDPProviders(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDPProviders(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetDPProviderAvailability operation middleware
+func (siw *ServerInterfaceWrapper) SetDPProviderAvailability(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "uss_id" -------------
+	var ussId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "uss_id", r.PathValue("uss_id"), &ussId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "uss_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetDPProviderAvailability(w, r, ussId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDPViews operation middleware
+func (siw *ServerInterfaceWrapper) ListDPViews(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDPViews(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateDPView operation middleware
+func (siw *ServerInterfaceWrapper) CreateDPView(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateDPView(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -26220,6 +27498,10 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/violations", wrapper.ListViolations)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/violations/{violation_id}", wrapper.GetViolation)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/violations/{violation_id}/review", wrapper.ReviewViolation)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/dp/views", wrapper.ListDPViews)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/dp/views", wrapper.CreateDPView)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/dp/providers", wrapper.ListDPProviders)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/v1/dp/providers/{uss_id}/availability", wrapper.SetDPProviderAvailability)
 
 	return m
 }
@@ -26874,6 +28156,249 @@ type PutCellOwnershipdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response PutCellOwnershipdefaultApplicationProblemPlusJSONResponse) VisitPutCellOwnershipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDPProvidersRequestObject struct {
+}
+
+type ListDPProvidersResponseObject interface {
+	VisitListDPProvidersResponse(w http.ResponseWriter) error
+}
+
+type ListDPProviders200JSONResponse DPProviderList
+
+func (response ListDPProviders200JSONResponse) VisitListDPProvidersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDPProvidersdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListDPProvidersdefaultApplicationProblemPlusJSONResponse) VisitListDPProvidersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetDPProviderAvailabilityRequestObject struct {
+	UssId string `json:"uss_id"`
+	Body  *SetDPProviderAvailabilityJSONRequestBody
+}
+
+type SetDPProviderAvailabilityResponseObject interface {
+	VisitSetDPProviderAvailabilityResponse(w http.ResponseWriter) error
+}
+
+type SetDPProviderAvailability200JSONResponse DPAvailabilityResult
+
+func (response SetDPProviderAvailability200JSONResponse) VisitSetDPProviderAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetDPProviderAvailability400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response SetDPProviderAvailability400ApplicationProblemPlusJSONResponse) VisitSetDPProviderAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetDPProviderAvailability409ApplicationProblemPlusJSONResponse Problem
+
+func (response SetDPProviderAvailability409ApplicationProblemPlusJSONResponse) VisitSetDPProviderAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetDPProviderAvailability502ApplicationProblemPlusJSONResponse Problem
+
+func (response SetDPProviderAvailability502ApplicationProblemPlusJSONResponse) VisitSetDPProviderAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(502)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetDPProviderAvailability503ApplicationProblemPlusJSONResponse Problem
+
+func (response SetDPProviderAvailability503ApplicationProblemPlusJSONResponse) VisitSetDPProviderAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetDPProviderAvailabilitydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response SetDPProviderAvailabilitydefaultApplicationProblemPlusJSONResponse) VisitSetDPProviderAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDPViewsRequestObject struct {
+}
+
+type ListDPViewsResponseObject interface {
+	VisitListDPViewsResponse(w http.ResponseWriter) error
+}
+
+type ListDPViews200JSONResponse DPViewList
+
+func (response ListDPViews200JSONResponse) VisitListDPViewsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDPViewsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListDPViewsdefaultApplicationProblemPlusJSONResponse) VisitListDPViewsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDPViewRequestObject struct {
+	Body *CreateDPViewJSONRequestBody
+}
+
+type CreateDPViewResponseObject interface {
+	VisitCreateDPViewResponse(w http.ResponseWriter) error
+}
+
+type CreateDPView201JSONResponse DPView
+
+func (response CreateDPView201JSONResponse) VisitCreateDPViewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDPView400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response CreateDPView400ApplicationProblemPlusJSONResponse) VisitCreateDPViewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDPView409ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateDPView409ApplicationProblemPlusJSONResponse) VisitCreateDPViewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDPViewdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateDPViewdefaultApplicationProblemPlusJSONResponse) VisitCreateDPViewResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -30253,6 +31778,18 @@ type StrictServerInterface interface {
 	// PutCellOwnership Replace the ownership map (an operator's rebalance)
 	// (PUT /v1/cells)
 	PutCellOwnership(ctx context.Context, request PutCellOwnershipRequestObject) (PutCellOwnershipResponseObject, error)
+	// ListDPProviders The Service Providers the Display Provider has seen, with their state
+	// (GET /v1/dp/providers)
+	ListDPProviders(ctx context.Context, request ListDPProvidersRequestObject) (ListDPProvidersResponseObject, error)
+	// SetDPProviderAvailability Arbitrate a USS's availability at the DSS (F3548)
+	// (PUT /v1/dp/providers/{uss_id}/availability)
+	SetDPProviderAvailability(ctx context.Context, request SetDPProviderAvailabilityRequestObject) (SetDPProviderAvailabilityResponseObject, error)
+	// ListDPViews The oversight areas the Display Provider shows
+	// (GET /v1/dp/views)
+	ListDPViews(ctx context.Context, request ListDPViewsRequestObject) (ListDPViewsResponseObject, error)
+	// CreateDPView Add an oversight area
+	// (POST /v1/dp/views)
+	CreateDPView(ctx context.Context, request CreateDPViewRequestObject) (CreateDPViewResponseObject, error)
 	// ListOAuthClients Registered clients
 	// (GET /v1/oauth/clients)
 	ListOAuthClients(ctx context.Context, request ListOAuthClientsRequestObject) (ListOAuthClientsResponseObject, error)
@@ -30833,6 +32370,118 @@ func (sh *strictHandler) PutCellOwnership(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PutCellOwnershipResponseObject); ok {
 		if err := validResponse.VisitPutCellOwnershipResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDPProviders operation middleware
+func (sh *strictHandler) ListDPProviders(w http.ResponseWriter, r *http.Request) {
+	var request ListDPProvidersRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDPProviders(ctx, request.(ListDPProvidersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDPProviders")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDPProvidersResponseObject); ok {
+		if err := validResponse.VisitListDPProvidersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetDPProviderAvailability operation middleware
+func (sh *strictHandler) SetDPProviderAvailability(w http.ResponseWriter, r *http.Request, ussId string) {
+	var request SetDPProviderAvailabilityRequestObject
+
+	request.UssId = ussId
+
+	var body SetDPProviderAvailabilityJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetDPProviderAvailability(ctx, request.(SetDPProviderAvailabilityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetDPProviderAvailability")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetDPProviderAvailabilityResponseObject); ok {
+		if err := validResponse.VisitSetDPProviderAvailabilityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDPViews operation middleware
+func (sh *strictHandler) ListDPViews(w http.ResponseWriter, r *http.Request) {
+	var request ListDPViewsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDPViews(ctx, request.(ListDPViewsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDPViews")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDPViewsResponseObject); ok {
+		if err := validResponse.VisitListDPViewsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateDPView operation middleware
+func (sh *strictHandler) CreateDPView(w http.ResponseWriter, r *http.Request) {
+	var request CreateDPViewRequestObject
+
+	var body CreateDPViewJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateDPView(ctx, request.(CreateDPViewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateDPView")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateDPViewResponseObject); ok {
+		if err := validResponse.VisitCreateDPViewResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
