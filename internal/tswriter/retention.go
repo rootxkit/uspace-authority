@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/rootxkit/uspace-core/core"
+	"github.com/rootxkit/uspace-core/f3411"
 )
 
 // RetentionCheck is a table that must hold nothing older than MaxAge on
@@ -20,10 +21,12 @@ type RetentionCheck struct {
 	MaxAge time.Duration
 }
 
-// RetentionChecks are the tables with a retention period. ussp_flights
-// is added by WP-14 together with its migration, which adds the policy
-// with authority_hypertable_policies (timeseries 00005).
-var RetentionChecks []RetentionCheck
+// RetentionChecks are the tables with a retention period: ussp_flights
+// (WP-14, timeseries 00011, whose policy drops its one-hour chunks well
+// inside the 24 h; F3411 NetDpMaxDataRetentionPeriodSeconds).
+var RetentionChecks = []RetentionCheck{
+	{Table: "ussp_flights", Column: "rx_ts", MaxAge: f3411.NetDpMaxDataRetentionPeriodSeconds * time.Second},
+}
 
 // OlderThaner counts rows older than an age (ts.WriterPool.OlderThan).
 type OlderThaner interface {
@@ -103,7 +106,7 @@ func (r *Retention) Last() map[string]string {
 // Run checks at once and then every Interval until ctx ends.
 func (r *Retention) Run(ctx context.Context) {
 	if len(r.Checks) == 0 {
-		r.Logger.Info("no table with a retention period is registered yet (ussp_flights arrives with WP-14)")
+		r.Logger.Info("no table with a retention period is registered")
 		return
 	}
 	t := time.NewTicker(r.Interval)

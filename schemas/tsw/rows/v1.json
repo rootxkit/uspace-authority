@@ -9,10 +9,10 @@
     "table": {
       "description": "The hypertable; equal to the <table> token of the subject.",
       "type": "string",
-      "enum": ["rid_observations", "tracks"]
+      "enum": ["rid_observations", "tracks", "ussp_flights"]
     },
     "rows": {
-      "description": "Rows of the table. Each member is a column of the table (migrations/timeseries), by its column name: timestamptz as an RFC 3339 string, bytea as standard base64, integers and floats as JSON numbers, booleans as JSON booleans; a nullable column may be null or absent.",
+      "description": "Rows of the table. Each member is a column of the table (migrations/timeseries), by its column name: timestamptz as an RFC 3339 string, bytea as standard base64, integers and floats as JSON numbers, booleans as JSON booleans, jsonb as a JSON object; a nullable column may be null or absent.",
       "type": "array",
       "minItems": 1,
       "items": { "type": "object" }
@@ -104,6 +104,25 @@
         "ussp_id": { "type": ["string", "null"] },
         "cell5": { "type": ["string", "null"] },
         "identity_receiver": { "type": ["string", "null"] }
+      }
+    },
+    "ussp_flights": {
+      "description": "One ussp_flights row (timeseries 00011, WP-14; internal/dp.FlightRow's JSON): an F3411 Service Provider's flight as received, with its details when fetched. Disposed of within 24 h (F3411 NetDpMaxDataRetentionPeriodSeconds). details is personal data of the PII class: it may carry the remote pilot's position (operator_location).",
+      "type": "object",
+      "required": ["rx_ts", "dedupe_key", "ussp_id", "uss_base_url", "flight_id", "track_id", "state_ts", "provider_unknown", "flight"],
+      "additionalProperties": false,
+      "properties": {
+        "rx_ts": { "type": "string", "format": "date-time" },
+        "dedupe_key": { "type": "string" },
+        "ussp_id": { "type": "string" },
+        "uss_base_url": { "type": "string" },
+        "isa_id": { "type": ["string", "null"] },
+        "flight_id": { "type": "string" },
+        "track_id": { "type": "string" },
+        "state_ts": { "type": "string", "format": "date-time" },
+        "provider_unknown": { "type": "boolean" },
+        "flight": { "type": "object" },
+        "details": { "type": ["object", "null"] }
       }
     }
   }

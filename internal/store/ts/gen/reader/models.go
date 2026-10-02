@@ -149,6 +149,21 @@ type Track struct {
 	IdentityReceiver      *string
 }
 
+type UsspFlight struct {
+	RxTs            time.Time
+	DedupeKey       string
+	UsspID          string
+	UssBaseUrl      string
+	IsaID           *string
+	FlightID        string
+	TrackID         string
+	StateTs         time.Time
+	ProviderUnknown bool
+	Flight          []byte
+	// PII class: may carry the remote pilot position (F3411 operator_location); disposed of within 24 h
+	Details []byte
+}
+
 type WriterGap struct {
 	DedupeKey  string
 	TableName  string
