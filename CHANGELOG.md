@@ -172,3 +172,20 @@ Unreleased; the format follows Keep a Changelog.
   pinned `api/clients/cisp.yaml` and `cisp-schemas/` with `SOURCE` and a
   CI diff; a fake CISP in `internal/ltest/fakecisp`; the
   cisp-publication runbook.
+- WP-12: uspace-core v1.3.0; the violation detectors (`cmd/detect`,
+  `internal/detectsvc`): one uspace-core `alerting.Monitor` per claimed
+  cell3 over a durable `trk.v1` consumer, built from the zones and
+  restrictions projections and the active policy (followed from KV
+  `policy`, which api now writes and repairs) and rebuilt when either
+  changes, conflicts skipped; raises mapped to `violation/v1`
+  (`height_120m`, `zone_incursion`, `unregistered`,
+  `identification_mismatch`; USPACE presence as `in_uspace`) with
+  evidence excerpts, republished every second, cleared with their reason
+  (`reconfigured` when a rebuild no longer raises one), source switches
+  clearing `source_disabled` at once; an error-level status line while a
+  zone in force is not judged. `internal/violation` (the message and
+  `schemas/violation/v1.json`); `internal/violations` (relational
+  `00015_violations`): the `alrt.v1` consumer, idempotent, every
+  transition an event, `detector_silent` for what detect stopped
+  republishing, `GET /v1/violations`, `GET /v1/violations/{id}`,
+  `POST /v1/violations/{id}/review`; the violations runbook.
