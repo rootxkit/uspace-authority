@@ -219,3 +219,23 @@ func TestFollowerIsAPublisher(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+// WP-3: the registration-number pattern is a policy column (G-07,
+// INV-03): an empty, over-long or unparsable pattern is refused naming
+// the field; the default and another valid pattern are accepted.
+func TestValidateRegistrationNumberPattern(t *testing.T) {
+	for _, bad := range []string{"", "[A-Z", strings.Repeat("A", MaxPatternLen+1)} {
+		th := Defaults()
+		th.RegistrationNumberPattern = bad
+		if got := fieldsOf(th.Validate()); len(got) != 1 || got[0] != "registration_number_pattern" {
+			t.Errorf("%.20q: %v", bad, got)
+		}
+	}
+	for _, good := range []string{Defaults().RegistrationNumberPattern, `^GEO[0-9]{6}$`} {
+		th := Defaults()
+		th.RegistrationNumberPattern = good
+		if err := th.Validate(); err != nil {
+			t.Errorf("%q refused: %v", good, err)
+		}
+	}
+}

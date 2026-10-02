@@ -282,6 +282,13 @@ wants (D7).
 The projection tables carry a `version` and `projected_at` the readers
 expose as `projection_age_s` on every status line and console frame.
 
+Registry statuses in the projection (WP-3): `identify` knows `active`,
+`suspended` and `revoked`. An `expired` registration is projected as
+`revoked`, the answer F8 already gives it, so the resolvers, the USSPs'
+caches and the console judge an expired registration the same way and
+core `identify` stays unchanged. The relational row keeps `expired`
+(renewable, set by the expiry job); only the projection maps it.
+
 ---
 
 ## 5. The published API (`api/openapi.yaml`)

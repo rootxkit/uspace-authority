@@ -21,6 +21,8 @@ func validAPI() map[string]string {
 		"AUTHORITY_PUBLIC_URL": "https://authority.example.test",
 		"SIGNING_KEY_FILES":    "/run/keys/token-1.pem",
 		"PII_KEY_FILE":         "/run/keys/pii.key",
+
+		"REGISTRY_HASH_KEY_FILE": "/run/keys/registry-hash.key",
 	}
 }
 
@@ -309,5 +311,31 @@ func TestTrustedProxiesMustParse(t *testing.T) {
 	var bad API
 	if fes := FieldErrors(Load(&bad, env(m))); len(fes) != 1 || fes[0].Field != "AUTHORITY_TRUSTED_PROXIES" {
 		t.Fatalf("got %v", fes)
+	}
+}
+
+// WP-3: the MTOM bands are ascending positive grams; the defaults are
+// the 2019/945 class limits.
+func TestRegistryMTOMBandsMustAscend(t *testing.T) {
+	var c API
+	if err := Load(&c, env(validAPI())); err != nil {
+		t.Fatal(err)
+	}
+	if b, err := c.MTOMBounds(); err != nil || len(b) != 4 || b[0] != 250 || b[3] != 25000 {
+		t.Fatalf("defaults: %v %v", b, err)
+	}
+	for _, bad := range []string{"900,250", "0,250", "250,x", "250,250"} {
+		m := validAPI()
+		m["REGISTRY_MTOM_BANDS_G"] = bad
+		var c API
+		if err := Load(&c, env(m)); err == nil || !strings.Contains(err.Error(), "REGISTRY_MTOM_BANDS_G") {
+			t.Errorf("%q accepted: %v", bad, err)
+		}
+	}
+	m := validAPI()
+	m["REGISTRY_MTOM_BANDS_G"] = "500,2000"
+	var ok API
+	if err := Load(&ok, env(m)); err != nil {
+		t.Fatalf("twin refused: %v", err)
 	}
 }

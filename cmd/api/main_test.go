@@ -35,6 +35,7 @@ func TestStartWithoutTheDatabaseFailsAndSaysWhich(t *testing.T) {
 		"NATS_URL": "nats://127.0.0.1:1", "AUTHORITY_PUBLIC_URL": "http://localhost:8080",
 		"API_ADDR": "127.0.0.1:0", "ADMIN_ADDR": "127.0.0.1:0", "SHUTDOWN_TIMEOUT_S": "2",
 		"SIGNING_KEY_FILES": "/nonexistent/token-1.pem", "PII_KEY_FILE": "/nonexistent/pii.key",
+		"REGISTRY_HASH_KEY_FILE": "/nonexistent/registry-hash.key",
 	}
 	var out, errOut bytes.Buffer
 	code := proc.Main(context.Background(), spec(&config.API{}), nil, &out, &errOut, func(k string) (string, bool) { v, ok := m[k]; return v, ok })

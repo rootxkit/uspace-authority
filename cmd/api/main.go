@@ -20,6 +20,7 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/passhash"
 	"github.com/rootxkit/uspace-authority/internal/policy"
 	"github.com/rootxkit/uspace-authority/internal/proc"
+	"github.com/rootxkit/uspace-authority/internal/registry"
 	"github.com/rootxkit/uspace-authority/internal/store"
 	"github.com/rootxkit/uspace-authority/internal/store/pg"
 	"github.com/rootxkit/uspace-authority/internal/tokens"
@@ -127,6 +128,32 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 		wg.Go(func() { tok.Manager.Run(ctx, time.Duration(cfg.KeyRefreshS)*time.Second) })
 		wg.Go(func() { az.Run(ctx, time.Duration(cfg.SessionSweepS)*time.Second) })
 
+		bands, err := cfg.MTOMBounds()
+		if err != nil {
+			return err
+		}
+		reg, err := registry.Assemble(ctx, registry.Setup{
+			DB: db, Audit: auditWriter, PIIKeyID: cfg.PIIKeyID, PIIKeyFile: cfg.PIIKeyFile, HashKeyFile: cfg.RegistryHashKeyFile,
+			TSURL: cfg.TSURL, TSRole: cfg.TSProjectorRole, TSMaxConns: cfg.TSMaxConns,
+			StatementTimeout: time.Duration(cfg.PGStatementTimeoutS) * time.Second, MTOMBandsG: bands, Logger: rt.Logger,
+			// The registration-number format of the policy api follows (G-07).
+			Pattern: func() (string, bool) {
+				p, ok := follower.Current()
+				return p.RegistrationNumberPattern, ok
+			},
+		})
+		if err != nil {
+			return err
+		}
+		// The pool closes after the jobs that use it have stopped.
+		defer func() { cancel(); wg.Wait(); reg.Close() }()
+		rt.Ready.Add("telemetry", reg.Projector.Ping)
+		rt.AddCounters("registry", reg.Counters)
+		wg.Go(func() {
+			reg.Service.RunJobs(ctx, time.Duration(cfg.ReprojectS)*time.Second, time.Duration(cfg.ExpiryS)*time.Second,
+				time.Duration(cfg.RepairRetryS)*time.Second)
+		})
+
 		mux := http.NewServeMux()
 		apiserver.Mount(mux, apiserver.Server{
 			PolicyHandler:     policy.Handler{Service: svc},
@@ -135,6 +162,7 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 			OAuthAdminHandler: tok.Handler,
 			AuthHandler:       az.Handler,
 			UsersHandler:      az.Handler,
+			RegistryHandler:   reg.Handler,
 		}, apiserver.Options{
 			Logger:      rt.Logger,
 			Middlewares: []apiserver.Middleware{tok.Handler.FormGuard(), apiserver.Authorize(identify, apiserver.DefaultRules())},

@@ -55,6 +55,40 @@ var Roles = map[string][]string{
 	"ResetUserMFA":         {RoleAdmin},
 	"RevokeUserSessions":   {RoleAdmin},
 	"UnlockUserMFA":        {RoleAdmin},
+
+	"ListRegistryOperators":           {RoleRegistrar, RoleInspector, RoleViewer},
+	"CreateRegistryOperator":          {RoleRegistrar},
+	"GetRegistryOperator":             {RoleRegistrar, RoleInspector, RoleViewer},
+	"UpdateRegistryOperator":          {RoleRegistrar},
+	"SetRegistryOperatorStatus":       {RoleRegistrar},
+	"GetRegistryOperatorPersonalData": {RoleRegistrar, RoleInspector},
+	"ListRegistryUAS":                 {RoleRegistrar, RoleInspector, RoleViewer},
+	"CreateRegistryUAS":               {RoleRegistrar},
+	"GetRegistryUAS":                  {RoleRegistrar, RoleInspector, RoleViewer},
+	"UpdateRegistryUAS":               {RoleRegistrar},
+	"SetRegistryUASStatus":            {RoleRegistrar},
+	"ListRegistryPilots":              {RoleRegistrar, RoleInspector, RoleViewer},
+	"CreateRegistryPilot":             {RoleRegistrar},
+	"GetRegistryPilot":                {RoleRegistrar, RoleInspector, RoleViewer},
+	"UpdateRegistryPilot":             {RoleRegistrar},
+	"SetRegistryPilotStatus":          {RoleRegistrar},
+	"GetRegistryPilotPersonalData":    {RoleRegistrar, RoleInspector},
+	"RecordPilotCompetency":           {RoleRegistrar},
+}
+
+// PIIRoles are the only roles that may read personal data: an operation
+// whose response carries it names no other role (CLAUDE.md rule 6; a
+// test holds every personal-data operation to it). viewer never reads
+// personal data.
+var PIIRoles = []string{RoleRegistrar, RoleInspector}
+
+// Scopes maps every machine operation to the ecosystem scope it
+// requires (WP-2 table B), mirroring x-scope in api/openapi.yaml; a
+// test compares the two. A console session is never admitted to one.
+var Scopes = map[string]string{
+	"ValidateRegistry":      "registry.validate",
+	"ValidateRegistryBatch": "registry.validate",
+	"ListRegistryChanges":   "registry.validate",
 }
 
 // Public lists the operations with `security: []` in the contract: no
@@ -92,7 +126,7 @@ type Rules struct {
 
 // DefaultRules are the contract's rules.
 func DefaultRules() Rules {
-	return Rules{Public: Public, AnySession: AnySession, Roles: Roles}
+	return Rules{Public: Public, AnySession: AnySession, Roles: Roles, Scopes: Scopes}
 }
 
 // Identity is who makes a request: the actor of its events rows.
@@ -164,9 +198,10 @@ func RequireRole(identify IdentifyFunc, roles map[string][]string) Middleware {
 
 // Authorize applies rules to every operation: a public operation runs
 // without an identity; any other needs identify to resolve one (401
-// unauthenticated otherwise) and must be a console session (a machine
-// token is 403 here: no machine operation exists yet, and WP-3 adds a
-// scope rule beside these); an any-session operation then runs; a role
+// unauthenticated otherwise); a scope operation admits only an
+// ecosystem token granting its scope (a session is 403); every other
+// operation needs a console session (a machine token is 403); an
+// any-session operation then runs; a role
 // operation needs a session of the operation's realm (console by
 // default) holding one of its roles (403 forbidden otherwise). An
 // operation that no rule names is refused (403, fail closed).

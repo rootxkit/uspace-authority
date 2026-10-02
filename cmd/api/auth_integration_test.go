@@ -30,11 +30,17 @@ import (
 // writePIIKey writes a fresh 32-byte PII key (base64) into dir.
 func writePIIKey(t *testing.T, dir string) string {
 	t.Helper()
+	return writeKey(t, dir, "pii.key")
+}
+
+// writeKey writes a fresh 32-byte key (base64) into dir/name.
+func writeKey(t *testing.T, dir, name string) string {
+	t.Helper()
 	var k [32]byte
 	if _, err := rand.Read(k[:]); err != nil {
 		t.Fatal(err)
 	}
-	p := filepath.Join(dir, "pii.key")
+	p := filepath.Join(dir, name)
 	if err := os.WriteFile(p, []byte(base64.StdEncoding.EncodeToString(k[:])), 0o600); err != nil {
 		t.Fatal(err)
 	}

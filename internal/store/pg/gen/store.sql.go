@@ -32,3 +32,16 @@ func (q *Queries) SchemaVersion(ctx context.Context) (int64, error) {
 	err := row.Scan(&version_id)
 	return version_id, err
 }
+
+const tryAdvisoryXactLock = `-- name: TryAdvisoryXactLock :one
+SELECT pg_try_advisory_xact_lock($1::bigint) AS acquired
+`
+
+// Takes the transaction-scoped advisory lock key when it is free and
+// reports whether it did; it never waits.
+func (q *Queries) TryAdvisoryXactLock(ctx context.Context, key int64) (bool, error) {
+	row := q.db.QueryRow(ctx, tryAdvisoryXactLock, key)
+	var acquired bool
+	err := row.Scan(&acquired)
+	return acquired, err
+}

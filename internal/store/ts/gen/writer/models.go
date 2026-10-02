@@ -5,6 +5,8 @@
 package writer
 
 import (
+	"time"
+
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -13,4 +15,24 @@ type GooseDbVersionTimeseries struct {
 	VersionID int64
 	IsApplied bool
 	Tstamp    pgtype.Timestamp
+}
+
+type ProjRegistryOperator struct {
+	OperatorID               string
+	RegistrationNumberPublic string
+	Status                   string
+	ProjectedAt              time.Time
+	RegistryVersion          int64
+}
+
+type ProjRegistryUAS struct {
+	UasID              string
+	Label              string
+	Serial             string
+	SerialFold         string
+	RegistrationStatus string
+	OperatorID         *string
+	InRegistry         bool
+	ProjectedAt        time.Time
+	RegistryVersion    int64
 }

@@ -2,10 +2,11 @@
 # generated packages by hand. scripts/verify-generated.sh regenerates
 # into a temporary directory and fails on any difference.
 #
-# Three query sets, two databases, never mixed (CLAUDE.md rule 10):
+# Four query sets, two databases, never mixed (CLAUDE.md rule 10):
 #   internal/store/pg/gen         relational (api only)
 #   internal/store/ts/gen/writer  telemetry hypertables (tsdb-writer only)
 #   internal/store/ts/gen/reader  telemetry projection and record reads
+#   internal/store/ts/gen/projector  projection writes (api only, WP-3)
 # Each schema is its migration tree plus the goose version table, which
 # goose creates outside the tree and the version checks read.
 version: "2"
@@ -20,6 +21,10 @@ sql:
         sql_package: pgx/v5
         emit_pointers_for_null_types: true
         emit_empty_slices: true
+        # sqlc singularises the table uas to "Ua".
+        rename:
+          ua: UAS
+          proj_registry_ua: ProjRegistryUAS
         overrides:
           - db_type: timestamp
             go_type: time.Time
@@ -46,3 +51,11 @@ sql:
         <<: *go
         package: reader
         out: internal/store/ts/gen/reader
+  - engine: postgresql
+    schema: [internal/store/ts/schema, migrations/timeseries]
+    queries: internal/store/ts/queries/projector
+    gen:
+      go:
+        <<: *go
+        package: projector
+        out: internal/store/ts/gen/projector

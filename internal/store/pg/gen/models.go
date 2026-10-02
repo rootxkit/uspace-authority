@@ -17,31 +17,32 @@ type AssertionJti struct {
 }
 
 type AuthorityPolicy struct {
-	Version                 int64
-	HeightLimitAglM         float64
-	PressureUncertaintyM    float64
-	ZoneConditionalSeverity string
-	MismatchSeverity        string
-	IdentificationSeverity  string
-	SpoofDistanceM          float64
-	IdentityTtlS            float64
-	MaxGapS                 float64
-	IdentifyWithinS         float64
-	BroadcastToleranceS     float64
-	MaxLatencyS             float64
-	LiveMaxAgeS             float64
-	ClearAfterS             float64
-	StaleAfterS             float64
-	DpViewDiagonalKm        float64
-	DpPollHz                float64
-	CisStaleBoundS          float64
-	HeightLimitInUspace     string
-	Note                    string
-	Active                  bool
-	CreatedAt               time.Time
-	CreatedBy               string
-	ActivatedAt             *time.Time
-	ActivatedBy             *string
+	Version                   int64
+	HeightLimitAglM           float64
+	PressureUncertaintyM      float64
+	ZoneConditionalSeverity   string
+	MismatchSeverity          string
+	IdentificationSeverity    string
+	SpoofDistanceM            float64
+	IdentityTtlS              float64
+	MaxGapS                   float64
+	IdentifyWithinS           float64
+	BroadcastToleranceS       float64
+	MaxLatencyS               float64
+	LiveMaxAgeS               float64
+	ClearAfterS               float64
+	StaleAfterS               float64
+	DpViewDiagonalKm          float64
+	DpPollHz                  float64
+	CisStaleBoundS            float64
+	HeightLimitInUspace       string
+	Note                      string
+	Active                    bool
+	CreatedAt                 time.Time
+	CreatedBy                 string
+	ActivatedAt               *time.Time
+	ActivatedBy               *string
+	RegistrationNumberPattern string
 }
 
 type Event struct {
@@ -94,6 +95,40 @@ type OauthClient struct {
 	UpdatedBy     string
 }
 
+type PilotCompetency struct {
+	PilotID        string
+	Competency     string
+	CertificateRef string
+	ValidUntil     time.Time
+	RecordedAt     time.Time
+	RecordedBy     string
+}
+
+type RegistryStatusChange struct {
+	Seq        int64
+	EntityType string
+	EntityID   string
+	PublicKey  string
+	Status     string
+	At         time.Time
+}
+
+type RemotePilot struct {
+	ID              string
+	OperatorID      *string
+	PersonRefHash   string
+	PersonRefLast4  string
+	PiiKeyID        string
+	NameEnc         []byte
+	Status          string
+	StatusReason    string
+	RegistryVersion int64
+	CreatedAt       time.Time
+	CreatedBy       string
+	UpdatedAt       time.Time
+	UpdatedBy       string
+}
+
 type Session struct {
 	Jti          string
 	UserID       string
@@ -122,6 +157,58 @@ type SigningKey struct {
 	CompromisedAt    *time.Time
 	CompromisedBy    *string
 	CompromiseReason *string
+}
+
+type UAS struct {
+	ID               string
+	OperatorID       string
+	Serial           string
+	SerialFold       string
+	ManufacturerCode string
+	RegistrationMark *string
+	Manufacturer     string
+	Model            string
+	OwnerRef         *string
+	ClassLabel       *string
+	MtomG            *int32
+	RidCapability    string
+	Status           string
+	StatusReason     string
+	RegisteredAt     time.Time
+	RegistryVersion  int64
+	CreatedBy        string
+	UpdatedAt        time.Time
+	UpdatedBy        string
+}
+
+type UasOperator struct {
+	ID                           string
+	OperatorType                 string
+	RegistrationNumberPublic     string
+	RegistrationNumberKey        string
+	SecretPartSalt               []byte
+	SecretPartHash               *string
+	PiiKeyID                     string
+	FullNameEnc                  []byte
+	LegalNameEnc                 []byte
+	DateOfBirthEnc               []byte
+	LegalIdentificationNumberEnc []byte
+	PostalAddressEnc             []byte
+	ContactEmailEnc              []byte
+	ContactPhoneEnc              []byte
+	InsurancePolicyNumberEnc     []byte
+	CompetencyConfirmation       bool
+	Authorisations               []byte
+	Status                       string
+	StatusReason                 string
+	ValidFrom                    time.Time
+	ValidUntil                   time.Time
+	Source                       string
+	RegistryVersion              int64
+	CreatedAt                    time.Time
+	CreatedBy                    string
+	UpdatedAt                    time.Time
+	UpdatedBy                    string
 }
 
 type User struct {

@@ -7,3 +7,8 @@ SELECT version_id FROM goose_db_version_relational ORDER BY id DESC LIMIT 1;
 -- Blocks until the transaction-scoped advisory lock key is held; it is
 -- released at commit or rollback.
 SELECT pg_advisory_xact_lock(sqlc.arg(key)::bigint);
+
+-- name: TryAdvisoryXactLock :one
+-- Takes the transaction-scoped advisory lock key when it is free and
+-- reports whether it did; it never waits.
+SELECT pg_try_advisory_xact_lock(sqlc.arg(key)::bigint) AS acquired;

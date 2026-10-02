@@ -99,6 +99,15 @@ func SQLState(err error) string {
 	return ""
 }
 
+// Constraint is the constraint a PostgreSQL error names, or "".
+func Constraint(err error) string {
+	var pe *pgconn.PgError
+	if errors.As(err, &pe) {
+		return pe.ConstraintName
+	}
+	return ""
+}
+
 // SQLStates the callers test for.
 const (
 	StateInsufficientPrivilege = "42501"

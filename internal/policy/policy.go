@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/rootxkit/uspace-core/core"
+	"github.com/rootxkit/uspace-core/regnum"
 
 	"github.com/rootxkit/uspace-authority/internal/store/pg/gen"
 )
@@ -38,6 +39,10 @@ type Thresholds struct {
 	DPPollHz                float64       `json:"dp_poll_hz"`
 	CISStaleBoundS          float64       `json:"cis_stale_bound_s"`
 	HeightLimitInUspace     string        `json:"height_limit_in_uspace"`
+	// RegistrationNumberPattern is the operator registration-number
+	// format (G-07, spec Q5) the registry validates against through
+	// uspace-core regnum (WP-3).
+	RegistrationNumberPattern string `json:"registration_number_pattern"`
 }
 
 // Defaults are the documented defaults, equal to the predecessor's and
@@ -63,6 +68,8 @@ func Defaults() Thresholds {
 		DPPollHz:                1,
 		CISStaleBoundS:          300,
 		HeightLimitInUspace:     HeightEvaluate,
+		// regnum.DefaultPattern, the EU shape (G-07).
+		RegistrationNumberPattern: regnum.DefaultPattern,
 	}
 }
 
@@ -92,6 +99,10 @@ func (t Thresholds) numbers() []struct {
 	}
 }
 
+// MaxPatternLen bounds Thresholds.RegistrationNumberPattern (the column's
+// CHECK in migration 00009_registry).
+const MaxPatternLen = 256
+
 var severities = []core.Severity{core.SeverityInfo, core.SeverityWarning, core.SeverityCritical}
 
 // Validate refuses a threshold that would disarm a check (E-15): zero,
@@ -118,6 +129,16 @@ func (t Thresholds) Validate() error {
 	}
 	if t.HeightLimitInUspace != HeightEvaluate && t.HeightLimitInUspace != HeightSkipWhenAuthorised {
 		errs = append(errs, core.Fieldf("height_limit_in_uspace", "must be evaluate or skip_when_authorised"))
+	}
+	switch {
+	case t.RegistrationNumberPattern == "":
+		errs = append(errs, core.Fieldf("registration_number_pattern", "required"))
+	case len(t.RegistrationNumberPattern) > MaxPatternLen:
+		errs = append(errs, core.Fieldf("registration_number_pattern", "longer than %d bytes", MaxPatternLen))
+	default:
+		if _, err := regnum.NewValidator(t.RegistrationNumberPattern); err != nil {
+			errs = append(errs, core.Fieldf("registration_number_pattern", "not a valid regular expression"))
+		}
 	}
 	return errors.Join(errs...)
 }
@@ -156,6 +177,8 @@ func fromRow(r gen.AuthorityPolicy) Policy {
 			DPPollHz:                r.DpPollHz,
 			CISStaleBoundS:          r.CisStaleBoundS,
 			HeightLimitInUspace:     r.HeightLimitInUspace,
+
+			RegistrationNumberPattern: r.RegistrationNumberPattern,
 		},
 		Note:        r.Note,
 		Active:      r.Active,
@@ -171,27 +194,28 @@ func fromRow(r gen.AuthorityPolicy) Policy {
 
 func insertParams(version int64, t Thresholds, note, by string, at time.Time) gen.InsertPolicyParams {
 	return gen.InsertPolicyParams{
-		Version:                 version,
-		HeightLimitAglM:         t.HeightLimitAGLM,
-		PressureUncertaintyM:    t.PressureUncertaintyM,
-		ZoneConditionalSeverity: string(t.ZoneConditionalSeverity),
-		MismatchSeverity:        string(t.MismatchSeverity),
-		IdentificationSeverity:  string(t.IdentificationSeverity),
-		SpoofDistanceM:          t.SpoofDistanceM,
-		IdentityTtlS:            t.IdentityTTLS,
-		MaxGapS:                 t.MaxGapS,
-		IdentifyWithinS:         t.IdentifyWithinS,
-		BroadcastToleranceS:     t.BroadcastToleranceS,
-		MaxLatencyS:             t.MaxLatencyS,
-		LiveMaxAgeS:             t.LiveMaxAgeS,
-		ClearAfterS:             t.ClearAfterS,
-		StaleAfterS:             t.StaleAfterS,
-		DpViewDiagonalKm:        t.DPViewDiagonalKM,
-		DpPollHz:                t.DPPollHz,
-		CisStaleBoundS:          t.CISStaleBoundS,
-		HeightLimitInUspace:     t.HeightLimitInUspace,
-		Note:                    note,
-		CreatedAt:               at,
-		CreatedBy:               by,
+		Version:                   version,
+		HeightLimitAglM:           t.HeightLimitAGLM,
+		PressureUncertaintyM:      t.PressureUncertaintyM,
+		ZoneConditionalSeverity:   string(t.ZoneConditionalSeverity),
+		MismatchSeverity:          string(t.MismatchSeverity),
+		IdentificationSeverity:    string(t.IdentificationSeverity),
+		SpoofDistanceM:            t.SpoofDistanceM,
+		IdentityTtlS:              t.IdentityTTLS,
+		MaxGapS:                   t.MaxGapS,
+		IdentifyWithinS:           t.IdentifyWithinS,
+		BroadcastToleranceS:       t.BroadcastToleranceS,
+		MaxLatencyS:               t.MaxLatencyS,
+		LiveMaxAgeS:               t.LiveMaxAgeS,
+		ClearAfterS:               t.ClearAfterS,
+		StaleAfterS:               t.StaleAfterS,
+		DpViewDiagonalKm:          t.DPViewDiagonalKM,
+		DpPollHz:                  t.DPPollHz,
+		CisStaleBoundS:            t.CISStaleBoundS,
+		HeightLimitInUspace:       t.HeightLimitInUspace,
+		RegistrationNumberPattern: t.RegistrationNumberPattern,
+		Note:                      note,
+		CreatedAt:                 at,
+		CreatedBy:                 by,
 	}
 }
