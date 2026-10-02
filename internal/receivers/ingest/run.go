@@ -3,18 +3,16 @@ package ingest
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
 	"sync"
 	"time"
 
-	"github.com/nats-io/nats.go"
-	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rootxkit/uspace-core/core"
 	"github.com/rootxkit/uspace-core/sources"
 
+	"github.com/rootxkit/uspace-authority/internal/bus"
 	"github.com/rootxkit/uspace-authority/internal/config"
 	"github.com/rootxkit/uspace-authority/internal/passhash"
 	"github.com/rootxkit/uspace-authority/internal/proc"
@@ -46,22 +44,14 @@ func LoopbackAddr(addr string) string {
 func Run(ctx context.Context, rt *proc.Runtime, cfg *config.RIDIngest, o Options) error {
 	t := cfg.RIDIngestTuning
 	timeout := time.Duration(t.NATSTimeoutMS) * time.Millisecond
-	conn, err := receivers.Connect(cfg.NATSURL, "uspace-authority-rid-ingest", rt.Logger)
-	if err != nil {
-		return fmt.Errorf("NATS: %w", err)
-	}
-	defer conn.Close()
-	rt.Ready.Add("nats", func(context.Context) error {
-		if s := conn.Status(); s != nats.CONNECTED {
-			return fmt.Errorf("NATS %s", s)
-		}
-		return nil
-	})
-	js, err := jetstream.New(conn)
+	bp, err := bus.OpenProcess(ctx, cfg.NATSURL, cfg.Bus, "rid-ingest", t.KeysetBucket, rt.Logger)
 	if err != nil {
 		return err
 	}
-	kv := &receivers.KV{JS: js, Bucket: t.KeysetBucket, Timeout: timeout}
+	defer bp.Close()
+	conn, js, limits, topo := bp.NC, bp.JS, bp.Limits, bp.Topology
+	rt.Ready.Add("nats", bus.Ready(conn))
+	kv := receivers.NewKV(js, limits, timeout)
 
 	krCounters := &core.Counters{}
 	rt.AddCounters("keyring", krCounters)
@@ -123,7 +113,12 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.RIDIngest, o Options
 		MaxBatches: t.QueueMaxBatches, MaxAge: time.Duration(t.QueueMaxAgeS) * time.Second,
 		MaxAckPending: t.QueueMaxAckPending, PublishTimeout: timeout,
 	}
-	queue := &JetQueue{JS: js, Config: qcfg}
+	ingestStream, _ := topo.Stream(bus.StreamINGEST)
+	queue := &JetQueue{JS: js, Config: qcfg, Stream: ingestStream}
+	if have, want, ok, err := queue.CheckBound(ctx); err == nil && !ok {
+		rt.Logger.Warn("the INGEST stream's hard bound is below the shedding bound plus the batches in flight; receivers are told queue_full before anything is shed",
+			slog.Int64("stream_max_msgs", have), slog.Int64("needed", want), slog.String("variable", "BUS_INGEST_MAX_MSGS"))
+	}
 	status := &Status{
 		Keyring: kr, Gate: gate, Pub: conn, StaleAfter: time.Duration(t.StaleAfterS) * time.Second,
 		LagAfter: time.Duration(t.LagAfterS) * time.Second, Logger: rt.Logger, Limiter: rt.Limiter, MaxReceivers: t.MaxReceivers,

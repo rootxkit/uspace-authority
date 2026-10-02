@@ -11,15 +11,16 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 
+	"github.com/rootxkit/uspace-authority/internal/bus"
 	"github.com/rootxkit/uspace-authority/internal/ridpipe"
 )
 
-// Names on the bus (docs/PLAN.md §6). The stream, consumer and storage
-// subjects are provisioned by internal/bus (WP-10) and consumed by
-// tsdb-writer (WP-9); EnsureQueue tolerates running before them.
+// Names on the bus (docs/PLAN.md §6). The stream and the storage
+// subjects are provisioned by internal/bus and consumed by tsdb-writer
+// (WP-9); EnsureQueue tolerates running before api's bus.Ensure.
 const (
-	QueueStream     = "INGEST"
-	QueueSubjectAll = "ingest.v1.>"
+	QueueStream     = bus.StreamINGEST
+	QueueSubjectAll = bus.SubjectIngestAll
 	QueueConsumer   = "rid-ingest"
 	// RowsSubject carries rid_observations rows to tsdb-writer.
 	RowsSubject = "tsw.v1.rid_observations"
@@ -60,47 +61,46 @@ type QueueConfig struct {
 	PublishTimeout time.Duration
 }
 
-// HardMaxBatches is the stream's own limit (discard new): the shedding
-// bound plus the batches in flight, doubled. Reaching it means the
-// consumer is not running, and the receiver is told 503 rather than any
-// batch being dropped silently.
+// HardMaxBatches is the stream bound this queue needs (discard new,
+// BUS_INGEST_MAX_MSGS): the shedding bound plus the batches in flight,
+// doubled. Reaching it means the consumer is not running, and the
+// receiver is told 503 rather than any batch being dropped silently. A
+// stream provisioned with less is reported at start (CheckBound).
 func (c QueueConfig) HardMaxBatches() int64 { return int64(2 * (c.MaxBatches + c.MaxAckPending)) }
 
 // JetQueue is the INGEST work queue on JetStream.
 type JetQueue struct {
 	JS     jetstream.JetStream
 	Config QueueConfig
+	// Stream is INGEST as internal/bus provisions it.
+	Stream jetstream.StreamConfig
 }
 
-// EnsureQueue creates the INGEST stream and the durable consumer when they
-// do not exist and leaves an existing stream's configuration alone (WP-10
-// owns it). JetStream's own age limit is not used: a message it ages out
-// would be lost without a record, so the consumer sheds by age instead.
+// EnsureQueue opens the INGEST stream (creating it from the bus topology
+// when api has not yet) and the durable pull consumer. JetStream's own
+// age limit is not used: a message it ages out would be lost without a
+// record, so the consumer sheds by age instead.
 func (q *JetQueue) EnsureQueue(ctx context.Context) (jetstream.Consumer, error) {
-	s, err := q.JS.Stream(ctx, QueueStream)
-	if errors.Is(err, jetstream.ErrStreamNotFound) {
-		s, err = q.JS.CreateStream(ctx, jetstream.StreamConfig{
-			Name: QueueStream, Subjects: []string{QueueSubjectAll}, Retention: jetstream.WorkQueuePolicy,
-			Discard: jetstream.DiscardNew, MaxMsgs: q.Config.HardMaxBatches(), MaxMsgSize: 4 * (1 << 20),
-			Storage: jetstream.FileStorage, Duplicates: 2 * time.Minute,
-			Description: "rid-ingest work queue (WP-7): acknowledged receiver batches awaiting decode and storage",
-		})
-		if errors.Is(err, jetstream.ErrStreamNameAlreadyInUse) {
-			s, err = q.JS.Stream(ctx, QueueStream)
-		}
-	}
+	s, err := bus.OpenStream(ctx, q.JS, q.Stream)
 	if err != nil {
-		return nil, fmt.Errorf("stream %s: %w", QueueStream, err)
+		return nil, err
 	}
-	c, err := s.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
-		Durable: QueueConsumer, FilterSubject: QueueSubjectAll, AckPolicy: jetstream.AckExplicitPolicy,
-		AckWait: 30 * time.Second, MaxAckPending: q.Config.MaxAckPending, MaxDeliver: -1,
-		DeliverPolicy: jetstream.DeliverAllPolicy,
+	return bus.PullConsumer(ctx, s, bus.PullSpec{
+		Durable: QueueConsumer, FilterSubject: QueueSubjectAll, MaxAckPending: q.Config.MaxAckPending,
+		AckWait: 30 * time.Second,
 	})
+}
+
+// CheckBound reports whether the stream's hard bound leaves room for the
+// shedding bound and the batches in flight; when it does not, receivers
+// are told 503 queue_full before the consumer sheds anything.
+func (q *JetQueue) CheckBound(ctx context.Context) (have, want int64, ok bool, err error) {
+	s, err := bus.OpenStream(ctx, q.JS, q.Stream)
 	if err != nil {
-		return nil, fmt.Errorf("consumer %s: %w", QueueConsumer, err)
+		return 0, 0, false, err
 	}
-	return c, nil
+	have, want = s.CachedInfo().Config.MaxMsgs, q.Config.HardMaxBatches()
+	return have, want, have <= 0 || have >= want, nil
 }
 
 // Enqueue writes b to ingest.v1.<cell3> and returns after JetStream's

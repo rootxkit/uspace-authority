@@ -5,10 +5,11 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rootxkit/uspace-core/core"
 
 	"github.com/rootxkit/uspace-authority/internal/audit"
+	"github.com/rootxkit/uspace-authority/internal/bus"
 	"github.com/rootxkit/uspace-authority/internal/logging"
 	"github.com/rootxkit/uspace-authority/internal/passhash"
 	"github.com/rootxkit/uspace-authority/internal/pii"
@@ -24,9 +25,10 @@ type Setup struct {
 	Hasher     *passhash.Hasher
 	PIIKeyID   string
 	PIIKeyFile string
-	NATSURL    string
-	// Bucket is the key set's KV bucket (RID_KEYSET_BUCKET).
-	Bucket string
+	// JS is api's JetStream (internal/bus); the connection is api's.
+	JS jetstream.JetStream
+	// Limits name the key set's KV bucket (RID_KEYSET_BUCKET).
+	Limits bus.Limits
 	// KVTimeout bounds every key-set operation.
 	KVTimeout time.Duration
 	TSURL     string
@@ -51,15 +53,10 @@ type Assembly struct {
 	// receiver endpoints.
 	KeyringCounters *core.Counters
 	Readers         *ts.Reader
-
-	conn *nats.Conn
 }
 
-// Close releases the NATS connection and the telemetry pool.
+// Close releases the telemetry pool.
 func (a *Assembly) Close() {
-	if a.conn != nil {
-		a.conn.Close()
-	}
 	if a.Readers != nil {
 		a.Readers.Close()
 	}
@@ -76,21 +73,12 @@ func Assemble(ctx context.Context, s Setup) (*Assembly, error) {
 	if err != nil {
 		return nil, err
 	}
-	conn, err := Connect(s.NATSURL, "uspace-authority-api", s.Logger)
-	if err != nil {
-		return nil, err
-	}
-	kv, err := NewKV(conn, s.Bucket, s.KVTimeout)
-	if err != nil {
-		conn.Close()
-		return nil, err
-	}
+	kv := NewKV(s.JS, s.Limits, s.KVTimeout)
 	readers, err := ts.OpenReader(ctx, store.PoolOptions{
 		URL: s.TSURL, MaxConns: s.TSMaxConns, StatementTimeout: s.StatementTimeout,
 		ApplicationName: "uspace-authority-api-rid-frames", Role: s.TSRole,
 	})
 	if err != nil {
-		conn.Close()
 		return nil, err
 	}
 	counters := &core.Counters{}
@@ -105,7 +93,6 @@ func Assemble(ctx context.Context, s Setup) (*Assembly, error) {
 	}, s.Hasher, krCounters)
 	if err != nil {
 		readers.Close()
-		conn.Close()
 		return nil, err
 	}
 	return &Assembly{
@@ -115,6 +102,5 @@ func Assemble(ctx context.Context, s Setup) (*Assembly, error) {
 		Counters:        counters,
 		KeyringCounters: krCounters,
 		Readers:         readers,
-		conn:            conn,
 	}, nil
 }

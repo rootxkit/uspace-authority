@@ -184,7 +184,11 @@ jobs:
       - name: integration tests
         run: |
           set -o pipefail
-          INTEGRATION=1 go test -count=1 -run Integration -v ./... 2>&1 | tee integration.log
+          # -p 1: one package at a time. The packages share one NATS, and
+          # some tests delete and recreate shared streams (INGEST, TSW,
+          # bus.Ensure's topology); another package's api would recreate
+          # them underneath (internal/bus/bustest).
+          INTEGRATION=1 go test -p 1 -count=1 -run Integration -v ./... 2>&1 | tee integration.log
           if grep -q -- '--- SKIP' integration.log; then echo "an integration test skipped with INTEGRATION=1"; exit 1; fi
 
   govulncheck:

@@ -16,6 +16,7 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/apiserver"
 	"github.com/rootxkit/uspace-authority/internal/audit"
 	"github.com/rootxkit/uspace-authority/internal/authz"
+	"github.com/rootxkit/uspace-authority/internal/bus"
 	"github.com/rootxkit/uspace-authority/internal/config"
 	"github.com/rootxkit/uspace-authority/internal/passhash"
 	"github.com/rootxkit/uspace-authority/internal/policy"
@@ -77,6 +78,23 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 		defer cancel()
 		wg.Go(func() {
 			follower.Run(ctx, svc.Active, time.Duration(cfg.PolicyRefreshS)*time.Second, rt.Logger)
+		})
+
+		// The bus: api provisions every stream and bucket (bus.Ensure)
+		// and starts degraded when NATS is down (B-08), provisioning once
+		// it is back.
+		bp, err := bus.OpenProcess(ctx, cfg.NATSURL, cfg.Bus, "api", cfg.RIDKeysetBucket, rt.Logger)
+		if err != nil {
+			return err
+		}
+		// The connection closes after the loops that use it have stopped.
+		defer func() { cancel(); wg.Wait(); bp.Close() }()
+		// Not a readiness check: api serves its control plane with NATS
+		// down (05 §6) and refuses only what needs the bus, with 503. The
+		// status line says how the connection is.
+		rt.AddStatus(bus.StatusAttrs(bp.NC))
+		wg.Go(func() {
+			bus.EnsureUntilDone(ctx, bp.JS, bp.Topology, time.Duration(cfg.NATSTimeoutMS)*time.Millisecond, rt.Logger, rt.Limiter)
 		})
 
 		hasher, err := passhash.New(passhash.Params{
@@ -157,7 +175,7 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 
 		rx, err := receivers.Assemble(ctx, receivers.Setup{
 			DB: db, Audit: auditWriter, Hasher: hasher, PIIKeyID: cfg.PIIKeyID, PIIKeyFile: cfg.PIIKeyFile,
-			NATSURL: cfg.NATSURL, Bucket: cfg.RIDKeysetBucket, KVTimeout: time.Duration(cfg.RIDKVTimeoutMS) * time.Millisecond,
+			JS: bp.JS, Limits: bp.Limits, KVTimeout: time.Duration(cfg.RIDKVTimeoutMS) * time.Millisecond,
 			TSURL: cfg.TSURL, TSRole: cfg.TSReaderRole, TSMaxConns: cfg.TSMaxConns,
 			StatementTimeout: time.Duration(cfg.PGStatementTimeoutS) * time.Second,
 			Defaults: receivers.Defaults{

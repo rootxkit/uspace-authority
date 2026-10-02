@@ -90,7 +90,7 @@ func baseEnv(t *testing.T, pgURL string) map[string]string {
 		"PG_URL": pgURL, "TS_URL": storetest.Migrated(t, migrate.Timeseries),
 		"REGISTRY_HASH_KEY_FILE": writeKey(t, dir, "registry-hash.key"),
 		"NATS_URL":               "nats://127.0.0.1:1", "AUTHORITY_PUBLIC_URL": "http://localhost:8080",
-		"API_ADDR": "127.0.0.1:0", "ADMIN_ADDR": "127.0.0.1:0", "STATUS_INTERVAL_S": "1",
+		"API_ADDR": "127.0.0.1:0", "ADMIN_ADDR": "127.0.0.1:0", "STATUS_INTERVAL_S": "1", "NATS_START_BACKOFF_MS": "10",
 		"POLICY_REFRESH_S": "1", "SHUTDOWN_TIMEOUT_S": "5", "AUTHORITY_MTLS_MODE": "off",
 		"SIGNING_KEY_FILES":    tokentest.WriteKey(t, dir, 0) + "," + tokentest.WriteKey(t, dir, 1),
 		"PUBLICATION_KEY_FILE": tokentest.WriteKey(t, dir, 9),
