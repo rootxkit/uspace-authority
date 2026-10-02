@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -502,4 +503,43 @@ func TestRebuildReobservesAtPlacedTimeAndClosesQuietAircraftStale(t *testing.T) 
 			t.Fatalf("cleared reconfigured %d", n)
 		}
 	})
+}
+
+// G-04, 06 §5: an operator number is kept and published as its public
+// part only. A broadcast carrying the secret part (under the policy's
+// registration-number pattern) never reaches violation/v1, neither on the
+// violation nor in its evidence excerpt; a number without one is kept
+// as broadcast (E-01).
+func TestOperatorNumberIsPublishedAsItsPublicPartOnly(t *testing.T) {
+	r := newRig(t, nil)
+	r.in.setPolicy(1, func(t *policy.Thresholds) { t.RegistrationNumberPattern = `^GEO-TEST-[A-Z0-9]{3}$` })
+	r.in.setZones(zoneOf(t, zoneSpec{id: "Z", lat: zLat, lon: zLon, upper: 1500}.feature())...)
+	withSecret := registered("TESTS1")
+	withSecret.OperatorReg = strp("GEO-TEST-OP1-X7Q")
+	withSecret.RegisteredOperatorReg = strp("GEO-TEST-OP1-X7Q")
+	r.at(0, sample{id: "S", lat: zLat, lon: zLon, altAMSL: f64(500), ident: withSecret},
+		sample{id: "P", lat: zLat, lon: zLon, altAMSL: f64(500)})
+	r.at(0.5, sample{id: "S", lat: zLat, lon: zLon, altAMSL: f64(500), ident: withSecret})
+	r.tick(1)
+	ms := r.pub.take()
+	if len(byKind(ms, violation.KindZoneIncursion, "S")) == 0 || len(byKind(ms, violation.KindZoneIncursion, "P")) == 0 {
+		t.Fatalf("published %s", describe(ms))
+	}
+	for _, m := range ms {
+		raw, err := json.Marshal(m)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.Contains(string(raw), "X7Q") {
+			t.Fatalf("the secret part was published: %s", raw)
+		}
+		if m.Body.State == violation.StateRaised && (m.Body.OperatorReg == nil || *m.Body.OperatorReg != "GEO-TEST-OP1") {
+			t.Fatalf("operator_reg %v of %s", m.Body.OperatorReg, m.Body.TrackRef)
+		}
+		for _, s := range m.Body.EvidenceExcerpt {
+			if s.Identification.OperatorReg == nil || *s.Identification.OperatorReg != "GEO-TEST-OP1" {
+				t.Fatalf("excerpt operator_reg %v of %s", s.Identification.OperatorReg, m.Body.TrackRef)
+			}
+		}
+	}
 }

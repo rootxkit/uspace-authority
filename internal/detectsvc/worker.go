@@ -13,6 +13,7 @@ import (
 
 	"github.com/rootxkit/uspace-core/alerting"
 	"github.com/rootxkit/uspace-core/core"
+	"github.com/rootxkit/uspace-core/regnum"
 	coresources "github.com/rootxkit/uspace-core/sources"
 	"github.com/rootxkit/uspace-core/terrain"
 	"github.com/rootxkit/uspace-core/zones"
@@ -158,11 +159,14 @@ type Worker struct {
 	logger *slog.Logger
 	lim    *logging.Limiter
 
-	mon        *alerting.Monitor
-	monSnap    map[string]uint64
-	zones      ZoneSet
-	zoneByKey  map[string]*zones.Zone
-	policyVer  int64
+	mon       *alerting.Monitor
+	monSnap   map[string]uint64
+	zones     ZoneSet
+	zoneByKey map[string]*zones.Zone
+	policyVer int64
+	// regnum is the policy's registration-number pattern: what is kept of
+	// an operator number is its public part under it (G-04).
+	regnum     *regnum.Validator
 	lastWallS  float64
 	open       map[string]*open
 	uspace     map[string]map[string]struct{}
@@ -261,7 +265,10 @@ func (w *Worker) Observe(m *track.Message) bool {
 	if !m.Backlog {
 		// History is recorded by tsdb-writer and never alerted (T-04); it
 		// is neither evidence of a live condition nor re-observed.
-		w.excerpts.Add(tr.ID, tr.CapturedAtS, violation.SampleOf(m))
+		s := violation.SampleOf(m)
+		s.Identification.OperatorReg = w.publicPart(s.Identification.OperatorReg)
+		s.Identification.RegisteredOperatorReg = w.publicPart(s.Identification.RegisteredOperatorReg)
+		w.excerpts.Add(tr.ID, tr.CapturedAtS, s)
 	}
 	wallS := w.wallS()
 	if !m.Backlog {
@@ -335,6 +342,15 @@ func (w *Worker) maybeRebuild() {
 	w.mon = alerting.NewMonitor(ConfigFor(zs.Zones, t, w.set.MaxAircraft))
 	w.monSnap = nil
 	w.zones, w.policyVer = zs, version
+	if v, err := regnum.NewValidator(t.RegistrationNumberPattern); err == nil {
+		w.regnum = v
+	} else {
+		// The policy validates its pattern; a fault here keeps the default
+		// shape rather than the whole number.
+		w.regnum, _ = regnum.NewValidator("")
+		w.errorf("detect_regnum_pattern", "registration_number_pattern does not compile: operator numbers are cut under the default pattern",
+			slog.String("error", err.Error()), slog.Int64("policy_version", version))
+	}
 	w.zoneByKey = make(map[string]*zones.Zone, len(zs.Zones))
 	for _, z := range zs.Zones {
 		if z == nil {
@@ -577,6 +593,9 @@ func (w *Worker) raised(a *alerting.Alert) {
 	last, have := w.excerpts.lastSample(id)
 	if have {
 		ident := last.Identification
+		// The sample's operator numbers are already cut to their public
+		// part (Observe); cutting again could take a public tail for a
+		// secret one.
 		b.Serial, b.OperatorReg, b.RegistryUASID = ident.Serial, ident.OperatorReg, ident.RegistryUASID
 		b.EvidenceTrust = last.Trust
 		ref := violation.RefReceiver
@@ -610,6 +629,19 @@ func (w *Worker) raised(a *alerting.Alert) {
 	}
 	w.enqueue(ov, violation.StateRaised, a.LastTrueS)
 	w.Counters.Inc(CounterRaised)
+}
+
+// publicPart is an operator number as it may be kept: its public part
+// only, never the secret part a broadcast may carry (G-04, 06 §5).
+func (w *Worker) publicPart(num *string) *string {
+	if num == nil {
+		return nil
+	}
+	v := w.regnum
+	if v == nil {
+		v, _ = regnum.NewValidator("")
+	}
+	return strp(v.PublicPart(*num))
 }
 
 // updatePeak keeps the worst height over the ground a height violation

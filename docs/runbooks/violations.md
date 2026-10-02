@@ -29,7 +29,7 @@ are later detectors (WP-26, plan Q-A6).
 |---|---|
 | `violation_id` | One per raise of a condition; stable while it holds. |
 | `alert_key` | The monitor's key of the condition (`zone:<country>:<identifier>:<aircraft>`, `height:<aircraft>`, ...). |
-| `track_id`, `serial`, `operator_reg` | The aircraft as identified when raised; serial and number are as broadcast or provided, never verified. |
+| `track_id`, `serial`, `operator_reg` | The aircraft as identified when raised; serial and number are as broadcast or provided, never verified. An operator number (here and in `evidence_excerpt`) is only its public part under the policy's `registration_number_pattern`: a secret part a broadcast carried is cut by detect and never stored (G-04, 06 §5). |
 | `zone_id`, `zone_version`, `zone_type` | The zone judged (`country/identifier`), its published version (null for a dynamic restriction). |
 | `opened_at`, `closed_at` | When the condition was first shown true and when it cleared, on the placed clock (`captured_at`). |
 | `clear_reason` | `resolved` (shown false past the hysteresis), `stale` (not heard for `stale_after_s`), `landed`, `source_disabled` (its source switched off, B-11), `flight_ended`, `reconfigured` (the zone set or policy changed and the aircraft's last sample, judged again as it was received, no longer raised it; an aircraft quiet past `stale_after_s` or no longer held is `stale` instead), `detector_silent` (closed by api: detect stopped republishing it, a restart or a bus outage; not a judgement of the aircraft, and revived as the same violation if detect's next update for it arrives, with `violation_revived` recording the gap). Only `resolved` rests on evidence that the condition ended. |

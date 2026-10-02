@@ -29,7 +29,7 @@
         "alert_key": { "type": "string", "minLength": 1, "description": "uspace-core alerting.Alert.Key of the condition." },
         "track_ref": { "type": "string", "minLength": 1, "description": "The aircraft's track id." },
         "serial": { "$ref": "#/$defs/nullable_string", "description": "As broadcast or provided." },
-        "operator_reg": { "$ref": "#/$defs/nullable_string", "description": "As broadcast or provided." },
+        "operator_reg": { "$ref": "#/$defs/nullable_string", "description": "As broadcast or provided; the public part only (regnum.PublicPart under the policy pattern, G-04)." },
         "registry_uas_id": { "$ref": "#/$defs/nullable_string" },
         "zone_id": { "$ref": "#/$defs/nullable_string", "description": "country/identifier of the zone judged; null for height_120m and identification_mismatch." },
         "zone_version": { "type": ["integer", "null"], "description": "The zone version in force; null for a dynamic restriction." },

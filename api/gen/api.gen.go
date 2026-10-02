@@ -2833,7 +2833,7 @@ type Violation struct {
 	LastCapturedAt    time.Time     `json:"last_captured_at"`
 	OpenedAt          time.Time     `json:"opened_at"`
 
-	// OperatorReg As broadcast.
+	// OperatorReg As broadcast; the public part only (regnum.PublicPart, G-04).
 	OperatorReg *string        `json:"operator_reg,omitempty"`
 	Peak        *ViolationPeak `json:"peak,omitempty"`
 
@@ -2917,7 +2917,7 @@ type ViolationSummary struct {
 	LastCapturedAt time.Time                     `json:"last_captured_at"`
 	OpenedAt       time.Time                     `json:"opened_at"`
 
-	// OperatorReg As broadcast.
+	// OperatorReg As broadcast; the public part only (regnum.PublicPart, G-04).
 	OperatorReg *string        `json:"operator_reg,omitempty"`
 	Peak        *ViolationPeak `json:"peak,omitempty"`
 

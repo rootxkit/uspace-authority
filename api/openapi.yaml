@@ -4228,7 +4228,7 @@ components:
         severity: {type: string, enum: [info, warning, critical]}
         track_id: {type: string}
         serial: {type: [string, "null"], description: As broadcast.}
-        operator_reg: {type: [string, "null"], description: As broadcast.}
+        operator_reg: {type: [string, "null"], description: "As broadcast; the public part only (regnum.PublicPart, G-04)."}
         zone_id: {type: [string, "null"], description: country/identifier of the zone judged.}
         zone_type: {type: [string, "null"]}
         detector_state: {type: string, enum: [raised, updated, cleared]}
