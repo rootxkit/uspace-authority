@@ -189,3 +189,19 @@ Unreleased; the format follows Keep a Changelog.
   transition an event, `detector_silent` for what detect stopped
   republishing, `GET /v1/violations`, `GET /v1/violations/{id}`,
   `POST /v1/violations/{id}/review`; the violations runbook.
+- WP-13: the picture feed (`cmd/picture-ws`, `internal/picture`):
+  `GET /v1/picture/ws` with the common console frame (M29), opened
+  same-origin with the `uspace_session` cookie and an exact `Origin`
+  allow-list (M22), verified by uspace-core's verifier and checked
+  against api's sessions table through `GET /v1/auth/session` at the
+  upgrade and every 15 s (4401 on logout or revocation, 1013 when it
+  cannot be checked); viewport subscriptions over c5 cells with a
+  one-cell margin, a status and a snapshot before the live stream, a
+  2 Hz per-track throttle above 200 tracks and `dropped_frames`; track,
+  manned and active-violation caches (ALRT read back at start and after
+  the bus returns, C-08), nothing removed while the bus is lost
+  (`nats_unavailable` since T); source rows with "disabled by <who>"
+  from the followed switches (`sources.Follower.InstancesOff`);
+  `GET /v1/picture/snapshot` and `/v1/picture/sources`; the extras in
+  `schemas/picture/`; the operator position for the console realm only;
+  the picture runbook.

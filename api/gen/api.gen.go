@@ -336,6 +336,75 @@ func (e OperatorType) Valid() bool {
 	}
 }
 
+// Defines values for PictureSourceStateDisabledBy.
+const (
+	PictureSourceStateDisabledByDefaultDeny PictureSourceStateDisabledBy = "default_deny"
+	PictureSourceStateDisabledByInstance    PictureSourceStateDisabledBy = "instance"
+	PictureSourceStateDisabledByLessThannil PictureSourceStateDisabledBy = "<nil>"
+	PictureSourceStateDisabledByType        PictureSourceStateDisabledBy = "type"
+)
+
+// Valid indicates whether the value is a known member of the PictureSourceStateDisabledBy enum.
+func (e PictureSourceStateDisabledBy) Valid() bool {
+	switch e {
+	case PictureSourceStateDisabledByDefaultDeny:
+		return true
+	case PictureSourceStateDisabledByInstance:
+		return true
+	case PictureSourceStateDisabledByLessThannil:
+		return true
+	case PictureSourceStateDisabledByType:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PictureSourceStateState.
+const (
+	PictureSourceStateStateDisabled PictureSourceStateState = "disabled"
+	PictureSourceStateStateDown     PictureSourceStateState = "down"
+	PictureSourceStateStateLive     PictureSourceStateState = "live"
+	PictureSourceStateStateStale    PictureSourceStateState = "stale"
+	PictureSourceStateStateUnknown  PictureSourceStateState = "unknown"
+)
+
+// Valid indicates whether the value is a known member of the PictureSourceStateState enum.
+func (e PictureSourceStateState) Valid() bool {
+	switch e {
+	case PictureSourceStateStateDisabled:
+		return true
+	case PictureSourceStateStateDown:
+		return true
+	case PictureSourceStateStateLive:
+		return true
+	case PictureSourceStateStateStale:
+		return true
+	case PictureSourceStateStateUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PictureSourcesNats.
+const (
+	PictureSourcesNatsConnected   PictureSourcesNats = "connected"
+	PictureSourcesNatsUnavailable PictureSourcesNats = "unavailable"
+)
+
+// Valid indicates whether the value is a known member of the PictureSourcesNats enum.
+func (e PictureSourcesNats) Valid() bool {
+	switch e {
+	case PictureSourcesNatsConnected:
+		return true
+	case PictureSourcesNatsUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PolicyHeightLimitInUspace.
 const (
 	PolicyHeightLimitInUspaceEvaluate           PolicyHeightLimitInUspace = "evaluate"
@@ -1707,6 +1776,57 @@ type OperatorValidity struct {
 	Status             RegistryValidityStatus `json:"status"`
 	ValidUntil         *time.Time             `json:"valid_until,omitempty"`
 }
+
+// PictureFrame A frame of the common console frame (uspace-lab
+// schemas/common/envelope/v1 with the body named by `schema`).
+type PictureFrame struct {
+	Backlog    bool                   `json:"backlog"`
+	Body       map[string]interface{} `json:"body"`
+	CapturedAt string                 `json:"captured_at"`
+	MsgId      string                 `json:"msg_id"`
+	Producer   string                 `json:"producer"`
+	RxTs       string                 `json:"rx_ts"`
+	Schema     string                 `json:"schema"`
+	TimeSource string                 `json:"time_source"`
+	Ts         *string                `json:"ts,omitempty"`
+}
+
+// PictureSourceState The body of source/status/v1 (uspace-lab schemas/common) with lagging and lag_s.
+type PictureSourceState struct {
+	AgeS           *float32                      `json:"age_s"`
+	Counters       map[string]int                `json:"counters"`
+	DisabledBy     *PictureSourceStateDisabledBy `json:"disabled_by"`
+	DisabledByWho  *string                       `json:"disabled_by_who,omitempty"`
+	LagS           *float32                      `json:"lag_s,omitempty"`
+	Lagging        *bool                         `json:"lagging,omitempty"`
+	Since          time.Time                     `json:"since"`
+	Source         string                        `json:"source"`
+	SourceInstance *string                       `json:"source_instance"`
+	State          PictureSourceStateState       `json:"state"`
+}
+
+// PictureSourceStateDisabledBy defines model for PictureSourceState.DisabledBy.
+type PictureSourceStateDisabledBy string
+
+// PictureSourceStateState defines model for PictureSourceState.State.
+type PictureSourceStateState string
+
+// PictureSources defines model for PictureSources.
+type PictureSources struct {
+	CisAgeS    *float32           `json:"cis_age_s,omitempty"`
+	CisVersion *string            `json:"cis_version,omitempty"`
+	Nats       PictureSourcesNats `json:"nats"`
+	NatsSince  *time.Time         `json:"nats_since,omitempty"`
+
+	// ProjectionAgeS Age of the registry projection (database clock).
+	ProjectionAgeS *float32             `json:"projection_age_s,omitempty"`
+	ServerTs       time.Time            `json:"server_ts"`
+	Sources        []PictureSourceState `json:"sources"`
+	ZonesVersion   *string              `json:"zones_version,omitempty"`
+}
+
+// PictureSourcesNats defines model for PictureSources.Nats.
+type PictureSourcesNats string
 
 // PilotCompetency defines model for PilotCompetency.
 type PilotCompetency struct {
@@ -3088,6 +3208,12 @@ type ListAuditEventsParams struct {
 	Purpose *string `form:"purpose,omitempty" json:"purpose,omitempty"`
 }
 
+// GetSessionParams defines parameters for GetSession.
+type GetSessionParams struct {
+	// Activity false checks the session without counting the request as activity.
+	Activity *bool `form:"activity,omitempty" json:"activity,omitempty"`
+}
+
 // CompromiseSigningKeyJSONBody defines parameters for CompromiseSigningKey.
 type CompromiseSigningKeyJSONBody struct {
 	Reason string `json:"reason"`
@@ -3761,8 +3887,10 @@ type ClientInterface interface {
 
 	// GetSession The session of the caller
 	//
+	// The caller's session, checked against its sessions row. A read is the console's activity and moves the idle expiry, unless `activity=false`: a check-only read (picture-ws re-checks every open stream with it) leaves `last_seen_at` as it was, so an idle console still ends at the idle timeout.
+	//
 	// Corresponds with GET /v1/auth/session (the `GetSession` operationId).
-	GetSession(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetSession(ctx context.Context, params *GetSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetCellOwnership The cell3 -> detect worker ownership map
 	//
@@ -5180,9 +5308,11 @@ func (c *Client) VerifyMFA(ctx context.Context, body VerifyMFAJSONRequestBody, r
 
 // GetSession The session of the caller
 //
+// The caller's session, checked against its sessions row. A read is the console's activity and moves the idle expiry, unless `activity=false`: a check-only read (picture-ws re-checks every open stream with it) leaves `last_seen_at` as it was, so an idle console still ends at the idle timeout.
+//
 // Corresponds with GET /v1/auth/session (the `GetSession` operationId).
-func (c *Client) GetSession(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetSessionRequest(c.Server)
+func (c *Client) GetSession(ctx context.Context, params *GetSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSessionRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -7811,7 +7941,7 @@ func NewVerifyMFARequestWithBody(server string, contentType string, body io.Read
 }
 
 // NewGetSessionRequest constructs an http.Request for the GetSession method
-func NewGetSessionRequest(server string) (*http.Request, error) {
+func NewGetSessionRequest(server string, params *GetSessionParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -7827,6 +7957,33 @@ func NewGetSessionRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Activity != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "activity", *params.Activity, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -11825,10 +11982,12 @@ type ClientWithResponsesInterface interface {
 
 	// GetSessionWithResponse The session of the caller
 	//
+	// The caller's session, checked against its sessions row. A read is the console's activity and moves the idle expiry, unless `activity=false`: a check-only read (picture-ws re-checks every open stream with it) leaves `last_seen_at` as it was, so an idle console still ends at the idle timeout.
+	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /v1/auth/session (the `GetSession` operationId).
-	GetSessionWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetSessionResponse, error)
+	GetSessionWithResponse(ctx context.Context, params *GetSessionParams, reqEditors ...RequestEditorFn) (*GetSessionResponse, error)
 
 	// GetCellOwnershipWithResponse The cell3 -> detect worker ownership map
 	//
@@ -17726,11 +17885,13 @@ func (c *ClientWithResponses) VerifyMFAWithResponse(ctx context.Context, body Ve
 
 // GetSessionWithResponse The session of the caller
 //
+// The caller's session, checked against its sessions row. A read is the console's activity and moves the idle expiry, unless `activity=false`: a check-only read (picture-ws re-checks every open stream with it) leaves `last_seen_at` as it was, so an idle console still ends at the idle timeout.
+//
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /v1/auth/session (the `GetSession` operationId).
-func (c *ClientWithResponses) GetSessionWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetSessionResponse, error) {
-	rsp, err := c.GetSession(ctx, reqEditors...)
+func (c *ClientWithResponses) GetSessionWithResponse(ctx context.Context, params *GetSessionParams, reqEditors ...RequestEditorFn) (*GetSessionResponse, error) {
+	rsp, err := c.GetSession(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -22861,7 +23022,7 @@ type ServerInterface interface {
 	VerifyMFA(w http.ResponseWriter, r *http.Request)
 	// GetSession The session of the caller
 	// (GET /v1/auth/session)
-	GetSession(w http.ResponseWriter, r *http.Request)
+	GetSession(w http.ResponseWriter, r *http.Request, params GetSessionParams)
 	// GetCellOwnership The cell3 -> detect worker ownership map
 	// (GET /v1/cells)
 	GetCellOwnership(w http.ResponseWriter, r *http.Request)
@@ -23353,8 +23514,27 @@ func (siw *ServerInterfaceWrapper) VerifyMFA(w http.ResponseWriter, r *http.Requ
 // GetSession operation middleware
 func (siw *ServerInterfaceWrapper) GetSession(w http.ResponseWriter, r *http.Request) {
 
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetSessionParams
+
+	// ------------- Optional query parameter "activity" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "activity", r.URL.Query(), &params.Activity, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "activity"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "activity", Err: err})
+		}
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetSession(w, r)
+		siw.Handler.GetSession(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -26558,6 +26738,7 @@ func (response VerifyMFAdefaultApplicationProblemPlusJSONResponse) VisitVerifyMF
 }
 
 type GetSessionRequestObject struct {
+	Params GetSessionParams
 }
 
 type GetSessionResponseObject interface {
@@ -30579,8 +30760,10 @@ func (sh *strictHandler) VerifyMFA(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetSession operation middleware
-func (sh *strictHandler) GetSession(w http.ResponseWriter, r *http.Request) {
+func (sh *strictHandler) GetSession(w http.ResponseWriter, r *http.Request, params GetSessionParams) {
 	var request GetSessionRequestObject
+
+	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.GetSession(ctx, request.(GetSessionRequestObject))

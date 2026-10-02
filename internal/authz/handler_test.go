@@ -1,6 +1,7 @@
 package authz
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -173,5 +174,58 @@ func TestSignInLimitAndAuditUseTheForwardedClient(t *testing.T) {
 			t.Fatalf("untrusted peer: %d %d, audited %v", first, second, ip)
 		}
 		srv.Close()
+	}
+}
+
+// A check-only read of the session (?activity=false, picture-ws's
+// re-check) is not activity: it leaves last_seen_at where it was, so an
+// idle console's re-checks never keep it alive and the session ends at
+// the idle timeout. A plain read is activity and moves last_seen_at (the
+// pair).
+func TestSessionCheckOnlyIsNotActivity(t *testing.T) {
+	f := newFixture(t, fxOpts{})
+	srv := serve(t, f)
+	sess := f.signIn(t, "admin", adminPW)
+	lastSeen := func() time.Time {
+		t.Helper()
+		s, err := f.st.Session(context.Background(), sess.Session.JTI)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return s.LastSeenAt
+	}
+	signedIn := lastSeen()
+
+	f.clk.Advance(5 * time.Minute)
+	if code, _, info := send(t, http.MethodGet, srv.URL+"/v1/auth/session?activity=false", sess.Token, ""); code != 200 || info["jti"] != sess.Session.JTI {
+		t.Fatalf("check-only: %d %v", code, info)
+	}
+	if got := lastSeen(); !got.Equal(signedIn) {
+		t.Fatalf("a check-only read moved last_seen_at from %s to %s", signedIn, got)
+	}
+	if code, _, _ := send(t, http.MethodGet, srv.URL+"/v1/auth/session", sess.Token, ""); code != 200 {
+		t.Fatalf("plain read: %d", code)
+	}
+	active := lastSeen()
+	if !active.Equal(f.clk.Now()) {
+		t.Fatalf("a plain read left last_seen_at at %s, want %s", active, f.clk.Now())
+	}
+
+	// Re-checks every 15 s for the idle timeout: the session stays live
+	// until it, and is refused past it.
+	for elapsed := time.Duration(0); elapsed < f.svc.Config.IdleTimeout; elapsed += 15 * time.Second {
+		f.clk.Advance(15 * time.Second)
+		code, _, _ := send(t, http.MethodGet, srv.URL+"/v1/auth/session?activity=false", sess.Token, "")
+		if f.clk.Now().Sub(active) <= f.svc.Config.IdleTimeout && code != 200 {
+			t.Fatalf("live session refused %s after its last activity: %d", f.clk.Now().Sub(active), code)
+		}
+	}
+	f.clk.Advance(15 * time.Second)
+	if code, _, p := send(t, http.MethodGet, srv.URL+"/v1/auth/session?activity=false", sess.Token, ""); code != 401 ||
+		!strings.Contains(p["detail"].(string), "idle") {
+		t.Fatalf("idle session past the timeout: %d %v", code, p)
+	}
+	if got := lastSeen(); !got.Equal(active) {
+		t.Fatalf("check-only reads moved last_seen_at to %s", got)
 	}
 }

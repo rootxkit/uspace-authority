@@ -1,0 +1,13 @@
+# lab/ holds verbatim copies of uspace-lab schemas/common: the common
+# console frame (M29) picture-ws serves and every message it carries.
+# This repository consumes these shapes and does not define them
+# (decision record M14); its own extras are schemas/picture/. Refresh by
+# copying again; never edit.
+repo = https://github.com/rootxkit/uspace-lab.git
+commit = e62f076c3e7dea7b6150d145b03960340b4a1d78
+paths = schemas/common/envelope/v1/ -> lab/envelope/v1/
+        schemas/common/console/status/v1/ -> lab/console/status/v1/
+        schemas/common/console/snapshot/v1/ -> lab/console/snapshot/v1/
+        schemas/common/console/subscribe/v1/ -> lab/console/subscribe/v1/
+        schemas/common/track/telemetry/v1/ -> lab/track/telemetry/v1/
+        schemas/common/source/status/v1/ -> lab/source/status/v1/

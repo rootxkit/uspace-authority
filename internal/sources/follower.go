@@ -2,6 +2,8 @@ package sources
 
 import (
 	"log/slog"
+	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -140,6 +142,28 @@ func (f *Follower) DisabledByWho(sourceType string, instanceID *string) *string 
 		return &who
 	}
 	return nil
+}
+
+// InstancesOff lists the instance rows of the state that switch an
+// instance off, sorted by type and instance: the console lists such a
+// source as "disabled by <who>" even when its adapter has never been
+// heard (WP-13, B-11).
+func (f *Follower) InstancesOff() []Control {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+	var out []Control
+	for k, c := range f.rows {
+		if !k.whole && !c.Enabled {
+			out = append(out, c)
+		}
+	}
+	slices.SortFunc(out, func(a, b Control) int {
+		if a.SourceType != b.SourceType {
+			return strings.Compare(a.SourceType, b.SourceType)
+		}
+		return strings.Compare(*a.InstanceID, *b.InstanceID)
+	})
+	return out
 }
 
 // Known reports whether any state has been applied.

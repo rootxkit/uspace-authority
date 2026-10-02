@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.uspace.ge/picture/track/v1.json",
+  "title": "picture/track/v1",
+  "description": "The members picture-ws adds to a track/telemetry/v1 frame (uspace-lab schemas/common/track/telemetry/v1, M29; WP-13): age_s, now - captured_at on this system's clock when the frame was sent, and source_state, the state of the track's source instance (source/status/v1's). The envelope is the producer's, so every track keeps its own times. operator_position, the remote pilot or operator position a Display Provider flight carries (WP-14), is shown to the console realm only and omitted for every other realm and any public subset (spec 06 §5). A track frame validates against the lab's track/telemetry/v1 and against this schema.",
+  "allOf": [{ "$ref": "https://schemas.uspace.ge/track/telemetry/v1.json" }],
+  "properties": {
+    "schema": { "const": "track/telemetry/v1" },
+    "body": { "$ref": "#/$defs/body" }
+  },
+  "$defs": {
+    "body": {
+      "type": "object",
+      "required": ["age_s", "source_state"],
+      "properties": {
+        "age_s": { "type": "number", "minimum": 0 },
+        "source_state": { "enum": ["live", "stale", "disabled", "down", "unknown"] },
+        "operator_position": {
+          "type": "object",
+          "required": ["lat", "lng"],
+          "properties": {
+            "lat": { "type": "number", "minimum": -90, "maximum": 90 },
+            "lng": { "type": "number", "minimum": -180, "maximum": 180 }
+          }
+        }
+      }
+    }
+  }
+}

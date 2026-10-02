@@ -571,7 +571,9 @@ const touchEvery = time.Minute
 // the session row exists for that account, is not revoked, has not
 // expired and has been used within the idle timeout (table A: idle
 // 30 min); an idle session is ended so it stays ended. Its roles and
-// realm are the row's.
+// realm are the row's. The request is the user's activity and moves
+// last_seen_at, unless ctx marks it check-only (apiserver.NoActivity:
+// picture-ws's re-check of an open stream), which only reads.
 func (s *Service) CheckSession(ctx context.Context, jti, sub string) (Session, error) {
 	now := s.now()
 	sess, err := s.Store.Session(ctx, jti)
@@ -599,7 +601,7 @@ func (s *Service) CheckSession(ctx context.Context, jti, sub string) (Session, e
 		}
 		return Session{}, fmt.Errorf("%w: the session was idle longer than %s", ErrSessionRefused, s.Config.IdleTimeout)
 	}
-	if now.Sub(sess.LastSeenAt) >= touchEvery {
+	if now.Sub(sess.LastSeenAt) >= touchEvery && !apiserver.NoActivity(ctx) {
 		if err := s.Store.TouchSession(ctx, jti, now); err != nil {
 			return Session{}, err
 		}

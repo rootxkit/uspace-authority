@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.uspace.ge/picture/status/v1.json",
+  "title": "picture/status/v1",
+  "description": "The authority's extras of console/status/v1 (uspace-lab schemas/common/console/status/v1, M29), the status frame picture-ws sends on connect, after every subscription and every 2 s. A frame validates against the lab's console/status/v1 and against this schema; this repository defines only what the lab leaves to the producing system (M14): the values of dp_state and nats, the degraded slugs, and since when each holds (nats_since, degraded_since). projection_age_s (the registry projection, database clock), cis_version and cis_age_s (the restrictions projection of the CIS cache) are absent while never projected, and say so in degraded. The thresholds (stale_after_s, live_max_age_s) are the active authority_policy's (INV-03). Each source in sources[] is source/status/v1's body with the adapters' lagging and lag_s.",
+  "allOf": [{ "$ref": "https://schemas.uspace.ge/console/status/v1.json" }],
+  "properties": {
+    "schema": { "const": "console/status/v1" },
+    "producer": { "const": "authority/picture-ws" },
+    "body": { "$ref": "#/$defs/body" }
+  },
+  "$defs": {
+    "timestamp": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$" },
+    "slug": {
+      "description": "What is degraded. Global: nats_unavailable (the bus is lost: nothing leaves the picture, every aircraft ages), projections_unreadable, registry_projection_absent, cis_absent, cis_stale (older than the policy's cis_stale_bound_s), dp_unavailable (no Display Provider view: provider tracks are missing), alerts_unconfirmed (an active violation detect stopped republishing), alerts_replaying (the read-back of ALRT at start or after the bus came back), session_verifier_unavailable, source_control_unknown (B-09: every source enabled until the switches are read), policy_default (the documented defaults, policy version 0), tracks_evicted (the track cache is at its bound). Per connection: no_subscription, viewport_too_large (the previous viewport is kept), session_unchecked (the session could not be re-checked; the connection closes past the grace).",
+      "enum": [
+        "nats_unavailable", "projections_unreadable", "registry_projection_absent", "cis_absent", "cis_stale",
+        "dp_unavailable", "alerts_unconfirmed", "alerts_replaying", "session_verifier_unavailable",
+        "source_control_unknown", "policy_default", "tracks_evicted",
+        "no_subscription", "viewport_too_large", "session_unchecked"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "lagging": { "type": "boolean" },
+        "lag_s": { "oneOf": [{ "type": "number", "minimum": 0 }, { "type": "null" }] }
+      }
+    },
+    "body": {
+      "type": "object",
+      "required": ["dp_state", "nats", "degraded_since"],
+      "properties": {
+        "degraded": { "type": "array", "items": { "$ref": "#/$defs/slug" } },
+        "degraded_since": {
+          "description": "For every slug in degraded, since when it holds (this process's clock).",
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/slug" },
+          "additionalProperties": { "$ref": "#/$defs/timestamp" }
+        },
+        "sources": { "type": "array", "items": { "$ref": "#/$defs/source" } },
+        "projection_age_s": { "type": "number", "minimum": 0 },
+        "cis_version": { "type": "string", "minLength": 1 },
+        "cis_age_s": { "type": "number", "minimum": 0 },
+        "dp_state": {
+          "description": "The F3411 Display Provider (network_rid) as the source rows say: polling (an instance live), stale (heard, none live), disabled (the type switched off), unavailable (never heard; until WP-14 always).",
+          "enum": ["polling", "stale", "disabled", "unavailable"]
+        },
+        "nats": { "enum": ["connected", "unavailable"] },
+        "nats_since": { "$ref": "#/$defs/timestamp" }
+      },
+      "if": { "properties": { "nats": { "const": "unavailable" } } },
+      "then": { "required": ["nats_since"] }
+    }
+  }
+}

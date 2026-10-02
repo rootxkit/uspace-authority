@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.uspace.ge/picture/snapshot/v1.json",
+  "title": "picture/snapshot/v1",
+  "description": "The authority's extra of console/snapshot/v1 (uspace-lab schemas/common/console/snapshot/v1, M29). A snapshot frame validates against the lab's console/snapshot/v1 and against this schema. picture-ws bounds a snapshot to PICTURE_SNAPSHOT_MAX_BYTES of items: active violations first, then tracks, then manned aircraft, each in a stable order. truncated is true when items were left out at the bound; the console then holds a partial picture of its viewport and should narrow it. Live frames of the viewport still arrive for every aircraft.",
+  "allOf": [{ "$ref": "https://schemas.uspace.ge/console/snapshot/v1.json" }],
+  "properties": {
+    "schema": { "const": "console/snapshot/v1" },
+    "producer": { "const": "authority/picture-ws" },
+    "body": {
+      "type": "object",
+      "required": ["truncated"],
+      "properties": {
+        "truncated": { "type": "boolean" }
+      }
+    }
+  }
+}

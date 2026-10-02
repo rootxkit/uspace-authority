@@ -1,0 +1,10 @@
+# Findings gitleaks may skip, one fingerprint each (commit:path:rule:line).
+# A fingerprint names one commit, so nothing committed later is exempt.
+#
+# 4ce276a: the test operator number "FIN87astrdge12k8-xyz" beside the
+# track id "secret" in TestFramesCarryNoPersonalDataMembers matched
+# generic-api-key. It is test data, not a credential: the three-letter
+# EU suffix that the test checks never leaves the picture. The test was
+# renamed in the next commit. This entry exists because that commit is
+# already pushed and is not rewritten.
+4ce276ac2d98973bc84f360ed636cc2fe3a224cc:internal/picture/hub_test.go:generic-api-key:512
