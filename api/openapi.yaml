@@ -2256,7 +2256,7 @@ components:
       type: object
       required: [registration_number, status]
       properties:
-        registration_number: {type: string, description: As asked.}
+        registration_number: {type: string, description: "The public part of the number asked (regnum.PublicPart); a secret part sent with it is never echoed or recorded."}
         status: {$ref: "#/components/schemas/RegistryValidityStatus"}
         valid_until: {type: string, format: date-time}
     UASValidity:

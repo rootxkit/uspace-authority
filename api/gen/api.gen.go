@@ -814,7 +814,7 @@ type OperatorType string
 
 // OperatorValidity defines model for OperatorValidity.
 type OperatorValidity struct {
-	// RegistrationNumber As asked.
+	// RegistrationNumber The public part of the number asked (regnum.PublicPart); a secret part sent with it is never echoed or recorded.
 	RegistrationNumber string                 `json:"registration_number"`
 	Status             RegistryValidityStatus `json:"status"`
 	ValidUntil         *time.Time             `json:"valid_until,omitempty"`

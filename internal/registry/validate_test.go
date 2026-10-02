@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -192,5 +193,38 @@ func TestChangeFeedPages(t *testing.T) {
 	f.store.failReads = true
 	if _, _, err := f.svc.Changes(ctx, 0, 10); err == nil {
 		t.Fatal("read failure hidden")
+	}
+}
+
+// Spec 06 s5: an operator number sent with its EU secret part is
+// answered and audited by its public part only; the secret part is
+// neither echoed nor recorded. The twin without a secret part is echoed
+// as sent.
+func TestValidateNeverEchoesOrRecordsTheSecretPart(t *testing.T) {
+	f := newFixture(t)
+	f.operator(t, naturalOperator(numberA))
+	ctx := context.Background()
+	got, err := f.svc.Validate(ctx, []Query{{Operator: "GEOTEST00000001-x9z"}, {Operator: "GEONOBODY000001-q7w"}, {Operator: numberB}}, PurposeIdentification, ussp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got[0].Operator.Number != numberA || got[0].Operator.Status != ValidityValid {
+		t.Fatalf("answered %+v", got[0].Operator)
+	}
+	if got[1].Operator.Number != "GEONOBODY000001" || got[1].Operator.Status != ValidityUnknown {
+		t.Fatalf("unknown answered %+v", got[1].Operator)
+	}
+	if got[2].Operator.Number != numberB {
+		t.Fatalf("plain number answered %+v", got[2].Operator)
+	}
+	e := f.store.events[len(f.store.events)-1]
+	recorded := fmt.Sprint(e.Payload)
+	for _, secret := range []string{"x9z", "q7w"} {
+		if strings.Contains(recorded, secret) {
+			t.Fatalf("the secret part %q was recorded: %s", secret, recorded)
+		}
+	}
+	if !strings.Contains(recorded, numberA) || !strings.Contains(recorded, "GEONOBODY000001") {
+		t.Fatalf("the public parts were not recorded: %s", recorded)
 	}
 }

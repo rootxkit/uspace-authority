@@ -10,6 +10,7 @@ import (
 
 	"github.com/rootxkit/uspace-core/core"
 	"github.com/rootxkit/uspace-core/identify"
+	"github.com/rootxkit/uspace-core/regnum"
 	"github.com/rootxkit/uspace-core/serial"
 
 	"github.com/rootxkit/uspace-authority/internal/audit"
@@ -177,11 +178,14 @@ func (s *Service) lookupSerial(ctx context.Context, sn string) (UAS, bool, error
 	return rows[i], true, nil
 }
 
-func (s *Service) answer(ctx context.Context, q Query, compareKey func(string) string, now time.Time) (Validity, error) {
+// answer looks up one query. An operator number is echoed as its public
+// part only (regnum.PublicPart): a secret part sent with it is never
+// returned or recorded (spec 06 s5).
+func (s *Service) answer(ctx context.Context, q Query, num *regnum.Validator, now time.Time) (Validity, error) {
 	var v Validity
 	if q.Operator != "" {
-		ov := &OperatorValidity{Number: q.Operator, Status: ValidityUnknown}
-		r, err := s.Store.OperatorByKey(ctx, compareKey(q.Operator))
+		ov := &OperatorValidity{Number: num.PublicPart(q.Operator), Status: ValidityUnknown}
+		r, err := s.Store.OperatorByKey(ctx, num.CompareKey(q.Operator))
 		switch {
 		case err == nil:
 			until := r.ValidUntil
@@ -237,7 +241,7 @@ func (s *Service) Validate(ctx context.Context, qs []Query, purpose string, acto
 	var operators, serials, pilots []string
 	unknown := 0
 	for _, q := range qs {
-		a, err := s.answer(ctx, q, v.CompareKey, now)
+		a, err := s.answer(ctx, q, v, now)
 		if err != nil {
 			return nil, err
 		}
@@ -246,7 +250,7 @@ func (s *Service) Validate(ctx context.Context, qs []Query, purpose string, acto
 			status string
 			keys   *[]string
 		}{
-			{q.Operator, statusOf(a.Operator), &operators}, {q.Serial, statusOfUAS(a.UAS), &serials}, {q.Pilot, statusOfPilot(a.Pilot), &pilots},
+			{operatorKey(a.Operator), statusOf(a.Operator), &operators}, {q.Serial, statusOfUAS(a.UAS), &serials}, {q.Pilot, statusOfPilot(a.Pilot), &pilots},
 		} {
 			if p.key == "" {
 				continue
@@ -272,6 +276,15 @@ func (s *Service) Validate(ctx context.Context, qs []Query, purpose string, acto
 		s.Counters.Add(CounterValidatedUnknown, uint64(unknown))
 	}
 	return out, nil
+}
+
+// operatorKey is the operator number as answered and audited: the public
+// part, never the secret part.
+func operatorKey(v *OperatorValidity) string {
+	if v == nil {
+		return ""
+	}
+	return v.Number
 }
 
 func statusOf(v *OperatorValidity) string {
