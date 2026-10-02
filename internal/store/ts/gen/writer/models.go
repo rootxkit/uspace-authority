@@ -37,6 +37,25 @@ type ProjRegistryUAS struct {
 	RegistryVersion    int64
 }
 
+type ProjRestriction struct {
+	Identifier       string
+	Feature          []byte
+	State            string
+	StartsAt         *time.Time
+	EndsAt           *time.Time
+	AnspRef          *string
+	UspaceAirspaceID *string
+	CisVersion       int64
+	ProjectedAt      time.Time
+}
+
+type ProjRestrictionsState struct {
+	ID          bool
+	CisVersion  int64
+	Etag        string
+	ProjectedAt time.Time
+}
+
 type ProjZone struct {
 	Dataset       string
 	Identifier    string
