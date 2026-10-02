@@ -10,7 +10,7 @@ func (r *Reader) Exec(ctx context.Context, sql string) (int64, error) {
 }
 
 // Exec is Reader.Exec as the writer's role.
-func (w *Writer) Exec(ctx context.Context, sql string) (int64, error) {
+func (w *WriterPool) Exec(ctx context.Context, sql string) (int64, error) {
 	tag, err := w.pool.Exec(ctx, sql)
 	return tag.RowsAffected(), err
 }

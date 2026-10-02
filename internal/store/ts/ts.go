@@ -1,9 +1,3 @@
-// Package ts is the telemetry database (TimescaleDB) with three query
-// sets: the writer (tsdb-writer only, role authority_ts_writer), the
-// reader (hot-path processes and api's record reads, role
-// authority_ts_reader, SELECT only) and the projector (api's writes of
-// the projection tables, role authority_ts_projector, WP-3).
-// internal/store's doc.go describes the whole store.
 package ts
 
 import (
@@ -35,8 +29,9 @@ type Reader struct {
 	Q    *reader.Queries
 }
 
-// Writer is the hypertable writer's pool; only tsdb-writer opens one.
-type Writer struct {
+// WriterPool is the hypertable writer's pool; only tsdb-writer opens
+// one. (Writer is the adapters' hand-over to tsdb-writer, enqueue.go.)
+type WriterPool struct {
 	pool *pgxpool.Pool
 	Q    *writer.Queries
 }
@@ -120,9 +115,9 @@ func OpenReader(ctx context.Context, o store.PoolOptions) (*Reader, error) {
 	return r, nil
 }
 
-// OpenWriter opens a pool working as WriterRole unless o names another
-// role, and checks the schema version.
-func OpenWriter(ctx context.Context, o store.PoolOptions) (*Writer, error) {
+// OpenWriterPool opens a pool working as WriterRole unless o names
+// another role, and checks the schema version.
+func OpenWriterPool(ctx context.Context, o store.PoolOptions) (*WriterPool, error) {
 	if o.Role == "" {
 		o.Role = WriterRole
 	}
@@ -130,7 +125,7 @@ func OpenWriter(ctx context.Context, o store.PoolOptions) (*Writer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("telemetry database: %w", err)
 	}
-	w := &Writer{pool: pool, Q: writer.New(pool)}
+	w := &WriterPool{pool: pool, Q: writer.New(pool)}
 	if err := requireSchema(ctx, w.Q.SchemaVersion); err != nil {
 		pool.Close()
 		return nil, err
@@ -156,10 +151,10 @@ func (r *Reader) ReadTx(ctx context.Context, fn func(q *reader.Queries) error) e
 func (r *Reader) Ping(ctx context.Context) error { return r.pool.Ping(ctx) }
 
 // Close closes the pool.
-func (w *Writer) Close() { w.pool.Close() }
+func (w *WriterPool) Close() { w.pool.Close() }
 
 // Ping checks a connection can be used.
-func (w *Writer) Ping(ctx context.Context) error { return w.pool.Ping(ctx) }
+func (w *WriterPool) Ping(ctx context.Context) error { return w.pool.Ping(ctx) }
 
 func requireSchema(ctx context.Context, version func(context.Context) (int64, error)) error {
 	want, err := migrate.Latest(migrate.Timeseries)

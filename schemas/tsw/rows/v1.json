@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.uspace.ge/tsw/rows/v1.json",
+  "title": "tsw/rows/v1",
+  "description": "Rows handed to tsdb-writer on the internal subject tsw.v1.<table> (JetStream stream TSW, 10 min; docs/PLAN.md §6). Owned by uspace-authority (WP-9). Internal to this system: NATS never crosses a system, and the message carries no 04 §2 envelope (it is a storage hand-over, not an event). Producers publish with internal/store/ts.Writer (or, for rid_observations, rid-ingest's JetRows, WP-7) and set Nats-Msg-Id so a retried publish is stored once within the stream's duplicate window; tsdb-writer's dedupe key covers redelivery beyond it. At most 1 MiB (the stream's maximum message size). tsdb-writer refuses a message whose table is not the subject's, which has no rows, or whose row lacks a NOT NULL column, has a value of the wrong kind or a member the table does not have; a refused message is recorded in writer_gaps as malformed, never dropped silently.",
+  "type": "object",
+  "required": ["table", "rows"],
+  "properties": {
+    "table": {
+      "description": "The hypertable; equal to the <table> token of the subject.",
+      "type": "string",
+      "enum": ["rid_observations"]
+    },
+    "rows": {
+      "description": "Rows of the table. Each member is a column of the table (migrations/timeseries), by its column name: timestamptz as an RFC 3339 string, bytea as standard base64, integers and floats as JSON numbers, booleans as JSON booleans; a nullable column may be null or absent.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "object" }
+    }
+  },
+  "$defs": {
+    "rid_observations": {
+      "description": "One rid_observations row (timeseries 00004; internal/ridpipe.Row's JSON).",
+      "type": "object",
+      "required": ["ingest_ts", "frame_id", "receiver_id", "transmitter", "payload", "payload_sha256", "backlog", "sent_at_ms", "nonce"],
+      "additionalProperties": false,
+      "properties": {
+        "ingest_ts": { "type": "string", "format": "date-time" },
+        "frame_id": { "type": "string", "pattern": "^[0-9a-f]{32}$" },
+        "receiver_id": { "type": "string" },
+        "transmitter": { "type": "string" },
+        "receiver_ts": { "type": ["string", "null"], "format": "date-time" },
+        "msg_type": { "type": ["integer", "null"], "minimum": 0, "maximum": 15 },
+        "payload": { "type": "string", "contentEncoding": "base64" },
+        "payload_sha256": { "type": "string", "contentEncoding": "base64" },
+        "rssi_dbm": { "type": ["number", "null"] },
+        "backlog": { "type": "boolean" },
+        "receiver_lat_deg": { "type": ["number", "null"] },
+        "receiver_lon_deg": { "type": ["number", "null"] },
+        "receiver_alt_hae_m": { "type": ["number", "null"] },
+        "sent_at_ms": { "type": "integer" },
+        "nonce": { "type": "string" }
+      }
+    }
+  }
+}
