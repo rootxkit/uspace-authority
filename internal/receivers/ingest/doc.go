@@ -18,9 +18,11 @@
 // refuses the write is 503 with Retry-After and the reservation is given
 // back.
 //
-// Worker drains the queue: each batch is handed once to the decode
-// pipeline (ridpipe.Sink, WP-8) and then its raw rows to tsdb-writer on
-// tsw.v1.rid_observations (R-15, B-12), then acknowledged. While the rows
+// Worker drains the queue: each batch is handed once to the Remote ID
+// pipeline (ridpipe.Pipeline, WP-8), which fills the rows' decoded
+// columns and publishes the tracks, then its raw rows to tsdb-writer on
+// tsw.v1.rid_observations (R-15, B-12) and its tracks rows on
+// tsw.v1.tracks, then acknowledged. While the rows
 // cannot be handed over the batch waits in the queue (SC-18). A batch
 // with more than RID_INGEST_QUEUE_MAX_BATCHES undelivered behind it, or
 // older than RID_INGEST_QUEUE_MAX_AGE_S, is shed with a writer_gaps
@@ -38,7 +40,10 @@
 //
 // With no receiver keys the process listens on loopback only (R-06); a
 // key set with an invalid entry or an id twice stops it at start (B-14).
-// Until WP-8 lands, Run uses ridpipe.Undecoded and says so at start. The
-// source-control gate is the process's internal/sources follower of the
+// The pipeline resolves against the registry projection, read as
+// authority_ts_reader from TS_URL (opened lazily; registry_unavailable
+// until it loads, said at start and on the status line), and has no
+// geoid until WP-11 (no AMSL altitude, said likewise). The source-control
+// gate is the process's internal/sources follower of the
 // published switches (WP-10): direct_rid by type and by receiver.
 package ingest

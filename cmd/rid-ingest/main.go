@@ -4,10 +4,12 @@
 // memory), refuses a disabled receiver with 503 and Retry-After, keeps a
 // 60 s dedupe window per receiver, acknowledges a batch (202) only after
 // it is written to the JetStream work queue ingest.v1.<cell3>, drains
-// that queue into the decode pipeline (WP-8) and hands every raw frame to
-// tsdb-writer (tsw.v1.rid_observations), shedding the oldest with a
-// writer_gaps record when the queue is past its bound, and publishes
-// src.v1.direct_rid.<receiver> every 2 s. With no receiver keys it listens
+// that queue into the Remote ID pipeline (WP-8: decode, identity, time,
+// altitude, identification against the registry projection, tracks on
+// trk.v1 and ident.v1) and hands every raw frame to tsdb-writer
+// (tsw.v1.rid_observations, the tracks on tsw.v1.tracks), shedding the
+// oldest with a writer_gaps record when the queue is past its bound, and
+// publishes src.v1.direct_rid.<receiver> every 2 s. With no receiver keys it listens
 // on loopback only. It is started as `uspace-authority rid-ingest`;
 // --help lists the configuration variables, and
 // docs/runbooks/receivers.md is the receiver contract.

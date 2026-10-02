@@ -10,11 +10,13 @@ what an operator does about each.
 | Table | Producer | Dedupe key | Policies |
 |---|---|---|---|
 | `rid_observations` | rid-ingest (WP-7) | `(frame_id, ingest_ts)`; `frame_id` hashes (receiver, transmitter, `receiver_ts`, payload hash) | 1-day chunks, compressed after 7 days (`segmentby transmitter`), no retention until WP-27's archive |
+| `tracks` | rid-ingest's Remote ID pipeline (WP-8) | `(dedupe_key, captured_at)`; `dedupe_key` is `direct_rid:<frame_id>` of the frame that carried the Location | 1-day chunks, compressed after 7 days (`segmentby track_id`), no retention until WP-27's archive |
 | `writer_gaps` | rid-ingest's shed batches; tsdb-writer itself | `dedupe_key` | none |
+| `writer_positions` | tsdb-writer itself, with every write | `(table_name, stream)`, raised, never lowered | not a hypertable |
 
-`tracks` (WP-8), `ussp_flights` (WP-14, 24 h retention) and
-`manned_tracks` (WP-15) are added by their work packages, with
-`authority_hypertable_policies` (timeseries `00005`).
+`ussp_flights` (WP-14, 24 h retention) and `manned_tracks` (WP-15) are
+added by their work packages, with `authority_hypertable_policies`
+(timeseries `00005`).
 
 ## Reading the status line
 
