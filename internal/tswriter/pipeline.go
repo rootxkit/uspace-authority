@@ -53,6 +53,17 @@ type Source interface {
 	// Holes reports, per jump, the sequences in it that the stream no
 	// longer holds (aged out or deleted); a zero Hole when none.
 	Holes(ctx context.Context, jumps []Jump) ([]Hole, error)
+	// Cursor reads the stream's last sequence and then the consumer's
+	// ack floor and undelivered count, in that order: with NumPending 0,
+	// every message of this consumer up to StreamLast was delivered.
+	Cursor(ctx context.Context) (Cursor, error)
+}
+
+// Cursor is where a consumer stands in its stream.
+type Cursor struct {
+	StreamLast uint64
+	AckFloor   uint64
+	NumPending uint64
 }
 
 // Store writes parts in one transaction (ts.WriterPool.Write) and reads
@@ -167,8 +178,13 @@ type Pipeline struct {
 	failedAt time.Time
 	wake     chan struct{}
 	once     sync.Once
-	// lastPurgeCheck belongs to the pull loop (checkPurge).
+	// lastPurgeCheck and caughtUp belong to the pull loop (idle, take).
+	// caughtUp: the last idle check found nothing of this table
+	// undelivered, and the loop has been fetching ever since, so none of
+	// its messages can have aged out unseen (they would have been
+	// delivered within a fetch wait, not after the stream's max age).
 	lastPurgeCheck time.Time
+	caughtUp       bool
 	// startFloor is the ack floor at start, compared once with the
 	// written position (checkPosition, the write loop's).
 	startFloor      uint64
@@ -348,11 +364,16 @@ func (p *Pipeline) positionPart(seq uint64) ts.Part {
 	return ts.Part{Table: ts.WriterPositions, Rows: [][]any{ts.PositionRow(p.Table.Name, bus.StreamTSW, seq)}}
 }
 
-// checkPurge reads the ack floor of an idle consumer, at most every
-// PurgeCheck, and records a purge when the floor has passed the last
-// sequence delivered: a purge of messages never delivered, with nothing
-// delivered after it to show a step.
-func (p *Pipeline) checkPurge(ctx context.Context) {
+// idle runs on an empty fetch, at most every PurgeCheck. It records a
+// purge when the ack floor has passed the last sequence delivered (a
+// purge of messages never delivered, with nothing delivered after it to
+// show a step), and when nothing of this table is undelivered it marks
+// the consumer caught up and moves the last sequence accounted for to
+// the stream's last: the sequences up to there hold nothing of this
+// table that was not delivered, so a later step over them, once other
+// tables' messages aged out, is not this table's hole (WP-9's false
+// stream_retention on a quiet table).
+func (p *Pipeline) idle(ctx context.Context) {
 	every := p.Config.PurgeCheck
 	if every <= 0 {
 		every = 10 * time.Second
@@ -362,18 +383,25 @@ func (p *Pipeline) checkPurge(ctx context.Context) {
 		return
 	}
 	p.lastPurgeCheck = now
-	floor, err := p.Source.AckFloor(ctx)
+	cur, err := p.Source.Cursor(ctx)
 	if err != nil {
-		return // the next fetch says so
+		p.caughtUp = false // the next fetch says why
+		return
 	}
 	p.mu.Lock()
 	last := p.lastSeq
 	p.mu.Unlock()
-	if floor <= last || !p.recordPurge(ctx, last, floor) {
+	if cur.AckFloor > last && !p.recordPurge(ctx, last, cur.AckFloor) {
+		p.caughtUp = false
 		return
 	}
+	p.caughtUp = cur.NumPending == 0
+	mark := cur.AckFloor
+	if p.caughtUp {
+		mark = max(mark, cur.StreamLast)
+	}
 	p.mu.Lock()
-	p.lastSeq = max(p.lastSeq, floor)
+	p.lastSeq = max(p.lastSeq, mark)
 	p.mu.Unlock()
 }
 
@@ -407,6 +435,7 @@ func (p *Pipeline) pull(ctx context.Context) {
 		p.mu.Unlock()
 		p.setSpilling(full)
 		if full {
+			p.caughtUp = false
 			select {
 			case <-ctx.Done():
 			case <-tick.C:
@@ -415,6 +444,7 @@ func (p *Pipeline) pull(ctx context.Context) {
 		}
 		msgs, err := p.Source.Fetch(ctx, p.Config.FetchMax, p.Config.FetchWait)
 		if err != nil {
+			p.caughtUp = false
 			if ctx.Err() == nil {
 				p.Counters.Inc(CounterFetchFailed)
 				p.Limiter.Limited("tsw_fetch:"+p.Table.Name).Warn("TSW fetch failed; rows wait in JetStream",
@@ -426,7 +456,7 @@ func (p *Pipeline) pull(ctx context.Context) {
 		if len(msgs) > 0 {
 			p.take(ctx, msgs)
 		} else {
-			p.checkPurge(ctx)
+			p.idle(ctx)
 		}
 	}
 }
@@ -445,6 +475,11 @@ func (p *Pipeline) take(ctx context.Context, msgs []Msg) {
 		seq  uint64
 		jump int // index into jumps, or -1
 	}
+	// Caught up until this delivery: a step can hide none of this
+	// table's messages (see caughtUp). Until the next idle check, more may
+	// be pending.
+	wasCaughtUp := p.caughtUp
+	p.caughtUp = false
 	p.mu.Lock()
 	last := p.lastSeq
 	before := last
@@ -497,7 +532,11 @@ func (p *Pipeline) take(ctx context.Context, msgs []Msg) {
 					jumps[i].After = min(floor, jumps[i].Before-1)
 				}
 			}
-			holes, err = p.Source.Holes(ctx, jumps)
+			if wasCaughtUp {
+				holes = make([]Hole, len(jumps))
+			} else {
+				holes, err = p.Source.Holes(ctx, jumps)
+			}
 		}
 		if err != nil || len(holes) != len(jumps) {
 			p.Counters.Inc(CounterHoleCheckFailed)

@@ -84,7 +84,7 @@ causes.
 | `cause` | Recorded by | Means | `count_unit` |
 |---|---|---|---|
 | `ingest_queue_full`, `ingest_queue_age`, `ingest_queue_corrupt` | rid-ingest | Queued receiver batches were shed before they were handed over (`docs/runbooks/receivers.md`). `stream` is `INGEST`. | rows |
-| `stream_retention` | tsdb-writer | TSW messages left the stream before this table's consumer reached them: the sequences the consumer was delivered stepped over sequences the stream no longer holds. | messages |
+| `stream_retention` | tsdb-writer | TSW messages left the stream before this table's consumer reached them: the sequences the consumer was delivered stepped over sequences the stream no longer holds, while the consumer was not caught up (stopped, spilling, or with messages undelivered). A quiet table's consumer is caught up, so other tables' aged-out messages are not counted for it. | messages |
 | `stream_purge` | tsdb-writer | The TSW stream was purged (or messages deleted) before this table's consumer was delivered them: the consumer's acknowledgement floor moved past sequences the writer never wrote. Seen at the next delivery or within 10 s on an idle table while the writer runs, and at start by comparing the floor with the position the table was written to (`writer_positions`) when the purge happened while it was stopped. | messages |
 | `malformed` | tsdb-writer | A TSW message could not be read (`detail` says why). It is acknowledged with the record. | rows when countable, else messages |
 | `rejected` | tsdb-writer | The database refused a message's rows (a CHECK or type error, in `detail`). The rest of the batch is written. | rows |

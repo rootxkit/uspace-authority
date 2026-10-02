@@ -78,6 +78,9 @@ type fakeSource struct {
 	holes    func([]Jump) ([]Hole, error)
 	jumps    []Jump
 	fetchErr error
+	// last and numPending are the stream's last sequence and this
+	// consumer's undelivered count (Cursor).
+	last, numPending uint64
 }
 
 func (s *fakeSource) add(ms ...Msg) {
@@ -108,6 +111,22 @@ func (s *fakeSource) AckFloor(context.Context) (uint64, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.floor, nil
+}
+
+// setLast sets the stream's last sequence and what is pending for this
+// consumer (Cursor).
+func (s *fakeSource) setLast(last, pending uint64) {
+	s.mu.Lock()
+	s.last, s.numPending = last, pending
+	s.mu.Unlock()
+}
+
+// Cursor reads the stream's last sequence, then the consumer's floor and
+// pending count.
+func (s *fakeSource) Cursor(context.Context) (Cursor, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return Cursor{StreamLast: s.last, AckFloor: s.floor, NumPending: s.numPending}, nil
 }
 
 // setFloor moves the consumer's ack floor, as a purge does.
@@ -957,4 +976,48 @@ func TestUnwrittenPurgeRecordGivesTheMessagesBack(t *testing.T) {
 	k.store.setFail(nil)
 	k.src.add(m)
 	eventually(t, "recorded", func() bool { return len(k.store.purgeGaps()) == 1 && len(k.store.rows(probeTable.Name)) == 2 })
+}
+
+// WP-9's false stream_retention on a quiet table (review of PR #14): a
+// table whose consumer was caught up while the other tables' messages
+// aged out of the stream steps over those sequences at its next
+// delivery; none was its own, so nothing is recorded. The twin: a
+// consumer with messages pending (not caught up) records the hole.
+func TestQuietTableRecordsNoRetentionGap(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		pending uint64
+		gap     bool
+	}{{"caught up", 0, false}, {"behind", 3, true}} {
+		t.Run(tc.name, func(t *testing.T) {
+			k := newKit(t, func(c *Config) { c.PurgeCheck = time.Millisecond })
+			k.src.holes = func(j []Jump) ([]Hole, error) { // everything stepped over is gone
+				out := make([]Hole, len(j))
+				for i, jj := range j {
+					if jj.Before > jj.After+1 {
+						out[i] = Hole{FromSeq: jj.After + 1, ToSeq: jj.Before - 1, Count: jj.Before - jj.After - 1}
+					}
+				}
+				return out, nil
+			}
+			k.src.add(rowsMsg(t, 1, "a"))
+			k.run(t)
+			eventually(t, "first", func() bool { return len(k.store.rows(probeTable.Name)) == 1 })
+			// Other tables' messages 2..49 arrive and age out while this
+			// table is idle and caught up (or not).
+			k.src.setLast(49, tc.pending)
+			eventually(t, "idle checks", func() bool { return k.src.fetchCount() > 20 })
+			k.src.add(rowsMsg(t, 50, "b"))
+			eventually(t, "second", func() bool { return len(k.store.rows(probeTable.Name)) == 2 })
+			var retention int
+			for _, g := range k.store.gaps() {
+				if g["cause"] == CauseStreamRetention {
+					retention++
+				}
+			}
+			if (retention > 0) != tc.gap {
+				t.Fatalf("retention gaps %v, want a gap %v", k.store.gaps(), tc.gap)
+			}
+		})
+	}
 }
