@@ -509,9 +509,9 @@ func TestFramesCarryNoPersonalDataMembers(t *testing.T) {
 		}
 		return raw
 	}
-	h.OfferTrack(withReg("secret", "FIN87astrdge12k8-xyz", "GEOabcd1234efgh-q7w"), now)
+	h.OfferTrack(withReg("suffixed", "FIN87astrdge12k8-xyz", "GEOabcd1234efgh-q7w"), now)
 	h.OfferTrack(withReg("plain", "FIN87astrdge12k8", "GEOabcd1234efgh"), now)
-	want := map[string][2]string{"secret": {"FIN87astrdge12k8", "GEOabcd1234efgh"}, "plain": {"FIN87astrdge12k8", "GEOabcd1234efgh"}}
+	want := map[string][2]string{"suffixed": {"FIN87astrdge12k8", "GEOabcd1234efgh"}, "plain": {"FIN87astrdge12k8", "GEOabcd1234efgh"}}
 	checkRegs := func(where string, raw []byte) {
 		t.Helper()
 		for _, secret := range []string{"xyz", "q7w"} {
