@@ -195,7 +195,8 @@ func PolicyOf(f *policy.Follower) func() PolicyView {
 			d := policy.Defaults()
 			return PolicyView{Version: "0", StaleAfterS: d.StaleAfterS, LiveMaxAgeS: d.LiveMaxAgeS, CISStaleBoundS: d.CISStaleBoundS, Default: true}
 		}
-		return PolicyView{Version: PolicyVersion(p.Version), StaleAfterS: p.StaleAfterS, LiveMaxAgeS: p.LiveMaxAgeS, CISStaleBoundS: p.CISStaleBoundS}
+		return PolicyView{Version: PolicyVersion(p.Version), StaleAfterS: p.StaleAfterS, LiveMaxAgeS: p.LiveMaxAgeS, CISStaleBoundS: p.CISStaleBoundS,
+			RegNumPattern: p.RegistrationNumberPattern}
 	}
 }
 

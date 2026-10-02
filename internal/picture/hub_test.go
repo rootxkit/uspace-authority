@@ -484,6 +484,72 @@ func TestFramesCarryNoPersonalDataMembers(t *testing.T) {
 	if got := jsonNames("x", withPII{}); len(got) != 1 || !strings.HasSuffix(got[0], "email") {
 		t.Fatalf("walker missed a member: %v", got)
 	}
+
+	// The EU registration secret (G-04) is in no frame of any realm: of
+	// operator_reg and registered_operator_reg only regnum.PublicPart
+	// leaves, live and in the snapshot. A number without a secret part is
+	// forwarded as broadcast (the pair).
+	h := testHub(t, func(c *Config, _ *Inputs) { c.StatusInterval = time.Hour })
+	console := connect(t, h, consoleSession(), nil)
+	police := connect(t, h, Session{Subject: "p-1", JTI: "j-2", Realm: RealmPolice, Roles: []string{"police"}}, nil)
+	for _, c := range []*fakeConn{console, police} {
+		subscribe(t, c, subscribeFrameOf(44.80, 41.70, 44.85, 41.73))
+	}
+	now := time.Now()
+	withReg := func(id, reg, registered string) []byte {
+		var m map[string]any
+		if err := json.Unmarshal(trackMsg(t, id, baseLatDeg, baseLonDeg, now, core.IdentUnknownOperator), &m); err != nil {
+			t.Fatal(err)
+		}
+		ident := m["body"].(map[string]any)["identification"].(map[string]any)
+		ident["operator_reg"], ident["registered_operator_reg"] = reg, registered
+		raw, err := json.Marshal(m)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return raw
+	}
+	h.OfferTrack(withReg("secret", "FIN87astrdge12k8-xyz", "GEOabcd1234efgh-q7w"), now)
+	h.OfferTrack(withReg("plain", "FIN87astrdge12k8", "GEOabcd1234efgh"), now)
+	want := map[string][2]string{"secret": {"FIN87astrdge12k8", "GEOabcd1234efgh"}, "plain": {"FIN87astrdge12k8", "GEOabcd1234efgh"}}
+	checkRegs := func(where string, raw []byte) {
+		t.Helper()
+		for _, secret := range []string{"xyz", "q7w"} {
+			if strings.Contains(string(raw), secret) {
+				t.Fatalf("%s carries the registration secret %q: %s", where, secret, raw)
+			}
+		}
+		var f struct {
+			Body struct {
+				TrackID        string `json:"track_id"`
+				Identification struct {
+					OperatorReg           *string `json:"operator_reg"`
+					RegisteredOperatorReg *string `json:"registered_operator_reg"`
+				} `json:"identification"`
+			} `json:"body"`
+		}
+		if err := json.Unmarshal(raw, &f); err != nil {
+			t.Fatal(err)
+		}
+		w := want[f.Body.TrackID]
+		id := f.Body.Identification
+		if id.OperatorReg == nil || *id.OperatorReg != w[0] || id.RegisteredOperatorReg == nil || *id.RegisteredOperatorReg != w[1] {
+			t.Fatalf("%s %s: operator_reg %v registered %v, want %v", where, f.Body.TrackID, id.OperatorReg, id.RegisteredOperatorReg, w)
+		}
+	}
+	for name, c := range map[string]*fakeConn{"console": console, "police": police} {
+		for range 2 {
+			_, raw := c.until(t, SchemaTrack, 2*time.Second)
+			checkRegs(name+" live", raw)
+		}
+		_, snap := subscribe(t, c, subscribeFrameOf(44.80, 41.70, 44.86, 41.73))
+		if len(snap.Tracks) != 2 {
+			t.Fatalf("%s snapshot holds %d tracks", name, len(snap.Tracks))
+		}
+		for _, tr := range snap.Tracks {
+			checkRegs(name+" snapshot", tr)
+		}
+	}
 }
 
 // TestStatusFrameCarriesThePolicyAndTheExtras: the thresholds and the

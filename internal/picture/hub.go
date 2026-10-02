@@ -14,6 +14,7 @@ import (
 	"github.com/coder/websocket"
 	"github.com/rootxkit/uspace-core/core"
 	"github.com/rootxkit/uspace-core/geodesy"
+	"github.com/rootxkit/uspace-core/regnum"
 
 	"github.com/rootxkit/uspace-authority/internal/bus"
 	"github.com/rootxkit/uspace-authority/internal/cell"
@@ -116,6 +117,9 @@ type PolicyView struct {
 	// Default: no policy has been read yet; the documented defaults
 	// (policy.Defaults) are shown and the frame says so.
 	Default bool
+	// RegNumPattern is the registration-number pattern the public part
+	// of an operator number is cut under (empty: regnum.DefaultPattern).
+	RegNumPattern string
 }
 
 // ProjectionView is what the status frame carries of the projections,
@@ -244,6 +248,10 @@ type Hub struct {
 	degradedMu   sync.Mutex
 	degradedSeen map[string]time.Time
 
+	// regnum is the validator of the active registration-number
+	// pattern, compiled once per pattern.
+	regnum atomic.Pointer[regnumFor]
+
 	// testSnapshotHook, when set, runs while a snapshot is built.
 	testSnapshotHook func()
 }
@@ -335,6 +343,7 @@ func (h *Hub) OfferTrack(raw []byte, rx time.Time) {
 		h.counters.Inc(CounterTracksBacklog)
 		return
 	}
+	h.publicRegs(&m.Body.Identification)
 	pos := core.LatLon{LatDeg: m.Body.Position.Lat, LonDeg: m.Body.Position.Lng}
 	it := &item{key: m.Body.TrackID, cell: c5, captured: captured, pos: &pos, sourceType: string(m.Body.Source),
 		instance: m.Body.SourceInstance, track: m}
@@ -368,6 +377,46 @@ func (h *Hub) OfferTrack(raw []byte, rx time.Time) {
 			c.offerTrack(it.key, c5, f, rx)
 		}
 	}
+}
+
+// regnumFor is a validator and the pattern it was compiled from.
+type regnumFor struct {
+	pattern string
+	v       *regnum.Validator
+}
+
+// publicRegs cuts the operator numbers of id to their public part
+// (regnum.PublicPart under the active policy's pattern): the EU
+// registration secret a broadcast may carry never leaves the picture,
+// for any realm or role (G-04). It is cut once, as the track is taken,
+// so the live frames and every snapshot hold the same value.
+func (h *Hub) publicRegs(id *core.Identification) {
+	v := h.validator()
+	for _, reg := range []**string{&id.OperatorReg, &id.RegisteredOperatorReg} {
+		if *reg != nil {
+			*reg = ptr(v.PublicPart(**reg))
+		}
+	}
+}
+
+// validator is the validator of the active pattern; a pattern that does
+// not compile falls back to regnum.DefaultPattern, logged.
+func (h *Hub) validator() *regnum.Validator {
+	pattern := h.policy().RegNumPattern
+	if pattern == "" {
+		pattern = regnum.DefaultPattern
+	}
+	if cur := h.regnum.Load(); cur != nil && cur.pattern == pattern {
+		return cur.v
+	}
+	v, err := regnum.NewValidator(pattern)
+	if err != nil {
+		h.cfg.Limiter.Limited("picture_regnum_pattern").Error("registration_number_pattern does not compile: operator numbers are cut under the default pattern",
+			slog.String("error", err.Error()))
+		v, _ = regnum.NewValidator("")
+	}
+	h.regnum.Store(&regnumFor{pattern: pattern, v: v})
+	return v
 }
 
 func (h *Hub) encodeTrack(it *item, now time.Time, state string, console bool) []byte {

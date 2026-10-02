@@ -80,6 +80,11 @@ in `subscribes_coalesced`.
 Every direct Remote ID track carries `trust: broadcast` and an
 identification `basis: as_broadcast`: "as broadcast and unverified"
 (R-05). No frame carries a name, an address or a contact (06 T6).
+`identification.operator_reg` and `registered_operator_reg` carry only
+the public part of the number (`regnum.PublicPart` under the active
+policy's `registration_number_pattern`). The EU registration secret a
+broadcast may carry never leaves the picture, for any realm or role
+(G-04).
 
 ### Viewport and throttle
 
