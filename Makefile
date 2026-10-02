@@ -1,6 +1,12 @@
 # uspace-authority developer targets. CI (.github/workflows/ci.yml) runs the
 # same commands. On Windows set GOROOT and GO, for example:
 #   make test GO=/c/Users/<you>/AppData/Local/anaconda3/bin/go
+# bash with -e and pipefail on every recipe line: a command that fails
+# anywhere in a line, also on the left of a pipe into tee or tail, fails
+# the target. /bin/sh (dash on ubuntu) has no pipefail, and without it
+# only the last command of a line decides.
+SHELL       := bash
+.SHELLFLAGS := -eo pipefail -c
 GO      ?= go
 PKGS    ?= ./...
 CORE    ?= github.com/rootxkit/uspace-core
