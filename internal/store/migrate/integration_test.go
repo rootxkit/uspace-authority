@@ -66,6 +66,32 @@ func tableExists(t *testing.T, db *sql.DB, table string) bool {
 	return n == 1
 }
 
+// jobsIdle waits until every policy job of db has had the run
+// TimescaleDB gives a new job at its scheduler's first pass, and none is
+// running. A Down to 0 drops the extension; dropped under a running
+// policy job, the job's worker outlived its scheduler and the DROP
+// DATABASE of the cleanup, and then crashed the server with a
+// segmentation fault (CI, "Retention Policy [1002]"), failing every test
+// after it. The next scheduled runs are 15 minutes away or more.
+func jobsIdle(t *testing.T, db *sql.DB) {
+	t.Helper()
+	deadline := time.Now().Add(30 * time.Second)
+	for {
+		var busy int
+		if err := db.QueryRow(`SELECT count(*) FROM timescaledb_information.job_stats
+			WHERE job_id >= 1000 AND (coalesce(total_runs, 0) = 0 OR coalesce(job_status, '') = 'Running' OR last_run_status IS NULL)`).Scan(&busy); err != nil {
+			t.Fatal(err)
+		}
+		if busy == 0 {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("%d policy jobs not past their first run", busy)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+}
+
 func TestIntegrationEachTreeAppliesAndRollsBack(t *testing.T) {
 	cases := []struct {
 		tree      Tree
@@ -109,6 +135,9 @@ func TestIntegrationEachTreeAppliesAndRollsBack(t *testing.T) {
 					if !m.Applied || m.AppliedAt.IsZero() {
 						t.Fatalf("round %d: migration %d not applied: %+v", round, m.Version, m)
 					}
+				}
+				if c.tree.Name == Timeseries.Name {
+					jobsIdle(t, db)
 				}
 				if err := DownTo(ctx, db, c.tree, 0); err != nil {
 					t.Fatalf("round %d: %v", round, err)

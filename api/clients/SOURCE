@@ -5,14 +5,14 @@
 # copies and their lines together, never part of a feature change.
 # The CISP's change examples are not copied: they name the staging host.
 # <copy, relative to api/clients/> <owner/repo> <commit> <path in that repo>
-cisp.yaml rootxkit/uspace-cisp 6c29028c0439eb30972ffffcf2217adc534e721e api/openapi.yaml
-cisp-schemas/cis/change/v1.json rootxkit/uspace-cisp 6c29028c0439eb30972ffffcf2217adc534e721e schemas/cis/change/v1.json
-cisp-schemas/cis/restriction/v1.json rootxkit/uspace-cisp 6c29028c0439eb30972ffffcf2217adc534e721e schemas/cis/restriction/v1.json
-cisp-schemas/cis/restriction/examples/active.json rootxkit/uspace-cisp 6c29028c0439eb30972ffffcf2217adc534e721e schemas/cis/restriction/examples/active.json
-cisp-schemas/cis/uspace_requirements/v1.json rootxkit/uspace-cisp 6c29028c0439eb30972ffffcf2217adc534e721e schemas/cis/uspace_requirements/v1.json
-cisp-schemas/cis/uspace_requirements/examples/tbilisi.json rootxkit/uspace-cisp 6c29028c0439eb30972ffffcf2217adc534e721e schemas/cis/uspace_requirements/examples/tbilisi.json
-cisp-schemas/cis/ussp_list/v1.json rootxkit/uspace-cisp 6c29028c0439eb30972ffffcf2217adc534e721e schemas/cis/ussp_list/v1.json
-cisp-schemas/cis/ussp_list/examples/lab.json rootxkit/uspace-cisp 6c29028c0439eb30972ffffcf2217adc534e721e schemas/cis/ussp_list/examples/lab.json
+cisp.yaml rootxkit/uspace-cisp d4f3572b44e53a0a83e0948daf0ef4aeef3b7ee4 api/openapi.yaml
+cisp-schemas/cis/change/v1.json rootxkit/uspace-cisp d4f3572b44e53a0a83e0948daf0ef4aeef3b7ee4 schemas/cis/change/v1.json
+cisp-schemas/cis/restriction/v1.json rootxkit/uspace-cisp d4f3572b44e53a0a83e0948daf0ef4aeef3b7ee4 schemas/cis/restriction/v1.json
+cisp-schemas/cis/restriction/examples/active.json rootxkit/uspace-cisp d4f3572b44e53a0a83e0948daf0ef4aeef3b7ee4 schemas/cis/restriction/examples/active.json
+cisp-schemas/cis/uspace_requirements/v1.json rootxkit/uspace-cisp d4f3572b44e53a0a83e0948daf0ef4aeef3b7ee4 schemas/cis/uspace_requirements/v1.json
+cisp-schemas/cis/uspace_requirements/examples/tbilisi.json rootxkit/uspace-cisp d4f3572b44e53a0a83e0948daf0ef4aeef3b7ee4 schemas/cis/uspace_requirements/examples/tbilisi.json
+cisp-schemas/cis/ussp_list/v1.json rootxkit/uspace-cisp d4f3572b44e53a0a83e0948daf0ef4aeef3b7ee4 schemas/cis/ussp_list/v1.json
+cisp-schemas/cis/ussp_list/examples/lab.json rootxkit/uspace-cisp d4f3572b44e53a0a83e0948daf0ef4aeef3b7ee4 schemas/cis/ussp_list/examples/lab.json
 # WP-14: the standards the Display Provider calls and serves. Each is the
 # file uspace-core generated its types from (core f3411/SOURCE and
 # f3548/SOURCE, spec_repo / spec_commit / spec_path), so the generated
