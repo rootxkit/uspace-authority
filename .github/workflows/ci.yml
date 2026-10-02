@@ -215,6 +215,13 @@ jobs:
       # D7: the migrate subcommand applies both trees before anything runs.
       - name: migrate both trees
         run: go run ./cmd/uspace-authority migrate
+      - name: scratch compression loop
+        run: |
+          for t in TestIntegrationScratchOldCompression TestIntegrationCompressionJobRunsOnABackdatedChunk; do
+            INTEGRATION=1 go test -count=30 -run "^${t}\$" -v ./internal/store/ts/ > loop.log 2>&1 || true
+            echo "$t: $(grep -c -- '^--- PASS' loop.log) passed, $(grep -c -- '^--- FAIL' loop.log) failed"
+            grep -m3 'writer_integration_test\|scratch_old' loop.log || true
+          done
       - name: integration tests
         run: |
           set -o pipefail
