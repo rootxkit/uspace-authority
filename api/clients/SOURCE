@@ -1,0 +1,15 @@
+# The sibling contracts this system calls or validates against, each
+# copied unmodified (reconciliation M11, docs/PLAN.md §14 Q-A2).
+# scripts/check-contracts.sh fetches each at its commit and fails on any
+# difference. A bump is a `build:` commit of its own that changes the
+# copies and their lines together, never part of a feature change.
+# The CISP's change examples are not copied: they name the staging host.
+# <copy, relative to api/clients/> <owner/repo> <commit> <path in that repo>
+cisp.yaml rootxkit/uspace-cisp 6c29028c0439eb30972ffffcf2217adc534e721e api/openapi.yaml
+cisp-schemas/cis/change/v1.json rootxkit/uspace-cisp 6c29028c0439eb30972ffffcf2217adc534e721e schemas/cis/change/v1.json
+cisp-schemas/cis/restriction/v1.json rootxkit/uspace-cisp 6c29028c0439eb30972ffffcf2217adc534e721e schemas/cis/restriction/v1.json
+cisp-schemas/cis/restriction/examples/active.json rootxkit/uspace-cisp 6c29028c0439eb30972ffffcf2217adc534e721e schemas/cis/restriction/examples/active.json
+cisp-schemas/cis/uspace_requirements/v1.json rootxkit/uspace-cisp 6c29028c0439eb30972ffffcf2217adc534e721e schemas/cis/uspace_requirements/v1.json
+cisp-schemas/cis/uspace_requirements/examples/tbilisi.json rootxkit/uspace-cisp 6c29028c0439eb30972ffffcf2217adc534e721e schemas/cis/uspace_requirements/examples/tbilisi.json
+cisp-schemas/cis/ussp_list/v1.json rootxkit/uspace-cisp 6c29028c0439eb30972ffffcf2217adc534e721e schemas/cis/ussp_list/v1.json
+cisp-schemas/cis/ussp_list/examples/lab.json rootxkit/uspace-cisp 6c29028c0439eb30972ffffcf2217adc534e721e schemas/cis/ussp_list/examples/lab.json

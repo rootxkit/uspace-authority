@@ -76,7 +76,7 @@ SELECT now()::timestamptz AS now
 `
 
 // WP-5: zone and U-space airspace versions (migration 00012_geo_zones)
-// and the publication outbox (00013_publications). Geometry columns are
+// (the publication outbox, 00013_publications, is WP-6's: cisp.sql). Geometry columns are
 // written from GeoJSON built by internal/zonesvc and never read back
 // here: the feature is the master copy.
 // The database clock: every instant the zone service stores or compares
@@ -86,56 +86,6 @@ func (q *Queries) DBNow(ctx context.Context) (time.Time, error) {
 	var now time.Time
 	err := row.Scan(&now)
 	return now, err
-}
-
-const insertPublication = `-- name: InsertPublication :one
-INSERT INTO publications (dataset, version, payload, payload_hash, feature_count, created_by)
-VALUES ($1, $2, $3, $4, $5,
-        $6)
-RETURNING id, dataset, version, payload_hash, feature_count, signature, state, created_at
-`
-
-type InsertPublicationParams struct {
-	Dataset      string
-	Version      int64
-	Payload      []byte
-	PayloadHash  string
-	FeatureCount int32
-	CreatedBy    string
-}
-
-type InsertPublicationRow struct {
-	ID           int64
-	Dataset      string
-	Version      int64
-	PayloadHash  string
-	FeatureCount int32
-	Signature    *string
-	State        string
-	CreatedAt    time.Time
-}
-
-func (q *Queries) InsertPublication(ctx context.Context, arg InsertPublicationParams) (InsertPublicationRow, error) {
-	row := q.db.QueryRow(ctx, insertPublication,
-		arg.Dataset,
-		arg.Version,
-		arg.Payload,
-		arg.PayloadHash,
-		arg.FeatureCount,
-		arg.CreatedBy,
-	)
-	var i InsertPublicationRow
-	err := row.Scan(
-		&i.ID,
-		&i.Dataset,
-		&i.Version,
-		&i.PayloadHash,
-		&i.FeatureCount,
-		&i.Signature,
-		&i.State,
-		&i.CreatedAt,
-	)
-	return i, err
 }
 
 const insertUSpaceDesignation = `-- name: InsertUSpaceDesignation :exec
@@ -650,19 +600,6 @@ type SupersedeOlderPublishedParams struct {
 // Publishing a version supersedes the identifier's older published ones.
 func (q *Queries) SupersedeOlderPublished(ctx context.Context, arg SupersedeOlderPublishedParams) (int64, error) {
 	result, err := q.db.Exec(ctx, supersedeOlderPublished, arg.Identifier, arg.ZoneVersion)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected(), nil
-}
-
-const supersedePendingPublications = `-- name: SupersedePendingPublications :execrows
-UPDATE publications SET state = 'superseded' WHERE dataset = $1 AND state = 'pending'
-`
-
-// One pending snapshot per dataset (E-10): a new one supersedes it.
-func (q *Queries) SupersedePendingPublications(ctx context.Context, dataset string) (int64, error) {
-	result, err := q.db.Exec(ctx, supersedePendingPublications, dataset)
 	if err != nil {
 		return 0, err
 	}

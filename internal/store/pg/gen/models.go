@@ -45,6 +45,25 @@ type AuthorityPolicy struct {
 	RegistrationNumberPattern string
 }
 
+type CisCache struct {
+	Dataset      string
+	Version      int64
+	Etag         string
+	CisUpdatedAt *time.Time
+	FetchedAt    time.Time
+	CheckedAt    time.Time
+	FeatureCount int32
+	PublisherKid *string
+	Payload      []byte
+}
+
+type CisDeliveryJti struct {
+	Issuer     string
+	Jti        string
+	ReceivedAt time.Time
+	ExpiresAt  time.Time
+}
+
 type Event struct {
 	ID         int64
 	Ts         time.Time
@@ -149,19 +168,28 @@ type PilotCompetency struct {
 }
 
 type Publication struct {
-	ID           int64
-	Dataset      string
-	Version      int64
-	Payload      []byte
-	PayloadHash  string
-	FeatureCount int32
-	Signature    *string
-	State        string
-	Attempts     int32
-	NextRetryAt  *time.Time
-	CispVersion  *int64
-	CreatedAt    time.Time
-	CreatedBy    string
+	ID              int64
+	Dataset         string
+	Version         int64
+	Payload         []byte
+	PayloadHash     string
+	FeatureCount    int32
+	Signature       *string
+	State           string
+	Attempts        int32
+	NextRetryAt     *time.Time
+	CispVersion     *int64
+	CreatedAt       time.Time
+	CreatedBy       string
+	ContentType     string
+	SignatureKid    *string
+	SignedAt        *time.Time
+	StateChangedAt  time.Time
+	LastAttemptAt   *time.Time
+	LastStatus      *int32
+	LastError       *string
+	ConflictVersion *int64
+	AcknowledgedAt  *time.Time
 }
 
 type RegistryStatusChange struct {

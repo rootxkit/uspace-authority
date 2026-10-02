@@ -1,0 +1,20 @@
+# oapi-codegen configuration for internal/cisp/cispclient: the Go client
+# of the CISP's national API (api/clients/cisp.yaml, the pinned copy
+# named in api/clients/SOURCE; reconciliation M11). Only the operations
+# this system calls are generated: the publications (F1, the heartbeat),
+# the dataset reads (F3 pull) and the subscriptions (F3 push), with
+# every model of the file (skip-prune: the change record, the USSP list
+# and the restriction block are read from bodies, not named by an
+# operation). Run scripts/generate.sh; never edit the generated file.
+package: cispclient
+generate:
+  client: true
+  models: true
+output-options:
+  skip-prune: true
+  include-tags:
+    - publications
+    - datasets
+    - subscriptions
+compatibility:
+  always-prefix-enum-values: true

@@ -2,15 +2,20 @@ package zonesvc
 
 import (
 	"bytes"
+	"crypto/rand"
+	"crypto/rsa"
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/rootxkit/uspace-core/auth"
 	"github.com/rootxkit/uspace-core/core"
 
 	"github.com/rootxkit/uspace-authority/internal/audit"
+	"github.com/rootxkit/uspace-authority/internal/cisp"
 	"github.com/rootxkit/uspace-authority/internal/httpx"
 )
 
@@ -84,8 +89,37 @@ func newService(t *testing.T) (*Service, *memStore, *memProjection, *memPublishe
 	t.Helper()
 	st, pr, pub := newMemStore(testNow), newMemProjection(), &memPublisher{}
 	s := &Service{Store: st, Projection: pr, Publisher: pub, Daylight: NoDaylight{}, Counters: &core.Counters{},
-		Meta: Meta{ProviderName: "Test authority", ProviderLang: "en-GB"}}
+		Meta: Meta{ProviderName: "Test authority", ProviderLang: "en-GB"}, Outbox: testOutbox(t)}
 	return s, st, pr, pub
+}
+
+var (
+	outboxOnce sync.Once
+	outboxRing *auth.KeyRing
+	errOutbox  error
+)
+
+// testOutbox is WP-6's outbox with a publication key generated at run
+// time: every publication these tests make is held to the CISP's
+// checks (the pinned api/clients/cisp-schemas) and signed, as in api.
+func testOutbox(t *testing.T) *cisp.Outbox {
+	t.Helper()
+	outboxOnce.Do(func() {
+		key, err := rsa.GenerateKey(rand.Reader, 2048)
+		if err != nil {
+			errOutbox = err
+			return
+		}
+		outboxRing, errOutbox = auth.NewKeyRing(auth.SigningKey{KID: "test-publication", Key: key})
+	})
+	if errOutbox != nil {
+		t.Fatal(errOutbox)
+	}
+	schemas, err := cisp.LoadSchemas()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return cisp.NewOutbox(schemas, outboxRing, nil, nil)
 }
 
 // problemOf is the problem err carries.

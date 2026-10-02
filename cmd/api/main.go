@@ -178,12 +178,25 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 				time.Duration(cfg.RepairRetryS)*time.Second)
 		})
 
+		// The CISP client (WP-6): the signed publication outbox and its
+		// sender, the publisher heartbeat, the subscriber with its
+		// reconciliation, and the notification receiver.
+		cis, err := assembleCISP(ctx, cfg, rt, tok, db, auditWriter, reg, bp, follower)
+		if err != nil {
+			return err
+		}
+		rt.AddCounters("cisp", cis.Counters)
+		rt.AddStatus(cis.StatusAttrs)
+		wg.Go(func() { cis.Run(ctx) })
+
 		// Zones and U-space airspaces (WP-5): the projection shares the
-		// registry's projector pool; publications are announced on the bus.
+		// registry's projector pool; publications are announced on the bus
+		// and queued, validated and signed, in WP-6's outbox.
 		zs, err := zonesvc.Assemble(zonesvc.Setup{
 			DB: db, Audit: auditWriter, Projector: reg.Projector, Logger: rt.Logger,
 			Publisher: zonesvc.NewBusPublisher(bp, time.Duration(cfg.NATSTimeoutMS)*time.Millisecond),
 			Meta:      zonesvc.Meta{ProviderName: cfg.ZonesProviderName, ProviderLang: cfg.ZonesProviderLang},
+			Outbox:    cis.Outbox,
 		})
 		if err != nil {
 			return err
@@ -248,6 +261,7 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 			},
 			ZonesHandler:  zs.Handler,
 			USpaceHandler: zs.Handler,
+			CISPHandler:   cis.Handler,
 		}, apiserver.Options{
 			Logger:      rt.Logger,
 			Middlewares: []apiserver.Middleware{tok.Handler.FormGuard(), apiserver.Authorize(identify, apiserver.DefaultRules())},
@@ -262,6 +276,9 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 		// The receivers' own config and heartbeat (x-receiver): bearer key
 		// and body HMAC, outside the generated server.
 		rx.Receiver.Mount(mux)
+		// The CIS change notifications (x-cis-delivery): the compact JWS
+		// of the body is the credential, outside the generated server.
+		cis.Receiver.Mount(mux)
 		return rt.ServePublic(ctx, cfg.HTTP, cfg.Addr, mux)
 	}}
 }

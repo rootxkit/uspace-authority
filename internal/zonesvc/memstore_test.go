@@ -311,17 +311,22 @@ func (t *memTx) MaxPublishedVersion(context.Context) (int64, error) {
 }
 
 func (t *memTx) EnqueuePublication(_ context.Context, p PublicationInput) (Publication, error) {
+	ds := Dataset(p.Prepared.Dataset)
 	for i := range t.s.publications {
-		if t.s.publications[i].Dataset == p.Dataset && t.s.publications[i].State == "pending" {
+		if t.s.publications[i].Dataset == ds && t.s.publications[i].State == "pending" {
 			t.s.publications[i].State = "superseded"
 		}
 	}
 	out := Publication{
-		ID: int64(len(t.s.publications) + 1), Dataset: p.Dataset, Version: p.Version, PayloadHash: p.PayloadHash,
-		FeatureCount: p.FeatureCount, State: "pending", CreatedAt: t.m.now,
+		ID: int64(len(t.s.publications) + 1), Dataset: ds, Version: p.Version, PayloadHash: p.Prepared.PayloadHash,
+		FeatureCount: p.Prepared.FeatureCount, State: "pending", CreatedAt: t.m.now,
+	}
+	if p.Prepared.Signature != "" {
+		sig := p.Prepared.Signature
+		out.Signature = &sig
 	}
 	t.s.publications = append(t.s.publications, out)
-	t.s.payloads[out.ID] = p.Payload
+	t.s.payloads[out.ID] = p.Prepared.Payload
 	return out, nil
 }
 

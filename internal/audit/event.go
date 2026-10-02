@@ -162,6 +162,18 @@ const (
 	EventUSpacePublished  = "uspace_published"
 )
 
+// Event types of WP-6's CISP client (internal/cisp): every state change
+// of a publication outbox row (spec 02 F1).
+const (
+	EventPublicationQueued       = "publication_queued"
+	EventPublicationSuperseded   = "publication_superseded"
+	EventPublicationSent         = "publication_sent"
+	EventPublicationAcknowledged = "publication_acknowledged"
+	EventPublicationRetry        = "publication_retry_scheduled"
+	EventPublicationFailed       = "publication_failed"
+	EventPublicationConflict     = "publication_conflict"
+)
+
 // DefaultCatalogue is the catalogue of this build.
 func DefaultCatalogue() Catalogue {
 	return Catalogue{
@@ -228,6 +240,14 @@ func DefaultCatalogue() Catalogue {
 		EventUSpaceDrafted:    {},
 		EventUSpaceDesignated: {},
 		EventUSpacePublished:  {},
+
+		EventPublicationQueued:       {},
+		EventPublicationSuperseded:   {},
+		EventPublicationSent:         {},
+		EventPublicationAcknowledged: {},
+		EventPublicationRetry:        {},
+		EventPublicationFailed:       {},
+		EventPublicationConflict:     {},
 	}
 }
 

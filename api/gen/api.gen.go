@@ -45,6 +45,30 @@ func (e AuditEventActorType) Valid() bool {
 	}
 }
 
+// Defines values for CISCacheStateDataset.
+const (
+	CISCacheStateDatasetRestrictions   CISCacheStateDataset = "restrictions"
+	CISCacheStateDatasetUspaceAirspace CISCacheStateDataset = "uspace_airspace"
+	CISCacheStateDatasetUsspList       CISCacheStateDataset = "ussp_list"
+	CISCacheStateDatasetZones          CISCacheStateDataset = "zones"
+)
+
+// Valid indicates whether the value is a known member of the CISCacheStateDataset enum.
+func (e CISCacheStateDataset) Valid() bool {
+	switch e {
+	case CISCacheStateDatasetRestrictions:
+		return true
+	case CISCacheStateDatasetUspaceAirspace:
+		return true
+	case CISCacheStateDatasetUsspList:
+		return true
+	case CISCacheStateDatasetZones:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ClassLabel.
 const (
 	ClassLabelC0 ClassLabel = "C0"
@@ -342,6 +366,57 @@ func (e PolicyInputHeightLimitInUspace) Valid() bool {
 	case PolicyInputHeightLimitInUspaceEvaluate:
 		return true
 	case PolicyInputHeightLimitInUspaceSkipWhenAuthorised:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublicationOutboxRowDataset.
+const (
+	PublicationOutboxRowDatasetUspaceAirspace PublicationOutboxRowDataset = "uspace_airspace"
+	PublicationOutboxRowDatasetUsspList       PublicationOutboxRowDataset = "ussp_list"
+	PublicationOutboxRowDatasetZones          PublicationOutboxRowDataset = "zones"
+)
+
+// Valid indicates whether the value is a known member of the PublicationOutboxRowDataset enum.
+func (e PublicationOutboxRowDataset) Valid() bool {
+	switch e {
+	case PublicationOutboxRowDatasetUspaceAirspace:
+		return true
+	case PublicationOutboxRowDatasetUsspList:
+		return true
+	case PublicationOutboxRowDatasetZones:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublicationOutboxRowState.
+const (
+	PublicationOutboxRowStateAcknowledged PublicationOutboxRowState = "acknowledged"
+	PublicationOutboxRowStateConflict     PublicationOutboxRowState = "conflict"
+	PublicationOutboxRowStateFailed       PublicationOutboxRowState = "failed"
+	PublicationOutboxRowStatePending      PublicationOutboxRowState = "pending"
+	PublicationOutboxRowStateSent         PublicationOutboxRowState = "sent"
+	PublicationOutboxRowStateSuperseded   PublicationOutboxRowState = "superseded"
+)
+
+// Valid indicates whether the value is a known member of the PublicationOutboxRowState enum.
+func (e PublicationOutboxRowState) Valid() bool {
+	switch e {
+	case PublicationOutboxRowStateAcknowledged:
+		return true
+	case PublicationOutboxRowStateConflict:
+		return true
+	case PublicationOutboxRowStateFailed:
+		return true
+	case PublicationOutboxRowStatePending:
+		return true
+	case PublicationOutboxRowStateSent:
+		return true
+	case PublicationOutboxRowStateSuperseded:
 		return true
 	default:
 		return false
@@ -1029,6 +1104,57 @@ func (e ZoneVersionType) Valid() bool {
 	}
 }
 
+// Defines values for ListPublicationsParamsDataset.
+const (
+	ListPublicationsParamsDatasetUspaceAirspace ListPublicationsParamsDataset = "uspace_airspace"
+	ListPublicationsParamsDatasetUsspList       ListPublicationsParamsDataset = "ussp_list"
+	ListPublicationsParamsDatasetZones          ListPublicationsParamsDataset = "zones"
+)
+
+// Valid indicates whether the value is a known member of the ListPublicationsParamsDataset enum.
+func (e ListPublicationsParamsDataset) Valid() bool {
+	switch e {
+	case ListPublicationsParamsDatasetUspaceAirspace:
+		return true
+	case ListPublicationsParamsDatasetUsspList:
+		return true
+	case ListPublicationsParamsDatasetZones:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListPublicationsParamsState.
+const (
+	ListPublicationsParamsStateAcknowledged ListPublicationsParamsState = "acknowledged"
+	ListPublicationsParamsStateConflict     ListPublicationsParamsState = "conflict"
+	ListPublicationsParamsStateFailed       ListPublicationsParamsState = "failed"
+	ListPublicationsParamsStatePending      ListPublicationsParamsState = "pending"
+	ListPublicationsParamsStateSent         ListPublicationsParamsState = "sent"
+	ListPublicationsParamsStateSuperseded   ListPublicationsParamsState = "superseded"
+)
+
+// Valid indicates whether the value is a known member of the ListPublicationsParamsState enum.
+func (e ListPublicationsParamsState) Valid() bool {
+	switch e {
+	case ListPublicationsParamsStateAcknowledged:
+		return true
+	case ListPublicationsParamsStateConflict:
+		return true
+	case ListPublicationsParamsStateFailed:
+		return true
+	case ListPublicationsParamsStatePending:
+		return true
+	case ListPublicationsParamsStateSent:
+		return true
+	case ListPublicationsParamsStateSuperseded:
+		return true
+	default:
+		return false
+	}
+}
+
 // AuditEvent defines model for AuditEvent.
 type AuditEvent struct {
 	ActorId    string                 `json:"actor_id"`
@@ -1054,6 +1180,51 @@ type AuditEventPage struct {
 
 	// NextBeforeId Pass as before_id for the next page; absent on the last page.
 	NextBeforeId *int64 `json:"next_before_id,omitempty"`
+}
+
+// CISCacheState defines model for CISCacheState.
+type CISCacheState struct {
+	// CheckedAt When the CISP last confirmed the version held.
+	CheckedAt *time.Time `json:"checked_at,omitempty"`
+
+	// CisAgeS Seconds since checked_at; null when nothing is held.
+	CisAgeS      *float64   `json:"cis_age_s"`
+	CisUpdatedAt *time.Time `json:"cis_updated_at,omitempty"`
+
+	// CisVersion The version held; null when none was ever pulled.
+	CisVersion   *int64               `json:"cis_version"`
+	Dataset      CISCacheStateDataset `json:"dataset"`
+	Etag         *string              `json:"etag,omitempty"`
+	FeatureCount *int                 `json:"feature_count,omitempty"`
+	FetchedAt    *time.Time           `json:"fetched_at,omitempty"`
+	HeldReason   *string              `json:"held_reason,omitempty"`
+
+	// HeldVersion A newer version not used because its publisher's signature did not verify.
+	HeldVersion *int64 `json:"held_version,omitempty"`
+
+	// LastError The last pull failure
+	LastError     *string `json:"last_error,omitempty"`
+	RefusedReason *string `json:"refused_reason,omitempty"`
+
+	// RefusedVersion A newer version refused whole by ed318.Parse or the pinned schema (T9).
+	RefusedVersion *int64 `json:"refused_version,omitempty"`
+
+	// Stale cis_age_s beyond the policy's cis_stale_bound_s, or nothing held: the console shows cis_stale.
+	Stale bool `json:"stale"`
+}
+
+// CISCacheStateDataset defines model for CISCacheState.Dataset.
+type CISCacheStateDataset string
+
+// CISSubscriptionState defines model for CISSubscriptionState.
+type CISSubscriptionState struct {
+	CallbackUrl *string `json:"callback_url,omitempty"`
+
+	// Enabled false without CIS_CALLBACK_URL; the 60 s reconciliation alone keeps the cache.
+	Enabled        bool    `json:"enabled"`
+	LastError      *string `json:"last_error,omitempty"`
+	Status         *string `json:"status,omitempty"`
+	SubscriptionId *string `json:"subscription_id,omitempty"`
 }
 
 // CellOwnership defines model for CellOwnership.
@@ -1496,8 +1667,53 @@ type Problem struct {
 	Type string `json:"type"`
 }
 
-// PublicationRow The F1 outbox row (dataset, version, payload hash). `signature` is
-// null and `state` pending until WP-6 signs and sends it.
+// PublicationOutboxRow defines model for PublicationOutboxRow.
+type PublicationOutboxRow struct {
+	AcknowledgedAt *time.Time `json:"acknowledged_at,omitempty"`
+
+	// AgeS Seconds since the row was written while it is pending or sent (not yet published); null otherwise.
+	AgeS     *float64 `json:"age_s"`
+	Attempts int      `json:"attempts"`
+
+	// CispVersion The CISP's version once acknowledged.
+	CispVersion *int64 `json:"cisp_version,omitempty"`
+
+	// ConflictVersion The CISP's current version a 412 showed.
+	ConflictVersion *int64                      `json:"conflict_version,omitempty"`
+	ContentType     string                      `json:"content_type"`
+	CreatedAt       time.Time                   `json:"created_at"`
+	CreatedBy       string                      `json:"created_by"`
+	Dataset         PublicationOutboxRowDataset `json:"dataset"`
+	FeatureCount    int                         `json:"feature_count"`
+	Id              int64                       `json:"id"`
+	LastAttemptAt   *time.Time                  `json:"last_attempt_at,omitempty"`
+	LastError       *string                     `json:"last_error,omitempty"`
+
+	// LastStatus The CISP's last HTTP status; null for a network error.
+	LastStatus  *int       `json:"last_status,omitempty"`
+	NextRetryAt *time.Time `json:"next_retry_at,omitempty"`
+
+	// PayloadHash SHA-256 of the payload bytes
+	PayloadHash string `json:"payload_hash"`
+
+	// SignatureKid The kid of the publication key that signed the last attempt.
+	SignatureKid   *string                   `json:"signature_kid,omitempty"`
+	SignedAt       *time.Time                `json:"signed_at,omitempty"`
+	State          PublicationOutboxRowState `json:"state"`
+	StateChangedAt time.Time                 `json:"state_changed_at"`
+	Version        int64                     `json:"version"`
+}
+
+// PublicationOutboxRowDataset defines model for PublicationOutboxRow.Dataset.
+type PublicationOutboxRowDataset string
+
+// PublicationOutboxRowState defines model for PublicationOutboxRow.State.
+type PublicationOutboxRowState string
+
+// PublicationRow The F1 outbox row (dataset, version, payload hash), written
+// `pending` with the detached JWS of the payload (WP-6); the
+// sender re-signs it at every attempt. GET /v1/publications shows
+// its later states.
 type PublicationRow struct {
 	CreatedAt    time.Time `json:"created_at"`
 	Dataset      string    `json:"dataset"`
@@ -1513,6 +1729,29 @@ type PublicationRow struct {
 
 // PublicationRowState defines model for PublicationRow.State.
 type PublicationRowState string
+
+// PublicationStatus defines model for PublicationStatus.
+type PublicationStatus struct {
+	Cache []CISCacheState `json:"cache"`
+
+	// CispConfigured false when CISP_BASE_URL is unset; nothing is sent or pulled and the ages grow.
+	CispConfigured bool                    `json:"cisp_configured"`
+	Heartbeat      PublisherHeartbeatState `json:"heartbeat"`
+	Publications   []PublicationOutboxRow  `json:"publications"`
+	Subscription   CISSubscriptionState    `json:"subscription"`
+}
+
+// PublisherHeartbeatState defines model for PublisherHeartbeatState.
+type PublisherHeartbeatState struct {
+	ConsecutiveFailures int     `json:"consecutive_failures"`
+	Enabled             bool    `json:"enabled"`
+	IntervalS           float64 `json:"interval_s"`
+	LastError           *string `json:"last_error,omitempty"`
+
+	// LastStatus The CISP's last HTTP status; null for a network error or before the first.
+	LastStatus    *int       `json:"last_status,omitempty"`
+	LastSuccessAt *time.Time `json:"last_success_at,omitempty"`
+}
 
 // RIDCapability defines model for RIDCapability.
 type RIDCapability string
@@ -2400,8 +2639,10 @@ type ZoneImportResultFormat string
 type ZonePublication struct {
 	Dataset ZoneDataset `json:"dataset"`
 
-	// Publication The F1 outbox row (dataset, version, payload hash). `signature` is
-	// null and `state` pending until WP-6 signs and sends it.
+	// Publication The F1 outbox row (dataset, version, payload hash), written
+	// `pending` with the detached JWS of the payload (WP-6); the
+	// sender re-signs it at every attempt. GET /v1/publications shows
+	// its later states.
 	Publication  PublicationRow `json:"publication"`
 	Published    []ZoneVersion  `json:"published"`
 	ZonesVersion int64          `json:"zones_version"`
@@ -2492,6 +2733,19 @@ type ListAuditEventsParams struct {
 type CompromiseSigningKeyJSONBody struct {
 	Reason string `json:"reason"`
 }
+
+// ListPublicationsParams defines parameters for ListPublications.
+type ListPublicationsParams struct {
+	Dataset *ListPublicationsParamsDataset `form:"dataset,omitempty" json:"dataset,omitempty"`
+	State   *ListPublicationsParamsState   `form:"state,omitempty" json:"state,omitempty"`
+	Limit   *int                           `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListPublicationsParamsDataset defines parameters for ListPublications.
+type ListPublicationsParamsDataset string
+
+// ListPublicationsParamsState defines parameters for ListPublications.
+type ListPublicationsParamsState string
 
 // ListRegistryChangesParams defines parameters for ListRegistryChanges.
 type ListRegistryChangesParams struct {
@@ -3320,6 +3574,24 @@ type ClientInterface interface {
 	// Corresponds with POST /v1/policy/{version}/activate (the `ActivatePolicy` operationId).
 	ActivatePolicy(ctx context.Context, version int64, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListPublications The publication outbox and the CIS subscriber's state
+	//
+	// The F1 outbox rows, newest first, without payloads: each with its
+	// state (pending, sent, acknowledged, failed, conflict,
+	// superseded), attempts, the last answer of the CISP, the CISP's
+	// version once acknowledged (or the one a 412 showed), and, while
+	// pending or sent, `age_s`: how long the publication has not been
+	// published (spec 02 F1 failure rule). Beside them the
+	// subscriber's cache per dataset (`cis_version`, `cis_age_s`,
+	// `stale` beyond the policy's `cis_stale_bound_s`, a version held
+	// because its publisher's signature did not verify, a refused
+	// publication, the last pull error), the publisher heartbeat's
+	// last answer and the subscription. Nothing here is hidden when
+	// the CISP is unreachable: the ages grow.
+	//
+	// Corresponds with GET /v1/publications (the `ListPublications` operationId).
+	ListPublications(ctx context.Context, params *ListPublicationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListRegistryChanges The status change feed (F8), ids and statuses only
 	//
 	// Changes after `since` in sequence order, for cache
@@ -4125,8 +4397,11 @@ type ClientInterface interface {
 	// projection is rewritten in the telemetry database (a failed write
 	// rolls the publication back, 503 projection_unavailable); the full
 	// set in force now is exported (ED-318, ed318.Export) into the F1
-	// outbox row of dataset `zones`, state `pending`, signature null
-	// until WP-6 signs and sends it. Then zones.v1.changed and KV
+	// outbox row of dataset `zones`, state `pending`, after it passed
+	// the CISP's dataset checks (ed318.Parse) and was signed with the
+	// publication key (a detached JWS, WP-6); a payload that fails is
+	// refused with every problem by path and nothing is published.
+	// Then zones.v1.changed and KV
 	// zones_version announce the version. 409 nothing_to_publish when
 	// no version is approved.
 	//
@@ -4842,6 +5117,34 @@ func (c *Client) CreatePolicy(ctx context.Context, body CreatePolicyJSONRequestB
 // Corresponds with POST /v1/policy/{version}/activate (the `ActivatePolicy` operationId).
 func (c *Client) ActivatePolicy(ctx context.Context, version int64, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewActivatePolicyRequest(c.Server, version)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListPublications The publication outbox and the CIS subscriber's state
+//
+// The F1 outbox rows, newest first, without payloads: each with its
+// state (pending, sent, acknowledged, failed, conflict,
+// superseded), attempts, the last answer of the CISP, the CISP's
+// version once acknowledged (or the one a 412 showed), and, while
+// pending or sent, `age_s`: how long the publication has not been
+// published (spec 02 F1 failure rule). Beside them the
+// subscriber's cache per dataset (`cis_version`, `cis_age_s`,
+// `stale` beyond the policy's `cis_stale_bound_s`, a version held
+// because its publisher's signature did not verify, a refused
+// publication, the last pull error), the publisher heartbeat's
+// last answer and the subscription. Nothing here is hidden when
+// the CISP is unreachable: the ages grow.
+//
+// Corresponds with GET /v1/publications (the `ListPublications` operationId).
+func (c *Client) ListPublications(ctx context.Context, params *ListPublicationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListPublicationsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -6437,8 +6740,11 @@ func (c *Client) ImportGovGeZones(ctx context.Context, body ImportGovGeZonesJSON
 // projection is rewritten in the telemetry database (a failed write
 // rolls the publication back, 503 projection_unavailable); the full
 // set in force now is exported (ED-318, ed318.Export) into the F1
-// outbox row of dataset `zones`, state `pending`, signature null
-// until WP-6 signs and sends it. Then zones.v1.changed and KV
+// outbox row of dataset `zones`, state `pending`, after it passed
+// the CISP's dataset checks (ed318.Parse) and was signed with the
+// publication key (a detached JWS, WP-6); a payload that fails is
+// refused with every problem by path and nothing is published.
+// Then zones.v1.changed and KV
 // zones_version announce the version. 409 nothing_to_publish when
 // no version is approved.
 //
@@ -7432,6 +7738,84 @@ func NewActivatePolicyRequest(server string, version int64) (*http.Request, erro
 	}
 
 	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListPublicationsRequest constructs an http.Request for the ListPublications method
+func NewListPublicationsRequest(server string, params *ListPublicationsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/publications")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Dataset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "dataset", *params.Dataset, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.State != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "state", *params.State, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -10931,6 +11315,26 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /v1/policy/{version}/activate (the `ActivatePolicy` operationId).
 	ActivatePolicyWithResponse(ctx context.Context, version int64, reqEditors ...RequestEditorFn) (*ActivatePolicyResponse, error)
 
+	// ListPublicationsWithResponse The publication outbox and the CIS subscriber's state
+	//
+	// The F1 outbox rows, newest first, without payloads: each with its
+	// state (pending, sent, acknowledged, failed, conflict,
+	// superseded), attempts, the last answer of the CISP, the CISP's
+	// version once acknowledged (or the one a 412 showed), and, while
+	// pending or sent, `age_s`: how long the publication has not been
+	// published (spec 02 F1 failure rule). Beside them the
+	// subscriber's cache per dataset (`cis_version`, `cis_age_s`,
+	// `stale` beyond the policy's `cis_stale_bound_s`, a version held
+	// because its publisher's signature did not verify, a refused
+	// publication, the last pull error), the publisher heartbeat's
+	// last answer and the subscription. Nothing here is hidden when
+	// the CISP is unreachable: the ages grow.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/publications (the `ListPublications` operationId).
+	ListPublicationsWithResponse(ctx context.Context, params *ListPublicationsParams, reqEditors ...RequestEditorFn) (*ListPublicationsResponse, error)
+
 	// ListRegistryChangesWithResponse The status change feed (F8), ids and statuses only
 	//
 	// Changes after `since` in sequence order, for cache
@@ -11794,8 +12198,11 @@ type ClientWithResponsesInterface interface {
 	// projection is rewritten in the telemetry database (a failed write
 	// rolls the publication back, 503 projection_unavailable); the full
 	// set in force now is exported (ED-318, ed318.Export) into the F1
-	// outbox row of dataset `zones`, state `pending`, signature null
-	// until WP-6 signs and sends it. Then zones.v1.changed and KV
+	// outbox row of dataset `zones`, state `pending`, after it passed
+	// the CISP's dataset checks (ed318.Parse) and was signed with the
+	// publication key (a detached JWS, WP-6); a payload that fails is
+	// refused with every problem by path and nothing is published.
+	// Then zones.v1.changed and KV
 	// zones_version announce the version. 409 nothing_to_publish when
 	// no version is approved.
 	//
@@ -13039,6 +13446,54 @@ func (r ActivatePolicyResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ActivatePolicyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListPublicationsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PublicationStatus
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListPublicationsResponse) GetJSON200() *PublicationStatus {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ListPublicationsResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListPublicationsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListPublicationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListPublicationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListPublicationsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -16640,6 +17095,32 @@ func (c *ClientWithResponses) ActivatePolicyWithResponse(ctx context.Context, ve
 	return ParseActivatePolicyResponse(rsp)
 }
 
+// ListPublicationsWithResponse The publication outbox and the CIS subscriber's state
+//
+// The F1 outbox rows, newest first, without payloads: each with its
+// state (pending, sent, acknowledged, failed, conflict,
+// superseded), attempts, the last answer of the CISP, the CISP's
+// version once acknowledged (or the one a 412 showed), and, while
+// pending or sent, `age_s`: how long the publication has not been
+// published (spec 02 F1 failure rule). Beside them the
+// subscriber's cache per dataset (`cis_version`, `cis_age_s`,
+// `stale` beyond the policy's `cis_stale_bound_s`, a version held
+// because its publisher's signature did not verify, a refused
+// publication, the last pull error), the publisher heartbeat's
+// last answer and the subscription. Nothing here is hidden when
+// the CISP is unreachable: the ages grow.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/publications (the `ListPublications` operationId).
+func (c *ClientWithResponses) ListPublicationsWithResponse(ctx context.Context, params *ListPublicationsParams, reqEditors ...RequestEditorFn) (*ListPublicationsResponse, error) {
+	rsp, err := c.ListPublications(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListPublicationsResponse(rsp)
+}
+
 // ListRegistryChangesWithResponse The status change feed (F8), ids and statuses only
 //
 // Changes after `since` in sequence order, for cache
@@ -17971,8 +18452,11 @@ func (c *ClientWithResponses) ImportGovGeZonesWithResponse(ctx context.Context, 
 // projection is rewritten in the telemetry database (a failed write
 // rolls the publication back, 503 projection_unavailable); the full
 // set in force now is exported (ED-318, ed318.Export) into the F1
-// outbox row of dataset `zones`, state `pending`, signature null
-// until WP-6 signs and sends it. Then zones.v1.changed and KV
+// outbox row of dataset `zones`, state `pending`, after it passed
+// the CISP's dataset checks (ed318.Parse) and was signed with the
+// publication key (a detached JWS, WP-6); a payload that fails is
+// refused with every problem by path and nothing is published.
+// Then zones.v1.changed and KV
 // zones_version announce the version. 409 nothing_to_publish when
 // no version is approved.
 //
@@ -18970,6 +19454,39 @@ func ParseActivatePolicyResponse(rsp *http.Response) (*ActivatePolicyResponse, e
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest Policy
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListPublicationsResponse parses an HTTP response from a ListPublicationsWithResponse call
+func ParseListPublicationsResponse(rsp *http.Response) (*ListPublicationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListPublicationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PublicationStatus
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -21228,6 +21745,9 @@ type ServerInterface interface {
 	// ActivatePolicy Activate a policy version
 	// (POST /v1/policy/{version}/activate)
 	ActivatePolicy(w http.ResponseWriter, r *http.Request, version int64)
+	// ListPublications The publication outbox and the CIS subscriber's state
+	// (GET /v1/publications)
+	ListPublications(w http.ResponseWriter, r *http.Request, params ListPublicationsParams)
 	// ListRegistryChanges The status change feed (F8), ids and statuses only
 	// (GET /v1/registry/changes)
 	ListRegistryChanges(w http.ResponseWriter, r *http.Request, params ListRegistryChangesParams)
@@ -21889,6 +22409,65 @@ func (siw *ServerInterfaceWrapper) ActivatePolicy(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ActivatePolicy(w, r, version)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListPublications operation middleware
+func (siw *ServerInterfaceWrapper) ListPublications(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPublicationsParams
+
+	// ------------- Optional query parameter "dataset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "dataset", r.URL.Query(), &params.Dataset, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "dataset"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "dataset", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "state" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPublications(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -24132,6 +24711,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/v1/uspace/{identifier}", wrapper.ReplaceUSpaceAirspace)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/uspace/{identifier}/designate", wrapper.DesignateUSpaceAirspace)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/uspace/{identifier}/versions", wrapper.ListUSpaceVersions)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/publications", wrapper.ListPublications)
 
 	return m
 }
@@ -25187,6 +25767,45 @@ type ActivatePolicydefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response ActivatePolicydefaultApplicationProblemPlusJSONResponse) VisitActivatePolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPublicationsRequestObject struct {
+	Params ListPublicationsParams
+}
+
+type ListPublicationsResponseObject interface {
+	VisitListPublicationsResponse(w http.ResponseWriter) error
+}
+
+type ListPublications200JSONResponse PublicationStatus
+
+func (response ListPublications200JSONResponse) VisitListPublicationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPublicationsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListPublicationsdefaultApplicationProblemPlusJSONResponse) VisitListPublicationsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -27961,6 +28580,9 @@ type StrictServerInterface interface {
 	// ActivatePolicy Activate a policy version
 	// (POST /v1/policy/{version}/activate)
 	ActivatePolicy(ctx context.Context, request ActivatePolicyRequestObject) (ActivatePolicyResponseObject, error)
+	// ListPublications The publication outbox and the CIS subscriber's state
+	// (GET /v1/publications)
+	ListPublications(ctx context.Context, request ListPublicationsRequestObject) (ListPublicationsResponseObject, error)
 	// ListRegistryChanges The status change feed (F8), ids and statuses only
 	// (GET /v1/registry/changes)
 	ListRegistryChanges(ctx context.Context, request ListRegistryChangesRequestObject) (ListRegistryChangesResponseObject, error)
@@ -28773,6 +29395,32 @@ func (sh *strictHandler) ActivatePolicy(w http.ResponseWriter, r *http.Request, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ActivatePolicyResponseObject); ok {
 		if err := validResponse.VisitActivatePolicyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListPublications operation middleware
+func (sh *strictHandler) ListPublications(w http.ResponseWriter, r *http.Request, params ListPublicationsParams) {
+	var request ListPublicationsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPublications(ctx, request.(ListPublicationsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPublications")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPublicationsResponseObject); ok {
+		if err := validResponse.VisitListPublicationsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -16,6 +16,7 @@ import (
 	"github.com/rootxkit/uspace-core/ed318"
 
 	"github.com/rootxkit/uspace-authority/internal/audit"
+	"github.com/rootxkit/uspace-authority/internal/cisp"
 	"github.com/rootxkit/uspace-authority/internal/ground"
 	"github.com/rootxkit/uspace-authority/internal/httpx"
 	"github.com/rootxkit/uspace-authority/internal/logging"
@@ -87,6 +88,10 @@ type Service struct {
 	// nil is ground.Daylight (core's ed318.NOAADaylight).
 	Daylight ed318.Daylight
 	Meta     Meta
+	// Outbox holds a publication to the CISP's checks and signs it
+	// before its row is written (WP-6, internal/cisp). nil writes the
+	// row unsigned (the zonesvc unit tests); api always sets it.
+	Outbox   Outbox
 	Counters *core.Counters
 	Logger   *slog.Logger
 
@@ -493,7 +498,7 @@ func checkAdjacent(set []Version) error {
 // transaction under LockProjection, the versions become published under
 // a new zones version and supersede their identifiers' older published
 // versions; the full set in force now is exported into the outbox row
-// (pending, unsigned until WP-6); the projection is rewritten in the
+// (pending, validated and signed by WP-6's outbox); the projection is rewritten in the
 // telemetry database before the relational commit, so a failed
 // projection write rolls the publication back (503
 // projection_unavailable) and a failed relational commit after it is
@@ -542,10 +547,11 @@ func (s *Service) Publish(ctx context.Context, ds Dataset, actor audit.Actor) (P
 			return httpx.Refuse(http.StatusConflict, SlugDatasetTooLarge,
 				fmt.Sprintf("the %s dataset is %d bytes; a publication is at most %d (what the CISP's ED-318 parser accepts)", ds, len(payload), MaxDocumentBytes))
 		}
-		sum := sha256.Sum256(payload)
-		pub, err := tx.EnqueuePublication(ctx, PublicationInput{
-			Dataset: ds, Version: version, Payload: payload, PayloadHash: hex.EncodeToString(sum[:]), FeatureCount: n, By: actor.ID,
-		})
+		prep, err := s.prepare(ds, payload, n)
+		if err != nil {
+			return err
+		}
+		pub, err := tx.EnqueuePublication(ctx, PublicationInput{Prepared: prep, Version: version, Actor: actor})
 		if err != nil {
 			return err
 		}
@@ -584,8 +590,33 @@ func (s *Service) Publish(ctx context.Context, ds Dataset, actor audit.Actor) (P
 		return Published{}, s.refused(err)
 	}
 	s.count(CounterPublished)
+	if s.Outbox != nil {
+		s.Outbox.Wake()
+	}
 	s.announce(ctx, out.ZonesVersion)
 	return out, nil
+}
+
+// Outbox is the CISP client's outbox (internal/cisp.Outbox): it holds
+// a publication to the CISP's checks for its dataset, refusing it whole
+// with every problem by path, signs it as a detached JWS, and wakes the
+// sender once the row is committed.
+type Outbox interface {
+	Prepare(ds cisp.Dataset, payload []byte) (cisp.Prepared, error)
+	Wake()
+}
+
+// prepare is the outbox row of a publication: validated and signed by
+// the Outbox, or, without one, unsigned with its hash.
+func (s *Service) prepare(ds Dataset, payload []byte, n int) (cisp.Prepared, error) {
+	if s.Outbox != nil {
+		return s.Outbox.Prepare(cisp.Dataset(ds), payload)
+	}
+	sum := sha256.Sum256(payload)
+	return cisp.Prepared{
+		Dataset: cisp.Dataset(ds), Payload: payload, PayloadHash: hex.EncodeToString(sum[:]), FeatureCount: n,
+		ContentType: cisp.Dataset(ds).ContentType(),
+	}, nil
 }
 
 // writeProjection replaces the projection with rows.

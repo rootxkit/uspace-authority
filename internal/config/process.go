@@ -96,6 +96,7 @@ type API struct {
 	Receivers
 	Sources
 	Zones
+	CISP
 }
 
 // Sources is source control in api (WP-10, U-15).
@@ -128,6 +129,111 @@ type Zones struct {
 	ZonesRepairRetryS int    `env:"ZONES_REPAIR_RETRY_S" default:"2" min:"1" max:"300" help:"first retry of a failed zones re-projection; each failure doubles it up to ZONES_REPROJECT_S"`
 	ZonesProviderName string `env:"ZONES_PROVIDER_NAME" help:"the provider named in the metadata of every ED-318 export and publication (the authority's name, spec 06 §4); absent when empty"`
 	ZonesProviderLang string `env:"ZONES_PROVIDER_LANG" default:"en-GB" help:"language tag of ZONES_PROVIDER_NAME (at most five characters)"`
+}
+
+// CISP is the CISP client of api (WP-6, spec 02 F1, F3). Without
+// CISP_BASE_URL publications are still validated, signed and queued
+// (their age grows on the console) and nothing is sent or pulled.
+type CISP struct {
+	CISPBaseURL            string   `env:"CISP_BASE_URL" kind:"url" help:"the CISP's published base URL (https; http only to a loopback host): F1 publications, the heartbeat and every F3 pull go there and nowhere else; its host is the audience of the authority's tokens for it (M18); unset: nothing is sent or pulled, said on the status line"`
+	CISPClientID           string   `env:"CISP_CLIENT_ID" default:"authority-01" help:"this system's client id at its own token service for calls to the CISP (M24)"`
+	CISPClientSecretFile   string   `env:"CISP_CLIENT_SECRET_FILE" help:"file holding that client's secret (client_secret_post at CISP_TOKEN_URL); unset: every call to the CISP is refused locally and counted"`
+	CISPTokenURL           string   `env:"CISP_TOKEN_URL" kind:"url" help:"the token endpoint the CISP client asks; default ISSUER_URL + /oauth/token"`
+	CISCallbackURL         string   `env:"CIS_CALLBACK_URL" kind:"url" help:"the URL the CISP posts change notifications to (this system's POST /v1/cis/notifications, M1); unset: no subscription, the 60 s reconciliation alone"`
+	CISNotifyIssuers       []string `env:"AUTHORITY_CIS_NOTIFY_ISSUERS" help:"allow-list of POST /v1/cis/notifications, at most two <iss>=<jwks_url> entries: the CISP's (iss = CISP_ISSUER_URL) and the ANSP's direct delivery (iss = ANSP_ISSUER_URL, M5); unset: the configured CISP and ANSP peers"`
+	CISSubscriptionBBox    []string `env:"CIS_SUBSCRIPTION_BBOX" help:"the subscription's box: min lng, min lat, max lng, max lat (WGS84 degrees, comma-separated); unset: every change"`
+	CISANSPJWKSURL         string   `env:"CIS_ANSP_PUBLISHER_JWKS_URL" kind:"url" help:"the ANSP's keys that verify the publisher signature of pulled restrictions versions; default ANSP_JWKS_URL"`
+	CISReconcileS          int      `env:"CIS_RECONCILE_S" default:"60" min:"1" max:"60" help:"seconds between reconciliations of every CIS dataset (HEAD on the ETag, GET on a change); 02 F3 makes 60 s mandatory, whether or not notifications arrive"`
+	CISHeartbeatS          int      `env:"CIS_HEARTBEAT_S" default:"15" min:"1" max:"15" help:"seconds between publisher heartbeats (M3: 15; the CISP marks a publisher stale after 60 s of silence)"`
+	CISSendBackoffMinS     int      `env:"CIS_SEND_BACKOFF_MIN_S" default:"2" min:"1" max:"300" help:"first wait before a publication is sent again after a 5xx or no answer; each failure doubles it"`
+	CISSendBackoffMaxS     int      `env:"CIS_SEND_BACKOFF_MAX_S" default:"300" min:"1" max:"300" help:"longest wait between two attempts of a publication (02 F1: capped at 5 min)"`
+	CISSendGiveUpS         int      `env:"CIS_SEND_GIVE_UP_S" default:"86400" min:"60" max:"86400" help:"a publication not acknowledged this long after it was queued is failed with its last reason (02 F1: 24 h)"`
+	CISPublisherSigMaxAgeS int      `env:"CIS_PUBLISHER_SIG_MAX_AGE_S" default:"31622400" min:"300" max:"315360000" help:"how old the publisher signature of a pulled version may be: the signature is as old as its version (366 days by default); an older one is held, visibly"`
+	CISJTIMaxLive          int      `env:"CIS_JTI_MAX_LIVE" default:"100000" min:"1" max:"10000000" help:"delivery ids remembered by the notification receiver; beyond it a notification is answered 503 and counted (E-10)"`
+}
+
+// NotifyIssuer is one entry of AUTHORITY_CIS_NOTIFY_ISSUERS.
+type NotifyIssuer struct {
+	Issuer  string
+	JWKSURL string
+	ANSP    bool
+}
+
+// NotifyIssuerList parses AUTHORITY_CIS_NOTIFY_ISSUERS against the peers:
+// each issuer must be the CISP's or the ANSP's, once; unset, the
+// configured CISP and ANSP peers are the list.
+func (c *API) NotifyIssuerList() ([]NotifyIssuer, error) {
+	const name = "AUTHORITY_CIS_NOTIFY_ISSUERS"
+	if len(c.CISNotifyIssuers) == 0 {
+		var out []NotifyIssuer
+		if c.CISPIssuerURL != "" {
+			out = append(out, NotifyIssuer{Issuer: c.CISPIssuerURL, JWKSURL: c.CISPJWKSURL})
+		}
+		if c.ANSPIssuerURL != "" {
+			out = append(out, NotifyIssuer{Issuer: c.ANSPIssuerURL, JWKSURL: c.ANSPJWKSURL, ANSP: true})
+		}
+		return out, nil
+	}
+	if len(c.CISNotifyIssuers) > 2 {
+		return nil, core.Fieldf(name, "at most two issuers: the CISP and the ANSP")
+	}
+	var out []NotifyIssuer
+	seen := map[string]bool{}
+	for _, e := range c.CISNotifyIssuers {
+		iss, jwks, ok := strings.Cut(e, "=")
+		iss, jwks = strings.TrimSpace(iss), strings.TrimSpace(jwks)
+		if !ok || iss == "" || jwks == "" {
+			return nil, core.Fieldf(name, "%q is not <iss>=<jwks_url>", e)
+		}
+		if u, err := url.Parse(jwks); err != nil || !u.IsAbs() || u.Host == "" {
+			return nil, core.Fieldf(name, "the JWKS URL of %q is not an absolute URL", iss)
+		}
+		var ansp bool
+		switch iss {
+		case c.CISPIssuerURL:
+		case c.ANSPIssuerURL:
+			ansp = true
+		default:
+			return nil, core.Fieldf(name, "%q is neither CISP_ISSUER_URL nor ANSP_ISSUER_URL", iss)
+		}
+		if seen[iss] {
+			return nil, core.Fieldf(name, "%q is listed twice", iss)
+		}
+		seen[iss] = true
+		out = append(out, NotifyIssuer{Issuer: iss, JWKSURL: jwks, ANSP: ansp})
+	}
+	return out, nil
+}
+
+// SubscriptionBBox parses CIS_SUBSCRIPTION_BBOX (nil when unset).
+func (c *API) SubscriptionBBox() ([]float64, error) {
+	const name = "CIS_SUBSCRIPTION_BBOX"
+	if len(c.CISSubscriptionBBox) == 0 {
+		return nil, nil
+	}
+	if len(c.CISSubscriptionBBox) != 4 {
+		return nil, core.Fieldf(name, "must be four numbers: min lng, min lat, max lng, max lat")
+	}
+	out := make([]float64, 4)
+	for i, s := range c.CISSubscriptionBBox {
+		x, err := strconv.ParseFloat(s, 64)
+		if err != nil || !core.IsFinite(x) {
+			return nil, core.Fieldf(name, "%q is not a number", s)
+		}
+		out[i] = x
+	}
+	if out[0] < -180 || out[2] > 180 || out[1] < -90 || out[3] > 90 || out[0] > out[2] || out[1] > out[3] {
+		return nil, core.Fieldf(name, "must be min lng, min lat, max lng, max lat within WGS84, not across the antimeridian")
+	}
+	return out, nil
+}
+
+// TokenURL is CISP_TOKEN_URL, or this issuer's /oauth/token.
+func (c *API) TokenURL() string {
+	if c.CISPTokenURL != "" {
+		return c.CISPTokenURL
+	}
+	return c.Issuer() + "/oauth/token"
 }
 
 // Registry is the registry of api (WP-3).
@@ -470,6 +576,15 @@ func (c *API) Validate() error {
 	}
 	if u, err := url.Parse(c.Issuer()); err == nil && (u.RawQuery != "" || u.Fragment != "") {
 		errs = append(errs, core.Fieldf("ISSUER_URL", "must have no query or fragment"))
+	}
+	if _, err := c.NotifyIssuerList(); err != nil {
+		errs = append(errs, err)
+	}
+	if _, err := c.SubscriptionBBox(); err != nil {
+		errs = append(errs, err)
+	}
+	if c.CISSendBackoffMaxS < c.CISSendBackoffMinS {
+		errs = append(errs, core.Fieldf("CIS_SEND_BACKOFF_MAX_S", "must not be shorter than CIS_SEND_BACKOFF_MIN_S"))
 	}
 	return errors.Join(errs...)
 }

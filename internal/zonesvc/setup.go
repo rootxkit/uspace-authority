@@ -21,7 +21,9 @@ type Setup struct {
 	Projector *ts.Projector
 	Publisher Publisher
 	Meta      Meta
-	Logger    *slog.Logger
+	// Outbox is WP-6's publication outbox (internal/cisp).
+	Outbox Outbox
+	Logger *slog.Logger
 }
 
 // Parts is the assembled zone service.
@@ -50,7 +52,7 @@ func Assemble(s Setup) (*Parts, error) {
 	}
 	svc := &Service{
 		Store: PG{DB: s.DB, Audit: s.Audit}, Projection: TSProjection{P: s.Projector}, Publisher: pub,
-		Daylight: ground.Daylight(), Meta: s.Meta, Counters: counters, Logger: s.Logger,
+		Daylight: ground.Daylight(), Meta: s.Meta, Counters: counters, Logger: s.Logger, Outbox: s.Outbox,
 	}
 	return &Parts{Service: svc, Handler: Handler{Service: svc}, Counters: counters}, nil
 }

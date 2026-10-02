@@ -1,5 +1,0 @@
-github.com/rootxkit/uspace-cisp schemas/cis/uspace_requirements/v1.json
-commit 6c29028c0439eb30972ffffcf2217adc534e721e
-Copied by WP-5 to test the U-space export against the CISP's schema
-(M7). WP-6's api/clients/cisp-schemas/ (with its CI diff) replaces
-this copy; bump it in a build: commit, never inside a feature change.

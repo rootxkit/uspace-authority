@@ -55,7 +55,8 @@ func newIntegration(t *testing.T) *itest {
 		t.Fatal(err)
 	}
 	t.Cleanup(rd.Close)
-	parts, err := Assemble(Setup{DB: db, Audit: audit.NewWriter(db), Projector: proj, Meta: Meta{ProviderName: "Test authority", ProviderLang: "en-GB"}})
+	parts, err := Assemble(Setup{DB: db, Audit: audit.NewWriter(db), Projector: proj, Meta: Meta{ProviderName: "Test authority", ProviderLang: "en-GB"},
+		Outbox: testOutbox(t)})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,7 +154,7 @@ func TestIntegrationLuxembourgSizedImportPublishProjectAndRead(t *testing.T) {
 	if len(p.Versions) != 202 || p.Publication.FeatureCount != 202 {
 		t.Fatalf("%d published, %d in the payload", len(p.Versions), p.Publication.FeatureCount)
 	}
-	// The outbox row: pending, and no signature until WP-6 signs it.
+	// The outbox row: pending and signed by WP-6's outbox.
 	var state string
 	var unsigned bool
 	var payloadBytes int
@@ -161,7 +162,7 @@ func TestIntegrationLuxembourgSizedImportPublishProjectAndRead(t *testing.T) {
 		p.Publication.ID).Scan(&state, &unsigned, &payloadBytes); err != nil {
 		t.Fatal(err)
 	}
-	if state != "pending" || !unsigned || payloadBytes == 0 {
+	if state != "pending" || unsigned || payloadBytes == 0 {
 		t.Fatalf("outbox row %s unsigned %v %d bytes", state, unsigned, payloadBytes)
 	}
 	if n := it.count(t, it.tsAdmin, `SELECT count(*) FROM proj_zones WHERE zones_version = $1`, p.ZonesVersion); n != 202 {

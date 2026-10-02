@@ -77,7 +77,7 @@ func TestHandlersAuthorApprovePublishExport(t *testing.T) {
 		t.Fatalf("%d %s", code, b)
 	}
 	code, _, b = call(t, srv, "admin", http.MethodPost, "/v1/zones/publish", "", nil)
-	if code != http.StatusOK || !strings.Contains(string(b), `"signature":null`) || !strings.Contains(string(b), `"state":"pending"`) {
+	if code != http.StatusOK || !strings.Contains(string(b), `"signature":"ey`) || !strings.Contains(string(b), `"state":"pending"`) {
 		t.Fatalf("%d %s", code, b)
 	}
 	// The export is the bytes ed318.Export wrote, as application/geo+json.

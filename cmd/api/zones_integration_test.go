@@ -103,12 +103,22 @@ func TestIntegrationZoneAuthoredApprovedAndPublishedThroughTheAPI(t *testing.T) 
 	if code, body := doAs(t, "admin", http.MethodPost, base+"/v1/zones/publish", "", "", &pub); code != http.StatusOK {
 		t.Fatalf("publish: %d %s", code, body)
 	}
+	// WP-6: the row is signed (a detached JWS of the payload) and, with
+	// no CISP configured, stays pending with its age on the console.
 	row := pub["publication"].(map[string]any)
-	if row["state"] != "pending" || row["signature"] != nil {
+	if sig, _ := row["signature"].(string); row["state"] != "pending" || !strings.Contains(sig, "..") {
 		t.Fatalf("outbox row %v", row)
 	}
-	if _, ok := row["signature"]; !ok {
-		t.Fatal("signature is absent rather than null")
+	var status map[string]any
+	if code, body := doAs(t, "viewer", http.MethodGet, base+"/v1/publications", "", "", &status); code != http.StatusOK {
+		t.Fatalf("publications: %d %s", code, body)
+	}
+	rows, _ := status["publications"].([]any)
+	if status["cisp_configured"] != false || len(rows) != 1 {
+		t.Fatalf("%v", status)
+	}
+	if r := rows[0].(map[string]any); r["state"] != "pending" || r["age_s"] == nil {
+		t.Fatalf("%v", r)
 	}
 	if code, body := doAs(t, "admin", http.MethodPost, base+"/v1/zones/publish", "", "", nil); code != http.StatusConflict || !strings.Contains(body, "nothing_to_publish") {
 		t.Fatalf("second publish: %d %s", code, body)

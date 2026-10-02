@@ -111,6 +111,8 @@ var Roles = map[string][]string{
 	"ReplaceUSpaceAirspace":   {RoleAdmin},
 	"DesignateUSpaceAirspace": {RoleAdmin},
 	"PublishUSpaceAirspaces":  {RoleAdmin},
+
+	"ListPublications": {RoleAdmin, RoleInspector, RoleViewer},
 }
 
 // Receiver lists the operations a Remote ID receiver calls (`x-receiver:
@@ -123,6 +125,14 @@ var Receiver = map[string]bool{
 	"PostRIDReceiverHeartbeat": true,
 	"PostRIDObservations":      true,
 }
+
+// Delivery lists the CIS change-notification receiver (`x-cis-delivery:
+// true` in the contract, WP-6): the compact JWS of its body is its
+// credential, verified inside internal/cisp, so it is excluded from the
+// generated server and never reaches Authorize. It has `security: []`
+// (no bearer), so it is also in Public. A test holds the lists to each
+// other.
+var Delivery = map[string]bool{"ReceiveCISNotification": true}
 
 // PIIRoles are the only roles that may read personal data: an operation
 // whose response carries it names no other role (CLAUDE.md rule 6; a
@@ -152,6 +162,8 @@ var Public = map[string]bool{
 	"GetIssuerMetadata": true,
 	"Login":             true,
 	"VerifyMFA":         true,
+
+	"ReceiveCISNotification": true,
 }
 
 // AnySession lists the operations open to every console session

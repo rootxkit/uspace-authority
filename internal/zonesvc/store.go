@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/rootxkit/uspace-authority/internal/audit"
+	"github.com/rootxkit/uspace-authority/internal/cisp"
 )
 
 // ErrNotFound is a missing identifier or version.
@@ -75,17 +76,16 @@ type Tx interface {
 	Projectable(ctx context.Context, at time.Time) ([]Version, error)
 	// MaxPublishedVersion is the newest zones version published.
 	MaxPublishedVersion(ctx context.Context) (int64, error)
-	// EnqueuePublication writes the F1 outbox row (pending, unsigned),
-	// superseding the dataset's older pending row.
+	// EnqueuePublication writes the F1 outbox row (pending, signed by
+	// the Outbox), superseding the dataset's older pending row
+	// (internal/cisp.EnqueueTx).
 	EnqueuePublication(ctx context.Context, p PublicationInput) (Publication, error)
 }
 
-// PublicationInput is one outbox row to write.
+// PublicationInput is one outbox row to write: the prepared (validated
+// and signed) payload, numbered by the zones version.
 type PublicationInput struct {
-	Dataset      Dataset
-	Version      int64
-	Payload      []byte
-	PayloadHash  string
-	FeatureCount int
-	By           string
+	Prepared cisp.Prepared
+	Version  int64
+	Actor    audit.Actor
 }

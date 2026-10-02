@@ -32,6 +32,9 @@ info:
     The Remote ID receiver operations carry `x-receiver: true` instead:
     the receiver's bearer key and the HMAC of the body authenticate
     them (WP-7), and they are served outside the generated server.
+    The CIS change-notification receiver carries `x-cis-delivery: true`:
+    the compact JWS of its body is its credential (WP-6), and it is
+    served outside the generated server too.
 
     Work packages add their path groups below under a `# WP-k` comment
     and regenerate `api/gen/` with `scripts/generate.sh`.
@@ -84,6 +87,11 @@ tags:
       instant.
   - name: uspace
     description: U-space airspace designations (WP-5, spec 01 A3), published as ED-318 USPACE zones (admin).
+  - name: cisp
+    description: |
+      The CISP client (WP-6, spec 02 F1, F3): the state of the signed
+      publication outbox and of the CIS subscriber, and the change
+      notification receiver every subscriber implements (M1).
 
 paths:
   # WP-0: health paths, served by every process on its admin port.
@@ -2005,8 +2013,8 @@ paths:
   # admin approves it and publishes the dataset, which supersedes older
   # versions, writes the zones projection the hot path judges with (a
   # failed projection write rolls the publication back, 503
-  # projection_unavailable) and the F1 outbox row (pending, unsigned
-  # until WP-6 signs and sends it). The period of validity is mandatory
+  # projection_unavailable) and the F1 outbox row (pending and signed;
+  # WP-6 sends it to the CISP). The period of validity is mandatory
   # (947 Art. 15(3)). A WGS84 vertical reference is accepted and named
   # in `extensions`: it is this project's extension, not a published
   # ED-318 reference (LESSONS Z-05).
@@ -2192,8 +2200,11 @@ paths:
         projection is rewritten in the telemetry database (a failed write
         rolls the publication back, 503 projection_unavailable); the full
         set in force now is exported (ED-318, ed318.Export) into the F1
-        outbox row of dataset `zones`, state `pending`, signature null
-        until WP-6 signs and sends it. Then zones.v1.changed and KV
+        outbox row of dataset `zones`, state `pending`, after it passed
+        the CISP's dataset checks (ed318.Parse) and was signed with the
+        publication key (a detached JWS, WP-6); a payload that fails is
+        refused with every problem by path and nothing is published.
+        Then zones.v1.changed and KV
         zones_version announce the version. 409 nothing_to_publish when
         no version is approved.
       security:
@@ -2516,6 +2527,95 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ZoneVersionPage"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  # WP-6: the CISP client (spec 02 F1, F3). The publication outbox and
+  # the subscriber's cache for the console, and the change-notification
+  # receiver every CIS subscriber implements (M1).
+  /v1/publications:
+    get:
+      operationId: listPublications
+      tags: [cisp]
+      summary: The publication outbox and the CIS subscriber's state
+      description: |
+        The F1 outbox rows, newest first, without payloads: each with its
+        state (pending, sent, acknowledged, failed, conflict,
+        superseded), attempts, the last answer of the CISP, the CISP's
+        version once acknowledged (or the one a 412 showed), and, while
+        pending or sent, `age_s`: how long the publication has not been
+        published (spec 02 F1 failure rule). Beside them the
+        subscriber's cache per dataset (`cis_version`, `cis_age_s`,
+        `stale` beyond the policy's `cis_stale_bound_s`, a version held
+        because its publisher's signature did not verify, a refused
+        publication, the last pull error), the publisher heartbeat's
+        last answer and the subscription. Nothing here is hidden when
+        the CISP is unreachable: the ages grow.
+      security:
+        - sessionCookie: []
+      x-roles: [admin, inspector, viewer]
+      x-audit: none
+      parameters:
+        - {name: dataset, in: query, schema: {type: string, enum: [zones, uspace_airspace, ussp_list]}}
+        - {name: state, in: query, schema: {type: string, enum: [pending, sent, acknowledged, failed, conflict, superseded]}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 500, default: 100}}
+      responses:
+        "200":
+          description: The outbox and the subscriber's state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicationStatus"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/cis/notifications:
+    post:
+      operationId: receiveCISNotification
+      tags: [cisp]
+      summary: A CIS change notification (compact JWS from the CISP or the ANSP)
+      description: |
+        The receiver path every CIS subscriber implements (M1). The body
+        is a compact JWS (`application/jose`, at most 256 KiB) whose
+        payload is `{iss, aud, sub, iat, jti, body}` with `body` a
+        `cis/change/v1` record. There is no bearer token: the JWS is the
+        credential. It is verified by uspace-core's CompactVerifier
+        against an allow-list of two issuers, the CISP and the ANSP
+        (`AUTHORITY_CIS_NOTIFY_ISSUERS`, M5), with `aud` one of this
+        system's hosts (`AUTHORITY_AUDIENCES`, M19) and `iat` at most
+        five minutes old; the `jti` is single-use and remembered in the
+        database (a repeated delivery is acknowledged 204 and not acted
+        on). The notification is a hint, never content: reasons
+        `publication` and `restriction_*` start a pull of the dataset
+        from the configured CISP over https (`pull_url` is followed only
+        when it is https on the CISP's configured host and port; any
+        other is counted and the configured CISP is read instead);
+        `subscription_test`, `republished` and any reason this receiver
+        does not know are acknowledged 204 without a pull (M16). Served
+        outside the generated server (`x-cis-delivery`), because the
+        JWS is read from the raw body.
+      security: []
+      x-cis-delivery: true
+      x-audit: none
+      requestBody:
+        required: true
+        content:
+          application/jose:
+            schema:
+              type: string
+              maxLength: 262144
+      responses:
+        "204":
+          description: Accepted (a pull may have been started), or acknowledged without action.
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "413":
+          $ref: "#/components/responses/Problem"
+        "415":
+          $ref: "#/components/responses/Problem"
+        "503":
+          $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
 
@@ -3882,8 +3982,10 @@ components:
     PublicationRow:
       type: object
       description: |
-        The F1 outbox row (dataset, version, payload hash). `signature` is
-        null and `state` pending until WP-6 signs and sends it.
+        The F1 outbox row (dataset, version, payload hash), written
+        `pending` with the detached JWS of the payload (WP-6); the
+        sender re-signs it at every attempt. GET /v1/publications shows
+        its later states.
       required: [id, dataset, version, payload_hash, feature_count, signature, state, created_at]
       properties:
         id: {type: integer, format: int64}
@@ -3913,3 +4015,84 @@ components:
         at: {type: string, format: date-time}
         applicability: {type: string, enum: [applies, not_applicable, unknown]}
         reason: {type: string}
+    # WP-6: the CISP client.
+    PublicationStatus:
+      type: object
+      required: [cisp_configured, publications, cache, heartbeat, subscription]
+      properties:
+        cisp_configured:
+          type: boolean
+          description: false when CISP_BASE_URL is unset; nothing is sent or pulled and the ages grow.
+        publications:
+          type: array
+          items: {$ref: "#/components/schemas/PublicationOutboxRow"}
+        cache:
+          type: array
+          items: {$ref: "#/components/schemas/CISCacheState"}
+        heartbeat: {$ref: "#/components/schemas/PublisherHeartbeatState"}
+        subscription: {$ref: "#/components/schemas/CISSubscriptionState"}
+    PublicationOutboxRow:
+      type: object
+      required: [id, dataset, version, payload_hash, feature_count, content_type, state, attempts, created_at, created_by, state_changed_at, age_s]
+      properties:
+        id: {type: integer, format: int64}
+        dataset: {type: string, enum: [zones, uspace_airspace, ussp_list]}
+        version: {type: integer, format: int64}
+        payload_hash: {type: string, description: SHA-256 of the payload bytes, lower-case hex.}
+        feature_count: {type: integer}
+        content_type: {type: string}
+        state: {type: string, enum: [pending, sent, acknowledged, failed, conflict, superseded]}
+        attempts: {type: integer}
+        signature_kid: {type: [string, "null"], description: The kid of the publication key that signed the last attempt.}
+        signed_at: {type: [string, "null"], format: date-time}
+        next_retry_at: {type: [string, "null"], format: date-time}
+        cisp_version: {type: [integer, "null"], format: int64, description: The CISP's version once acknowledged.}
+        conflict_version: {type: [integer, "null"], format: int64, description: The CISP's current version a 412 showed.}
+        last_attempt_at: {type: [string, "null"], format: date-time}
+        last_status: {type: [integer, "null"], description: The CISP's last HTTP status; null for a network error.}
+        last_error: {type: [string, "null"]}
+        acknowledged_at: {type: [string, "null"], format: date-time}
+        created_at: {type: string, format: date-time}
+        created_by: {type: string}
+        state_changed_at: {type: string, format: date-time}
+        age_s:
+          type: [number, "null"]
+          format: double
+          description: Seconds since the row was written while it is pending or sent (not yet published); null otherwise.
+    CISCacheState:
+      type: object
+      required: [dataset, cis_version, cis_age_s, stale]
+      properties:
+        dataset: {type: string, enum: [zones, uspace_airspace, ussp_list, restrictions]}
+        cis_version: {type: [integer, "null"], format: int64, description: The version held; null when none was ever pulled.}
+        etag: {type: [string, "null"]}
+        cis_updated_at: {type: [string, "null"], format: date-time}
+        fetched_at: {type: [string, "null"], format: date-time}
+        checked_at: {type: [string, "null"], format: date-time, description: When the CISP last confirmed the version held.}
+        cis_age_s: {type: [number, "null"], format: double, description: Seconds since checked_at; null when nothing is held.}
+        stale: {type: boolean, description: "cis_age_s beyond the policy's cis_stale_bound_s, or nothing held: the console shows cis_stale."}
+        feature_count: {type: [integer, "null"]}
+        held_version: {type: [integer, "null"], format: int64, description: A newer version not used because its publisher's signature did not verify.}
+        held_reason: {type: [string, "null"]}
+        refused_version: {type: [integer, "null"], format: int64, description: A newer version refused whole by ed318.Parse or the pinned schema (T9).}
+        refused_reason: {type: [string, "null"]}
+        last_error: {type: [string, "null"], description: The last pull failure, cleared by the next success.}
+    PublisherHeartbeatState:
+      type: object
+      required: [enabled, interval_s, consecutive_failures]
+      properties:
+        enabled: {type: boolean}
+        interval_s: {type: number, format: double}
+        last_success_at: {type: [string, "null"], format: date-time}
+        last_status: {type: [integer, "null"], description: The CISP's last HTTP status; null for a network error or before the first.}
+        last_error: {type: [string, "null"]}
+        consecutive_failures: {type: integer}
+    CISSubscriptionState:
+      type: object
+      required: [enabled]
+      properties:
+        enabled: {type: boolean, description: false without CIS_CALLBACK_URL; the 60 s reconciliation alone keeps the cache.}
+        callback_url: {type: [string, "null"]}
+        subscription_id: {type: [string, "null"]}
+        status: {type: [string, "null"]}
+        last_error: {type: [string, "null"]}

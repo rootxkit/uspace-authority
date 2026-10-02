@@ -154,11 +154,12 @@ func TestUSpacePublicationRefusesAnAdjacentAirspaceNotInIt(t *testing.T) {
 	}
 }
 
-// The CISP's cis/uspace_requirements/v1, pinned in testdata/cisp with
-// its SOURCE (M7: the CISP owns the shape).
+// The CISP's cis/uspace_requirements/v1, pinned in api/clients with
+// its SOURCE (M7: the CISP owns the shape; WP-6's copy, diffed with
+// the CISP's commit in CI).
 func cispSchema(t *testing.T) map[string]any {
 	t.Helper()
-	raw, err := os.ReadFile("testdata/cisp/uspace_requirements.v1.json")
+	raw, err := os.ReadFile("../../api/clients/cisp-schemas/cis/uspace_requirements/v1.json")
 	if err != nil {
 		t.Fatal(err)
 	}
