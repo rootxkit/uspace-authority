@@ -52,11 +52,18 @@ func EnqueueTx(ctx context.Context, q *gen.Queries, w *audit.Writer, p Prepared,
 			return Row{}, nil, err
 		}
 	}
-	sig, kid, at := p.Signature, p.KID, p.SignedAt
-	r, err := q.InsertOutboxRow(ctx, gen.InsertOutboxRowParams{
+	params := gen.InsertOutboxRowParams{
 		Dataset: ds, Version: version, Payload: p.Payload, PayloadHash: p.PayloadHash, FeatureCount: int32(p.FeatureCount),
-		ContentType: p.ContentType, Signature: &sig, SignatureKid: &kid, SignedAt: &at, CreatedBy: actor.ID,
-	})
+		ContentType: p.ContentType, CreatedBy: actor.ID,
+	}
+	kid := p.KID
+	if p.Signature != "" {
+		// An unsigned row (no outbox, zonesvc's unit tests) stores NULL,
+		// never an empty signature.
+		sig, at := p.Signature, p.SignedAt
+		params.Signature, params.SignatureKid, params.SignedAt = &sig, &kid, &at
+	}
+	r, err := q.InsertOutboxRow(ctx, params)
 	if err != nil {
 		return Row{}, nil, err
 	}
