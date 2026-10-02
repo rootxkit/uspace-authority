@@ -57,8 +57,9 @@
 //     (SC-17 steps 4 and 5). A row the registry does not hold is kept
 //     and marked: aircraft in_registry = false, operators 'unregistered'
 //     (which identify never reads as in good standing); nothing is
-//     deleted. An expired registration is projected as 'expired', which
-//     identify also fails safe on (unknown_operator).
+//     deleted. An expired registration is projected as revoked
+//     (ProjectedStatus), the answer F8 gives it: identify judges it
+//     suspended (operator_revoked or uas_revoked), never registered.
 //   - ProjectionReader (for the hot-path processes): loads the tables in
 //     one read-only transaction into exactly what identify.NewSnapshot
 //     takes, refreshes every DefaultRefresh (5 s) and on Notify, keeps

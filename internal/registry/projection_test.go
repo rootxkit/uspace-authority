@@ -72,10 +72,11 @@ func TestAChangeIsProjectedWithIt(t *testing.T) {
 	}
 }
 
-// An expired registration is projected as expired, which identification
-// does not recognise as in good standing: the aircraft of an expired
-// operator is never registered (fail safe, G-03).
-func TestAnExpiredOwnerIsNeverRegistered(t *testing.T) {
+// An expired registration is projected as revoked (the F8 answer), so
+// the aircraft of an expired operator resolves as suspended /
+// operator_revoked, never registered; its active twin is projected as
+// active and registered.
+func TestAnExpiredOwnerIsProjectedAsRevoked(t *testing.T) {
 	f := newFixture(t)
 	ctx := context.Background()
 	op := f.operator(t, naturalOperator(numberA))
@@ -86,8 +87,15 @@ func TestAnExpiredOwnerIsNeverRegistered(t *testing.T) {
 	}
 	r := newReader(f)
 	_ = r.Refresh(ctx)
-	if id := resolve(t, r, serialC1, numberA); id.Status == core.IdentRegistered || id.Reason != core.ReasonOwnerUnknown {
+	if id := resolve(t, r, serialC1, numberA); id.Status != core.IdentSuspended || id.Reason != core.ReasonOperatorRevoked {
 		t.Fatalf("expired owner: %+v", id)
+	}
+	if f.store.operators[op.ID].Status != StatusExpired || f.proj.operators[op.ID].Status != "revoked" {
+		t.Fatalf("registry %s, projection %s", f.store.operators[op.ID].Status, f.proj.operators[op.ID].Status)
+	}
+	// The re-projection maps it the same way.
+	if _, err := f.svc.Reproject(ctx); err != nil || f.proj.operators[op.ID].Status != "revoked" {
+		t.Fatalf("re-projected %v %+v", err, f.proj.operators[op.ID])
 	}
 }
 
@@ -414,5 +422,23 @@ func waitFor(t *testing.T, ok func() bool) {
 			t.Fatal("condition not reached in 5 s")
 		}
 		time.Sleep(5 * time.Millisecond)
+	}
+}
+
+// The projected status: expired projects as revoked; active projects as
+// active (and suspended and revoked as themselves).
+func TestProjectedStatus(t *testing.T) {
+	for st, want := range map[Status]string{
+		StatusExpired: "revoked", StatusActive: "active", StatusSuspended: "suspended", StatusRevoked: "revoked",
+	} {
+		if got := ProjectedStatus(st); got != want {
+			t.Errorf("%s projects as %q, want %q", st, got, want)
+		}
+	}
+	f := newFixture(t)
+	op := f.operator(t, naturalOperator(numberA))
+	u := f.uas(t, op.ID, serialC1, "C1")
+	if f.proj.operators[op.ID].Status != "active" || f.proj.uas[u.ID].Status != "active" {
+		t.Fatalf("active projected as %q, %q", f.proj.operators[op.ID].Status, f.proj.uas[u.ID].Status)
 	}
 }

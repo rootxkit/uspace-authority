@@ -343,7 +343,7 @@ func TestExpiryMarksOnlyWhatIsDue(t *testing.T) {
 	if ev.Actor.Type != audit.ActorSystem || ev.EventType != audit.EventRegistryStatusChanged {
 		t.Fatalf("expiry event %+v", ev)
 	}
-	if f.proj.operators[due.ID].Status != string(StatusExpired) {
+	if f.proj.operators[due.ID].Status != string(StatusRevoked) {
 		t.Fatalf("projection %+v", f.proj.operators[due.ID])
 	}
 	if f.svc.Counters.Get(CounterExpired) != 1 {

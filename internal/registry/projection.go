@@ -111,9 +111,21 @@ func (t tsProjectionTx) Commit(ctx context.Context) error { return t.tx.Commit(c
 // Rollback implements ProjectionTx.
 func (t tsProjectionTx) Rollback(ctx context.Context) { t.tx.Rollback(ctx) }
 
+// ProjectedStatus is the status a registry status is projected as.
+// identify knows active, suspended and revoked; an expired registration
+// is projected as revoked, the same answer F8 gives it, so every
+// consumer judges an expired registration one way (docs/PLAN.md §4.2).
+// Every other status is projected as it is.
+func ProjectedStatus(st Status) string {
+	if st == StatusExpired {
+		return string(StatusRevoked)
+	}
+	return string(st)
+}
+
 // projectOperator is the projection row of an operator.
 func projectOperator(o *Operator) ProjectedOperator {
-	return ProjectedOperator{OperatorID: o.ID, RegistrationNumber: o.RegistrationNumber, Status: string(o.Status), Version: o.RegistryVersion}
+	return ProjectedOperator{OperatorID: o.ID, RegistrationNumber: o.RegistrationNumber, Status: ProjectedStatus(o.Status), Version: o.RegistryVersion}
 }
 
 // projectUAS is the projection row of an aircraft. The label is the
@@ -124,7 +136,7 @@ func projectUAS(u *UAS) ProjectedUAS {
 		label = u.Model
 	}
 	return ProjectedUAS{
-		UASID: u.ID, Label: label, Serial: u.Serial, SerialFold: u.SerialFold, Status: string(u.Status),
+		UASID: u.ID, Label: label, Serial: u.Serial, SerialFold: u.SerialFold, Status: ProjectedStatus(u.Status),
 		OperatorID: u.OperatorID, Version: u.RegistryVersion,
 	}
 }

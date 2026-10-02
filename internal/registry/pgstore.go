@@ -477,11 +477,11 @@ func (t pgTx) Facts(ctx context.Context) (Facts, error) {
 	}
 	f := Facts{Operators: make([]ProjectedOperator, 0, len(ops)), UAS: make([]ProjectedUAS, 0, len(uas))}
 	for _, o := range ops {
-		f.Operators = append(f.Operators, ProjectedOperator{OperatorID: o.ID, RegistrationNumber: o.RegistrationNumberPublic, Status: o.Status, Version: o.RegistryVersion})
+		f.Operators = append(f.Operators, ProjectedOperator{OperatorID: o.ID, RegistrationNumber: o.RegistrationNumberPublic, Status: ProjectedStatus(Status(o.Status)), Version: o.RegistryVersion})
 	}
 	for _, u := range uas {
 		f.UAS = append(f.UAS, ProjectedUAS{
-			UASID: u.ID, Label: u.Label, Serial: u.Serial, SerialFold: u.SerialFold, Status: u.Status,
+			UASID: u.ID, Label: u.Label, Serial: u.Serial, SerialFold: u.SerialFold, Status: ProjectedStatus(Status(u.Status)),
 			OperatorID: u.OperatorID, Version: u.RegistryVersion,
 		})
 	}
