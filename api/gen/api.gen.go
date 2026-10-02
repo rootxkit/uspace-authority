@@ -288,6 +288,99 @@ func (e RIDCapability) Valid() bool {
 	}
 }
 
+// Defines values for RIDReceiverConfigViewSignatureHeader.
+const (
+	RIDReceiverConfigViewSignatureHeaderXReportSignature RIDReceiverConfigViewSignatureHeader = "X-Report-Signature"
+)
+
+// Valid indicates whether the value is a known member of the RIDReceiverConfigViewSignatureHeader enum.
+func (e RIDReceiverConfigViewSignatureHeader) Valid() bool {
+	switch e {
+	case RIDReceiverConfigViewSignatureHeaderXReportSignature:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RIDReceiverCredentialsSignatureHeader.
+const (
+	RIDReceiverCredentialsSignatureHeaderXReportSignature RIDReceiverCredentialsSignatureHeader = "X-Report-Signature"
+)
+
+// Valid indicates whether the value is a known member of the RIDReceiverCredentialsSignatureHeader enum.
+func (e RIDReceiverCredentialsSignatureHeader) Valid() bool {
+	switch e {
+	case RIDReceiverCredentialsSignatureHeaderXReportSignature:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RIDReceiverOwner.
+const (
+	RIDReceiverOwnerAuthority  RIDReceiverOwner = "authority"
+	RIDReceiverOwnerThirdParty RIDReceiverOwner = "third_party"
+)
+
+// Valid indicates whether the value is a known member of the RIDReceiverOwner enum.
+func (e RIDReceiverOwner) Valid() bool {
+	switch e {
+	case RIDReceiverOwnerAuthority:
+		return true
+	case RIDReceiverOwnerThirdParty:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RIDReceiverStatus.
+const (
+	RIDReceiverStatusDisabled RIDReceiverStatus = "disabled"
+	RIDReceiverStatusEnabled  RIDReceiverStatus = "enabled"
+)
+
+// Valid indicates whether the value is a known member of the RIDReceiverStatus enum.
+func (e RIDReceiverStatus) Valid() bool {
+	switch e {
+	case RIDReceiverStatusDisabled:
+		return true
+	case RIDReceiverStatusEnabled:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RIDReportingField.
+const (
+	RIDReportingFieldPayloadHex       RIDReportingField = "payload_hex"
+	RIDReportingFieldReceiverPosition RIDReportingField = "receiver_position"
+	RIDReportingFieldRssiDbm          RIDReportingField = "rssi_dbm"
+	RIDReportingFieldRxTs             RIDReportingField = "rx_ts"
+	RIDReportingFieldTransmitter      RIDReportingField = "transmitter"
+)
+
+// Valid indicates whether the value is a known member of the RIDReportingField enum.
+func (e RIDReportingField) Valid() bool {
+	switch e {
+	case RIDReportingFieldPayloadHex:
+		return true
+	case RIDReportingFieldReceiverPosition:
+		return true
+	case RIDReportingFieldRssiDbm:
+		return true
+	case RIDReportingFieldRxTs:
+		return true
+	case RIDReportingFieldTransmitter:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ReadinessStatus.
 const (
 	ReadinessStatusNotReady ReadinessStatus = "not_ready"
@@ -995,6 +1088,248 @@ type Problem struct {
 // RIDCapability defines model for RIDCapability.
 type RIDCapability string
 
+// RIDHeartbeat defines model for RIDHeartbeat.
+type RIDHeartbeat struct {
+	Firmware *string      `json:"firmware,omitempty"`
+	Nonce    string       `json:"nonce"`
+	Position *RIDPosition `json:"position,omitempty"`
+
+	// QueueDepth Observations the receiver holds unsent.
+	QueueDepth *int   `json:"queue_depth,omitempty"`
+	ReceiverId string `json:"receiver_id"`
+
+	// SentAtMs Epoch milliseconds on the receiver's clock.
+	SentAtMs int64 `json:"sent_at_ms"`
+}
+
+// RIDHeartbeatAck defines model for RIDHeartbeatAck.
+type RIDHeartbeatAck struct {
+	LastSeenAt         time.Time         `json:"last_seen_at"`
+	PositionDeviationM *float64          `json:"position_deviation_m,omitempty"`
+	PositionToleranceM *float64          `json:"position_tolerance_m,omitempty"`
+	ReceiverId         string            `json:"receiver_id"`
+	ServerTimeMs       int64             `json:"server_time_ms"`
+	Status             RIDReceiverStatus `json:"status"`
+}
+
+// RIDIngestLimits defines model for RIDIngestLimits.
+type RIDIngestLimits struct {
+	MaxBatchBytes   int `json:"max_batch_bytes"`
+	MaxObservations int `json:"max_observations"`
+	MaxPayloadBytes int `json:"max_payload_bytes"`
+	MaxSkewS        int `json:"max_skew_s"`
+
+	// NonceWindowS A nonce is refused if seen again from this receiver within this window (twice max_skew_s).
+	NonceWindowS int `json:"nonce_window_s"`
+}
+
+// RIDKeyRotationInput defines model for RIDKeyRotationInput.
+type RIDKeyRotationInput struct {
+	// GraceS How long the previous keys keep working; default RID_KEY_ROTATION_GRACE_S.
+	GraceS *int `json:"grace_s,omitempty"`
+}
+
+// RIDObservation One frame as the receiver heard it (schemas/rid/observation/v1.json).
+type RIDObservation struct {
+	// PayloadHex The ODID message or message pack
+	PayloadHex       string       `json:"payload_hex"`
+	ReceiverPosition *RIDPosition `json:"receiver_position,omitempty"`
+	RssiDbm          *float64     `json:"rssi_dbm,omitempty"`
+
+	// RxTs Reception time on the receiver's clock, RFC 3339 UTC; null when unknown (placed at arrival, T-12).
+	RxTs *time.Time `json:"rx_ts,omitempty"`
+
+	// Transmitter The BT or Wi-Fi MAC address the frame came from.
+	Transmitter string `json:"transmitter"`
+}
+
+// RIDObservationAck defines model for RIDObservationAck.
+type RIDObservationAck struct {
+	// Accepted Observations written to the work queue.
+	Accepted int `json:"accepted"`
+
+	// BatchId <receiver_id>:<nonce>
+	BatchId string `json:"batch_id"`
+
+	// Duplicates Observations already accepted within the dedupe window
+	Duplicates int `json:"duplicates"`
+}
+
+// RIDObservationBatch rid/observation/v1, the exact bytes signed.
+type RIDObservationBatch struct {
+	// Backlog True when the batch replays observations buffered while the ingest was unreachable (T-04).
+	Backlog      *bool            `json:"backlog,omitempty"`
+	Nonce        string           `json:"nonce"`
+	Observations []RIDObservation `json:"observations"`
+	ReceiverId   string           `json:"receiver_id"`
+	SentAtMs     int64            `json:"sent_at_ms"`
+}
+
+// RIDPosition defines model for RIDPosition.
+type RIDPosition struct {
+	// AltHaeM Height above the WGS-84 ellipsoid
+	AltHaeM *float64 `json:"alt_hae_m,omitempty"`
+	LatDeg  float64  `json:"lat_deg"`
+	LonDeg  float64  `json:"lon_deg"`
+}
+
+// RIDReceiver defines model for RIDReceiver.
+type RIDReceiver struct {
+	// Config What the receiver is told to do (GET .../config). Absent members
+	// take the defaults of the ingest's configuration
+	// (RID_DEFAULT_* variables), so a default is never a literal
+	// here (INV-03).
+	Config     RIDReceiverConfig `json:"config"`
+	CreatedAt  time.Time         `json:"created_at"`
+	CreatedBy  string            `json:"created_by"`
+	DisabledAt *time.Time        `json:"disabled_at,omitempty"`
+
+	// DisabledBy Who disabled it
+	DisabledBy     *string      `json:"disabled_by,omitempty"`
+	DisabledReason *string      `json:"disabled_reason,omitempty"`
+	Firmware       *string      `json:"firmware,omitempty"`
+	Id             string       `json:"id"`
+	KeyGeneration  int          `json:"key_generation"`
+	Label          string       `json:"label"`
+	LastPosition   *RIDPosition `json:"last_position,omitempty"`
+
+	// LastSeenAt The last heartbeat
+	LastSeenAt *time.Time       `json:"last_seen_at,omitempty"`
+	LatDeg     float64          `json:"lat_deg"`
+	LonDeg     float64          `json:"lon_deg"`
+	Owner      RIDReceiverOwner `json:"owner"`
+	OwnerName  *string          `json:"owner_name,omitempty"`
+
+	// PositionDeviationM Distance of the last reported position from the pinned one.
+	PositionDeviationM *float64 `json:"position_deviation_m,omitempty"`
+
+	// PositionDeviations Heartbeats whose position was beyond the tolerance.
+	PositionDeviations int64 `json:"position_deviations"`
+
+	// PreviousKeyValidUntil The previous generation's keys are accepted until then.
+	PreviousKeyValidUntil *time.Time        `json:"previous_key_valid_until,omitempty"`
+	Status                RIDReceiverStatus `json:"status"`
+	UpdatedAt             time.Time         `json:"updated_at"`
+	UpdatedBy             string            `json:"updated_by"`
+	Version               int64             `json:"version"`
+}
+
+// RIDReceiverConfig What the receiver is told to do (GET .../config). Absent members
+// take the defaults of the ingest's configuration
+// (RID_DEFAULT_* variables), so a default is never a literal
+// here (INV-03).
+type RIDReceiverConfig struct {
+	// BacklogCap Observations the receiver buffers while the ingest is unreachable
+	BacklogCap *int `json:"backlog_cap,omitempty"`
+
+	// BatchIntervalMs How often the receiver posts a batch; at most one second of reception per batch.
+	BatchIntervalMs    *int `json:"batch_interval_ms,omitempty"`
+	HeartbeatIntervalS *int `json:"heartbeat_interval_s,omitempty"`
+
+	// PositionToleranceM Distance from the pinned position beyond which a heartbeat's reported position is counted as a deviation (T2).
+	PositionToleranceM *float64             `json:"position_tolerance_m,omitempty"`
+	ReportingFields    *[]RIDReportingField `json:"reporting_fields,omitempty"`
+}
+
+// RIDReceiverConfigView defines model for RIDReceiverConfigView.
+type RIDReceiverConfigView struct {
+	// Config What the receiver is told to do (GET .../config). Absent members
+	// take the defaults of the ingest's configuration
+	// (RID_DEFAULT_* variables), so a default is never a literal
+	// here (INV-03).
+	Config     RIDReceiverConfig `json:"config"`
+	Limits     RIDIngestLimits   `json:"limits"`
+	ReceiverId string            `json:"receiver_id"`
+
+	// ServerTimeMs The authority's clock
+	ServerTimeMs    int64                                `json:"server_time_ms"`
+	SignatureHeader RIDReceiverConfigViewSignatureHeader `json:"signature_header"`
+	Status          RIDReceiverStatus                    `json:"status"`
+}
+
+// RIDReceiverConfigViewSignatureHeader defines model for RIDReceiverConfigView.SignatureHeader.
+type RIDReceiverConfigViewSignatureHeader string
+
+// RIDReceiverCreated defines model for RIDReceiverCreated.
+type RIDReceiverCreated struct {
+	// Credentials Shown once. Neither value can be read back; a lost key is replaced by a rotation.
+	Credentials RIDReceiverCredentials `json:"credentials"`
+	Receiver    RIDReceiver            `json:"receiver"`
+}
+
+// RIDReceiverCredentials Shown once. Neither value can be read back; a lost key is replaced by a rotation.
+type RIDReceiverCredentials struct {
+	// BearerKey Authorization: Bearer <bearer_key> on every receiver request.
+	BearerKey  string `json:"bearer_key"`
+	Generation int    `json:"generation"`
+
+	// HmacSecretHex The 32-byte HMAC-SHA256 secret
+	HmacSecretHex   string                                `json:"hmac_secret_hex"`
+	SignatureHeader RIDReceiverCredentialsSignatureHeader `json:"signature_header"`
+}
+
+// RIDReceiverCredentialsSignatureHeader defines model for RIDReceiverCredentials.SignatureHeader.
+type RIDReceiverCredentialsSignatureHeader string
+
+// RIDReceiverInput defines model for RIDReceiverInput.
+type RIDReceiverInput struct {
+	// Config What the receiver is told to do (GET .../config). Absent members
+	// take the defaults of the ingest's configuration
+	// (RID_DEFAULT_* variables), so a default is never a literal
+	// here (INV-03).
+	Config *RIDReceiverConfig `json:"config,omitempty"`
+
+	// Id Slug; the receiver id of every batch and status.
+	Id string `json:"id"`
+
+	// Label The receiver's display label (rid_receivers.name).
+	Label string `json:"label"`
+
+	// LatDeg Pinned position.
+	LatDeg    float64          `json:"lat_deg"`
+	LonDeg    float64          `json:"lon_deg"`
+	Owner     RIDReceiverOwner `json:"owner"`
+	OwnerName *string          `json:"owner_name,omitempty"`
+}
+
+// RIDReceiverList defines model for RIDReceiverList.
+type RIDReceiverList struct {
+	// NextAfter Pass as after for the next page; absent on the last page.
+	NextAfter *string       `json:"next_after,omitempty"`
+	Receivers []RIDReceiver `json:"receivers"`
+}
+
+// RIDReceiverOwner defines model for RIDReceiverOwner.
+type RIDReceiverOwner string
+
+// RIDReceiverPatch Members present are changed; lat_deg and lon_deg come together.
+type RIDReceiverPatch struct {
+	// Config What the receiver is told to do (GET .../config). Absent members
+	// take the defaults of the ingest's configuration
+	// (RID_DEFAULT_* variables), so a default is never a literal
+	// here (INV-03).
+	Config *RIDReceiverConfig `json:"config,omitempty"`
+
+	// Label The receiver's display label (rid_receivers.name).
+	Label     *string           `json:"label,omitempty"`
+	LatDeg    *float64          `json:"lat_deg,omitempty"`
+	LonDeg    *float64          `json:"lon_deg,omitempty"`
+	Owner     *RIDReceiverOwner `json:"owner,omitempty"`
+	OwnerName *string           `json:"owner_name,omitempty"`
+}
+
+// RIDReceiverStatus defines model for RIDReceiverStatus.
+type RIDReceiverStatus string
+
+// RIDReceiverStatusInput defines model for RIDReceiverStatusInput.
+type RIDReceiverStatusInput struct {
+	Reason string            `json:"reason"`
+	Status RIDReceiverStatus `json:"status"`
+}
+
+// RIDReportingField defines model for RIDReportingField.
+type RIDReportingField string
+
 // Readiness defines model for Readiness.
 type Readiness struct {
 	// Checks Check name to its state; an error names the cause.
@@ -1520,6 +1855,18 @@ type ValidateRegistryBatchParams struct {
 	Purpose RegistryPurpose `form:"purpose" json:"purpose"`
 }
 
+// ListRIDReceiversParams defines parameters for ListRIDReceivers.
+type ListRIDReceiversParams struct {
+	// After The next_after of the previous page.
+	After *string `form:"after,omitempty" json:"after,omitempty"`
+	Limit *int    `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// DeleteRIDReceiverParams defines parameters for DeleteRIDReceiver.
+type DeleteRIDReceiverParams struct {
+	Reason string `form:"reason" json:"reason"`
+}
+
 // RequestTokenFormdataRequestBody defines body for RequestToken for application/x-www-form-urlencoded ContentType.
 type RequestTokenFormdataRequestBody = TokenRequest
 
@@ -1573,6 +1920,18 @@ type SetRegistryUASStatusJSONRequestBody = RegistryStatusInput
 
 // ValidateRegistryBatchJSONRequestBody defines body for ValidateRegistryBatch for application/json ContentType.
 type ValidateRegistryBatchJSONRequestBody = RegistryValidateBatch
+
+// CreateRIDReceiverJSONRequestBody defines body for CreateRIDReceiver for application/json ContentType.
+type CreateRIDReceiverJSONRequestBody = RIDReceiverInput
+
+// UpdateRIDReceiverJSONRequestBody defines body for UpdateRIDReceiver for application/json ContentType.
+type UpdateRIDReceiverJSONRequestBody = RIDReceiverPatch
+
+// RotateRIDReceiverKeysJSONRequestBody defines body for RotateRIDReceiverKeys for application/json ContentType.
+type RotateRIDReceiverKeysJSONRequestBody = RIDKeyRotationInput
+
+// SetRIDReceiverStatusJSONRequestBody defines body for SetRIDReceiverStatus for application/json ContentType.
+type SetRIDReceiverStatusJSONRequestBody = RIDReceiverStatusInput
 
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
 type CreateUserJSONRequestBody = UserInput
@@ -2281,6 +2640,126 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /v1/registry/validate (the `ValidateRegistryBatch` operationId).
 	ValidateRegistryBatch(ctx context.Context, params *ValidateRegistryBatchParams, body ValidateRegistryBatchJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListRIDReceivers Remote ID receivers, in id order
+	//
+	// No key material, ever; the key generation and the end of the previous key's grace only.
+	//
+	// Corresponds with GET /v1/rid/receivers (the `ListRIDReceivers` operationId).
+	ListRIDReceivers(ctx context.Context, params *ListRIDReceiversParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateRIDReceiverWithBody Register a receiver; its keys are shown once
+	//
+	// Generates the bearer key (stored as an argon2id hash only) and
+	// the 32-byte HMAC secret (stored sealed with the PII key) and
+	// returns both in this response and never again. The key set
+	// reaches rid-ingest through the KV bucket `rid_receiver_keys`,
+	// written inside the same transaction: when the bucket cannot
+	// take it the registration is refused with 503
+	// `key_store_unavailable` and nothing is recorded. 409 when the
+	// id exists.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/rid/receivers (the `CreateRIDReceiver` operationId).
+	CreateRIDReceiverWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateRIDReceiver Register a receiver; its keys are shown once
+	//
+	// Generates the bearer key (stored as an argon2id hash only) and
+	// the 32-byte HMAC secret (stored sealed with the PII key) and
+	// returns both in this response and never again. The key set
+	// reaches rid-ingest through the KV bucket `rid_receiver_keys`,
+	// written inside the same transaction: when the bucket cannot
+	// take it the registration is refused with 503
+	// `key_store_unavailable` and nothing is recorded. 409 when the
+	// id exists.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/rid/receivers (the `CreateRIDReceiver` operationId).
+	CreateRIDReceiver(ctx context.Context, body CreateRIDReceiverJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteRIDReceiver Delete a receiver and revoke its keys
+	//
+	// The row and its key-set entry go; its stored observations stay.
+	// A later request with its keys is an unknown receiver (401).
+	//
+	// Corresponds with DELETE /v1/rid/receivers/{receiver_id} (the `DeleteRIDReceiver` operationId).
+	DeleteRIDReceiver(ctx context.Context, receiverId string, params *DeleteRIDReceiverParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetRIDReceiver One receiver, with its last heartbeat and position deviation
+	//
+	// Corresponds with GET /v1/rid/receivers/{receiver_id} (the `GetRIDReceiver` operationId).
+	GetRIDReceiver(ctx context.Context, receiverId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateRIDReceiverWithBody Change a receiver's name, pinned position, owner or configuration
+	//
+	// The id, the keys and the status are changed by their own operations.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /v1/rid/receivers/{receiver_id} (the `UpdateRIDReceiver` operationId).
+	UpdateRIDReceiverWithBody(ctx context.Context, receiverId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateRIDReceiver Change a receiver's name, pinned position, owner or configuration
+	//
+	// The id, the keys and the status are changed by their own operations.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /v1/rid/receivers/{receiver_id} (the `UpdateRIDReceiver` operationId).
+	UpdateRIDReceiver(ctx context.Context, receiverId string, body UpdateRIDReceiverJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RotateRIDReceiverKeysWithBody Issue a new bearer key and HMAC secret; shown once
+	//
+	// The previous generation keeps working until `grace_s` has
+	// passed (default RID_KEY_ROTATION_GRACE_S), so a receiver can be
+	// re-flashed without a gap; a generation older than that is
+	// revoked at once. `grace_s: 0` revokes the previous keys now (a
+	// captured receiver).
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/rid/receivers/{receiver_id}/keys/rotate (the `RotateRIDReceiverKeys` operationId).
+	RotateRIDReceiverKeysWithBody(ctx context.Context, receiverId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RotateRIDReceiverKeys Issue a new bearer key and HMAC secret; shown once
+	//
+	// The previous generation keeps working until `grace_s` has
+	// passed (default RID_KEY_ROTATION_GRACE_S), so a receiver can be
+	// re-flashed without a gap; a generation older than that is
+	// revoked at once. `grace_s: 0` revokes the previous keys now (a
+	// captured receiver).
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/rid/receivers/{receiver_id}/keys/rotate (the `RotateRIDReceiverKeys` operationId).
+	RotateRIDReceiverKeys(ctx context.Context, receiverId string, body RotateRIDReceiverKeysJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetRIDReceiverStatusWithBody Disable or enable a receiver
+	//
+	// A disabled receiver's observations are refused with 503 and
+	// Retry-After and counted (B-10); its status says who disabled it
+	// and why (B-11). A reason is required either way. rid-ingest
+	// follows the change within a second (KV watch).
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/rid/receivers/{receiver_id}/status (the `SetRIDReceiverStatus` operationId).
+	SetRIDReceiverStatusWithBody(ctx context.Context, receiverId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetRIDReceiverStatus Disable or enable a receiver
+	//
+	// A disabled receiver's observations are refused with 503 and
+	// Retry-After and counted (B-10); its status says who disabled it
+	// and why (B-11). A reason is required either way. rid-ingest
+	// follows the change within a second (KV watch).
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/rid/receivers/{receiver_id}/status (the `SetRIDReceiverStatus` operationId).
+	SetRIDReceiverStatus(ctx context.Context, receiverId string, body SetRIDReceiverStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListUsers Console accounts
 	//
@@ -3575,6 +4054,236 @@ func (c *Client) ValidateRegistryBatchWithBody(ctx context.Context, params *Vali
 // Corresponds with POST /v1/registry/validate (the `ValidateRegistryBatch` operationId).
 func (c *Client) ValidateRegistryBatch(ctx context.Context, params *ValidateRegistryBatchParams, body ValidateRegistryBatchJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewValidateRegistryBatchRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListRIDReceivers Remote ID receivers, in id order
+//
+// No key material, ever; the key generation and the end of the previous key's grace only.
+//
+// Corresponds with GET /v1/rid/receivers (the `ListRIDReceivers` operationId).
+func (c *Client) ListRIDReceivers(ctx context.Context, params *ListRIDReceiversParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRIDReceiversRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateRIDReceiverWithBody Register a receiver; its keys are shown once
+//
+// Generates the bearer key (stored as an argon2id hash only) and
+// the 32-byte HMAC secret (stored sealed with the PII key) and
+// returns both in this response and never again. The key set
+// reaches rid-ingest through the KV bucket `rid_receiver_keys`,
+// written inside the same transaction: when the bucket cannot
+// take it the registration is refused with 503
+// `key_store_unavailable` and nothing is recorded. 409 when the
+// id exists.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/rid/receivers (the `CreateRIDReceiver` operationId).
+func (c *Client) CreateRIDReceiverWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateRIDReceiverRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateRIDReceiver Register a receiver; its keys are shown once
+//
+// Generates the bearer key (stored as an argon2id hash only) and
+// the 32-byte HMAC secret (stored sealed with the PII key) and
+// returns both in this response and never again. The key set
+// reaches rid-ingest through the KV bucket `rid_receiver_keys`,
+// written inside the same transaction: when the bucket cannot
+// take it the registration is refused with 503
+// `key_store_unavailable` and nothing is recorded. 409 when the
+// id exists.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/rid/receivers (the `CreateRIDReceiver` operationId).
+func (c *Client) CreateRIDReceiver(ctx context.Context, body CreateRIDReceiverJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateRIDReceiverRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DeleteRIDReceiver Delete a receiver and revoke its keys
+//
+// The row and its key-set entry go; its stored observations stay.
+// A later request with its keys is an unknown receiver (401).
+//
+// Corresponds with DELETE /v1/rid/receivers/{receiver_id} (the `DeleteRIDReceiver` operationId).
+func (c *Client) DeleteRIDReceiver(ctx context.Context, receiverId string, params *DeleteRIDReceiverParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteRIDReceiverRequest(c.Server, receiverId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetRIDReceiver One receiver, with its last heartbeat and position deviation
+//
+// Corresponds with GET /v1/rid/receivers/{receiver_id} (the `GetRIDReceiver` operationId).
+func (c *Client) GetRIDReceiver(ctx context.Context, receiverId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetRIDReceiverRequest(c.Server, receiverId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateRIDReceiverWithBody Change a receiver's name, pinned position, owner or configuration
+//
+// The id, the keys and the status are changed by their own operations.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /v1/rid/receivers/{receiver_id} (the `UpdateRIDReceiver` operationId).
+func (c *Client) UpdateRIDReceiverWithBody(ctx context.Context, receiverId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateRIDReceiverRequestWithBody(c.Server, receiverId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateRIDReceiver Change a receiver's name, pinned position, owner or configuration
+//
+// The id, the keys and the status are changed by their own operations.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /v1/rid/receivers/{receiver_id} (the `UpdateRIDReceiver` operationId).
+func (c *Client) UpdateRIDReceiver(ctx context.Context, receiverId string, body UpdateRIDReceiverJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateRIDReceiverRequest(c.Server, receiverId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RotateRIDReceiverKeysWithBody Issue a new bearer key and HMAC secret; shown once
+//
+// The previous generation keeps working until `grace_s` has
+// passed (default RID_KEY_ROTATION_GRACE_S), so a receiver can be
+// re-flashed without a gap; a generation older than that is
+// revoked at once. `grace_s: 0` revokes the previous keys now (a
+// captured receiver).
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/rid/receivers/{receiver_id}/keys/rotate (the `RotateRIDReceiverKeys` operationId).
+func (c *Client) RotateRIDReceiverKeysWithBody(ctx context.Context, receiverId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRotateRIDReceiverKeysRequestWithBody(c.Server, receiverId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RotateRIDReceiverKeys Issue a new bearer key and HMAC secret; shown once
+//
+// The previous generation keeps working until `grace_s` has
+// passed (default RID_KEY_ROTATION_GRACE_S), so a receiver can be
+// re-flashed without a gap; a generation older than that is
+// revoked at once. `grace_s: 0` revokes the previous keys now (a
+// captured receiver).
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/rid/receivers/{receiver_id}/keys/rotate (the `RotateRIDReceiverKeys` operationId).
+func (c *Client) RotateRIDReceiverKeys(ctx context.Context, receiverId string, body RotateRIDReceiverKeysJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRotateRIDReceiverKeysRequest(c.Server, receiverId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetRIDReceiverStatusWithBody Disable or enable a receiver
+//
+// A disabled receiver's observations are refused with 503 and
+// Retry-After and counted (B-10); its status says who disabled it
+// and why (B-11). A reason is required either way. rid-ingest
+// follows the change within a second (KV watch).
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/rid/receivers/{receiver_id}/status (the `SetRIDReceiverStatus` operationId).
+func (c *Client) SetRIDReceiverStatusWithBody(ctx context.Context, receiverId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetRIDReceiverStatusRequestWithBody(c.Server, receiverId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetRIDReceiverStatus Disable or enable a receiver
+//
+// A disabled receiver's observations are refused with 503 and
+// Retry-After and counted (B-10); its status says who disabled it
+// and why (B-11). A reason is required either way. rid-ingest
+// follows the change within a second (KV watch).
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/rid/receivers/{receiver_id}/status (the `SetRIDReceiverStatus` operationId).
+func (c *Client) SetRIDReceiverStatus(ctx context.Context, receiverId string, body SetRIDReceiverStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetRIDReceiverStatusRequest(c.Server, receiverId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5738,6 +6447,344 @@ func NewValidateRegistryBatchRequestWithBody(server string, params *ValidateRegi
 	return req, nil
 }
 
+// NewListRIDReceiversRequest constructs an http.Request for the ListRIDReceivers method
+func NewListRIDReceiversRequest(server string, params *ListRIDReceiversParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/rid/receivers")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.After != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "after", *params.After, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateRIDReceiverRequest calls the generic CreateRIDReceiver builder with application/json body
+func NewCreateRIDReceiverRequest(server string, body CreateRIDReceiverJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateRIDReceiverRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateRIDReceiverRequestWithBody constructs an http.Request for the CreateRIDReceiver method, with any body, and a specified content type
+func NewCreateRIDReceiverRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/rid/receivers")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteRIDReceiverRequest constructs an http.Request for the DeleteRIDReceiver method
+func NewDeleteRIDReceiverRequest(server string, receiverId string, params *DeleteRIDReceiverParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "receiver_id", receiverId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/rid/receivers/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "reason", params.Reason, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetRIDReceiverRequest constructs an http.Request for the GetRIDReceiver method
+func NewGetRIDReceiverRequest(server string, receiverId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "receiver_id", receiverId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/rid/receivers/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateRIDReceiverRequest calls the generic UpdateRIDReceiver builder with application/json body
+func NewUpdateRIDReceiverRequest(server string, receiverId string, body UpdateRIDReceiverJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateRIDReceiverRequestWithBody(server, receiverId, "application/json", bodyReader)
+}
+
+// NewUpdateRIDReceiverRequestWithBody constructs an http.Request for the UpdateRIDReceiver method, with any body, and a specified content type
+func NewUpdateRIDReceiverRequestWithBody(server string, receiverId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "receiver_id", receiverId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/rid/receivers/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRotateRIDReceiverKeysRequest calls the generic RotateRIDReceiverKeys builder with application/json body
+func NewRotateRIDReceiverKeysRequest(server string, receiverId string, body RotateRIDReceiverKeysJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRotateRIDReceiverKeysRequestWithBody(server, receiverId, "application/json", bodyReader)
+}
+
+// NewRotateRIDReceiverKeysRequestWithBody constructs an http.Request for the RotateRIDReceiverKeys method, with any body, and a specified content type
+func NewRotateRIDReceiverKeysRequestWithBody(server string, receiverId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "receiver_id", receiverId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/rid/receivers/%s/keys/rotate", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewSetRIDReceiverStatusRequest calls the generic SetRIDReceiverStatus builder with application/json body
+func NewSetRIDReceiverStatusRequest(server string, receiverId string, body SetRIDReceiverStatusJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetRIDReceiverStatusRequestWithBody(server, receiverId, "application/json", bodyReader)
+}
+
+// NewSetRIDReceiverStatusRequestWithBody constructs an http.Request for the SetRIDReceiverStatus method, with any body, and a specified content type
+func NewSetRIDReceiverStatusRequestWithBody(server string, receiverId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "receiver_id", receiverId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/rid/receivers/%s/status", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListUsersRequest constructs an http.Request for the ListUsers method
 func NewListUsersRequest(server string) (*http.Request, error) {
 	var err error
@@ -6773,6 +7820,132 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /v1/registry/validate (the `ValidateRegistryBatch` operationId).
 	ValidateRegistryBatchWithResponse(ctx context.Context, params *ValidateRegistryBatchParams, body ValidateRegistryBatchJSONRequestBody, reqEditors ...RequestEditorFn) (*ValidateRegistryBatchResponse, error)
+
+	// ListRIDReceiversWithResponse Remote ID receivers, in id order
+	//
+	// No key material, ever; the key generation and the end of the previous key's grace only.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/rid/receivers (the `ListRIDReceivers` operationId).
+	ListRIDReceiversWithResponse(ctx context.Context, params *ListRIDReceiversParams, reqEditors ...RequestEditorFn) (*ListRIDReceiversResponse, error)
+
+	// CreateRIDReceiverWithBodyWithResponse Register a receiver; its keys are shown once
+	//
+	// Generates the bearer key (stored as an argon2id hash only) and
+	// the 32-byte HMAC secret (stored sealed with the PII key) and
+	// returns both in this response and never again. The key set
+	// reaches rid-ingest through the KV bucket `rid_receiver_keys`,
+	// written inside the same transaction: when the bucket cannot
+	// take it the registration is refused with 503
+	// `key_store_unavailable` and nothing is recorded. 409 when the
+	// id exists.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/rid/receivers (the `CreateRIDReceiver` operationId).
+	CreateRIDReceiverWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRIDReceiverResponse, error)
+
+	// CreateRIDReceiverWithResponse Register a receiver; its keys are shown once
+	//
+	// Generates the bearer key (stored as an argon2id hash only) and
+	// the 32-byte HMAC secret (stored sealed with the PII key) and
+	// returns both in this response and never again. The key set
+	// reaches rid-ingest through the KV bucket `rid_receiver_keys`,
+	// written inside the same transaction: when the bucket cannot
+	// take it the registration is refused with 503
+	// `key_store_unavailable` and nothing is recorded. 409 when the
+	// id exists.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/rid/receivers (the `CreateRIDReceiver` operationId).
+	CreateRIDReceiverWithResponse(ctx context.Context, body CreateRIDReceiverJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRIDReceiverResponse, error)
+
+	// DeleteRIDReceiverWithResponse Delete a receiver and revoke its keys
+	//
+	// The row and its key-set entry go; its stored observations stay.
+	// A later request with its keys is an unknown receiver (401).
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /v1/rid/receivers/{receiver_id} (the `DeleteRIDReceiver` operationId).
+	DeleteRIDReceiverWithResponse(ctx context.Context, receiverId string, params *DeleteRIDReceiverParams, reqEditors ...RequestEditorFn) (*DeleteRIDReceiverResponse, error)
+
+	// GetRIDReceiverWithResponse One receiver, with its last heartbeat and position deviation
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/rid/receivers/{receiver_id} (the `GetRIDReceiver` operationId).
+	GetRIDReceiverWithResponse(ctx context.Context, receiverId string, reqEditors ...RequestEditorFn) (*GetRIDReceiverResponse, error)
+
+	// UpdateRIDReceiverWithBodyWithResponse Change a receiver's name, pinned position, owner or configuration
+	//
+	// The id, the keys and the status are changed by their own operations.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v1/rid/receivers/{receiver_id} (the `UpdateRIDReceiver` operationId).
+	UpdateRIDReceiverWithBodyWithResponse(ctx context.Context, receiverId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRIDReceiverResponse, error)
+
+	// UpdateRIDReceiverWithResponse Change a receiver's name, pinned position, owner or configuration
+	//
+	// The id, the keys and the status are changed by their own operations.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v1/rid/receivers/{receiver_id} (the `UpdateRIDReceiver` operationId).
+	UpdateRIDReceiverWithResponse(ctx context.Context, receiverId string, body UpdateRIDReceiverJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRIDReceiverResponse, error)
+
+	// RotateRIDReceiverKeysWithBodyWithResponse Issue a new bearer key and HMAC secret; shown once
+	//
+	// The previous generation keeps working until `grace_s` has
+	// passed (default RID_KEY_ROTATION_GRACE_S), so a receiver can be
+	// re-flashed without a gap; a generation older than that is
+	// revoked at once. `grace_s: 0` revokes the previous keys now (a
+	// captured receiver).
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/rid/receivers/{receiver_id}/keys/rotate (the `RotateRIDReceiverKeys` operationId).
+	RotateRIDReceiverKeysWithBodyWithResponse(ctx context.Context, receiverId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RotateRIDReceiverKeysResponse, error)
+
+	// RotateRIDReceiverKeysWithResponse Issue a new bearer key and HMAC secret; shown once
+	//
+	// The previous generation keeps working until `grace_s` has
+	// passed (default RID_KEY_ROTATION_GRACE_S), so a receiver can be
+	// re-flashed without a gap; a generation older than that is
+	// revoked at once. `grace_s: 0` revokes the previous keys now (a
+	// captured receiver).
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/rid/receivers/{receiver_id}/keys/rotate (the `RotateRIDReceiverKeys` operationId).
+	RotateRIDReceiverKeysWithResponse(ctx context.Context, receiverId string, body RotateRIDReceiverKeysJSONRequestBody, reqEditors ...RequestEditorFn) (*RotateRIDReceiverKeysResponse, error)
+
+	// SetRIDReceiverStatusWithBodyWithResponse Disable or enable a receiver
+	//
+	// A disabled receiver's observations are refused with 503 and
+	// Retry-After and counted (B-10); its status says who disabled it
+	// and why (B-11). A reason is required either way. rid-ingest
+	// follows the change within a second (KV watch).
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/rid/receivers/{receiver_id}/status (the `SetRIDReceiverStatus` operationId).
+	SetRIDReceiverStatusWithBodyWithResponse(ctx context.Context, receiverId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetRIDReceiverStatusResponse, error)
+
+	// SetRIDReceiverStatusWithResponse Disable or enable a receiver
+	//
+	// A disabled receiver's observations are refused with 503 and
+	// Retry-After and counted (B-10); its status says who disabled it
+	// and why (B-11). A reason is required either way. rid-ingest
+	// follows the change within a second (KV watch).
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/rid/receivers/{receiver_id}/status (the `SetRIDReceiverStatus` operationId).
+	SetRIDReceiverStatusWithResponse(ctx context.Context, receiverId string, body SetRIDReceiverStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*SetRIDReceiverStatusResponse, error)
 
 	// ListUsersWithResponse Console accounts
 	//
@@ -9003,6 +10176,384 @@ func (r ValidateRegistryBatchResponse) ContentType() string {
 	return ""
 }
 
+type ListRIDReceiversResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RIDReceiverList
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListRIDReceiversResponse) GetJSON200() *RIDReceiverList {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ListRIDReceiversResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListRIDReceiversResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListRIDReceiversResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListRIDReceiversResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListRIDReceiversResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// CreateRIDReceiverResponse201Headers the declared response headers of an HTTP 201 response for CreateRIDReceiver
+type CreateRIDReceiverResponse201Headers struct {
+	CacheControl *string
+}
+
+type CreateRIDReceiverResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *RIDReceiverCreated
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers201 the parsed response headers for an HTTP 201 response
+	Headers201 *CreateRIDReceiverResponse201Headers
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateRIDReceiverResponse) GetJSON201() *RIDReceiverCreated {
+	return r.JSON201
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r CreateRIDReceiverResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r CreateRIDReceiverResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateRIDReceiverResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateRIDReceiverResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateRIDReceiverResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateRIDReceiverResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteRIDReceiverResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r DeleteRIDReceiverResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r DeleteRIDReceiverResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteRIDReceiverResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteRIDReceiverResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteRIDReceiverResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteRIDReceiverResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetRIDReceiverResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RIDReceiver
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetRIDReceiverResponse) GetJSON200() *RIDReceiver {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetRIDReceiverResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetRIDReceiverResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetRIDReceiverResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetRIDReceiverResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetRIDReceiverResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateRIDReceiverResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RIDReceiver
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateRIDReceiverResponse) GetJSON200() *RIDReceiver {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r UpdateRIDReceiverResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r UpdateRIDReceiverResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateRIDReceiverResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateRIDReceiverResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateRIDReceiverResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateRIDReceiverResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// RotateRIDReceiverKeysResponse200Headers the declared response headers of an HTTP 200 response for RotateRIDReceiverKeys
+type RotateRIDReceiverKeysResponse200Headers struct {
+	CacheControl *string
+}
+
+type RotateRIDReceiverKeysResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RIDReceiverCreated
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *RotateRIDReceiverKeysResponse200Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r RotateRIDReceiverKeysResponse) GetJSON200() *RIDReceiverCreated {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r RotateRIDReceiverKeysResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r RotateRIDReceiverKeysResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r RotateRIDReceiverKeysResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RotateRIDReceiverKeysResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RotateRIDReceiverKeysResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RotateRIDReceiverKeysResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SetRIDReceiverStatusResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RIDReceiver
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r SetRIDReceiverStatusResponse) GetJSON200() *RIDReceiver {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r SetRIDReceiverStatusResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r SetRIDReceiverStatusResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r SetRIDReceiverStatusResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SetRIDReceiverStatusResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetRIDReceiverStatusResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetRIDReceiverStatusResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListUsersResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -10461,6 +12012,198 @@ func (c *ClientWithResponses) ValidateRegistryBatchWithResponse(ctx context.Cont
 		return nil, err
 	}
 	return ParseValidateRegistryBatchResponse(rsp)
+}
+
+// ListRIDReceiversWithResponse Remote ID receivers, in id order
+//
+// No key material, ever; the key generation and the end of the previous key's grace only.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/rid/receivers (the `ListRIDReceivers` operationId).
+func (c *ClientWithResponses) ListRIDReceiversWithResponse(ctx context.Context, params *ListRIDReceiversParams, reqEditors ...RequestEditorFn) (*ListRIDReceiversResponse, error) {
+	rsp, err := c.ListRIDReceivers(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListRIDReceiversResponse(rsp)
+}
+
+// CreateRIDReceiverWithBodyWithResponse Register a receiver; its keys are shown once
+//
+// Generates the bearer key (stored as an argon2id hash only) and
+// the 32-byte HMAC secret (stored sealed with the PII key) and
+// returns both in this response and never again. The key set
+// reaches rid-ingest through the KV bucket `rid_receiver_keys`,
+// written inside the same transaction: when the bucket cannot
+// take it the registration is refused with 503
+// `key_store_unavailable` and nothing is recorded. 409 when the
+// id exists.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/rid/receivers (the `CreateRIDReceiver` operationId).
+func (c *ClientWithResponses) CreateRIDReceiverWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRIDReceiverResponse, error) {
+	rsp, err := c.CreateRIDReceiverWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateRIDReceiverResponse(rsp)
+}
+
+// CreateRIDReceiverWithResponse Register a receiver; its keys are shown once
+//
+// Generates the bearer key (stored as an argon2id hash only) and
+// the 32-byte HMAC secret (stored sealed with the PII key) and
+// returns both in this response and never again. The key set
+// reaches rid-ingest through the KV bucket `rid_receiver_keys`,
+// written inside the same transaction: when the bucket cannot
+// take it the registration is refused with 503
+// `key_store_unavailable` and nothing is recorded. 409 when the
+// id exists.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/rid/receivers (the `CreateRIDReceiver` operationId).
+func (c *ClientWithResponses) CreateRIDReceiverWithResponse(ctx context.Context, body CreateRIDReceiverJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRIDReceiverResponse, error) {
+	rsp, err := c.CreateRIDReceiver(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateRIDReceiverResponse(rsp)
+}
+
+// DeleteRIDReceiverWithResponse Delete a receiver and revoke its keys
+//
+// The row and its key-set entry go; its stored observations stay.
+// A later request with its keys is an unknown receiver (401).
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /v1/rid/receivers/{receiver_id} (the `DeleteRIDReceiver` operationId).
+func (c *ClientWithResponses) DeleteRIDReceiverWithResponse(ctx context.Context, receiverId string, params *DeleteRIDReceiverParams, reqEditors ...RequestEditorFn) (*DeleteRIDReceiverResponse, error) {
+	rsp, err := c.DeleteRIDReceiver(ctx, receiverId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteRIDReceiverResponse(rsp)
+}
+
+// GetRIDReceiverWithResponse One receiver, with its last heartbeat and position deviation
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/rid/receivers/{receiver_id} (the `GetRIDReceiver` operationId).
+func (c *ClientWithResponses) GetRIDReceiverWithResponse(ctx context.Context, receiverId string, reqEditors ...RequestEditorFn) (*GetRIDReceiverResponse, error) {
+	rsp, err := c.GetRIDReceiver(ctx, receiverId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetRIDReceiverResponse(rsp)
+}
+
+// UpdateRIDReceiverWithBodyWithResponse Change a receiver's name, pinned position, owner or configuration
+//
+// The id, the keys and the status are changed by their own operations.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v1/rid/receivers/{receiver_id} (the `UpdateRIDReceiver` operationId).
+func (c *ClientWithResponses) UpdateRIDReceiverWithBodyWithResponse(ctx context.Context, receiverId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRIDReceiverResponse, error) {
+	rsp, err := c.UpdateRIDReceiverWithBody(ctx, receiverId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateRIDReceiverResponse(rsp)
+}
+
+// UpdateRIDReceiverWithResponse Change a receiver's name, pinned position, owner or configuration
+//
+// The id, the keys and the status are changed by their own operations.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v1/rid/receivers/{receiver_id} (the `UpdateRIDReceiver` operationId).
+func (c *ClientWithResponses) UpdateRIDReceiverWithResponse(ctx context.Context, receiverId string, body UpdateRIDReceiverJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRIDReceiverResponse, error) {
+	rsp, err := c.UpdateRIDReceiver(ctx, receiverId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateRIDReceiverResponse(rsp)
+}
+
+// RotateRIDReceiverKeysWithBodyWithResponse Issue a new bearer key and HMAC secret; shown once
+//
+// The previous generation keeps working until `grace_s` has
+// passed (default RID_KEY_ROTATION_GRACE_S), so a receiver can be
+// re-flashed without a gap; a generation older than that is
+// revoked at once. `grace_s: 0` revokes the previous keys now (a
+// captured receiver).
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/rid/receivers/{receiver_id}/keys/rotate (the `RotateRIDReceiverKeys` operationId).
+func (c *ClientWithResponses) RotateRIDReceiverKeysWithBodyWithResponse(ctx context.Context, receiverId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RotateRIDReceiverKeysResponse, error) {
+	rsp, err := c.RotateRIDReceiverKeysWithBody(ctx, receiverId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRotateRIDReceiverKeysResponse(rsp)
+}
+
+// RotateRIDReceiverKeysWithResponse Issue a new bearer key and HMAC secret; shown once
+//
+// The previous generation keeps working until `grace_s` has
+// passed (default RID_KEY_ROTATION_GRACE_S), so a receiver can be
+// re-flashed without a gap; a generation older than that is
+// revoked at once. `grace_s: 0` revokes the previous keys now (a
+// captured receiver).
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/rid/receivers/{receiver_id}/keys/rotate (the `RotateRIDReceiverKeys` operationId).
+func (c *ClientWithResponses) RotateRIDReceiverKeysWithResponse(ctx context.Context, receiverId string, body RotateRIDReceiverKeysJSONRequestBody, reqEditors ...RequestEditorFn) (*RotateRIDReceiverKeysResponse, error) {
+	rsp, err := c.RotateRIDReceiverKeys(ctx, receiverId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRotateRIDReceiverKeysResponse(rsp)
+}
+
+// SetRIDReceiverStatusWithBodyWithResponse Disable or enable a receiver
+//
+// A disabled receiver's observations are refused with 503 and
+// Retry-After and counted (B-10); its status says who disabled it
+// and why (B-11). A reason is required either way. rid-ingest
+// follows the change within a second (KV watch).
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/rid/receivers/{receiver_id}/status (the `SetRIDReceiverStatus` operationId).
+func (c *ClientWithResponses) SetRIDReceiverStatusWithBodyWithResponse(ctx context.Context, receiverId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetRIDReceiverStatusResponse, error) {
+	rsp, err := c.SetRIDReceiverStatusWithBody(ctx, receiverId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetRIDReceiverStatusResponse(rsp)
+}
+
+// SetRIDReceiverStatusWithResponse Disable or enable a receiver
+//
+// A disabled receiver's observations are refused with 503 and
+// Retry-After and counted (B-10); its status says who disabled it
+// and why (B-11). A reason is required either way. rid-ingest
+// follows the change within a second (KV watch).
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/rid/receivers/{receiver_id}/status (the `SetRIDReceiverStatus` operationId).
+func (c *ClientWithResponses) SetRIDReceiverStatusWithResponse(ctx context.Context, receiverId string, body SetRIDReceiverStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*SetRIDReceiverStatusResponse, error) {
+	rsp, err := c.SetRIDReceiverStatus(ctx, receiverId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetRIDReceiverStatusResponse(rsp)
 }
 
 // ListUsersWithResponse Console accounts
@@ -12214,6 +13957,294 @@ func ParseValidateRegistryBatchResponse(rsp *http.Response) (*ValidateRegistryBa
 	return response, nil
 }
 
+// ParseListRIDReceiversResponse parses an HTTP response from a ListRIDReceiversWithResponse call
+func ParseListRIDReceiversResponse(rsp *http.Response) (*ListRIDReceiversResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListRIDReceiversResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RIDReceiverList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateRIDReceiverResponse parses an HTTP response from a CreateRIDReceiverWithResponse call
+func ParseCreateRIDReceiverResponse(rsp *http.Response) (*CreateRIDReceiverResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateRIDReceiverResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest RIDReceiverCreated
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 201:
+		var headers CreateRIDReceiverResponse201Headers
+		if values := rsp.Header.Values("Cache-Control"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Cache-Control", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.CacheControl = &value
+		}
+		response.Headers201 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseDeleteRIDReceiverResponse parses an HTTP response from a DeleteRIDReceiverWithResponse call
+func ParseDeleteRIDReceiverResponse(rsp *http.Response) (*DeleteRIDReceiverResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteRIDReceiverResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetRIDReceiverResponse parses an HTTP response from a GetRIDReceiverWithResponse call
+func ParseGetRIDReceiverResponse(rsp *http.Response) (*GetRIDReceiverResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetRIDReceiverResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RIDReceiver
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateRIDReceiverResponse parses an HTTP response from a UpdateRIDReceiverWithResponse call
+func ParseUpdateRIDReceiverResponse(rsp *http.Response) (*UpdateRIDReceiverResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateRIDReceiverResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RIDReceiver
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRotateRIDReceiverKeysResponse parses an HTTP response from a RotateRIDReceiverKeysWithResponse call
+func ParseRotateRIDReceiverKeysResponse(rsp *http.Response) (*RotateRIDReceiverKeysResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RotateRIDReceiverKeysResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RIDReceiverCreated
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers RotateRIDReceiverKeysResponse200Headers
+		if values := rsp.Header.Values("Cache-Control"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Cache-Control", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.CacheControl = &value
+		}
+		response.Headers200 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseSetRIDReceiverStatusResponse parses an HTTP response from a SetRIDReceiverStatusWithResponse call
+func ParseSetRIDReceiverStatusResponse(rsp *http.Response) (*SetRIDReceiverStatusResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetRIDReceiverStatusResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RIDReceiver
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListUsersResponse parses an HTTP response from a ListUsersWithResponse call
 func ParseListUsersResponse(rsp *http.Response) (*ListUsersResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -12636,6 +14667,27 @@ type ServerInterface interface {
 	// ValidateRegistryBatch Validity of up to 100 entities (F8)
 	// (POST /v1/registry/validate)
 	ValidateRegistryBatch(w http.ResponseWriter, r *http.Request, params ValidateRegistryBatchParams)
+	// ListRIDReceivers Remote ID receivers, in id order
+	// (GET /v1/rid/receivers)
+	ListRIDReceivers(w http.ResponseWriter, r *http.Request, params ListRIDReceiversParams)
+	// CreateRIDReceiver Register a receiver; its keys are shown once
+	// (POST /v1/rid/receivers)
+	CreateRIDReceiver(w http.ResponseWriter, r *http.Request)
+	// DeleteRIDReceiver Delete a receiver and revoke its keys
+	// (DELETE /v1/rid/receivers/{receiver_id})
+	DeleteRIDReceiver(w http.ResponseWriter, r *http.Request, receiverId string, params DeleteRIDReceiverParams)
+	// GetRIDReceiver One receiver, with its last heartbeat and position deviation
+	// (GET /v1/rid/receivers/{receiver_id})
+	GetRIDReceiver(w http.ResponseWriter, r *http.Request, receiverId string)
+	// UpdateRIDReceiver Change a receiver's name, pinned position, owner or configuration
+	// (PATCH /v1/rid/receivers/{receiver_id})
+	UpdateRIDReceiver(w http.ResponseWriter, r *http.Request, receiverId string)
+	// RotateRIDReceiverKeys Issue a new bearer key and HMAC secret; shown once
+	// (POST /v1/rid/receivers/{receiver_id}/keys/rotate)
+	RotateRIDReceiverKeys(w http.ResponseWriter, r *http.Request, receiverId string)
+	// SetRIDReceiverStatus Disable or enable a receiver
+	// (POST /v1/rid/receivers/{receiver_id}/status)
+	SetRIDReceiverStatus(w http.ResponseWriter, r *http.Request, receiverId string)
 	// ListUsers Console accounts
 	// (GET /v1/users)
 	ListUsers(w http.ResponseWriter, r *http.Request)
@@ -13912,6 +15964,212 @@ func (siw *ServerInterfaceWrapper) ValidateRegistryBatch(w http.ResponseWriter, 
 	handler.ServeHTTP(w, r)
 }
 
+// ListRIDReceivers operation middleware
+func (siw *ServerInterfaceWrapper) ListRIDReceivers(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListRIDReceiversParams
+
+	// ------------- Optional query parameter "after" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "after", r.URL.Query(), &params.After, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "after"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "after", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRIDReceivers(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateRIDReceiver operation middleware
+func (siw *ServerInterfaceWrapper) CreateRIDReceiver(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateRIDReceiver(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteRIDReceiver operation middleware
+func (siw *ServerInterfaceWrapper) DeleteRIDReceiver(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "receiver_id" -------------
+	var receiverId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "receiver_id", r.PathValue("receiver_id"), &receiverId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "receiver_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteRIDReceiverParams
+
+	// ------------- Required query parameter "reason" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "reason", r.URL.Query(), &params.Reason, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "reason"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "reason", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteRIDReceiver(w, r, receiverId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetRIDReceiver operation middleware
+func (siw *ServerInterfaceWrapper) GetRIDReceiver(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "receiver_id" -------------
+	var receiverId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "receiver_id", r.PathValue("receiver_id"), &receiverId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "receiver_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRIDReceiver(w, r, receiverId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateRIDReceiver operation middleware
+func (siw *ServerInterfaceWrapper) UpdateRIDReceiver(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "receiver_id" -------------
+	var receiverId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "receiver_id", r.PathValue("receiver_id"), &receiverId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "receiver_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateRIDReceiver(w, r, receiverId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RotateRIDReceiverKeys operation middleware
+func (siw *ServerInterfaceWrapper) RotateRIDReceiverKeys(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "receiver_id" -------------
+	var receiverId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "receiver_id", r.PathValue("receiver_id"), &receiverId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "receiver_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RotateRIDReceiverKeys(w, r, receiverId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetRIDReceiverStatus operation middleware
+func (siw *ServerInterfaceWrapper) SetRIDReceiverStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "receiver_id" -------------
+	var receiverId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "receiver_id", r.PathValue("receiver_id"), &receiverId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "receiver_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetRIDReceiverStatus(w, r, receiverId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListUsers operation middleware
 func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Request) {
 
@@ -14292,6 +16550,13 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/registry/validate", wrapper.ValidateRegistry)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/registry/validate", wrapper.ValidateRegistryBatch)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/registry/changes", wrapper.ListRegistryChanges)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/rid/receivers", wrapper.ListRIDReceivers)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/rid/receivers", wrapper.CreateRIDReceiver)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/v1/rid/receivers/{receiver_id}", wrapper.DeleteRIDReceiver)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/rid/receivers/{receiver_id}", wrapper.GetRIDReceiver)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/v1/rid/receivers/{receiver_id}", wrapper.UpdateRIDReceiver)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/rid/receivers/{receiver_id}/status", wrapper.SetRIDReceiverStatus)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/rid/receivers/{receiver_id}/keys/rotate", wrapper.RotateRIDReceiverKeys)
 
 	return m
 }
@@ -16204,6 +18469,377 @@ func (response ValidateRegistryBatchdefaultApplicationProblemPlusJSONResponse) V
 	return err
 }
 
+type ListRIDReceiversRequestObject struct {
+	Params ListRIDReceiversParams
+}
+
+type ListRIDReceiversResponseObject interface {
+	VisitListRIDReceiversResponse(w http.ResponseWriter) error
+}
+
+type ListRIDReceivers200JSONResponse RIDReceiverList
+
+func (response ListRIDReceivers200JSONResponse) VisitListRIDReceiversResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRIDReceiversdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListRIDReceiversdefaultApplicationProblemPlusJSONResponse) VisitListRIDReceiversResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRIDReceiverRequestObject struct {
+	Body *CreateRIDReceiverJSONRequestBody
+}
+
+type CreateRIDReceiverResponseObject interface {
+	VisitCreateRIDReceiverResponse(w http.ResponseWriter) error
+}
+
+type CreateRIDReceiver201ResponseHeaders struct {
+	CacheControl *string
+}
+
+type CreateRIDReceiver201JSONResponse struct {
+	Body    RIDReceiverCreated
+	Headers CreateRIDReceiver201ResponseHeaders
+}
+
+func (response CreateRIDReceiver201JSONResponse) VisitCreateRIDReceiverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRIDReceiver503ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response CreateRIDReceiver503ApplicationProblemPlusJSONResponse) VisitCreateRIDReceiverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRIDReceiverdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateRIDReceiverdefaultApplicationProblemPlusJSONResponse) VisitCreateRIDReceiverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteRIDReceiverRequestObject struct {
+	ReceiverId string `json:"receiver_id"`
+	Params     DeleteRIDReceiverParams
+}
+
+type DeleteRIDReceiverResponseObject interface {
+	VisitDeleteRIDReceiverResponse(w http.ResponseWriter) error
+}
+
+type DeleteRIDReceiver204Response struct {
+}
+
+func (response DeleteRIDReceiver204Response) VisitDeleteRIDReceiverResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteRIDReceiver503ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response DeleteRIDReceiver503ApplicationProblemPlusJSONResponse) VisitDeleteRIDReceiverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteRIDReceiverdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response DeleteRIDReceiverdefaultApplicationProblemPlusJSONResponse) VisitDeleteRIDReceiverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRIDReceiverRequestObject struct {
+	ReceiverId string `json:"receiver_id"`
+}
+
+type GetRIDReceiverResponseObject interface {
+	VisitGetRIDReceiverResponse(w http.ResponseWriter) error
+}
+
+type GetRIDReceiver200JSONResponse RIDReceiver
+
+func (response GetRIDReceiver200JSONResponse) VisitGetRIDReceiverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRIDReceiverdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetRIDReceiverdefaultApplicationProblemPlusJSONResponse) VisitGetRIDReceiverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateRIDReceiverRequestObject struct {
+	ReceiverId string `json:"receiver_id"`
+	Body       *UpdateRIDReceiverJSONRequestBody
+}
+
+type UpdateRIDReceiverResponseObject interface {
+	VisitUpdateRIDReceiverResponse(w http.ResponseWriter) error
+}
+
+type UpdateRIDReceiver200JSONResponse RIDReceiver
+
+func (response UpdateRIDReceiver200JSONResponse) VisitUpdateRIDReceiverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateRIDReceiver503ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response UpdateRIDReceiver503ApplicationProblemPlusJSONResponse) VisitUpdateRIDReceiverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateRIDReceiverdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpdateRIDReceiverdefaultApplicationProblemPlusJSONResponse) VisitUpdateRIDReceiverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RotateRIDReceiverKeysRequestObject struct {
+	ReceiverId string `json:"receiver_id"`
+	Body       *RotateRIDReceiverKeysJSONRequestBody
+}
+
+type RotateRIDReceiverKeysResponseObject interface {
+	VisitRotateRIDReceiverKeysResponse(w http.ResponseWriter) error
+}
+
+type RotateRIDReceiverKeys200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type RotateRIDReceiverKeys200JSONResponse struct {
+	Body    RIDReceiverCreated
+	Headers RotateRIDReceiverKeys200ResponseHeaders
+}
+
+func (response RotateRIDReceiverKeys200JSONResponse) VisitRotateRIDReceiverKeysResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RotateRIDReceiverKeys503ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response RotateRIDReceiverKeys503ApplicationProblemPlusJSONResponse) VisitRotateRIDReceiverKeysResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RotateRIDReceiverKeysdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response RotateRIDReceiverKeysdefaultApplicationProblemPlusJSONResponse) VisitRotateRIDReceiverKeysResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetRIDReceiverStatusRequestObject struct {
+	ReceiverId string `json:"receiver_id"`
+	Body       *SetRIDReceiverStatusJSONRequestBody
+}
+
+type SetRIDReceiverStatusResponseObject interface {
+	VisitSetRIDReceiverStatusResponse(w http.ResponseWriter) error
+}
+
+type SetRIDReceiverStatus200JSONResponse RIDReceiver
+
+func (response SetRIDReceiverStatus200JSONResponse) VisitSetRIDReceiverStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetRIDReceiverStatus503ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response SetRIDReceiverStatus503ApplicationProblemPlusJSONResponse) VisitSetRIDReceiverStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetRIDReceiverStatusdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response SetRIDReceiverStatusdefaultApplicationProblemPlusJSONResponse) VisitSetRIDReceiverStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListUsersRequestObject struct {
 }
 
@@ -16680,6 +19316,27 @@ type StrictServerInterface interface {
 	// ValidateRegistryBatch Validity of up to 100 entities (F8)
 	// (POST /v1/registry/validate)
 	ValidateRegistryBatch(ctx context.Context, request ValidateRegistryBatchRequestObject) (ValidateRegistryBatchResponseObject, error)
+	// ListRIDReceivers Remote ID receivers, in id order
+	// (GET /v1/rid/receivers)
+	ListRIDReceivers(ctx context.Context, request ListRIDReceiversRequestObject) (ListRIDReceiversResponseObject, error)
+	// CreateRIDReceiver Register a receiver; its keys are shown once
+	// (POST /v1/rid/receivers)
+	CreateRIDReceiver(ctx context.Context, request CreateRIDReceiverRequestObject) (CreateRIDReceiverResponseObject, error)
+	// DeleteRIDReceiver Delete a receiver and revoke its keys
+	// (DELETE /v1/rid/receivers/{receiver_id})
+	DeleteRIDReceiver(ctx context.Context, request DeleteRIDReceiverRequestObject) (DeleteRIDReceiverResponseObject, error)
+	// GetRIDReceiver One receiver, with its last heartbeat and position deviation
+	// (GET /v1/rid/receivers/{receiver_id})
+	GetRIDReceiver(ctx context.Context, request GetRIDReceiverRequestObject) (GetRIDReceiverResponseObject, error)
+	// UpdateRIDReceiver Change a receiver's name, pinned position, owner or configuration
+	// (PATCH /v1/rid/receivers/{receiver_id})
+	UpdateRIDReceiver(ctx context.Context, request UpdateRIDReceiverRequestObject) (UpdateRIDReceiverResponseObject, error)
+	// RotateRIDReceiverKeys Issue a new bearer key and HMAC secret; shown once
+	// (POST /v1/rid/receivers/{receiver_id}/keys/rotate)
+	RotateRIDReceiverKeys(ctx context.Context, request RotateRIDReceiverKeysRequestObject) (RotateRIDReceiverKeysResponseObject, error)
+	// SetRIDReceiverStatus Disable or enable a receiver
+	// (POST /v1/rid/receivers/{receiver_id}/status)
+	SetRIDReceiverStatus(ctx context.Context, request SetRIDReceiverStatusRequestObject) (SetRIDReceiverStatusResponseObject, error)
 	// ListUsers Console accounts
 	// (GET /v1/users)
 	ListUsers(ctx context.Context, request ListUsersRequestObject) (ListUsersResponseObject, error)
@@ -17903,6 +20560,215 @@ func (sh *strictHandler) ValidateRegistryBatch(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ValidateRegistryBatchResponseObject); ok {
 		if err := validResponse.VisitValidateRegistryBatchResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListRIDReceivers operation middleware
+func (sh *strictHandler) ListRIDReceivers(w http.ResponseWriter, r *http.Request, params ListRIDReceiversParams) {
+	var request ListRIDReceiversRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListRIDReceivers(ctx, request.(ListRIDReceiversRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListRIDReceivers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListRIDReceiversResponseObject); ok {
+		if err := validResponse.VisitListRIDReceiversResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateRIDReceiver operation middleware
+func (sh *strictHandler) CreateRIDReceiver(w http.ResponseWriter, r *http.Request) {
+	var request CreateRIDReceiverRequestObject
+
+	var body CreateRIDReceiverJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateRIDReceiver(ctx, request.(CreateRIDReceiverRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateRIDReceiver")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateRIDReceiverResponseObject); ok {
+		if err := validResponse.VisitCreateRIDReceiverResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteRIDReceiver operation middleware
+func (sh *strictHandler) DeleteRIDReceiver(w http.ResponseWriter, r *http.Request, receiverId string, params DeleteRIDReceiverParams) {
+	var request DeleteRIDReceiverRequestObject
+
+	request.ReceiverId = receiverId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteRIDReceiver(ctx, request.(DeleteRIDReceiverRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteRIDReceiver")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteRIDReceiverResponseObject); ok {
+		if err := validResponse.VisitDeleteRIDReceiverResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetRIDReceiver operation middleware
+func (sh *strictHandler) GetRIDReceiver(w http.ResponseWriter, r *http.Request, receiverId string) {
+	var request GetRIDReceiverRequestObject
+
+	request.ReceiverId = receiverId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetRIDReceiver(ctx, request.(GetRIDReceiverRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetRIDReceiver")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetRIDReceiverResponseObject); ok {
+		if err := validResponse.VisitGetRIDReceiverResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateRIDReceiver operation middleware
+func (sh *strictHandler) UpdateRIDReceiver(w http.ResponseWriter, r *http.Request, receiverId string) {
+	var request UpdateRIDReceiverRequestObject
+
+	request.ReceiverId = receiverId
+
+	var body UpdateRIDReceiverJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateRIDReceiver(ctx, request.(UpdateRIDReceiverRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateRIDReceiver")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateRIDReceiverResponseObject); ok {
+		if err := validResponse.VisitUpdateRIDReceiverResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RotateRIDReceiverKeys operation middleware
+func (sh *strictHandler) RotateRIDReceiverKeys(w http.ResponseWriter, r *http.Request, receiverId string) {
+	var request RotateRIDReceiverKeysRequestObject
+
+	request.ReceiverId = receiverId
+
+	var body RotateRIDReceiverKeysJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RotateRIDReceiverKeys(ctx, request.(RotateRIDReceiverKeysRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RotateRIDReceiverKeys")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RotateRIDReceiverKeysResponseObject); ok {
+		if err := validResponse.VisitRotateRIDReceiverKeysResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetRIDReceiverStatus operation middleware
+func (sh *strictHandler) SetRIDReceiverStatus(w http.ResponseWriter, r *http.Request, receiverId string) {
+	var request SetRIDReceiverStatusRequestObject
+
+	request.ReceiverId = receiverId
+
+	var body SetRIDReceiverStatusJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetRIDReceiverStatus(ctx, request.(SetRIDReceiverStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetRIDReceiverStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetRIDReceiverStatusResponseObject); ok {
+		if err := validResponse.VisitSetRIDReceiverStatusResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

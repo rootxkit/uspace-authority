@@ -57,6 +57,21 @@ type API struct {
 	Auth
 	Peers
 	Registry
+	Receivers
+}
+
+// Receivers is the Remote ID receiver registry of api (WP-7). The
+// defaults are what a receiver is told when its own config leaves a
+// member out (INV-03: no default is a literal in a row).
+type Receivers struct {
+	RIDDefaultBatchIntervalMS    int     `env:"RID_DEFAULT_BATCH_INTERVAL_MS" default:"1000" min:"100" max:"1000" help:"how often a receiver posts a batch unless its config says otherwise (F9: batches of at most 1 s)"`
+	RIDDefaultBacklogCap         int     `env:"RID_DEFAULT_BACKLOG_CAP" default:"50000" min:"1" max:"10000000" help:"observations a receiver buffers while the ingest is unreachable unless its config says otherwise"`
+	RIDDefaultHeartbeatIntervalS int     `env:"RID_DEFAULT_HEARTBEAT_INTERVAL_S" default:"10" min:"1" max:"300" help:"receiver heartbeat interval unless its config says otherwise (F9: 10 s)"`
+	RIDDefaultPositionToleranceM float64 `env:"RID_DEFAULT_POSITION_TOLERANCE_M" default:"100" min:"1" max:"100000" help:"distance of a heartbeat's position from the pinned one beyond which it is counted as a deviation (T2) unless the receiver's config says otherwise"`
+	RIDKeyRotationGraceS         int     `env:"RID_KEY_ROTATION_GRACE_S" default:"3600" min:"0" max:"604800" help:"how long a rotated receiver key keeps working unless the rotation says otherwise"`
+	RIDKeysetReprojectS          int     `env:"RID_KEYSET_REPROJECT_S" default:"60" min:"5" max:"3600" help:"seconds between full re-projections of the receiver key set into KV rid_receiver_keys (repair of a lost bucket)"`
+	RIDKVTimeoutMS               int     `env:"RID_KV_TIMEOUT_MS" default:"2000" min:"50" max:"60000" help:"bound on one write of the receiver key set; a change whose write fails is refused with 503"`
+	RIDKeysetBucket              string  `env:"RID_KEYSET_BUCKET" default:"rid_receiver_keys" help:"KV bucket of the receiver key set that rid-ingest reads (the same variable there)"`
 }
 
 // Registry is the registry of api (WP-3).

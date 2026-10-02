@@ -97,6 +97,20 @@ type RegistryHandler interface {
 	ValidateRegistryBatch(ctx context.Context, request gen.ValidateRegistryBatchRequestObject) (gen.ValidateRegistryBatchResponseObject, error)
 }
 
+// RIDReceiversHandler serves the admin operations of /v1/rid/receivers*
+// (api, WP-7). The receivers' own
+// config and heartbeat endpoints are x-receiver operations served
+// outside the generated server (Receiver).
+type RIDReceiversHandler interface {
+	ListRIDReceivers(ctx context.Context, request gen.ListRIDReceiversRequestObject) (gen.ListRIDReceiversResponseObject, error)
+	CreateRIDReceiver(ctx context.Context, request gen.CreateRIDReceiverRequestObject) (gen.CreateRIDReceiverResponseObject, error)
+	GetRIDReceiver(ctx context.Context, request gen.GetRIDReceiverRequestObject) (gen.GetRIDReceiverResponseObject, error)
+	UpdateRIDReceiver(ctx context.Context, request gen.UpdateRIDReceiverRequestObject) (gen.UpdateRIDReceiverResponseObject, error)
+	DeleteRIDReceiver(ctx context.Context, request gen.DeleteRIDReceiverRequestObject) (gen.DeleteRIDReceiverResponseObject, error)
+	SetRIDReceiverStatus(ctx context.Context, request gen.SetRIDReceiverStatusRequestObject) (gen.SetRIDReceiverStatusResponseObject, error)
+	RotateRIDReceiverKeys(ctx context.Context, request gen.RotateRIDReceiverKeysRequestObject) (gen.RotateRIDReceiverKeysResponseObject, error)
+}
+
 // Server implements gen.StrictServerInterface by delegating to one
 // handler per group. A group left nil must not be mounted.
 type Server struct {
@@ -108,6 +122,7 @@ type Server struct {
 	AuthHandler
 	UsersHandler
 	RegistryHandler
+	RIDReceiversHandler
 }
 
 var _ gen.StrictServerInterface = Server{}
