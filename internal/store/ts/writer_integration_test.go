@@ -224,7 +224,7 @@ func TestIntegrationCompressionJobRunsOnABackdatedChunk(t *testing.T) {
 	for {
 		var runs int
 		var status string
-		if err := db.QueryRow(`SELECT total_runs, job_status || '/' || coalesce(last_run_status, '') FROM timescaledb_information.job_stats WHERE job_id = $1`, job).Scan(&runs, &status); err != nil && !errors.Is(err, sql.ErrNoRows) {
+		if err := db.QueryRow(`SELECT coalesce(total_runs, 0), coalesce(job_status, '') || '/' || coalesce(last_run_status, '') FROM timescaledb_information.job_stats WHERE job_id = $1`, job).Scan(&runs, &status); err != nil && !errors.Is(err, sql.ErrNoRows) {
 			t.Fatal(err)
 		}
 		if runs >= 1 && status == "Scheduled/Success" {
