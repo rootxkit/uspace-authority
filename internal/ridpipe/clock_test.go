@@ -8,6 +8,7 @@ import (
 
 	"github.com/rootxkit/uspace-core/identify"
 	"github.com/rootxkit/uspace-core/odid"
+	"github.com/rootxkit/uspace-core/rid"
 )
 
 // T-02, I-01 (review of PR #14): the wall-clock tick must not move the
@@ -159,5 +160,31 @@ func TestIdentityReceiverIsStored(t *testing.T) {
 		if !ok || got != tc.want {
 			t.Fatalf("%s: identity_receiver %v (present %v), want %v", tc.b.ReceiverID, got, ok, tc.want)
 		}
+	}
+}
+
+// The core limitation documented in doc.go and docs/PLAN.md Q-A21,
+// pinned so a change in uspace-core is noticed: rid.Tracker forgets a
+// transmitter silent for MaxGapS (3 s) before IdentifyWithinS (4 s) is
+// reached, so a lone Location without an identity, followed only by
+// more than 3 s of silence, is dropped with the address (counted in the
+// tracker's silences) and never published unidentified. A transmitter
+// that keeps sending Locations every second is published unidentified
+// after 4 s (the twin).
+func TestHeldLocationForgottenBeforeIdentifyWithin(t *testing.T) {
+	p, rec := pipe(DefaultSettings(), Deps{})
+	observe(t, p, batchOf("rx-1", t0, false, rxRow("rx-1", "TX-LONE", frame(t, loc(baseLatDeg, baseLonDeg)), at(t0))))
+	later := t0.Add(5 * time.Second)
+	observe(t, p, batchOf("rx-1", later, false, rxRow("rx-1", "TX-LONE", frame(t, loc(baseLatDeg, baseLonDeg)), at(later))))
+	live, _ := p.TrackerCounters()
+	if len(rec.tracks(t)) != 0 || live.Get(rid.CounterSilences) != 1 {
+		t.Fatalf("lone Location: %d tracks, silences %d", len(rec.tracks(t)), live.Get(rid.CounterSilences))
+	}
+	for s := range 6 {
+		now := t0.Add(time.Minute + time.Duration(s)*time.Second)
+		observe(t, p, batchOf("rx-1", now, false, rxRow("rx-1", "TX-STEADY", frame(t, loc(baseLatDeg, baseLonDeg)), at(now))))
+	}
+	if len(rec.tracks(t)) == 0 {
+		t.Fatal("a steady transmitter without an identity was never published unidentified")
 	}
 }

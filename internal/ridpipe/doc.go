@@ -90,6 +90,18 @@
 //     after the raw rows, with their retry and acknowledgement (B-05,
 //     SC-18).
 //
+// # Known core limitation (docs/PLAN.md Q-A21)
+//
+// rid.Tracker forgets a (receiver, transmitter) silent for longer than
+// MaxGapS (3 s) before a held Location reaches IdentifyWithinS (4 s): a
+// Location without an identity that is followed by more than 3 s of
+// silence from that transmitter is dropped with the address, counted in
+// the tracker's silences, and never published unidentified. A
+// transmitter sending Locations every second (F3411's rate) is published
+// unidentified after 4 s. This is uspace-core's rule and is not patched
+// here (CLAUDE.md rule 3); TestHeldLocationForgottenBeforeIdentifyWithin
+// pins it.
+//
 // Undecoded is the stand-in Sink of a build without the pipeline: it
 // counts every row as not decoded.
 package ridpipe
