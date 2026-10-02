@@ -2,8 +2,6 @@ package ingest
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/json"
 	"log/slog"
 	"maps"
 	"math"
@@ -12,6 +10,7 @@ import (
 
 	"github.com/rootxkit/uspace-core/sources"
 
+	"github.com/rootxkit/uspace-authority/internal/bus"
 	"github.com/rootxkit/uspace-authority/internal/logging"
 	"github.com/rootxkit/uspace-authority/internal/receivers"
 )
@@ -32,9 +31,7 @@ type Gate interface {
 }
 
 // Publisher sends one core NATS message (nats.Conn.Publish).
-type Publisher interface {
-	Publish(subject string, data []byte) error
-}
+type Publisher = bus.Publisher
 
 type receiverStats struct {
 	accepted   uint64
@@ -180,21 +177,11 @@ type Body struct {
 	DisabledReason *string           `json:"disabled_reason,omitempty"`
 }
 
-// Envelope is the 04 §2 envelope.
-type Envelope struct {
-	Schema     string `json:"schema"`
-	MsgID      string `json:"msg_id"`
-	Producer   string `json:"producer"`
-	TS         string `json:"ts"`
-	RxTS       string `json:"rx_ts"`
-	CapturedAt string `json:"captured_at"`
-	TimeSource string `json:"time_source"`
-	Backlog    bool   `json:"backlog"`
-	Body       Body   `json:"body"`
-}
+// Envelope is the 04 §2 envelope of a status.
+type Envelope = bus.Envelope[Body]
 
 // stamp is the envelope's timestamp form: RFC 3339 UTC, milliseconds.
-func stamp(t time.Time) string { return t.UTC().Format("2006-01-02T15:04:05.000Z") }
+func stamp(t time.Time) string { return bus.Stamp(t) }
 
 // Snapshot builds the status of one receiver at now.
 func (s *Status) Snapshot(id string, now time.Time) Body {
@@ -230,6 +217,13 @@ func (s *Status) Snapshot(id string, now time.Time) Body {
 			by = string(*decision.WhyDisabled)
 		}
 		b.State, b.DisabledBy = "disabled", &by
+		// B-11: who switched it off, when the gate knows (the
+		// internal/sources follower does).
+		if w, ok := s.Gate.(interface {
+			DisabledByWho(sourceType string, instanceID *string) *string
+		}); ok {
+			b.DisabledByWho = w.DisabledByWho(SourceType, &inst)
+		}
 	case st.lastSeen.IsZero():
 		b.State = "unknown"
 	case now.Sub(st.lastSeen) <= s.StaleAfter:
@@ -269,16 +263,12 @@ func (s *Status) depth() uint64 {
 func (s *Status) Publish(now time.Time) int {
 	n := 0
 	for _, id := range s.Keyring.IDs() {
-		env := Envelope{
-			Schema: "source/status/v1", MsgID: NewULID(now), Producer: Producer,
-			TS: stamp(now), RxTS: stamp(now), CapturedAt: stamp(now), TimeSource: "system",
-			Body: s.Snapshot(id, now),
-		}
-		data, err := json.Marshal(env)
+		subject, err := bus.Subjects.Src(SourceType, id)
 		if err != nil {
 			continue
 		}
-		if err := s.Pub.Publish(StatusSubject(id), data); err != nil {
+		env := bus.SystemEnvelope("source/status/v1", Producer, now, s.Snapshot(id, now))
+		if err := bus.PublishCore(s.Pub, subject, env); err != nil {
 			s.Limiter.Limited("ingest_status_publish").Warn("receiver status not published", slog.String("error", err.Error()))
 			continue
 		}
@@ -304,28 +294,5 @@ func (s *Status) Run(ctx context.Context, interval time.Duration) {
 	}
 }
 
-// crockford is the ULID alphabet.
-const crockford = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
-
-// NewULID returns a ULID for at: 48 bits of milliseconds and 80 random
-// bits, Crockford base32 (the envelope's msg_id).
-func NewULID(at time.Time) string {
-	var b [16]byte
-	ms := uint64(at.UnixMilli()) & (1<<48 - 1)
-	for i := 5; i >= 0; i-- {
-		b[i] = byte(ms)
-		ms >>= 8
-	}
-	_, _ = rand.Read(b[6:])
-	// 128 bits as 26 base32 digits, least significant first: the top
-	// digit holds the top 3 bits, so it is 0-7 as the schema requires.
-	var out [26]byte
-	hi := uint64(b[0])<<56 | uint64(b[1])<<48 | uint64(b[2])<<40 | uint64(b[3])<<32 | uint64(b[4])<<24 | uint64(b[5])<<16 | uint64(b[6])<<8 | uint64(b[7])
-	lo := uint64(b[8])<<56 | uint64(b[9])<<48 | uint64(b[10])<<40 | uint64(b[11])<<32 | uint64(b[12])<<24 | uint64(b[13])<<16 | uint64(b[14])<<8 | uint64(b[15])
-	for i := 25; i >= 0; i-- {
-		out[i] = crockford[lo&31]
-		lo = lo>>5 | (hi&31)<<59
-		hi >>= 5
-	}
-	return string(out[:])
-}
+// NewULID returns a ULID for at (the envelope's msg_id).
+func NewULID(at time.Time) string { return bus.NewULID(at) }

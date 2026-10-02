@@ -83,9 +83,10 @@ generate:
 verify-generated:
 	scripts/verify-generated.sh
 
-# Tests that need the development stack (make up).
+# Tests that need the development stack (make up), one package at a time:
+# they share one NATS and some recreate shared streams (internal/bus/bustest).
 integration:
-	INTEGRATION=1 PG_URL='$(DEV_PG_URL)' TS_URL='$(DEV_TS_URL)' NATS_URL='$(DEV_NATS_URL)' $(GO) test -count=1 -run Integration $(PKGS)
+	INTEGRATION=1 PG_URL='$(DEV_PG_URL)' TS_URL='$(DEV_TS_URL)' NATS_URL='$(DEV_NATS_URL)' $(GO) test -p 1 -count=1 -run Integration $(PKGS)
 
 # Both trees against the development stack, as the one-shot service does.
 migrate:

@@ -63,6 +63,20 @@ func (l *lines) find(msg string, ok func(map[string]any) bool) map[string]any {
 	return found
 }
 
+// tail is the last n lines written: printed when a process exits
+// non-zero, so a failure at shutdown names its cause in the CI log
+// (the drain overrun of TestIntegrationReceiverLifecycleThroughTheAPI
+// was first seen as a bare "exit 1").
+func (l *lines) tail(n int) string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	all := strings.Split(strings.TrimRight(l.b.String(), "\n"), "\n")
+	if len(all) > n {
+		all = all[len(all)-n:]
+	}
+	return strings.Join(all, "\n")
+}
+
 func (l *lines) waitFor(t *testing.T, msg string, ok func(map[string]any) bool) map[string]any {
 	t.Helper()
 	deadline := time.Now().Add(20 * time.Second)
@@ -198,7 +212,7 @@ func (h *harness) start(extra map[string]string, o ingest.Options) {
 		select {
 		case code := <-h.exit:
 			if code != proc.ExitOK {
-				h.t.Errorf("exit %d", code)
+				h.t.Errorf("exit %d; last lines of stdout:\n%s", code, h.stdout.tail(40))
 			}
 		case <-time.After(20 * time.Second):
 			h.t.Error("rid-ingest did not stop")

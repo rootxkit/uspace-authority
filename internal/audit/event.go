@@ -139,6 +139,16 @@ const (
 	EventRIDFramesViewed              = "rid_frames_viewed"
 )
 
+// Event types of WP-10: every source switch and every change of the
+// source-control epoch (U-15, B-09), and every change of the cell
+// ownership map.
+const (
+	EventSourceDisabled            = "source_disabled"
+	EventSourceEnabled             = "source_enabled"
+	EventSourceControlEpochStarted = "source_control_epoch_started"
+	EventCellOwnershipChanged      = "cell_ownership_changed"
+)
+
 // DefaultCatalogue is the catalogue of this build.
 func DefaultCatalogue() Catalogue {
 	return Catalogue{
@@ -191,6 +201,11 @@ func DefaultCatalogue() Catalogue {
 		EventRIDReceiverDeleted:           {},
 		EventRIDReceiverPositionDeviation: {},
 		EventRIDFramesViewed:              {PIIView: true},
+
+		EventSourceDisabled:            {},
+		EventSourceEnabled:             {},
+		EventSourceControlEpochStarted: {},
+		EventCellOwnershipChanged:      {},
 	}
 }
 

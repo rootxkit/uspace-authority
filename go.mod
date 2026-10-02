@@ -14,8 +14,8 @@ go 1.27
 //                 (internal/tokens only; already core's dependency)
 //   x/crypto      argon2id for passwords and client secrets (internal/passhash)
 //   pquerna/otp   TOTP (RFC 6238) enrolment and codes of console MFA (internal/authz)
-//   nats.go       JetStream work queue, KV key set and status subjects of the
-//                 Remote ID receivers (WP-7; internal/bus takes it over in WP-10)
+//   nats.go       JetStream streams, KV buckets and subjects (internal/bus,
+//                 WP-10; first used by the Remote ID receivers, WP-7)
 require (
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/lestrrat-go/jwx/v3 v3.3.0
@@ -24,7 +24,7 @@ require (
 	github.com/pquerna/otp v1.5.0
 	github.com/pressly/goose/v3 v3.28.0
 	github.com/prometheus/client_golang v1.24.1
-	github.com/rootxkit/uspace-core v1.1.0
+	github.com/rootxkit/uspace-core v1.2.0
 	go.opentelemetry.io/otel v1.46.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.46.0
 	go.opentelemetry.io/otel/sdk v1.46.0

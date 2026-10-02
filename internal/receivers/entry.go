@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/rootxkit/uspace-core/core"
+
+	"github.com/rootxkit/uspace-authority/internal/bus"
 )
 
 // Receiver statuses.
@@ -19,7 +21,7 @@ const (
 
 // MaxEntryBytes bounds a key-set entry read from the KV bucket before it
 // is parsed (E-10).
-const MaxEntryBytes = 16 << 10
+const MaxEntryBytes = bus.RIDReceiverKeyValueBytes
 
 // KeyGeneration is one generation of a receiver's keys as the key set
 // carries it: the bearer key's argon2id hash and the HMAC secret. NotAfter

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.uspace.ge/source/control/v1.json",
+  "title": "source/control/v1",
+  "description": "The authority's source-control state (spec 04 §3.6 source/control; U-15; LESSONS B-09, B-11), in the common envelope: the value of KV bucket source_control key \"state\" and the message on ctl.sources, written only by api (internal/sources/switches) and followed by every process (internal/sources). Internal to this system: NATS never crosses a system (02 §1), so this shape is this repository's own (M14, M30). Followers apply a state only when its version is strictly higher within the same epoch, and any state under another epoch; with none they enable everything (never fail closed). The decision is uspace-core sources.State.Query; the knowledge vector source_control.json pins it.",
+  "allOf": [{ "$ref": "https://schemas.uspace.ge/envelope/v1.json" }],
+  "properties": {
+    "schema": { "const": "source/control/v1" },
+    "body": { "$ref": "#/$defs/body" }
+  },
+  "$defs": {
+    "body": {
+      "type": "object",
+      "required": ["epoch", "version", "default_deny", "controls"],
+      "properties": {
+        "epoch": {
+          "description": "Random per source_controls table creation, and new when api finds the bucket ahead of its database (a restored database).",
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "description": "The last value of source_control_version_seq drawn for a change: it only rises within an epoch.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "default_deny": {
+          "description": "An instance with no row of its own is disabled (why: default_deny) unless its type is on (SOURCES_DEFAULT_DENY).",
+          "type": "boolean"
+        },
+        "controls": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/control" }
+        }
+      }
+    },
+    "control": {
+      "type": "object",
+      "required": ["source_type", "instance_id", "enabled", "reason", "actor", "changed_at", "version"],
+      "properties": {
+        "source_type": { "enum": ["direct_rid", "network_rid", "ansp_feed"] },
+        "instance_id": {
+          "description": "null switches the whole type.",
+          "type": ["string", "null"],
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}$"
+        },
+        "enabled": { "type": "boolean" },
+        "reason": { "type": "string", "minLength": 1, "maxLength": 500 },
+        "actor": {
+          "description": "Who switched it, as the audit log names them (02 F9 \"disabled by <who>\").",
+          "type": "string",
+          "minLength": 1
+        },
+        "changed_at": { "type": "string", "format": "date-time" },
+        "version": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

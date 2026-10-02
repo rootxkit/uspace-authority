@@ -38,6 +38,7 @@
 //
 // With no receiver keys the process listens on loopback only (R-06); a
 // key set with an invalid entry or an id twice stops it at start (B-14).
-// Until WP-8 and WP-10 land, Run uses ridpipe.Undecoded and an unfed
-// sources.Follower (everything enabled, B-09), and says so at start.
+// Until WP-8 lands, Run uses ridpipe.Undecoded and says so at start. The
+// source-control gate is the process's internal/sources follower of the
+// published switches (WP-10): direct_rid by type and by receiver.
 package ingest

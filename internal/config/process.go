@@ -39,9 +39,27 @@ type HTTP struct {
 	TrustedProxies      []string `env:"AUTHORITY_TRUSTED_PROXIES" help:"CIDRs or addresses of the reverse proxies (Caddy) whose X-Forwarded-For names the client; the rightmost hop that is not one of them is the client address of every limiter and audit row"`
 }
 
+// Bus is every process's NATS (internal/bus, WP-10): per-process
+// credentials, the start retry of LESSONS B-08, the topology bounds api
+// provisions and every process opens with, and the source-control
+// bucket and push subject every follower reads.
+type Bus struct {
+	NATSCreds                  string `env:"NATS_CREDS" help:"this process's NATS credentials file (.creds); per-process credentials (plan §6); empty in the development stack"`
+	NATSStartAttempts          int    `env:"NATS_START_ATTEMPTS" default:"3" min:"1" max:"20" help:"connection attempts at start before the process starts degraded and keeps connecting in the background (B-08)"`
+	NATSStartBackoffMS         int    `env:"NATS_START_BACKOFF_MS" default:"500" min:"10" max:"60000" help:"wait after the first failed attempt at start; doubled after each"`
+	NATSTimeoutMS              int    `env:"NATS_TIMEOUT_MS" default:"2000" min:"50" max:"60000" help:"bound on one connection attempt and on one KV read or write of the source-control state"`
+	BusTRKStorage              string `env:"BUS_TRK_STORAGE" default:"file" enum:"file|memory" help:"storage of the TRK stream (the 1 h track mirror)"`
+	BusIngestMaxMsgs           int    `env:"BUS_INGEST_MAX_MSGS" default:"120512" min:"2" max:"100000000" help:"hard bound of the INGEST work queue (discard new: a receiver is told 503); twice rid-ingest's shedding bound plus its batches in flight"`
+	SourceControlBucket        string `env:"SOURCE_CONTROL_BUCKET" default:"source_control" help:"KV bucket of the source-control state (one key, the whole state)"`
+	SourceControlSubject       string `env:"SOURCE_CONTROL_SUBJECT" default:"ctl.sources" help:"push subject of every source-control state"`
+	SourceControlMaxValueBytes int    `env:"SOURCE_CONTROL_MAX_VALUE_BYTES" default:"262144" min:"1024" max:"1048576" help:"largest source-control state the bucket holds; a switch that would exceed it is refused naming the limit (E-10)"`
+	SourceControlRereadS       int    `env:"SOURCE_CONTROL_REREAD_S" default:"5" min:"1" max:"3600" help:"seconds between re-reads of the source-control state by every follower, besides the watch and the push"`
+}
+
 // API is the control plane.
 type API struct {
 	Common
+	Bus
 	HTTP
 	Addr      string   `env:"API_ADDR" default:":8080" help:"public listen address (behind Caddy)"`
 	PGURL     string   `env:"PG_URL" required:"true" secret:"true" kind:"url" help:"relational database (PostgreSQL + PostGIS); only api opens it"`
@@ -58,6 +76,15 @@ type API struct {
 	Peers
 	Registry
 	Receivers
+	Sources
+}
+
+// Sources is source control in api (WP-10, U-15).
+type Sources struct {
+	SourcesDefaultDeny      bool `env:"SOURCES_DEFAULT_DENY" default:"false" help:"an instance with no switch of its own is disabled (by default deny) unless its type is switched on; the flag travels in the published state"`
+	SourceControlRepublishS int  `env:"SOURCE_CONTROL_REPUBLISH_S" default:"60" min:"1" max:"3600" help:"seconds between republishes of the source-control state from the database (repairs a lost bucket)"`
+	SourceStatusStaleS      int  `env:"SOURCE_STATUS_STALE_S" default:"10" min:"1" max:"3600" help:"an adapter whose last src.v1 status is older is silent: its sources are shown stale"`
+	SourceStatusMax         int  `env:"SOURCE_STATUS_MAX" default:"10000" min:"1" max:"1000000" help:"sources whose last status api keeps; past it the one heard longest ago is dropped and counted (E-10)"`
 }
 
 // Receivers is the Remote ID receiver registry of api (WP-7). The
@@ -185,6 +212,7 @@ func (c *API) String() string { return Describe(c) }
 // RIDIngest is the F9 receiver ingest.
 type RIDIngest struct {
 	Common
+	Bus
 	HTTP
 	Addr    string `env:"RID_INGEST_ADDR" default:":8081" help:"public listen address of /v1/rid/observations (behind Caddy); with no receiver keys the host is replaced by 127.0.0.1 (R-06)"`
 	TSURL   string `env:"TS_URL" required:"true" secret:"true" kind:"url" help:"telemetry database (projections, read only)"`
@@ -237,6 +265,7 @@ func (c *RIDIngest) Validate() error {
 // DPPoller is the F3411 Display Provider.
 type DPPoller struct {
 	Common
+	Bus
 	HTTP
 	Addr       string `env:"DP_ADDR" default:":8082" help:"public listen address of /uss/* (behind Caddy)"`
 	TSURL      string `env:"TS_URL" required:"true" secret:"true" kind:"url" help:"telemetry database (projections, read only)"`
@@ -250,6 +279,7 @@ func (c *DPPoller) String() string { return Describe(c) }
 // MannedIngest is the F4 client of the ANSP manned feed.
 type MannedIngest struct {
 	Common
+	Bus
 	NATSURL     string `env:"NATS_URL" required:"true" secret:"true" kind:"url" help:"NATS JetStream"`
 	ANSPFeedURL string `env:"ANSP_FEED_URL" kind:"url" help:"ANSP manned-traffic WebSocket; required once WP-15 lands"`
 	MTLSMode    string `env:"AUTHORITY_MTLS_MODE" default:"required" enum:"required|off" help:"client certificate towards the ANSP; off only in the lab and on staging"`
@@ -261,9 +291,12 @@ func (c *MannedIngest) String() string { return Describe(c) }
 // Detect runs the violation detectors per cell.
 type Detect struct {
 	Common
+	Bus
 	TSURL     string `env:"TS_URL" required:"true" secret:"true" kind:"url" help:"telemetry database (projections, read only)"`
 	NATSURL   string `env:"NATS_URL" required:"true" secret:"true" kind:"url" help:"NATS JetStream"`
 	GroundDir string `env:"GROUND_DIR" help:"directory of terrain tiles and the geoid grid; required once WP-11 lands"`
+	WorkerID  string `env:"DETECT_WORKER_ID" default:"detect-1" help:"this worker's id in the cell ownership map (KV cells, PUT /v1/cells)"`
+	Cells     string `env:"CELLS" enum:"all" help:"all: judge every cell whatever the ownership map says (the demo); empty: the cells the map gives DETECT_WORKER_ID, and refuse to start with none"`
 }
 
 // String redacts secrets.
@@ -272,6 +305,7 @@ func (c *Detect) String() string { return Describe(c) }
 // TSDBWriter is the only writer of the hypertables.
 type TSDBWriter struct {
 	Common
+	Bus
 	TSURL   string `env:"TS_URL" required:"true" secret:"true" kind:"url" help:"telemetry database"`
 	NATSURL string `env:"NATS_URL" required:"true" secret:"true" kind:"url" help:"NATS JetStream"`
 }
@@ -282,6 +316,7 @@ func (c *TSDBWriter) String() string { return Describe(c) }
 // PictureWS is the console feed.
 type PictureWS struct {
 	Common
+	Bus
 	HTTP
 	Addr    string `env:"PICTURE_ADDR" default:":8083" help:"public listen address of /v1/picture/* (behind Caddy)"`
 	TSURL   string `env:"TS_URL" required:"true" secret:"true" kind:"url" help:"telemetry database (projections, read only)"`

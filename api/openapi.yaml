@@ -73,6 +73,10 @@ tags:
     description: Signed observation batches from receivers, served by rid-ingest (WP-7).
   - name: rid-frames
     description: Raw Remote ID frames as stored, purpose-logged (WP-7, LESSONS R-15).
+  - name: sources
+    description: "Source control (WP-10, U-15): switches by type and instance, audited, and every source's health."
+  - name: cells
+    description: The partition cells' ownership map (WP-10, spec 05 §3); cells never cross an external interface.
 
 paths:
   # WP-0: health paths, served by every process on its admin port.
@@ -1826,6 +1830,166 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  # WP-10: the cell3 -> detect worker ownership map.
+  /v1/cells:
+    get:
+      operationId: getCellOwnership
+      tags: [cells]
+      summary: The cell3 -> detect worker ownership map
+      description: |
+        Read from KV bucket `cells`, where detect workers read it. A
+        worker judges the cells the map gives it and refuses to start
+        with none unless `CELLS=all` (05 §3). 404 when no map has been
+        written yet.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: none
+      responses:
+        "200":
+          description: The map.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CellOwnership"
+        "503":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      operationId: putCellOwnership
+      tags: [cells]
+      summary: Replace the ownership map (an operator's rebalance)
+      description: |
+        Writes the whole map with the next version into KV bucket
+        `cells`, inside the transaction of its `events` row: when the
+        bucket cannot take it the change is refused with 503
+        `cell_store_unavailable` and nothing is recorded. A map past the
+        bucket's value bound is refused with 400 naming the bound.
+        Workers take a new map at their next start.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: cell_ownership_changed, entity_type: cells, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CellOwnershipInput"
+      responses:
+        "200":
+          description: The map as stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CellOwnership"
+        "503":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  # WP-10: source control (U-15).
+  /v1/sources:
+    get:
+      operationId: listSources
+      tags: [sources]
+      summary: Every switch and every source with its switch and its health
+      description: |
+        The switches as the database holds them (the state api
+        publishes), and every source a switch names or an adapter has
+        reported on `src.v1.<type>.<instance>`: enabled or disabled (by
+        type, instance or default deny, and by whom), and healthy,
+        stale, lagging or never heard (B-11, B-03). `status_age_s` is
+        the age of the adapter's last status; past
+        `SOURCE_STATUS_STALE_S` the source is stale whatever it said.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: none
+      responses:
+        "200":
+          description: The switches and the sources.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceOverview"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/sources/{source_type}:
+    parameters:
+      - {name: source_type, in: path, required: true, schema: {$ref: "#/components/schemas/SourceType"}}
+    put:
+      operationId: switchSourceType
+      tags: [sources]
+      summary: Switch a whole source type on or off
+      description: |
+        A type switched off disables every instance of it, even one
+        switched on. In one transaction under the advisory lock
+        `source_controls`: the row, its `events` row, then the KV write
+        of the whole state (bucket `source_control`, key `state`); when
+        the bucket cannot take it the switch is refused with 503
+        `source_control_unavailable` and nothing is written (B-09). The
+        state is then pushed on `ctl.sources`; adapters refuse a
+        disabled source with 503 and Retry-After (B-10). A state past
+        the bucket's value bound is refused with 400 naming the bound
+        (E-10). A switch to the state already held changes and records
+        nothing (`changed: false`).
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: source_disabled, entity_type: source, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SourceSwitchInput"
+      responses:
+        "200":
+          description: The switch as stored and the state's version.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceSwitchResult"
+        "503":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/sources/{source_type}/{instance_id}:
+    parameters:
+      - {name: source_type, in: path, required: true, schema: {$ref: "#/components/schemas/SourceType"}}
+      - {name: instance_id, in: path, required: true, schema: {type: string, pattern: "^[A-Za-z0-9][A-Za-z0-9_-]{0,62}$"}}
+    put:
+      operationId: switchSourceInstance
+      tags: [sources]
+      summary: Switch one instance (a receiver, a USSP, a feed) on or off
+      description: |
+        As for a type. An instance switched off stays off under a type
+        that is on; an instance switched on overrides default deny but
+        not a type that is off.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: source_disabled, entity_type: source, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SourceSwitchInput"
+      responses:
+        "200":
+          description: The switch as stored and the state's version.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SourceSwitchResult"
+        "503":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+
 components:
   securitySchemes:
     sessionCookie:
@@ -2923,3 +3087,83 @@ components:
           type: array
           items: {$ref: "#/components/schemas/RIDFrame"}
         truncated: {type: boolean, description: The window holds more frames than were returned.}
+    CellOwnership:
+      type: object
+      required: [version, assignments, updated_by, updated_at]
+      properties:
+        version: {type: integer, format: int64, minimum: 1, description: Rises by one with every change.}
+        assignments:
+          type: object
+          description: cell3 name (`c3:<lat_idx>:<lon_idx>`, uspace-core geodesy/cell) -> detect worker id.
+          additionalProperties: {type: string}
+        updated_by: {type: string}
+        updated_at: {type: string, format: date-time}
+    CellOwnershipInput:
+      type: object
+      required: [assignments, reason]
+      properties:
+        assignments:
+          type: object
+          description: cell3 name -> detect worker id (`^[a-z0-9][a-z0-9_-]{0,62}$`); the whole map, replacing the stored one.
+          maxProperties: 64800
+          additionalProperties: {type: string, maxLength: 63}
+        reason: {type: string, minLength: 1, maxLength: 500}
+    SourceType:
+      type: string
+      description: The adapter type (04 §2 `source`), one per adapter process.
+      enum: [direct_rid, network_rid, ansp_feed]
+    SourceSwitchInput:
+      type: object
+      required: [enabled, reason]
+      properties:
+        enabled: {type: boolean}
+        reason: {type: string, minLength: 1, maxLength: 500}
+    SourceControl:
+      type: object
+      required: [source_type, enabled, reason, actor, changed_at, version]
+      properties:
+        source_type: {$ref: "#/components/schemas/SourceType"}
+        instance_id: {type: string, description: Absent for the switch of the whole type.}
+        enabled: {type: boolean}
+        reason: {type: string}
+        actor: {type: string, description: Who switched it, as the audit log names them.}
+        changed_at: {type: string, format: date-time}
+        version: {type: integer, format: int64}
+    SourceSwitchResult:
+      type: object
+      required: [control, changed, epoch, version]
+      properties:
+        control: {$ref: "#/components/schemas/SourceControl"}
+        changed: {type: boolean, description: False when the switch already held this state; nothing was written.}
+        epoch: {type: string}
+        version: {type: integer, format: int64, description: The version of the whole state after the switch.}
+    SourceView:
+      type: object
+      required: [source_type, switch, health]
+      properties:
+        source_type: {$ref: "#/components/schemas/SourceType"}
+        instance_id: {type: string}
+        switch: {type: string, enum: [enabled, disabled]}
+        disabled_by: {type: string, enum: [type, instance, default_deny]}
+        disabled_by_who: {type: string}
+        disabled_reason: {type: string}
+        health: {type: string, enum: [healthy, stale, lagging, never_heard]}
+        age_s: {type: number, format: double, description: Seconds since the adapter last heard the source.}
+        lag_s: {type: number, format: double}
+        status_age_s: {type: number, format: double, description: Seconds since the adapter's last status reached api.}
+        counters:
+          type: object
+          additionalProperties: {type: integer, format: int64}
+    SourceOverview:
+      type: object
+      required: [epoch, version, default_deny, controls, sources]
+      properties:
+        epoch: {type: string}
+        version: {type: integer, format: int64}
+        default_deny: {type: boolean}
+        controls:
+          type: array
+          items: {$ref: "#/components/schemas/SourceControl"}
+        sources:
+          type: array
+          items: {$ref: "#/components/schemas/SourceView"}

@@ -135,6 +135,104 @@ func TestServeReportsADrainThatOverrunsItsBound(t *testing.T) {
 	}
 }
 
+// A connection opened and never used: an HTTP client's spare dial (the
+// transport dials while an idle connection frees up, and parks the new
+// one unused), a TCP health check or a browser preconnect. net/http's
+// Shutdown waits for such a StateNew connection until it is more than 5 s
+// old, so with a drain bound of 5 s or less the drain overran and the
+// process exited 1 with nothing in flight (the flaky exit 1 of
+// TestIntegrationReceiverLifecycleThroughTheAPI: 1.7 s of test plus the
+// 5 s bound). The drain closes it at once.
+func TestServeDrainClosesAConnectionThatNeverSentARequest(t *testing.T) {
+	s := NewServer(ServerOptions{Name: "public", Addr: "127.0.0.1:0", Logger: discard(), Handler: http.NewServeMux()})
+	ln, err := s.Listen()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	served := make(chan error, 1)
+	go func() { served <- s.Serve(ctx, ln, 2*time.Second) }()
+	idle, err := net.DialTimeout("tcp", ln.Addr().String(), time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer idle.Close()
+	// The server has accepted it once it says so (ConnState StateNew).
+	deadline := time.Now().Add(5 * time.Second)
+	for s.newConns() == 0 {
+		if time.Now().After(deadline) {
+			t.Fatal("the connection was never accepted")
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	start := time.Now()
+	cancel()
+	select {
+	case err := <-served:
+		if err != nil {
+			t.Fatalf("drain with an unused connection open: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the drain did not end")
+	}
+	if took := time.Since(start); took > time.Second {
+		t.Fatalf("the drain waited %s for a connection that never sent a request", took)
+	}
+	// The server closed its side: the client reads EOF.
+	_ = idle.SetReadDeadline(time.Now().Add(time.Second))
+	if _, err := idle.Read(make([]byte, 1)); err == nil {
+		t.Fatal("the unused connection is still open")
+	}
+}
+
+// E-01 twin: a connection that has sent its request is drained, not
+// closed, even when an unused one is closed beside it.
+func TestServeDrainStillWaitsForARequestInFlight(t *testing.T) {
+	release := make(chan struct{})
+	entered := make(chan struct{})
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /slow", func(w http.ResponseWriter, _ *http.Request) {
+		close(entered)
+		<-release
+		_, _ = io.WriteString(w, "done")
+	})
+	s := NewServer(ServerOptions{Name: "public", Addr: "127.0.0.1:0", Logger: discard(), Handler: mux})
+	ln, err := s.Listen()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	served := make(chan error, 1)
+	go func() { served <- s.Serve(ctx, ln, 5*time.Second) }()
+	idle, err := net.DialTimeout("tcp", ln.Addr().String(), time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer idle.Close()
+	got := make(chan string, 1)
+	go func() {
+		client := &http.Client{Transport: &http.Transport{DisableKeepAlives: true}}
+		resp, err := client.Get("http://" + ln.Addr().String() + "/slow")
+		if err != nil {
+			got <- err.Error()
+			return
+		}
+		b, _ := io.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		got <- string(b)
+	}()
+	<-entered
+	cancel()
+	time.Sleep(100 * time.Millisecond)
+	close(release)
+	if body := <-got; body != "done" {
+		t.Fatalf("in-flight request not drained: %q", body)
+	}
+	if err := <-served; err != nil {
+		t.Fatalf("clean drain returned %v", err)
+	}
+}
+
 func TestListenReportsABindError(t *testing.T) {
 	a := NewServer(ServerOptions{Name: "a", Addr: "127.0.0.1:0", Logger: discard()})
 	ln, err := a.Listen()

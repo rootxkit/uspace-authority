@@ -3,30 +3,28 @@ package ingest
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
 	"sync"
 	"time"
 
-	"github.com/nats-io/nats.go"
-	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rootxkit/uspace-core/core"
-	"github.com/rootxkit/uspace-core/sources"
 
+	"github.com/rootxkit/uspace-authority/internal/bus"
 	"github.com/rootxkit/uspace-authority/internal/config"
 	"github.com/rootxkit/uspace-authority/internal/passhash"
 	"github.com/rootxkit/uspace-authority/internal/proc"
 	"github.com/rootxkit/uspace-authority/internal/receivers"
 	"github.com/rootxkit/uspace-authority/internal/ridpipe"
+	"github.com/rootxkit/uspace-authority/internal/sources"
 )
 
 // Options are what Run needs beyond the configuration: the decode
-// pipeline (WP-8) and the source-control follower (WP-10). Nil members
-// take the stand-ins this work package ships: ridpipe.Undecoded, and a
-// sources.Follower that nothing feeds, so every receiver is enabled by
-// source control (B-09: never fail closed) and the start line says so.
+// pipeline (WP-8) and the source-control gate. A nil Sink takes the
+// stand-in ridpipe.Undecoded until WP-8; a nil Gate is the process's
+// internal/sources follower of the published switches (tests give their
+// own).
 type Options struct {
 	Sink ridpipe.Sink
 	Gate Gate
@@ -46,22 +44,14 @@ func LoopbackAddr(addr string) string {
 func Run(ctx context.Context, rt *proc.Runtime, cfg *config.RIDIngest, o Options) error {
 	t := cfg.RIDIngestTuning
 	timeout := time.Duration(t.NATSTimeoutMS) * time.Millisecond
-	conn, err := receivers.Connect(cfg.NATSURL, "uspace-authority-rid-ingest", rt.Logger)
-	if err != nil {
-		return fmt.Errorf("NATS: %w", err)
-	}
-	defer conn.Close()
-	rt.Ready.Add("nats", func(context.Context) error {
-		if s := conn.Status(); s != nats.CONNECTED {
-			return fmt.Errorf("NATS %s", s)
-		}
-		return nil
-	})
-	js, err := jetstream.New(conn)
+	bp, err := bus.OpenProcess(ctx, cfg.NATSURL, cfg.Bus, "rid-ingest", t.KeysetBucket, rt.Logger)
 	if err != nil {
 		return err
 	}
-	kv := &receivers.KV{JS: js, Bucket: t.KeysetBucket, Timeout: timeout}
+	defer bp.Close()
+	conn, js, limits, topo := bp.NC, bp.JS, bp.Limits, bp.Topology
+	rt.Ready.Add("nats", bus.Ready(conn))
+	kv := receivers.NewKV(js, limits, timeout)
 
 	krCounters := &core.Counters{}
 	rt.AddCounters("keyring", krCounters)
@@ -105,12 +95,15 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.RIDIngest, o Options
 		sink = ridpipe.Undecoded{Counters: c}
 		rt.Logger.Warn("no decode pipeline in this build (WP-8): observations are stored raw and no track is published")
 	}
+	// Source control (WP-10): the follower of the published switches,
+	// fed by the KV watch, the push subject and the re-read; with the
+	// state unreadable at start every receiver is enabled and the start
+	// says so (B-09, SC-08 step 8).
+	var followSources func(context.Context)
 	if gate == nil {
-		f := sources.NewFollower()
-		rt.AddCounters("source_control", f.Counters())
+		var f *sources.Follower
+		f, followSources = sources.Follow(ctx, rt, bp, cfg.Bus)
 		gate = f
-		rt.Logger.Warn("source control state unknown: no follower feed in this build (WP-10); every receiver is enabled by source control, registry disables still apply",
-			slog.String("source_type", SourceType))
 	}
 
 	counters := &core.Counters{}
@@ -123,7 +116,12 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.RIDIngest, o Options
 		MaxBatches: t.QueueMaxBatches, MaxAge: time.Duration(t.QueueMaxAgeS) * time.Second,
 		MaxAckPending: t.QueueMaxAckPending, PublishTimeout: timeout,
 	}
-	queue := &JetQueue{JS: js, Config: qcfg}
+	ingestStream, _ := topo.Stream(bus.StreamINGEST)
+	queue := &JetQueue{JS: js, Config: qcfg, Stream: ingestStream}
+	if have, want, ok, err := queue.CheckBound(ctx); err == nil && !ok {
+		rt.Logger.Warn("the INGEST stream's hard bound is below the shedding bound plus the batches in flight; receivers are told queue_full before anything is shed",
+			slog.Int64("stream_max_msgs", have), slog.Int64("needed", want), slog.String("variable", "BUS_INGEST_MAX_MSGS"))
+	}
 	status := &Status{
 		Keyring: kr, Gate: gate, Pub: conn, StaleAfter: time.Duration(t.StaleAfterS) * time.Second,
 		LagAfter: time.Duration(t.LagAfterS) * time.Second, Logger: rt.Logger, Limiter: rt.Limiter, MaxReceivers: t.MaxReceivers,
@@ -153,6 +151,9 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.RIDIngest, o Options
 	wg.Go(func() {
 		FollowKeySet(ctx, kv, kr, time.Duration(t.KeysetRereadS)*time.Second, rt.Logger, rt.Limiter)
 	})
+	if followSources != nil {
+		wg.Go(func() { followSources(ctx) })
+	}
 	wg.Go(func() { worker.Run(ctx, queue.EnsureQueue) })
 	wg.Go(func() { status.Run(ctx, time.Duration(t.StatusIntervalMS)*time.Millisecond) })
 

@@ -33,7 +33,7 @@ func TestIntegrationRegistryThroughTheProcess(t *testing.T) {
 		select {
 		case code := <-exit:
 			if code != proc.ExitOK {
-				t.Errorf("exit %d", code)
+				t.Errorf("exit %d; last lines of stdout:\n%s\nstderr:\n%s", code, stdout.tail(40), stderr.tail(40))
 			}
 		case <-time.After(20 * time.Second):
 			t.Error("api did not stop")

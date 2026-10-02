@@ -16,12 +16,17 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/apiserver"
 	"github.com/rootxkit/uspace-authority/internal/audit"
 	"github.com/rootxkit/uspace-authority/internal/authz"
+	"github.com/rootxkit/uspace-authority/internal/bus"
+	"github.com/rootxkit/uspace-authority/internal/cell"
+	"github.com/rootxkit/uspace-authority/internal/cell/assign"
 	"github.com/rootxkit/uspace-authority/internal/config"
 	"github.com/rootxkit/uspace-authority/internal/passhash"
 	"github.com/rootxkit/uspace-authority/internal/policy"
 	"github.com/rootxkit/uspace-authority/internal/proc"
 	"github.com/rootxkit/uspace-authority/internal/receivers"
 	"github.com/rootxkit/uspace-authority/internal/registry"
+	"github.com/rootxkit/uspace-authority/internal/sources"
+	"github.com/rootxkit/uspace-authority/internal/sources/switches"
 	"github.com/rootxkit/uspace-authority/internal/store"
 	"github.com/rootxkit/uspace-authority/internal/store/pg"
 	"github.com/rootxkit/uspace-authority/internal/tokens"
@@ -77,6 +82,23 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 		defer cancel()
 		wg.Go(func() {
 			follower.Run(ctx, svc.Active, time.Duration(cfg.PolicyRefreshS)*time.Second, rt.Logger)
+		})
+
+		// The bus: api provisions every stream and bucket (bus.Ensure)
+		// and starts degraded when NATS is down (B-08), provisioning once
+		// it is back.
+		bp, err := bus.OpenProcess(ctx, cfg.NATSURL, cfg.Bus, "api", cfg.RIDKeysetBucket, rt.Logger)
+		if err != nil {
+			return err
+		}
+		// The connection closes after the loops that use it have stopped.
+		defer func() { cancel(); wg.Wait(); bp.Close() }()
+		// Not a readiness check: api serves its control plane with NATS
+		// down (05 §6) and refuses only what needs the bus, with 503. The
+		// status line says how the connection is.
+		rt.AddStatus(bus.StatusAttrs(bp.NC))
+		wg.Go(func() {
+			bus.EnsureUntilDone(ctx, bp.JS, bp.Topology, time.Duration(cfg.NATSTimeoutMS)*time.Millisecond, rt.Logger, rt.Limiter)
 		})
 
 		hasher, err := passhash.New(passhash.Params{
@@ -157,7 +179,7 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 
 		rx, err := receivers.Assemble(ctx, receivers.Setup{
 			DB: db, Audit: auditWriter, Hasher: hasher, PIIKeyID: cfg.PIIKeyID, PIIKeyFile: cfg.PIIKeyFile,
-			NATSURL: cfg.NATSURL, Bucket: cfg.RIDKeysetBucket, KVTimeout: time.Duration(cfg.RIDKVTimeoutMS) * time.Millisecond,
+			JS: bp.JS, Limits: bp.Limits, KVTimeout: time.Duration(cfg.RIDKVTimeoutMS) * time.Millisecond,
 			TSURL: cfg.TSURL, TSRole: cfg.TSReaderRole, TSMaxConns: cfg.TSMaxConns,
 			StatementTimeout: time.Duration(cfg.PGStatementTimeoutS) * time.Second,
 			Defaults: receivers.Defaults{
@@ -178,6 +200,21 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 			rx.Service.RunReprojection(ctx, time.Duration(cfg.RIDKeysetReprojectS)*time.Second, rt.Limiter)
 		})
 
+		cells := assign.New(db, auditWriter, cell.StoreOf(bp), rt.Logger)
+
+		// Source control (U-15): api writes the switches, republishes
+		// them from the database, keeps every adapter's last status, and
+		// follows the published state like every process.
+		sw := switches.NewService(db, auditWriter, bp, cfg.Bus, cfg.Sources, rt.Logger, rt.Limiter)
+		rt.AddCounters("source_switches", sw.Counters)
+		statuses := sources.NewStatusStore(cfg.SourceStatusMax)
+		rt.AddCounters("source_status", statuses.Counters)
+		_, followSources := sources.Follow(ctx, rt, bp, cfg.Bus)
+		wg.Go(func() { followSources(ctx) })
+		wg.Go(func() { sw.RunRepublish(ctx, time.Duration(cfg.SourceControlRepublishS)*time.Second) })
+		wg.Go(func() { statuses.Run(ctx, bp.NC, rt.Logger) })
+		rt.AddCounters("cells", cells.Counters)
+
 		mux := http.NewServeMux()
 		apiserver.Mount(mux, apiserver.Server{
 			PolicyHandler:       policy.Handler{Service: svc},
@@ -188,6 +225,10 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 			UsersHandler:        az.Handler,
 			RegistryHandler:     reg.Handler,
 			RIDReceiversHandler: rx.Handler,
+			CellsHandler:        assign.Handler{Service: cells},
+			SourcesHandler: switches.Handler{
+				Service: sw, Status: statuses, StaleAfter: time.Duration(cfg.SourceStatusStaleS) * time.Second,
+			},
 		}, apiserver.Options{
 			Logger:      rt.Logger,
 			Middlewares: []apiserver.Middleware{tok.Handler.FormGuard(), apiserver.Authorize(identify, apiserver.DefaultRules())},

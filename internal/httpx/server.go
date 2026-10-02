@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
+	"sync"
 	"time"
 
 	"github.com/rootxkit/uspace-core/core"
@@ -26,10 +27,22 @@ const (
 // Server is a net/http server with the baseline every listener of this
 // system has: header read timeout, read, write and idle timeouts, a
 // header size cap, and a Shutdown bounded by a deadline.
+//
+// The drain closes every connection that has not sent a request yet.
+// net/http's Shutdown waits for such a connection until it is more than
+// 5 s old, so a client's spare dial (an HTTP transport dials while an
+// idle connection frees up and parks the new one unused), a TCP health
+// check or a preconnect made a drain bound of 5 s or less overrun with
+// nothing in flight, and the process exit 1. Nothing is lost: such a
+// connection holds no request, as an idle keep-alive connection does
+// not, and net/http closes those at once too.
 type Server struct {
 	Name   string // "public", "admin": names the listener in logs
 	Logger *slog.Logger
 	srv    *http.Server
+
+	mu    sync.Mutex
+	fresh map[net.Conn]struct{} // accepted, no request read yet (StateNew)
 }
 
 // ServerOptions configures NewServer; zero values take the defaults.
@@ -59,20 +72,59 @@ func NewServer(opts ServerOptions) *Server {
 	if opts.NoWriteTimeout {
 		writeTimeout = 0
 	}
-	return &Server{
+	s := &Server{
 		Name:   opts.Name,
 		Logger: opts.Logger,
-		srv: &http.Server{
-			Addr:              opts.Addr,
-			Handler:           opts.Handler,
-			ReadHeaderTimeout: def(opts.ReadHeaderTimeout, DefaultReadHeaderTimeout),
-			ReadTimeout:       def(opts.ReadTimeout, DefaultReadTimeout),
-			WriteTimeout:      writeTimeout,
-			IdleTimeout:       def(opts.IdleTimeout, DefaultIdleTimeout),
-			MaxHeaderBytes:    DefaultMaxHeaderBytes,
-			ErrorLog:          slog.NewLogLogger(opts.Logger.Handler(), slog.LevelWarn),
-		},
+		fresh:  map[net.Conn]struct{}{},
 	}
+	s.srv = &http.Server{
+		Addr:              opts.Addr,
+		Handler:           opts.Handler,
+		ReadHeaderTimeout: def(opts.ReadHeaderTimeout, DefaultReadHeaderTimeout),
+		ReadTimeout:       def(opts.ReadTimeout, DefaultReadTimeout),
+		WriteTimeout:      writeTimeout,
+		IdleTimeout:       def(opts.IdleTimeout, DefaultIdleTimeout),
+		MaxHeaderBytes:    DefaultMaxHeaderBytes,
+		ErrorLog:          slog.NewLogLogger(opts.Logger.Handler(), slog.LevelWarn),
+		ConnState:         s.track,
+	}
+	s.srv.RegisterOnShutdown(s.closeFresh)
+	return s
+}
+
+// track keeps the connections that have not sent a request yet.
+func (s *Server) track(c net.Conn, state http.ConnState) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if state == http.StateNew {
+		s.fresh[c] = struct{}{}
+		return
+	}
+	delete(s.fresh, c)
+}
+
+// closeFresh closes the connections that have not sent a request. It
+// runs when Shutdown has closed the listeners, so no new one arrives.
+func (s *Server) closeFresh() {
+	s.mu.Lock()
+	conns := make([]net.Conn, 0, len(s.fresh))
+	for c := range s.fresh {
+		conns = append(conns, c)
+	}
+	s.mu.Unlock()
+	for _, c := range conns {
+		_ = c.Close()
+	}
+	if len(conns) > 0 && s.Logger != nil {
+		s.Logger.Debug("drain closed connections that never sent a request", slog.String("listener", s.Name), slog.Int("connections", len(conns)))
+	}
+}
+
+// newConns is how many accepted connections have not sent a request.
+func (s *Server) newConns() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.fresh)
 }
 
 // HTTPServer exposes the underlying server (tests read its timeouts).

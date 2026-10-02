@@ -231,8 +231,11 @@ func TestHardMaxBatchesCoversTheShedBoundAndTheInFlight(t *testing.T) {
 	if c.HardMaxBatches() != 220 {
 		t.Fatal(c.HardMaxBatches())
 	}
-	if QueueSubject("c3:131:224") != "ingest.v1.c3:131:224" {
-		t.Fatal(QueueSubject("c3:131:224"))
+	if s, err := QueueSubject("c3:131:224"); s != "ingest.v1.c3_131_224" || err != nil {
+		t.Fatal(s, err)
+	}
+	if _, err := QueueSubject("c3:131"); err == nil {
+		t.Fatal("a malformed cell name made a subject")
 	}
 }
 
