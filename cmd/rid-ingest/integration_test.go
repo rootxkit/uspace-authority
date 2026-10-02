@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -598,6 +599,19 @@ func (g *gate) Query(sourceType string, instanceID *string) sources.Decision {
 // RID_LOAD_SMOKE_S seconds (60 by default). Every observation sent ends
 // in exactly one place: handed to the writer, shed with a gap record,
 // refused, or a duplicate; the counts must add up to what was sent.
+//
+// The accounting is per batch (receiver, nonce), reconciled against what
+// reached the writer's stream. A batch the client saw refused with 503
+// or lost to a client-side timeout may still have been queued: the
+// queue write is acknowledged by JetStream after the handler gave up
+// waiting (RID_INGEST_NATS_TIMEOUT_MS), so the receiver is told to retry
+// while the batch is in the queue. That is at-least-once delivery, which
+// the writer's dedupe key absorbs (B-05), not a loss; such batches are
+// counted as "queued after an ambiguous answer" and logged. This is the
+// one way a slow full run (other packages' processes and containers on
+// the same machine) made the old totals disagree while a lone run passed
+// (WP-8 investigation): the per-batch reconciliation tells it apart from
+// a real loss or a row handed over twice, which still fail the test.
 func TestIntegrationLoadSmoke(t *testing.T) {
 	h := newHarness(t)
 	seconds := 60
@@ -617,13 +631,23 @@ func TestIntegrationLoadSmoke(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	h.start(nil, ingest.Options{})
+	// RID_LOAD_SMOKE_NATS_TIMEOUT_MS shortens the queue-write bound to
+	// provoke the ambiguous answers a slow machine produces.
+	var extra map[string]string
+	if v := os.Getenv("RID_LOAD_SMOKE_NATS_TIMEOUT_MS"); v != "" {
+		extra = map[string]string{"RID_INGEST_NATS_TIMEOUT_MS": v}
+	}
+	h.start(extra, ingest.Options{})
 	h.stdout.waitFor(t, "receiver key set loaded", func(m map[string]any) bool { return m["receivers"] == float64(nRx) })
 
+	// outcome is what the client saw of one batch.
+	type outcome struct {
+		n, accepted, duplicates, code int
+		err                           error
+		latency                       time.Duration
+	}
 	var mu sync.Mutex
-	var sent, accepted, duplicates, refused, transport int
-	statuses := map[int]int{}
-	var latencies []time.Duration
+	outcomes := map[string]outcome{} // "<receiver>|<nonce>"
 	start := time.Now()
 	var wg sync.WaitGroup
 	for i := range rxs {
@@ -639,21 +663,11 @@ func TestIntegrationLoadSmoke(t *testing.T) {
 						obs = append(obs, observation(fmt.Sprintf("AA:BB:CC:%02X:%02X:%02X", i, a, m), s*100+a, at))
 					}
 				}
+				nonce := fmt.Sprintf("load-%d", s)
 				t0 := time.Now()
-				code, a, err := postNoFatal(h, r, fmt.Sprintf("load-%d", s), obs)
+				code, a, err := postNoFatal(h, r, nonce, obs)
 				mu.Lock()
-				sent += len(obs)
-				latencies = append(latencies, time.Since(t0))
-				switch {
-				case err != nil:
-					transport += len(obs)
-				case code == http.StatusAccepted:
-					accepted += a.Accepted
-					duplicates += a.Duplicates
-				default:
-					refused += len(obs)
-				}
-				statuses[code]++
+				outcomes[r.id+"|"+nonce] = outcome{n: len(obs), accepted: a.Accepted, duplicates: a.Duplicates, code: code, err: err, latency: time.Since(t0)}
 				mu.Unlock()
 				<-tick.C
 			}
@@ -661,6 +675,28 @@ func TestIntegrationLoadSmoke(t *testing.T) {
 	}
 	wg.Wait()
 	elapsed := time.Since(start)
+
+	var sent, accepted, duplicates, refused, transport int
+	statuses := map[int]int{}
+	lats := make([]time.Duration, 0, len(outcomes))
+	for _, o := range outcomes {
+		sent += o.n
+		lats = append(lats, o.latency)
+		statuses[o.code]++
+		switch {
+		case o.err != nil:
+			transport += o.n
+		case o.code == http.StatusAccepted:
+			accepted += o.accepted
+			duplicates += o.duplicates
+		default:
+			refused += o.n
+		}
+	}
+	slices.Sort(lats)
+	pct := func(p float64) time.Duration {
+		return lats[min(len(lats)-1, int(p*float64(len(lats))))].Round(time.Millisecond)
+	}
 
 	var rows []ridpipe.Row
 	var gaps []ingest.Gap
@@ -671,41 +707,90 @@ func TestIntegrationLoadSmoke(t *testing.T) {
 		}
 		return n
 	}
+	// Every 202 batch reaches the writer or a gap; batches with an
+	// ambiguous answer may arrive too, so wait for the 202s and then for
+	// the stream to stop growing.
 	waitUntil(t, 60*time.Second, func() bool {
 		rows, gaps = h.handedOver()
 		return len(rows)+shedOf() >= accepted
 	})
-	shed := shedOf()
-	line := h.stdout.waitFor(t, "status", func(m map[string]any) bool {
-		return counter(m, "rid_ingest", "rows_handed_to_writer") == float64(len(rows))
-	})
-	lats := latencies
-	var maxLat, sum time.Duration
-	for _, l := range lats {
-		sum += l
-		maxLat = max(maxLat, l)
+	for prev := -1; prev != len(rows); {
+		prev = len(rows)
+		time.Sleep(2 * time.Second)
+		rows, gaps = h.handedOver()
 	}
+	shed := shedOf()
+
+	// Reconcile per batch against the writer's stream.
+	handed := map[string]int{}
+	frames := map[string]int{}
+	for _, row := range rows {
+		handed[row.ReceiverID+"|"+row.Nonce]++
+		frames[row.FrameID]++
+	}
+	var twice, unsent, missing202 []string
+	for id, n := range frames {
+		if n > 1 {
+			twice = append(twice, fmt.Sprintf("%s x%d", id, n))
+		}
+	}
+	ambiguousBatches, ambiguousRows := 0, 0
+	missingAccepted := 0
+	for key, n := range handed {
+		o, ok := outcomes[key]
+		switch {
+		case !ok:
+			unsent = append(unsent, key)
+		case o.err != nil || o.code != http.StatusAccepted:
+			// Refused or timed out at the client, yet queued.
+			ambiguousBatches++
+			ambiguousRows += n
+			if n != o.n {
+				t.Errorf("batch %s answered %d (%v) and partly handed over: %d of %d", key, o.code, o.err, n, o.n)
+			}
+		case n != o.accepted:
+			t.Errorf("batch %s: %d accepted, %d handed over", key, o.accepted, n)
+		}
+	}
+	for key, o := range outcomes {
+		if o.err == nil && o.code == http.StatusAccepted && handed[key] == 0 {
+			missingAccepted += o.accepted
+			missing202 = append(missing202, key)
+		}
+	}
+	line := h.stdout.waitFor(t, "status", func(m map[string]any) bool {
+		return counter(m, "rid_ingest", "rows_handed_to_writer") >= float64(len(rows))
+	})
 	t.Logf("load smoke: %d receivers x %d aircraft x %d msg/s for %d s in %s", nRx, aircraft, perSecond, seconds, elapsed.Round(time.Millisecond))
-	t.Logf("sent %d = handed over %d + shed %d + refused %d + duplicates %d + transport errors %d (HTTP %v)",
-		sent, len(rows), shed, refused, duplicates, transport, statuses)
-	t.Logf("request latency: mean %s, max %s", (sum / time.Duration(max(1, len(lats)))).Round(time.Microsecond), maxLat.Round(time.Microsecond))
-	t.Logf("rid-ingest counters: observations_accepted %.0f, rows_handed_to_writer %.0f, queue_shed_observations %.0f, batches_refused %.0f, observations_duplicate %.0f",
+	t.Logf("sent %d = accepted %d + refused %d + duplicates %d + transport errors %d (HTTP %v)",
+		sent, accepted, refused, duplicates, transport, statuses)
+	t.Logf("handed over %d + shed %d; queued after an ambiguous answer (503 or client timeout, at-least-once): %d batches, %d rows",
+		len(rows), shed, ambiguousBatches, ambiguousRows)
+	t.Logf("request latency: p50 %s, p99 %s, max %s", pct(0.5), pct(0.99), lats[len(lats)-1].Round(time.Millisecond))
+	t.Logf("rid-ingest counters: observations_accepted %.0f, rows_handed_to_writer %.0f, queue_shed_observations %.0f, batches_refused %.0f, observations_duplicate %.0f, storage_unavailable %.0f, queue_ack_failed %.0f",
 		counter(line, "rid_ingest", "observations_accepted"), counter(line, "rid_ingest", "rows_handed_to_writer"),
 		counter(line, "rid_ingest", "queue_shed_observations"), counter(line, "rid_ingest", "batches_refused"),
-		counter(line, "rid_ingest", "observations_duplicate"))
-	if sent != nRx*aircraft*perSecond*seconds {
-		t.Fatalf("sent %d", sent)
+		counter(line, "rid_ingest", "observations_duplicate"), counter(line, "rid_ingest", ingest.CounterStorageUnavailable),
+		counter(line, "rid_ingest", ingest.CounterAckFailed))
+	if sent != nRx*aircraft*perSecond*seconds || accepted+refused+duplicates+transport != sent {
+		t.Fatalf("sent %d, outcomes add up to %d", sent, accepted+refused+duplicates+transport)
 	}
-	if len(rows)+shed+refused+duplicates+transport != sent || accepted != len(rows)+shed {
-		t.Fatalf("the counts do not add up: sent %d, accepted %d, handed over %d, shed %d, refused %d, duplicates %d, transport %d",
-			sent, accepted, len(rows), shed, refused, duplicates, transport)
+	if len(twice) > 0 || len(unsent) > 0 {
+		t.Fatalf("frames handed over twice %v; batches nobody sent %v", twice, unsent)
 	}
-	if counter(line, "rid_ingest", "observations_accepted") != float64(accepted) {
-		t.Fatalf("the process counted %v accepted, the receivers %d", counter(line, "rid_ingest", "observations_accepted"), accepted)
+	// Every accepted observation is handed over or in a gap record, and
+	// nothing else reached the writer but batches with an ambiguous answer.
+	if missingAccepted != shed || len(rows) != accepted-missingAccepted+ambiguousRows {
+		t.Fatalf("accepted %d: handed over %d (of which %d after an ambiguous answer), shed %d, accepted and missing %d %v",
+			accepted, len(rows), ambiguousRows, shed, missingAccepted, missing202)
+	}
+	// The process counts what it accepted: the receivers' 202s, plus any
+	// batch whose 202 a client timeout lost.
+	if got := counter(line, "rid_ingest", "observations_accepted"); got < float64(accepted) || got > float64(accepted+ambiguousRows) {
+		t.Fatalf("the process counted %v accepted, the receivers %d (+%d ambiguous)", got, accepted, ambiguousRows)
 	}
 }
 
-// postNoFatal is post for goroutines: errors are returned, not fatal.
 func postNoFatal(h *harness, r testRx, nonce string, obs []string) (int, ack, error) {
 	body := fmt.Sprintf(`{"receiver_id":%q,"sent_at_ms":%d,"nonce":%q,"backlog":false,"observations":[%s]}`,
 		r.id, time.Now().UnixMilli(), nonce, strings.Join(obs, ","))
