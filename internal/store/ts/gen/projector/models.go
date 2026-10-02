@@ -54,3 +54,18 @@ type RidObservation struct {
 	SentAtMs        int64
 	Nonce           string
 }
+
+type WriterGap struct {
+	DedupeKey  string
+	TableName  string
+	Stream     string
+	FromSeq    int64
+	ToSeq      int64
+	Cause      string
+	Count      int64
+	CountUnit  string
+	At         time.Time
+	ReceiverID *string
+	Detail     *string
+	RecordedAt time.Time
+}
