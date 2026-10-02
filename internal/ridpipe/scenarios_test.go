@@ -62,6 +62,20 @@ func leg(start time.Time, n int, serial string) []datagram {
 // two Locations through before the next Basic ID that arrives).
 func sc10(t *testing.T, seed uint64, s Settings, run bool) (oldAfter, newRows int, wanted bool) {
 	t.Helper()
+	oldAfter, newRows, wanted, _ = sc10Run(t, seed, s, run, false)
+	return oldAfter, newRows, wanted
+}
+
+// sc10Backlog replays SC-10's datagrams as backlog an hour later, while
+// the process ticks on wall time, and returns tracker_clock_held too.
+func sc10Backlog(t *testing.T, seed uint64) (oldAfter, newRows int, held uint64) {
+	t.Helper()
+	oldAfter, newRows, _, p := sc10Run(t, seed, DefaultSettings(), true, true)
+	return oldAfter, newRows, p.Counters().Get(CounterTrackerClockHeld)
+}
+
+func sc10Run(t *testing.T, seed uint64, s Settings, run, backlog bool) (oldAfter, newRows int, wanted bool, p *Pipeline) {
+	t.Helper()
 	const tx = "AA:BB:CC:00:10:01"
 	restart := t0.Add(34 * time.Second)
 	sent := append(leg(t0, 30, "TESTOLD0001"), leg(restart, 30, "TESTNEW0002")...)
@@ -90,20 +104,24 @@ func sc10(t *testing.T, seed uint64, s Settings, run bool) (oldAfter, newRows in
 		wanted = through == 2
 	}
 	if !run {
-		return 0, 0, wanted
+		return 0, 0, wanted, nil
 	}
 	p, rec := pipe(s, Deps{})
 	oldID, newID := rid.AircraftID(odid.IDTypeSerial, "TESTOLD0001"), rid.AircraftID(odid.IDTypeSerial, "TESTNEW0002")
 	lastTick := t0
+	replay := time.Duration(0)
+	if backlog {
+		replay = time.Hour // delivered an hour after it was heard
+	}
 	for i, d := range sent {
-		for d.at.Sub(lastTick) >= time.Second { // the process's once-a-second tick
+		for d.at.Sub(lastTick) >= time.Second { // the process's once-a-second tick, on wall time
 			lastTick = lastTick.Add(time.Second)
-			p.Tick(lastTick)
+			p.Tick(lastTick.Add(replay))
 		}
 		if !kept[i] {
 			continue
 		}
-		observe(t, p, batchOf("rx-1", d.at, false, rxRow("rx-1", tx, frame(t, d.msg), at(d.at))))
+		observe(t, p, batchOf("rx-1", d.at, backlog, rxRow("rx-1", tx, frame(t, d.msg), at(d.at))))
 	}
 	tracks := rec.tracks(t)
 	for i := range tracks {
@@ -119,7 +137,7 @@ func sc10(t *testing.T, seed uint64, s Settings, run bool) (oldAfter, newRows in
 			newRows++
 		}
 	}
-	return oldAfter, newRows, wanted
+	return oldAfter, newRows, wanted, p
 }
 
 // SC-10 (S-32, I-01): a serial change on a reused address with 30 %

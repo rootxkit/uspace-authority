@@ -3,7 +3,7 @@ package ridpipe
 import (
 	"context"
 	"log/slog"
-	"math"
+	"sort"
 	"sync"
 	"time"
 
@@ -209,16 +209,19 @@ func (p *Pipeline) now() time.Time {
 // seconds is t on the trackers' clock: Unix seconds, this system's clock.
 func seconds(t time.Time) float64 { return float64(t.UnixNano()) / 1e9 }
 
-// Tick forgets the transmitters silent for longer than the maximum gap
-// at now (I-01), so a silence ends an identity even when nothing else
-// is heard.
+// Tick forgets the live transmitters silent for longer than the maximum
+// gap (I-01), so a silence ends an identity even when nothing else is
+// heard. It never moves a tracker's clock: the trackers run on placed
+// receipt time (rx), and a batch placed up to MaxBatchSpacing before its
+// arrival must keep its spacing (T-02), so the tick forgets at now -
+// MaxBatchSpacing, a time no later row of a batch arriving now can
+// precede. The backlog tracker is never driven by wall time: history is
+// judged on its own clock (T-04); its transmitters are forgotten by its
+// own rows and bounded by MaxTransmitters.
 func (p *Pipeline) Tick(now time.Time) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	for _, st := range []*trackerState{&p.live, &p.backlog} {
-		st.nowS = math.Max(st.nowS, seconds(now))
-		st.t.Forget(st.nowS)
-	}
+	p.live.t.Forget(seconds(now.Add(-p.s.MaxBatchSpacing)))
 }
 
 // Run ticks every period until ctx ends.
@@ -265,9 +268,16 @@ func (p *Pipeline) Observe(_ context.Context, b *Batch) error {
 	if clamped > 0 {
 		p.cnt.Add(CounterRxSpacingClamped, uint64(clamped))
 	}
+	// The rows in the order they were heard, so the tracker's clock
+	// moves forward through the batch and its spacing is kept (T-02).
+	order := make([]int, len(b.Rows))
+	for i := range order {
+		order[i] = i
+	}
+	sort.SliceStable(order, func(a, c int) bool { return rx[order[a]].Before(rx[order[c]]) })
 	var rows []track.Row
 	p.mu.Lock()
-	for i := range b.Rows {
+	for _, i := range order {
 		if row := p.observeRow(b, &b.Rows[i], rx[i]); row != nil {
 			rows = append(rows, *row)
 		}

@@ -41,9 +41,13 @@
 //     tracker is keyed by transmitter across every receiver (I-03
 //     borrowing) for live rows, and a second one for backlog rows, so a
 //     replayed history never borrows a live identity and never moves the
-//     live tracker's clock (T-04). The trackers' clock is rx in Unix
-//     seconds, never moved backwards (tracker_clock_held); Tick forgets
-//     silent transmitters once a second. The tracker publishes each
+//     live tracker's clock (T-04). Each tracker's clock is the placed
+//     rx of its rows in Unix seconds, the rows of a batch taken in the
+//     order they were heard; a row behind the clock (an older batch) is
+//     taken at the clock and counted (tracker_clock_held). Wall time
+//     never moves a tracker's clock: Tick only forgets the live
+//     tracker's transmitters silent at now - MaxBatchSpacing, once a
+//     second, and never touches the backlog tracker. The tracker publishes each
 //     Location once (Take returns nil for a frame that publishes
 //     nothing); the track id is rid.AircraftID(id_type, ua_id) when
 //     identified and rid.UnidentifiedID(transmitter) otherwise (I-06;

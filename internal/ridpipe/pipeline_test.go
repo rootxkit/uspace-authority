@@ -345,11 +345,14 @@ func TestTickForgetsSilentTransmitters(t *testing.T) {
 	p, _ := pipe(DefaultSettings(), Deps{Now: func() time.Time { return t0 }})
 	observe(t, p, batchOf("rx-1", t0, false, rxRow("rx-1", "TX-1", frame(t, odid.BasicID{IDType: odid.IDTypeSerial, UAID: "TESTREG0001"}), at(t0))))
 	live, _ := p.TrackerCounters()
-	p.Tick(t0.Add(2 * time.Second))
+	// The tick forgets at now - MaxBatchSpacing (120 s): a batch arriving
+	// now may still hold rows heard that long ago.
+	spacing := DefaultSettings().MaxBatchSpacing
+	p.Tick(t0.Add(spacing + 2*time.Second))
 	if live.Get(rid.CounterSilences) != 0 || p.live.t.Transmitters() != 1 {
 		t.Fatal("forgot within the gap")
 	}
-	p.Tick(t0.Add(4 * time.Second))
+	p.Tick(t0.Add(spacing + 4*time.Second))
 	if live.Get(rid.CounterSilences) != 1 || p.live.t.Transmitters() != 0 {
 		t.Fatalf("not forgotten past the gap: %v", live.Snapshot())
 	}
