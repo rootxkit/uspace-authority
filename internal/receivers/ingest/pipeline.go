@@ -8,11 +8,13 @@ import (
 
 	"github.com/nats-io/nats.go"
 	"github.com/rootxkit/uspace-core/core"
+	"github.com/rootxkit/uspace-core/geoid"
 	"github.com/rootxkit/uspace-core/rid"
 	"github.com/rootxkit/uspace-core/timeplace"
 
 	"github.com/rootxkit/uspace-authority/internal/bus"
 	"github.com/rootxkit/uspace-authority/internal/config"
+	"github.com/rootxkit/uspace-authority/internal/ground"
 	"github.com/rootxkit/uspace-authority/internal/proc"
 	"github.com/rootxkit/uspace-authority/internal/registry"
 	"github.com/rootxkit/uspace-authority/internal/ridpipe"
@@ -72,7 +74,7 @@ func (l *lazyProjection) close() {
 
 // startPipeline builds the Remote ID pipeline of the process (WP-8): the
 // registry projection reader (re-read every RID_PROJECTION_REFRESH_S and
-// on registry.v1.changed), the geoid of o (none until WP-11), the
+// on registry.v1.changed), the geoid of o or else GEOID_FILE's (WP-11), the
 // trackers' tick, and the status-line attributes. The returned function
 // runs the background work until ctx ends.
 func startPipeline(rt *proc.Runtime, cfg *config.RIDIngest, bp *bus.Process, o Options) (*ridpipe.Pipeline, func(context.Context)) {
@@ -85,11 +87,15 @@ func startPipeline(rt *proc.Runtime, cfg *config.RIDIngest, bp *bus.Process, o O
 	reader := &registry.ProjectionReader{Source: src, Counters: regCounters, Logger: rt.Logger}
 	rt.AddStatus(reader.StatusAttrs)
 
+	geo := o.Geoid
+	if geo == nil {
+		geo = loadGeoid(rt, cfg.Geoid)
+	}
 	counters := &core.Counters{}
 	rt.AddCounters("ridpipe", counters)
 	s := PipelineSettings(t)
 	p := ridpipe.New(s, ridpipe.Deps{
-		Registry: reader.Lookup, Geoid: o.Geoid, Publisher: bp.NC, Counters: counters, Logger: rt.Logger, Limiter: rt.Limiter,
+		Registry: reader.Lookup, Geoid: geo, Publisher: bp.NC, Counters: counters, Logger: rt.Logger, Limiter: rt.Limiter,
 	})
 	live, backlog := p.TrackerCounters()
 	rt.AddCounters("rid_tracker", live)
@@ -102,7 +108,7 @@ func startPipeline(rt *proc.Runtime, cfg *config.RIDIngest, bp *bus.Process, o O
 		slog.Float64("broadcast_tolerance_s", s.Broadcast.ToleranceS), slog.Float64("max_latency_s", s.Broadcast.MaxLatencyS),
 		slog.Int("min_vertical_accuracy", int(s.Altitude.MinVerticalAccuracy)), slog.Float64("pressure_hold_s", s.Altitude.PressureHoldS),
 		slog.Int("max_tracks", s.MaxTracks))
-	if o.Geoid == nil {
+	if geo == nil {
 		// R-07, SC-05 step 3, SC-22: said at start and on every status line.
 		rt.Logger.Warn("no geoid configured: Remote ID aircraft have no AMSL altitude and are not judged vertically (R-07)")
 	}
@@ -149,4 +155,25 @@ func startPipeline(rt *proc.Runtime, cfg *config.RIDIngest, bp *bus.Process, o O
 		<-ctx.Done()
 	}
 	return p, run
+}
+
+// loadGeoid reads GEOID_FILE through internal/ground (WP-11). It returns
+// a nil interface when the file is not configured or cannot be read, so
+// that the pipeline publishes no AMSL altitude (HAE only, R-07) rather
+// than a guess; an unreadable grid is said at start with its reason and
+// on every status line.
+func loadGeoid(rt *proc.Runtime, cfg config.Geoid) geoid.Undulator {
+	if cfg.GeoidFile == "" {
+		return nil
+	}
+	g := ground.New(ground.FromGeoidConfig(cfg))
+	g.Log(rt.Logger)
+	problems := g.Problems()
+	rt.AddStatus(func() []slog.Attr {
+		if len(problems) != 0 {
+			return []slog.Attr{slog.String("geoid_grid", problems[0].State+": "+problems[0].Reason)}
+		}
+		return []slog.Attr{slog.String("geoid_grid", g.GeoidDescription())}
+	})
+	return g.Undulator()
 }

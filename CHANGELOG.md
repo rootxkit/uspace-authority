@@ -127,6 +127,17 @@ Unreleased; the format follows Keep a Changelog.
   adapters and scenarios SC-06, SC-10, SC-11, SC-22 in process.
   tsdb-writer records a purge of `TSW` as a `stream_purge` gap
   (timeseries `00007`, `writer_positions`).
+- WP-11: `internal/ground` over core's `terrain` and `geoid`: `Env`
+  (known, unknown or not-configured ground, never 0 m for what is not
+  known; the undulation or nil), the `Undulator` and `Ground`
+  interfaces, `Problems` and the status line with the datasets and the
+  Copernicus attribution; `Daylight` is core's `ed318.NOAADaylight`;
+  `GROUND_DIR`, `GEOID_FILE`, `GROUND_TILE_CACHE`,
+  `GROUND_RETRY_AFTER_S`; rid-ingest computes AMSL through
+  `GEOID_FILE` (HAE only without it) and detect says what ground it
+  has; `deploy/fetch-ground.sh` (SHA-256-pinned geoid grids, checked
+  terrain tiles); CI runs the GeographicLib vector cases; the ground
+  runbook.
 - WP-5: zones and U-space airspaces (`internal/zonesvc`, relational
   `00012_geo_zones` and `00013_publications`, timeseries
   `00009_zones_projection`, `/v1/zones*`, `/v1/uspace*`): versioned

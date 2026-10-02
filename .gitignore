@@ -12,6 +12,8 @@ vectors.log
 # DEM tiles, keys, certificates, environment files.
 /local/
 *.pgm
+# except the small synthetic ones internal/ground's tests generate
+!/internal/ground/testdata/**/*.pgm
 *.tif
 *.tiff
 *.pem

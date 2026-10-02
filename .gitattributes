@@ -13,6 +13,8 @@ Makefile text eol=lf
 go.mod text eol=lf
 go.sum text eol=lf
 
-# Binary fixtures (none yet; geoid and terrain tiles are never committed).
+# Binary fixtures: only the small synthetic grids and tiles that
+# internal/ground's tests generate; real geoid grids and DEM tiles are
+# never committed (deploy/fetch-ground.sh fetches them).
 *.pgm binary
 *.dat binary

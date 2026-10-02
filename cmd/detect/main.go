@@ -1,6 +1,8 @@
 // Command detect is the per-cell violation detector. It is started as `uspace-authority detect`;
-// --help lists the configuration variables. Until WP-12 it claims its
-// cells from the ownership map (or CELLS=all) and waits.
+// --help lists the configuration variables. It loads the terrain and the
+// geoid (GROUND_DIR, GEOID_FILE; WP-11) and says what is loaded; until
+// WP-12 it claims its cells from the ownership map (or CELLS=all) and
+// waits.
 package main
 
 import (
@@ -14,6 +16,7 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/bus"
 	"github.com/rootxkit/uspace-authority/internal/cell"
 	"github.com/rootxkit/uspace-authority/internal/config"
+	"github.com/rootxkit/uspace-authority/internal/ground"
 	"github.com/rootxkit/uspace-authority/internal/proc"
 	"github.com/rootxkit/uspace-authority/internal/sources"
 )
@@ -33,6 +36,15 @@ func spec(cfg *config.Detect) proc.Spec {
 		}
 		defer bp.Close()
 		rt.AddStatus(bus.StatusAttrs(bp.NC))
+		// Terrain and geoid (WP-11): what is loaded, and what therefore
+		// cannot be judged, at start and on every status line (Z-09).
+		g := ground.New(ground.FromConfig(cfg.Ground))
+		g.Log(rt.Logger)
+		rt.AddStatus(g.StatusAttrs)
+		rt.AddCounters("ground", g.Counters())
+		if tc := g.TerrainCounters(); tc != nil {
+			rt.AddCounters("terrain", tc)
+		}
 		// The cells this worker judges (05 §3): the ownership map's, or
 		// every cell with CELLS=all; none is a refusal to start.
 		claim, err := cell.LoadClaim(ctx, cell.StoreOf(bp), cfg.WorkerID, cfg.Cells == "all",
