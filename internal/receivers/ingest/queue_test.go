@@ -128,12 +128,11 @@ func TestWorkerKeepsTheBatchQueuedWhileStorageIsDown(t *testing.T) {
 }
 
 // 05 §5, E-10 (SC-18 step 3): past the queue's bound the oldest batch is
-// shed with a gap record and counted, never silently; the gap record
-// waits while storage is down and is written when it returns. A batch
+// shed with a gap record and counted, never silently; by age too. A batch
 // within the bound beside it is stored (E-01).
 func TestWorkerShedsTheOldestPastTheBoundWithAGapRecord(t *testing.T) {
 	now := time.Unix(10_000, 0)
-	store := &fakeStore{gapsErr: errors.New("TSW unavailable")}
+	store := &fakeStore{}
 	w := newWorker(&countingSink{}, store, now)
 	shed := 0
 	w.OnShed = func(_ string, n int) { shed += n }
@@ -142,19 +141,15 @@ func TestWorkerShedsTheOldestPastTheBoundWithAGapRecord(t *testing.T) {
 	if old.termed != 1 || old.acked != 0 || w.Counters.Get(CounterShedFull) != 1 || w.Counters.Get(CounterShedObservations) != 4 || shed != 4 {
 		t.Fatalf("shed: %+v %v", old, w.Counters.Snapshot())
 	}
-	if w.PendingGaps() != 1 || len(store.gaps) != 0 {
-		t.Fatalf("gap pending %d written %d", w.PendingGaps(), len(store.gaps))
-	}
 	aged := queued(t, "rx-1:aged", 1, 8, 0, now.Add(-11*time.Minute))
 	w.Handle(context.Background(), aged)
 	if aged.termed != 1 || w.Counters.Get(CounterShedAge) != 1 {
 		t.Fatalf("age: %+v", aged)
 	}
-	store.gapsErr = nil
 	within := queued(t, "rx-1:new", 1, 9, 9, now)
 	w.Handle(context.Background(), within)
-	if within.acked != 1 || len(store.gaps) != 2 || w.PendingGaps() != 0 {
-		t.Fatalf("within: acked %d gaps %d pending %d", within.acked, len(store.gaps), w.PendingGaps())
+	if within.acked != 1 || within.termed != 0 || len(store.gaps) != 2 {
+		t.Fatalf("within: acked %d gaps %d", within.acked, len(store.gaps))
 	}
 	g := store.gaps[0]
 	if g.Cause != CauseQueueFull || g.Count != 4 || g.FromSeq != 7 || g.Table != RowsTable || g.ReceiverID != "rx-1" {
@@ -165,23 +160,28 @@ func TestWorkerShedsTheOldestPastTheBoundWithAGapRecord(t *testing.T) {
 	}
 }
 
-// E-10: the gap records held while storage is down are bounded; past the
-// bound they merge into the last one, so the count of shed observations
-// is kept whole.
-func TestPendingGapsAreBoundedWithoutLosingTheCount(t *testing.T) {
-	w := newWorker(&countingSink{}, &fakeStore{}, time.Unix(1, 0))
-	for i := range maxPendingGaps + 10 {
-		w.addGap(Gap{Cause: CauseQueueFull, Count: 1, FromSeq: uint64(i), ToSeq: uint64(i)})
+// B-13: a batch is removed from the queue only after its gap record is
+// durable. The writer's stream dies mid-shed: the batch is not
+// terminated, it stays queued and nothing is counted as shed; the process
+// then restarts (a new worker, no memory) and the batch is delivered
+// again with the writer back: the gap record is written with the full
+// count and only then is the batch terminated.
+func TestShedGapSurvivesTheWriterDyingMidShed(t *testing.T) {
+	now := time.Unix(10_000, 0)
+	store := &fakeStore{gapsErr: errors.New("TSW unavailable")}
+	w := newWorker(&countingSink{}, store, now)
+	m := queued(t, "rx-1:old", 4, 7, 10, now)
+	w.Handle(context.Background(), m)
+	if m.termed != 0 || m.acked != 0 || m.naked != 1 || len(store.gaps) != 0 ||
+		w.Counters.Get(CounterShedFull) != 0 || w.Counters.Get(CounterGapsWaiting) != 1 {
+		t.Fatalf("writer down: %+v %v", m, w.Counters.Snapshot())
 	}
-	total := 0
-	for _, g := range w.pending {
-		total += g.Count
-	}
-	if len(w.pending) != maxPendingGaps || total != maxPendingGaps+10 || w.Counters.Get(CounterGapsDropped) != 10 {
-		t.Fatalf("held %d total %d", len(w.pending), total)
-	}
-	if last := w.pending[len(w.pending)-1]; last.ToSeq != maxPendingGaps+9 {
-		t.Fatalf("last %+v", last)
+	store.gapsErr = nil
+	restarted := newWorker(&countingSink{}, store, now)
+	restarted.Handle(context.Background(), m)
+	if m.termed != 1 || len(store.gaps) != 1 || store.gaps[0].Count != 4 || store.gaps[0].FromSeq != 7 ||
+		restarted.Counters.Get(CounterShedFull) != 1 || restarted.Counters.Get(CounterGapsRecorded) != 1 {
+		t.Fatalf("after restart: %+v gaps %+v %v", m, store.gaps, restarted.Counters.Snapshot())
 	}
 }
 
@@ -195,7 +195,7 @@ func TestWorkerSurvivesCorruptMessagesAndAFailingDecoder(t *testing.T) {
 	w.Handle(context.Background(), corrupt)
 	noMeta := &fakeMsg{data: []byte("{}"), metaErr: errors.New("no metadata")}
 	w.Handle(context.Background(), noMeta)
-	if corrupt.termed != 1 || noMeta.termed != 1 || w.Counters.Get(CounterQueueCorrupt) != 2 || w.PendingGaps() != 1 {
+	if corrupt.termed != 1 || noMeta.termed != 1 || w.Counters.Get(CounterQueueCorrupt) != 2 || len(store.gaps) != 2 {
 		t.Fatalf("corrupt: %v", w.Counters.Snapshot())
 	}
 	m := queued(t, "rx-1:a", 1, 4, 0, now)

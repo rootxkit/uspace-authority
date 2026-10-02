@@ -94,7 +94,7 @@ const (
 	CounterSinkFailed         = "sink_failed"
 	CounterSinkPanicked       = "sink_panicked"
 	CounterGapsRecorded       = "gap_records_written"
-	CounterGapsDropped        = "gap_records_dropped"
+	CounterGapsWaiting        = "gap_records_waiting"
 	CounterAckFailed          = "queue_ack_failed"
 )
 
@@ -108,9 +108,10 @@ type QueueMsg interface {
 	Term() error
 }
 
-// Worker drains the work queue: each batch is shed with a gap record when
-// the queue is deeper than MaxBatches behind it or older than MaxAge
-// (oldest first, never the newest, 05 §5), otherwise handed once to the
+// Worker drains the work queue: each batch is shed with a durable gap
+// record when the queue is deeper than MaxBatches behind it or older than
+// MaxAge (oldest first, never the newest, 05 §5; a batch whose gap record
+// cannot be written yet stays queued), otherwise handed once to the
 // Sink, then its rows to tsdb-writer, then acknowledged. A batch whose
 // rows cannot be handed over waits in the queue and is retried (SC-18).
 type Worker struct {
@@ -128,15 +129,10 @@ type Worker struct {
 	OnShed   func(receiverID string, observations int)
 	OnStored func(receiverID string, observations int)
 
-	mu      sync.Mutex
-	sunk    map[string]*ridpipe.Batch // batch id -> decoded batch awaiting storage
-	pending []Gap
-	depth   uint64
+	mu    sync.Mutex
+	sunk  map[string]*ridpipe.Batch // batch id -> decoded batch awaiting storage
+	depth uint64
 }
-
-// maxPendingGaps bounds the gap records held while storage is down; beyond
-// it records of one cause are merged, so the count is never lost (E-10).
-const maxPendingGaps = 1024
 
 func (w *Worker) now() time.Time {
 	if w.Now != nil {
@@ -153,58 +149,41 @@ func (w *Worker) Depth() uint64 {
 	return w.depth
 }
 
-// PendingGaps is the number of gap records not yet handed over.
-func (w *Worker) PendingGaps() int {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	return len(w.pending)
+// settleWithGap removes a message from the queue only once its gap
+// record is durable (B-13): the record is published to tsdb-writer's
+// stream first, and the message is terminated after JetStream confirmed
+// it. When the record cannot be written the message is not terminated:
+// it waits in the queue and is shed again on its next delivery, so a
+// restart in between loses nothing (a record written twice is stored
+// once, by its message id). It reports whether the message was removed.
+func (w *Worker) settleWithGap(ctx context.Context, msg QueueMsg, g Gap) bool {
+	if err := w.Store.PutGap(ctx, g); err != nil {
+		w.Counters.Inc(CounterGapsWaiting)
+		w.Limiter.Limited("ingest_gap_waiting").Warn("a batch due to be shed waits in the queue until its gap record is stored",
+			slog.String("cause", g.Cause), slog.Int("observations", g.Count), slog.String("error", err.Error()))
+		if err := msg.NakWithDelay(w.Retry); err != nil {
+			w.Counters.Inc(CounterAckFailed)
+		}
+		return false
+	}
+	w.Counters.Inc(CounterGapsRecorded)
+	if err := msg.Term(); err != nil {
+		// The gap is recorded; a redelivery records it again under the
+		// same message id, which the stream stores once.
+		w.Counters.Inc(CounterAckFailed)
+	}
+	return true
 }
 
-func (w *Worker) addGap(g Gap) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	if len(w.pending) >= maxPendingGaps {
-		last := &w.pending[len(w.pending)-1]
-		last.Count += g.Count
-		if g.ToSeq > last.ToSeq {
-			last.ToSeq = g.ToSeq
-		}
-		if g.FromSeq < last.FromSeq {
-			last.FromSeq = g.FromSeq
-		}
-		last.ReceiverID = ""
-		w.Counters.Inc(CounterGapsDropped)
+func (w *Worker) shed(ctx context.Context, msg QueueMsg, meta *jetstream.MsgMetadata, b *ridpipe.Batch, cause, counter string) {
+	n := len(b.Rows)
+	g := Gap{Table: RowsTable, FromSeq: meta.Sequence.Stream, ToSeq: meta.Sequence.Stream, Cause: cause, Count: n,
+		At: w.now().UTC(), ReceiverID: b.ReceiverID}
+	if !w.settleWithGap(ctx, msg, g) {
 		return
 	}
-	w.pending = append(w.pending, g)
-}
-
-// flushGaps hands the held gap records over, oldest first.
-func (w *Worker) flushGaps(ctx context.Context) {
-	for {
-		w.mu.Lock()
-		if len(w.pending) == 0 {
-			w.mu.Unlock()
-			return
-		}
-		g := w.pending[0]
-		w.mu.Unlock()
-		if err := w.Store.PutGap(ctx, g); err != nil {
-			return
-		}
-		w.mu.Lock()
-		w.pending = w.pending[1:]
-		w.mu.Unlock()
-		w.Counters.Inc(CounterGapsRecorded)
-	}
-}
-
-func (w *Worker) shed(msg QueueMsg, meta *jetstream.MsgMetadata, b *ridpipe.Batch, cause, counter string) {
-	n := len(b.Rows)
 	w.Counters.Inc(counter)
 	w.Counters.Add(CounterShedObservations, uint64(n))
-	w.addGap(Gap{Table: RowsTable, FromSeq: meta.Sequence.Stream, ToSeq: meta.Sequence.Stream, Cause: cause, Count: n,
-		At: w.now().UTC(), ReceiverID: b.ReceiverID})
 	w.Limiter.Limited("ingest_shed:"+cause).Warn("queued batch shed with a gap record",
 		slog.String("cause", cause), slog.String("receiver_id", b.ReceiverID), slog.Int("observations", n),
 		slog.Uint64("stream_seq", meta.Sequence.Stream))
@@ -212,9 +191,6 @@ func (w *Worker) shed(msg QueueMsg, meta *jetstream.MsgMetadata, b *ridpipe.Batc
 		w.OnShed(b.ReceiverID, n)
 	}
 	w.forget(b.ID)
-	if err := msg.Term(); err != nil {
-		w.Counters.Inc(CounterAckFailed)
-	}
 }
 
 func (w *Worker) forget(id string) {
@@ -263,7 +239,7 @@ func (w *Worker) Handle(ctx context.Context, msg QueueMsg) {
 	meta, err := msg.Metadata()
 	if err != nil {
 		w.Counters.Inc(CounterQueueCorrupt)
-		_ = msg.Term()
+		w.settleWithGap(ctx, msg, Gap{Table: RowsTable, Cause: CauseQueueCorrupt, At: w.now().UTC()})
 		return
 	}
 	w.mu.Lock()
@@ -272,17 +248,16 @@ func (w *Worker) Handle(ctx context.Context, msg QueueMsg) {
 	var b ridpipe.Batch
 	if err := json.Unmarshal(msg.Data(), &b); err != nil || b.ID == "" {
 		w.Counters.Inc(CounterQueueCorrupt)
-		w.addGap(Gap{Table: RowsTable, FromSeq: meta.Sequence.Stream, ToSeq: meta.Sequence.Stream, Cause: CauseQueueCorrupt,
-			At: w.now().UTC()})
-		_ = msg.Term()
+		w.settleWithGap(ctx, msg, Gap{Table: RowsTable, FromSeq: meta.Sequence.Stream, ToSeq: meta.Sequence.Stream,
+			Cause: CauseQueueCorrupt, At: w.now().UTC()})
 		return
 	}
 	switch {
 	case meta.NumPending >= uint64(w.Config.MaxBatches):
-		w.shed(msg, meta, &b, CauseQueueFull, CounterShedFull)
+		w.shed(ctx, msg, meta, &b, CauseQueueFull, CounterShedFull)
 		return
 	case w.now().Sub(meta.Timestamp) > w.Config.MaxAge:
-		w.shed(msg, meta, &b, CauseQueueAge, CounterShedAge)
+		w.shed(ctx, msg, meta, &b, CauseQueueAge, CounterShedAge)
 		return
 	}
 	done := w.observe(ctx, &b)
@@ -306,7 +281,6 @@ func (w *Worker) Handle(ctx context.Context, msg QueueMsg) {
 	if w.OnStored != nil {
 		w.OnStored(b.ReceiverID, len(done.Rows))
 	}
-	w.flushGaps(ctx)
 }
 
 // Run pulls from the consumer until ctx ends. ensure provisions the stream
@@ -340,7 +314,6 @@ func (w *Worker) Run(ctx context.Context, ensure func(context.Context) (jetstrea
 		if err := batch.Error(); err != nil && !errors.Is(err, nats.ErrTimeout) && ctx.Err() == nil {
 			w.Limiter.Limited("ingest_queue_fetch").Warn("work queue fetch ended", slog.String("error", err.Error()))
 		}
-		w.flushGaps(ctx)
 	}
 }
 

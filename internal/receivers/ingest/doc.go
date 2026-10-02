@@ -25,7 +25,9 @@
 // with more than RID_INGEST_QUEUE_MAX_BATCHES undelivered behind it, or
 // older than RID_INGEST_QUEUE_MAX_AGE_S, is shed with a writer_gaps
 // record on tsw.v1.writer_gaps and counted: the oldest first, never the
-// newest (05 §5). JetStream's own limits are a backstop that refuses new
+// newest (05 §5). The batch leaves the queue only after JetStream
+// confirmed its gap record (B-13); while the record cannot be written the
+// batch stays queued. JetStream's own limits are a backstop that refuses new
 // writes (503) rather than dropping anything unrecorded.
 //
 // Status publishes src.v1.direct_rid.<receiver> every 2 s

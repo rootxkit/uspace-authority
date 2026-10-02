@@ -414,7 +414,7 @@ func TestIntegrationSC18QueueBoundShedsTheOldestWithGaps(t *testing.T) {
 			t.Fatalf("batch %d: %d %+v", i, code, a)
 		}
 	}
-	h.stdout.waitFor(t, "queued batch shed with a gap record", nil)
+	h.stdout.waitFor(t, "a batch due to be shed waits in the queue until its gap record is stored", nil)
 	h.createTSW()
 	var rows []ridpipe.Row
 	var gaps []ingest.Gap

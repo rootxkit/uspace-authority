@@ -136,7 +136,7 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.RIDIngest, o Options
 	rt.AddStatus(func() []slog.Attr {
 		return []slog.Attr{
 			slog.Int("receivers", kr.Len()), slog.Uint64("queue_depth", worker.Depth()),
-			slog.Int("gap_records_pending", worker.PendingGaps()), slog.Uint64("nonces_evicted", kr.NoncesEvicted()),
+			slog.Uint64("nonces_evicted", kr.NoncesEvicted()),
 		}
 	})
 	h := &Handler{

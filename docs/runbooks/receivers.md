@@ -129,10 +129,11 @@ The authority never answers a receiver with 403 (LESSONS B-10): 401 is
   `refused_*` per reason, `observations_duplicate`,
   `rows_handed_to_writer`, `storage_unavailable`,
   `queue_shed_full_batches`, `queue_shed_age_batches`,
-  `queue_shed_observations`, `gap_records_written`), `keyring`
+  `queue_shed_observations`, `gap_records_written`,
+  `gap_records_waiting`: a batch due to be shed stays queued until its
+  gap record is stored, so a restart never loses the record), `keyring`
   (`key_unknown`, `key_check_busy`, `key_argon2_checks`,
-  `keyset_refused`), `queue_depth`, `nonces_evicted`,
-  `gap_records_pending`.
+  `keyset_refused`), `queue_depth`, `nonces_evicted`.
 - Raw frames: `GET /v1/rid/frames?from=&to=&transmitter=&purpose=`
   (inspector, incident officer; `purpose` required and audited; a
   window over 24 h is refused, never thinned) and
