@@ -70,8 +70,10 @@ type Receivers struct {
 	RIDDefaultPositionToleranceM float64 `env:"RID_DEFAULT_POSITION_TOLERANCE_M" default:"100" min:"1" max:"100000" help:"distance of a heartbeat's position from the pinned one beyond which it is counted as a deviation (T2) unless the receiver's config says otherwise"`
 	RIDKeyRotationGraceS         int     `env:"RID_KEY_ROTATION_GRACE_S" default:"3600" min:"0" max:"604800" help:"how long a rotated receiver key keeps working unless the rotation says otherwise"`
 	RIDKeysetReprojectS          int     `env:"RID_KEYSET_REPROJECT_S" default:"60" min:"5" max:"3600" help:"seconds between full re-projections of the receiver key set into KV rid_receiver_keys (repair of a lost bucket)"`
+	RIDFramesMaxWindowS          int     `env:"RID_FRAMES_MAX_WINDOW_S" default:"86400" min:"60" max:"86400" help:"longest window of GET /v1/rid/frames; a longer one is refused, never thinned (B-13)"`
 	RIDKVTimeoutMS               int     `env:"RID_KV_TIMEOUT_MS" default:"2000" min:"50" max:"60000" help:"bound on one write of the receiver key set; a change whose write fails is refused with 503"`
 	RIDKeysetBucket              string  `env:"RID_KEYSET_BUCKET" default:"rid_receiver_keys" help:"KV bucket of the receiver key set that rid-ingest reads (the same variable there)"`
+	TSReaderRole                 string  `env:"TS_READER_ROLE" default:"authority_ts_reader" help:"role SET on api's telemetry connections that read the raw Remote ID frames (SELECT only)"`
 }
 
 // Registry is the registry of api (WP-3).

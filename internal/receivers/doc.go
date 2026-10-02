@@ -34,7 +34,9 @@
 // ReceiverAPI serves a receiver's own GET .../config and POST
 // .../heartbeat (bearer key; the heartbeat also signed); a heartbeat
 // position farther from the pinned one than the receiver's tolerance is
-// counted and its start audited.
+// counted and its start audited. Frames serves the raw frames of
+// rid_observations read-only, purpose-logged, refusing a window over
+// 24 h rather than thinning it (B-13).
 //
 // Subpackage ingest is rid-ingest's side: the observation endpoint, the
 // dedupe window, the work queue and the receivers' status.

@@ -126,8 +126,9 @@ const (
 )
 
 // Event types of WP-7's Remote ID receivers (internal/receivers): every
-// registry change of a receiver and the start of a reported position
-// away from the pinned one (06 §2 T2).
+// registry change of a receiver, the start of a reported position away
+// from the pinned one (06 §2 T2), and every read of the raw frames,
+// which may carry an operator's position and so needs a purpose.
 const (
 	EventRIDReceiverCreated           = "rid_receiver_created"
 	EventRIDReceiverUpdated           = "rid_receiver_updated"
@@ -135,6 +136,7 @@ const (
 	EventRIDReceiverKeysRotated       = "rid_receiver_keys_rotated"
 	EventRIDReceiverDeleted           = "rid_receiver_deleted"
 	EventRIDReceiverPositionDeviation = "rid_receiver_position_deviation"
+	EventRIDFramesViewed              = "rid_frames_viewed"
 )
 
 // DefaultCatalogue is the catalogue of this build.
@@ -188,6 +190,7 @@ func DefaultCatalogue() Catalogue {
 		EventRIDReceiverKeysRotated:       {},
 		EventRIDReceiverDeleted:           {},
 		EventRIDReceiverPositionDeviation: {},
+		EventRIDFramesViewed:              {PIIView: true},
 	}
 }
 

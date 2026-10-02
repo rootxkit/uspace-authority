@@ -32,15 +32,6 @@ type Options struct {
 	Gate Gate
 }
 
-// Gate is the source-control switch (uspace-core sources.Follower).
-type Gate interface {
-	Query(sourceType string, instanceID *string) sources.Decision
-}
-
-// SourceType is this adapter's type in source control (04 §2 `source`,
-// WP-10's source_controls.source_type).
-const SourceType = "direct_rid"
-
 // LoopbackAddr replaces addr's host with 127.0.0.1 (R-06: an ingest
 // without receiver keys can authenticate nobody and listens on loopback).
 func LoopbackAddr(addr string) string {
@@ -107,7 +98,13 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.RIDIngest, o Options
 		rt.Logger.Info("receiver key set loaded", slog.Int("receivers", n))
 	}
 
-	gate := o.Gate
+	sink, gate := o.Sink, o.Gate
+	if sink == nil {
+		c := &core.Counters{}
+		rt.AddCounters("pipeline", c)
+		sink = ridpipe.Undecoded{Counters: c}
+		rt.Logger.Warn("no decode pipeline in this build (WP-8): observations are stored raw and no track is published")
+	}
 	if gate == nil {
 		f := sources.NewFollower()
 		rt.AddCounters("source_control", f.Counters())
@@ -127,11 +124,23 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.RIDIngest, o Options
 		MaxAckPending: t.QueueMaxAckPending, PublishTimeout: timeout,
 	}
 	queue := &JetQueue{JS: js, Config: qcfg}
+	status := &Status{
+		Keyring: kr, Gate: gate, Pub: conn, StaleAfter: time.Duration(t.StaleAfterS) * time.Second,
+		LagAfter: time.Duration(t.LagAfterS) * time.Second, Logger: rt.Logger, Limiter: rt.Limiter, MaxReceivers: t.MaxReceivers,
+	}
+	worker := &Worker{
+		Sink: sink, Store: JetRows{JS: js, Timeout: timeout}, Config: qcfg, Counters: counters, Logger: rt.Logger,
+		Limiter: rt.Limiter, Retry: time.Duration(t.StorageRetryMS) * time.Millisecond, OnShed: status.Shed, OnStored: status.Stored,
+	}
+	status.Depth = worker.Depth
 	rt.AddStatus(func() []slog.Attr {
-		return []slog.Attr{slog.Int("receivers", kr.Len()), slog.Uint64("nonces_evicted", kr.NoncesEvicted())}
+		return []slog.Attr{
+			slog.Int("receivers", kr.Len()), slog.Uint64("queue_depth", worker.Depth()),
+			slog.Int("gap_records_pending", worker.PendingGaps()), slog.Uint64("nonces_evicted", kr.NoncesEvicted()),
+		}
 	})
 	h := &Handler{
-		Keyring: kr, Gate: gate, Dedupe: dedupe, Queue: queue,
+		Keyring: kr, Gate: gate, Dedupe: dedupe, Queue: queue, Status: status,
 		DisabledRetryAfter: time.Duration(t.DisabledRetryAfterS) * time.Second,
 		QueueRetryAfter:    time.Duration(t.QueueRetryAfterS) * time.Second,
 		Counters:           counters, Limiter: rt.Limiter,
@@ -144,29 +153,10 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.RIDIngest, o Options
 	wg.Go(func() {
 		FollowKeySet(ctx, kv, kr, time.Duration(t.KeysetRereadS)*time.Second, rt.Logger, rt.Limiter)
 	})
-	wg.Go(func() { ensureQueue(ctx, queue, rt) })
+	wg.Go(func() { worker.Run(ctx, queue.EnsureQueue) })
+	wg.Go(func() { status.Run(ctx, time.Duration(t.StatusIntervalMS)*time.Millisecond) })
 
 	mux := http.NewServeMux()
 	h.Mount(mux)
 	return rt.ServePublic(ctx, cfg.HTTP, addr, mux)
-}
-
-// ensureQueue provisions the work queue, retrying until it succeeds, so
-// the process starts degraded with the bus down (B-08); until then every
-// batch is refused with 503.
-func ensureQueue(ctx context.Context, q *JetQueue, rt *proc.Runtime) {
-	for ctx.Err() == nil {
-		_, err := q.EnsureQueue(ctx)
-		if err == nil {
-			return
-		}
-		rt.Limiter.Limited("ingest_queue_ensure").Warn("work queue unavailable; receivers are refused with 503 until it returns",
-			slog.String("error", err.Error()))
-		t := time.NewTimer(time.Second)
-		select {
-		case <-ctx.Done():
-		case <-t.C:
-		}
-		t.Stop()
-	}
 }

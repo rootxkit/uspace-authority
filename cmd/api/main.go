@@ -158,12 +158,15 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 		rx, err := receivers.Assemble(ctx, receivers.Setup{
 			DB: db, Audit: auditWriter, Hasher: hasher, PIIKeyID: cfg.PIIKeyID, PIIKeyFile: cfg.PIIKeyFile,
 			NATSURL: cfg.NATSURL, Bucket: cfg.RIDKeysetBucket, KVTimeout: time.Duration(cfg.RIDKVTimeoutMS) * time.Millisecond,
+			TSURL: cfg.TSURL, TSRole: cfg.TSReaderRole, TSMaxConns: cfg.TSMaxConns,
+			StatementTimeout: time.Duration(cfg.PGStatementTimeoutS) * time.Second,
 			Defaults: receivers.Defaults{
 				BatchIntervalMS: cfg.RIDDefaultBatchIntervalMS, BacklogCap: cfg.RIDDefaultBacklogCap,
 				HeartbeatIntervalS: cfg.RIDDefaultHeartbeatIntervalS, PositionToleranceM: cfg.RIDDefaultPositionToleranceM,
 			},
-			RotationGrace: time.Duration(cfg.RIDKeyRotationGraceS) * time.Second,
-			Logger:        rt.Logger, Limiter: rt.Limiter,
+			RotationGrace:   time.Duration(cfg.RIDKeyRotationGraceS) * time.Second,
+			FramesMaxWindow: time.Duration(cfg.RIDFramesMaxWindowS) * time.Second,
+			Logger:          rt.Logger, Limiter: rt.Limiter,
 		})
 		if err != nil {
 			return err

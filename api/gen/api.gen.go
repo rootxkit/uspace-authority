@@ -1088,6 +1088,31 @@ type Problem struct {
 // RIDCapability defines model for RIDCapability.
 type RIDCapability string
 
+// RIDFrame defines model for RIDFrame.
+type RIDFrame struct {
+	Backlog          bool         `json:"backlog"`
+	FrameId          string       `json:"frame_id"`
+	IngestTs         time.Time    `json:"ingest_ts"`
+	MsgType          *int         `json:"msg_type,omitempty"`
+	Nonce            string       `json:"nonce"`
+	PayloadHex       string       `json:"payload_hex"`
+	PayloadSha256Hex string       `json:"payload_sha256_hex"`
+	ReceiverId       string       `json:"receiver_id"`
+	ReceiverPosition *RIDPosition `json:"receiver_position,omitempty"`
+	RssiDbm          *float64     `json:"rssi_dbm,omitempty"`
+	RxTs             *time.Time   `json:"rx_ts,omitempty"`
+	SentAtMs         int64        `json:"sent_at_ms"`
+	Transmitter      string       `json:"transmitter"`
+}
+
+// RIDFramePage defines model for RIDFramePage.
+type RIDFramePage struct {
+	Frames []RIDFrame `json:"frames"`
+
+	// Truncated The window holds more frames than were returned.
+	Truncated bool `json:"truncated"`
+}
+
 // RIDHeartbeat defines model for RIDHeartbeat.
 type RIDHeartbeat struct {
 	Firmware *string      `json:"firmware,omitempty"`
@@ -1853,6 +1878,21 @@ type ValidateRegistryParams struct {
 // ValidateRegistryBatchParams defines parameters for ValidateRegistryBatch.
 type ValidateRegistryBatchParams struct {
 	Purpose RegistryPurpose `form:"purpose" json:"purpose"`
+}
+
+// ListRIDFramesParams defines parameters for ListRIDFrames.
+type ListRIDFramesParams struct {
+	From        time.Time `form:"from" json:"from"`
+	To          time.Time `form:"to" json:"to"`
+	Transmitter *string   `form:"transmitter,omitempty" json:"transmitter,omitempty"`
+	ReceiverId  *string   `form:"receiver_id,omitempty" json:"receiver_id,omitempty"`
+	Purpose     string    `form:"purpose" json:"purpose"`
+	Limit       *int      `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// GetRIDFrameParams defines parameters for GetRIDFrame.
+type GetRIDFrameParams struct {
+	Purpose string `form:"purpose" json:"purpose"`
 }
 
 // ListRIDReceiversParams defines parameters for ListRIDReceivers.
@@ -2640,6 +2680,22 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /v1/registry/validate (the `ValidateRegistryBatch` operationId).
 	ValidateRegistryBatch(ctx context.Context, params *ValidateRegistryBatchParams, body ValidateRegistryBatchJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListRIDFrames Raw Remote ID frames in a time window (purpose required, audited)
+	//
+	// Read-only from `rid_observations`, by ingest time in [from, to).
+	// A window longer than 24 h is refused, never thinned (B-13); a
+	// page holds at most `limit` frames and says `truncated` when the
+	// window holds more (narrow it, or start the next window at the
+	// last `ingest_ts`). Every read is an events row with its purpose.
+	//
+	// Corresponds with GET /v1/rid/frames (the `ListRIDFrames` operationId).
+	ListRIDFrames(ctx context.Context, params *ListRIDFramesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetRIDFrame Every stored row of one frame id (purpose required, audited)
+	//
+	// Corresponds with GET /v1/rid/frames/{frame_id} (the `GetRIDFrame` operationId).
+	GetRIDFrame(ctx context.Context, frameId string, params *GetRIDFrameParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListRIDReceivers Remote ID receivers, in id order
 	//
@@ -4054,6 +4110,42 @@ func (c *Client) ValidateRegistryBatchWithBody(ctx context.Context, params *Vali
 // Corresponds with POST /v1/registry/validate (the `ValidateRegistryBatch` operationId).
 func (c *Client) ValidateRegistryBatch(ctx context.Context, params *ValidateRegistryBatchParams, body ValidateRegistryBatchJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewValidateRegistryBatchRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListRIDFrames Raw Remote ID frames in a time window (purpose required, audited)
+//
+// Read-only from `rid_observations`, by ingest time in [from, to).
+// A window longer than 24 h is refused, never thinned (B-13); a
+// page holds at most `limit` frames and says `truncated` when the
+// window holds more (narrow it, or start the next window at the
+// last `ingest_ts`). Every read is an events row with its purpose.
+//
+// Corresponds with GET /v1/rid/frames (the `ListRIDFrames` operationId).
+func (c *Client) ListRIDFrames(ctx context.Context, params *ListRIDFramesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRIDFramesRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetRIDFrame Every stored row of one frame id (purpose required, audited)
+//
+// Corresponds with GET /v1/rid/frames/{frame_id} (the `GetRIDFrame` operationId).
+func (c *Client) GetRIDFrame(ctx context.Context, frameId string, params *GetRIDFrameParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetRIDFrameRequest(c.Server, frameId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -6447,6 +6539,165 @@ func NewValidateRegistryBatchRequestWithBody(server string, params *ValidateRegi
 	return req, nil
 }
 
+// NewListRIDFramesRequest constructs an http.Request for the ListRIDFrames method
+func NewListRIDFramesRequest(server string, params *ListRIDFramesParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/rid/frames")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from", params.From, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to", params.To, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if params.Transmitter != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "transmitter", *params.Transmitter, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ReceiverId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "receiver_id", *params.ReceiverId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "purpose", params.Purpose, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetRIDFrameRequest constructs an http.Request for the GetRIDFrame method
+func NewGetRIDFrameRequest(server string, frameId string, params *GetRIDFrameParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "frame_id", frameId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/rid/frames/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "purpose", params.Purpose, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListRIDReceiversRequest constructs an http.Request for the ListRIDReceivers method
 func NewListRIDReceiversRequest(server string, params *ListRIDReceiversParams) (*http.Request, error) {
 	var err error
@@ -7820,6 +8071,26 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /v1/registry/validate (the `ValidateRegistryBatch` operationId).
 	ValidateRegistryBatchWithResponse(ctx context.Context, params *ValidateRegistryBatchParams, body ValidateRegistryBatchJSONRequestBody, reqEditors ...RequestEditorFn) (*ValidateRegistryBatchResponse, error)
+
+	// ListRIDFramesWithResponse Raw Remote ID frames in a time window (purpose required, audited)
+	//
+	// Read-only from `rid_observations`, by ingest time in [from, to).
+	// A window longer than 24 h is refused, never thinned (B-13); a
+	// page holds at most `limit` frames and says `truncated` when the
+	// window holds more (narrow it, or start the next window at the
+	// last `ingest_ts`). Every read is an events row with its purpose.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/rid/frames (the `ListRIDFrames` operationId).
+	ListRIDFramesWithResponse(ctx context.Context, params *ListRIDFramesParams, reqEditors ...RequestEditorFn) (*ListRIDFramesResponse, error)
+
+	// GetRIDFrameWithResponse Every stored row of one frame id (purpose required, audited)
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/rid/frames/{frame_id} (the `GetRIDFrame` operationId).
+	GetRIDFrameWithResponse(ctx context.Context, frameId string, params *GetRIDFrameParams, reqEditors ...RequestEditorFn) (*GetRIDFrameResponse, error)
 
 	// ListRIDReceiversWithResponse Remote ID receivers, in id order
 	//
@@ -10176,6 +10447,102 @@ func (r ValidateRegistryBatchResponse) ContentType() string {
 	return ""
 }
 
+type ListRIDFramesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RIDFramePage
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListRIDFramesResponse) GetJSON200() *RIDFramePage {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ListRIDFramesResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListRIDFramesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListRIDFramesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListRIDFramesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListRIDFramesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetRIDFrameResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RIDFramePage
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetRIDFrameResponse) GetJSON200() *RIDFramePage {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetRIDFrameResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetRIDFrameResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetRIDFrameResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetRIDFrameResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetRIDFrameResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListRIDReceiversResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -12012,6 +12379,38 @@ func (c *ClientWithResponses) ValidateRegistryBatchWithResponse(ctx context.Cont
 		return nil, err
 	}
 	return ParseValidateRegistryBatchResponse(rsp)
+}
+
+// ListRIDFramesWithResponse Raw Remote ID frames in a time window (purpose required, audited)
+//
+// Read-only from `rid_observations`, by ingest time in [from, to).
+// A window longer than 24 h is refused, never thinned (B-13); a
+// page holds at most `limit` frames and says `truncated` when the
+// window holds more (narrow it, or start the next window at the
+// last `ingest_ts`). Every read is an events row with its purpose.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/rid/frames (the `ListRIDFrames` operationId).
+func (c *ClientWithResponses) ListRIDFramesWithResponse(ctx context.Context, params *ListRIDFramesParams, reqEditors ...RequestEditorFn) (*ListRIDFramesResponse, error) {
+	rsp, err := c.ListRIDFrames(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListRIDFramesResponse(rsp)
+}
+
+// GetRIDFrameWithResponse Every stored row of one frame id (purpose required, audited)
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/rid/frames/{frame_id} (the `GetRIDFrame` operationId).
+func (c *ClientWithResponses) GetRIDFrameWithResponse(ctx context.Context, frameId string, params *GetRIDFrameParams, reqEditors ...RequestEditorFn) (*GetRIDFrameResponse, error) {
+	rsp, err := c.GetRIDFrame(ctx, frameId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetRIDFrameResponse(rsp)
 }
 
 // ListRIDReceiversWithResponse Remote ID receivers, in id order
@@ -13957,6 +14356,72 @@ func ParseValidateRegistryBatchResponse(rsp *http.Response) (*ValidateRegistryBa
 	return response, nil
 }
 
+// ParseListRIDFramesResponse parses an HTTP response from a ListRIDFramesWithResponse call
+func ParseListRIDFramesResponse(rsp *http.Response) (*ListRIDFramesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListRIDFramesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RIDFramePage
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetRIDFrameResponse parses an HTTP response from a GetRIDFrameWithResponse call
+func ParseGetRIDFrameResponse(rsp *http.Response) (*GetRIDFrameResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetRIDFrameResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RIDFramePage
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListRIDReceiversResponse parses an HTTP response from a ListRIDReceiversWithResponse call
 func ParseListRIDReceiversResponse(rsp *http.Response) (*ListRIDReceiversResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -14667,6 +15132,12 @@ type ServerInterface interface {
 	// ValidateRegistryBatch Validity of up to 100 entities (F8)
 	// (POST /v1/registry/validate)
 	ValidateRegistryBatch(w http.ResponseWriter, r *http.Request, params ValidateRegistryBatchParams)
+	// ListRIDFrames Raw Remote ID frames in a time window (purpose required, audited)
+	// (GET /v1/rid/frames)
+	ListRIDFrames(w http.ResponseWriter, r *http.Request, params ListRIDFramesParams)
+	// GetRIDFrame Every stored row of one frame id (purpose required, audited)
+	// (GET /v1/rid/frames/{frame_id})
+	GetRIDFrame(w http.ResponseWriter, r *http.Request, frameId string, params GetRIDFrameParams)
 	// ListRIDReceivers Remote ID receivers, in id order
 	// (GET /v1/rid/receivers)
 	ListRIDReceivers(w http.ResponseWriter, r *http.Request, params ListRIDReceiversParams)
@@ -15964,6 +16435,146 @@ func (siw *ServerInterfaceWrapper) ValidateRegistryBatch(w http.ResponseWriter, 
 	handler.ServeHTTP(w, r)
 }
 
+// ListRIDFrames operation middleware
+func (siw *ServerInterfaceWrapper) ListRIDFrames(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListRIDFramesParams
+
+	// ------------- Required query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "transmitter" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "transmitter", r.URL.Query(), &params.Transmitter, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "transmitter"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "transmitter", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "receiver_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "receiver_id", r.URL.Query(), &params.ReceiverId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "receiver_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "receiver_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "purpose" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "purpose", r.URL.Query(), &params.Purpose, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "purpose"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "purpose", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRIDFrames(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetRIDFrame operation middleware
+func (siw *ServerInterfaceWrapper) GetRIDFrame(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "frame_id" -------------
+	var frameId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "frame_id", r.PathValue("frame_id"), &frameId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "frame_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetRIDFrameParams
+
+	// ------------- Required query parameter "purpose" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "purpose", r.URL.Query(), &params.Purpose, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "purpose"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "purpose", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRIDFrame(w, r, frameId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListRIDReceivers operation middleware
 func (siw *ServerInterfaceWrapper) ListRIDReceivers(w http.ResponseWriter, r *http.Request) {
 
@@ -16557,6 +17168,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/v1/rid/receivers/{receiver_id}", wrapper.UpdateRIDReceiver)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/rid/receivers/{receiver_id}/status", wrapper.SetRIDReceiverStatus)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/rid/receivers/{receiver_id}/keys/rotate", wrapper.RotateRIDReceiverKeys)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/rid/frames", wrapper.ListRIDFrames)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/rid/frames/{frame_id}", wrapper.GetRIDFrame)
 
 	return m
 }
@@ -18469,6 +19082,85 @@ func (response ValidateRegistryBatchdefaultApplicationProblemPlusJSONResponse) V
 	return err
 }
 
+type ListRIDFramesRequestObject struct {
+	Params ListRIDFramesParams
+}
+
+type ListRIDFramesResponseObject interface {
+	VisitListRIDFramesResponse(w http.ResponseWriter) error
+}
+
+type ListRIDFrames200JSONResponse RIDFramePage
+
+func (response ListRIDFrames200JSONResponse) VisitListRIDFramesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRIDFramesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListRIDFramesdefaultApplicationProblemPlusJSONResponse) VisitListRIDFramesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRIDFrameRequestObject struct {
+	FrameId string `json:"frame_id"`
+	Params  GetRIDFrameParams
+}
+
+type GetRIDFrameResponseObject interface {
+	VisitGetRIDFrameResponse(w http.ResponseWriter) error
+}
+
+type GetRIDFrame200JSONResponse RIDFramePage
+
+func (response GetRIDFrame200JSONResponse) VisitGetRIDFrameResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRIDFramedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetRIDFramedefaultApplicationProblemPlusJSONResponse) VisitGetRIDFrameResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListRIDReceiversRequestObject struct {
 	Params ListRIDReceiversParams
 }
@@ -19316,6 +20008,12 @@ type StrictServerInterface interface {
 	// ValidateRegistryBatch Validity of up to 100 entities (F8)
 	// (POST /v1/registry/validate)
 	ValidateRegistryBatch(ctx context.Context, request ValidateRegistryBatchRequestObject) (ValidateRegistryBatchResponseObject, error)
+	// ListRIDFrames Raw Remote ID frames in a time window (purpose required, audited)
+	// (GET /v1/rid/frames)
+	ListRIDFrames(ctx context.Context, request ListRIDFramesRequestObject) (ListRIDFramesResponseObject, error)
+	// GetRIDFrame Every stored row of one frame id (purpose required, audited)
+	// (GET /v1/rid/frames/{frame_id})
+	GetRIDFrame(ctx context.Context, request GetRIDFrameRequestObject) (GetRIDFrameResponseObject, error)
 	// ListRIDReceivers Remote ID receivers, in id order
 	// (GET /v1/rid/receivers)
 	ListRIDReceivers(ctx context.Context, request ListRIDReceiversRequestObject) (ListRIDReceiversResponseObject, error)
@@ -20560,6 +21258,59 @@ func (sh *strictHandler) ValidateRegistryBatch(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ValidateRegistryBatchResponseObject); ok {
 		if err := validResponse.VisitValidateRegistryBatchResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListRIDFrames operation middleware
+func (sh *strictHandler) ListRIDFrames(w http.ResponseWriter, r *http.Request, params ListRIDFramesParams) {
+	var request ListRIDFramesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListRIDFrames(ctx, request.(ListRIDFramesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListRIDFrames")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListRIDFramesResponseObject); ok {
+		if err := validResponse.VisitListRIDFramesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetRIDFrame operation middleware
+func (sh *strictHandler) GetRIDFrame(w http.ResponseWriter, r *http.Request, frameId string, params GetRIDFrameParams) {
+	var request GetRIDFrameRequestObject
+
+	request.FrameId = frameId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetRIDFrame(ctx, request.(GetRIDFrameRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetRIDFrame")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetRIDFrameResponseObject); ok {
+		if err := validResponse.VisitGetRIDFrameResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

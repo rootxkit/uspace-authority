@@ -36,3 +36,21 @@ type ProjRegistryUAS struct {
 	ProjectedAt        time.Time
 	RegistryVersion    int64
 }
+
+type RidObservation struct {
+	IngestTs        time.Time
+	FrameID         string
+	ReceiverID      string
+	Transmitter     string
+	RxTs            *time.Time
+	MsgType         *int16
+	Payload         []byte
+	PayloadSha256   []byte
+	RssiDbm         *float32
+	Backlog         bool
+	ReceiverLatDeg  *float64
+	ReceiverLonDeg  *float64
+	ReceiverAltHaeM *float64
+	SentAtMs        int64
+	Nonce           string
+}

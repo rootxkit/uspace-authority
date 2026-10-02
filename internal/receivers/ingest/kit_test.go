@@ -86,6 +86,7 @@ func (q *fakeQueue) rows() int {
 
 type fixture struct {
 	h        *Handler
+	status   *Status
 	queue    *fakeQueue
 	gate     *sources.Follower
 	counters *core.Counters
@@ -120,7 +121,10 @@ func newFixture(t testing.TB, rxs ...rx) *fixture {
 	}
 	f := &fixture{queue: &fakeQueue{}, gate: sources.NewFollower(), counters: counters, kr: kr,
 		now: time.UnixMilli(1_790_000_000_000).UTC()}
-	f.h = &Handler{Keyring: kr, Gate: f.gate, Dedupe: dd, Queue: f.queue,
+	status := &Status{Keyring: kr, Gate: f.gate, Pub: &fakePub{}, StaleAfter: 15 * time.Second, LagAfter: 15 * time.Second,
+		Limiter: quietLimiter(), MaxReceivers: 100, Now: func() time.Time { return f.now }}
+	f.status = status
+	f.h = &Handler{Keyring: kr, Gate: f.gate, Dedupe: dd, Queue: f.queue, Status: status,
 		DisabledRetryAfter: 30 * time.Second, QueueRetryAfter: 2 * time.Second, Counters: counters, Limiter: quietLimiter(),
 		Now: func() time.Time { return f.now }}
 	return f
@@ -167,4 +171,23 @@ func obs(tx, payloadHex, rxTS string) string {
 func batchBody(id string, sentAtMS int64, nonce string, backlog bool, observations ...string) string {
 	return fmt.Sprintf(`{"receiver_id":%q,"sent_at_ms":%d,"nonce":%q,"backlog":%v,"observations":[%s]}`,
 		id, sentAtMS, nonce, backlog, strings.Join(observations, ","))
+}
+
+type fakePub struct {
+	mu   sync.Mutex
+	msgs map[string][][]byte
+	err  error
+}
+
+func (p *fakePub) Publish(subject string, data []byte) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.err != nil {
+		return p.err
+	}
+	if p.msgs == nil {
+		p.msgs = map[string][][]byte{}
+	}
+	p.msgs[subject] = append(p.msgs[subject], data)
+	return nil
 }

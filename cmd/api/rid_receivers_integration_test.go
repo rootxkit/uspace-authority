@@ -113,7 +113,8 @@ func heartbeat(id, nonce string, lat, lon float64) string {
 // The receiver lifecycle through the real process: create (keys shown
 // once), config and a signed heartbeat with the receiver's own keys,
 // disable, enable, rotate with a grace and without, delete; the key set
-// in KV follows every step, and every step is an events row.
+// in KV follows every step, every step is an events row, and the raw
+// frames are read with a purpose and audited.
 func TestIntegrationReceiverLifecycleThroughTheAPI(t *testing.T) {
 	bucket := fmt.Sprintf("rid_keys_api_%d", time.Now().UnixNano())
 	base, m, _ := startAPI(t, func(m map[string]string) {
@@ -237,6 +238,38 @@ func TestIntegrationReceiverLifecycleThroughTheAPI(t *testing.T) {
 		t.Fatalf("new key: %d", code)
 	}
 
+	// Raw frames: refused without purpose or over 24 h; read with a purpose.
+	ts := storetest.Open(t, m["TS_URL"])
+	payload := []byte{0x12, 1, 2, 3}
+	if _, err := ts.Exec(`INSERT INTO rid_observations (ingest_ts, frame_id, receiver_id, transmitter, payload, payload_sha256, backlog, sent_at_ms, nonce)
+		VALUES (now(), '00112233445566778899aabbccddeeff', 'rx-tbs-01', 'AA:BB:CC:00:00:01', $1, decode(repeat('00', 32), 'hex'), false, 1, 'n')`, payload); err != nil {
+		t.Fatal(err)
+	}
+	from, to := time.Now().Add(-time.Hour).UTC().Format(time.RFC3339), time.Now().Add(time.Hour).UTC().Format(time.RFC3339)
+	var page struct {
+		Frames []map[string]any `json:"frames"`
+	}
+	if code, _ := rxCall(t, http.MethodGet, base+"/v1/rid/frames?from="+from+"&to="+to+"&purpose=incident%2042", "", "", nil, &page); code != http.StatusOK ||
+		len(page.Frames) != 1 || page.Frames[0]["payload_hex"] != hex.EncodeToString(payload) {
+		t.Fatalf("frames: %d %+v", code, page)
+	}
+	if code, _ := rxCall(t, http.MethodGet, base+"/v1/rid/frames?from="+from+"&to="+to+"&transmitter=aa:bb:cc:00:00:01&purpose=case", "", "", nil, &page); code != http.StatusOK ||
+		len(page.Frames) != 1 {
+		t.Fatalf("frames by transmitter, lower case: %d %+v", code, page)
+	}
+	if code, _ := rxCall(t, http.MethodGet, base+"/v1/rid/frames?from="+from+"&to="+to, "", "", nil, nil); code != http.StatusBadRequest {
+		t.Fatalf("frames without purpose: %d", code)
+	}
+	far := time.Now().Add(-49 * time.Hour).UTC().Format(time.RFC3339)
+	var problem map[string]any
+	if code, _ := rxCall(t, http.MethodGet, base+"/v1/rid/frames?from="+far+"&to="+to+"&purpose=x", "", "", nil, &problem); code != http.StatusBadRequest ||
+		!strings.HasSuffix(problem["type"].(string), "/window_too_large") {
+		t.Fatalf("a 50 h window: %d %v", code, problem)
+	}
+	if code, _ := rxCall(t, http.MethodGet, base+"/v1/rid/frames/00112233445566778899aabbccddeeff?purpose=check", "", "", nil, &page); code != http.StatusOK || len(page.Frames) != 1 {
+		t.Fatalf("frame by id: %d", code)
+	}
+
 	// Delete: the entry goes and the keys stop working.
 	if code, _ := rxCall(t, http.MethodDelete, base+"/v1/rid/receivers/rx-tbs-01?reason=decommissioned", "", "", nil, nil); code != http.StatusNoContent {
 		t.Fatalf("delete: %d", code)
@@ -250,7 +283,7 @@ func TestIntegrationReceiverLifecycleThroughTheAPI(t *testing.T) {
 
 	// Every step is an events row.
 	db := storetest.Open(t, m["PG_URL_FOR_TEST"])
-	rows, err := db.Query(`SELECT event_type, count(*) FROM events WHERE entity_type = 'rid_receiver' GROUP BY event_type`)
+	rows, err := db.Query(`SELECT event_type, count(*) FROM events WHERE entity_type IN ('rid_receiver', 'rid_observations') GROUP BY event_type`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -265,11 +298,15 @@ func TestIntegrationReceiverLifecycleThroughTheAPI(t *testing.T) {
 		counts[et] = n
 	}
 	want := map[string]int{"rid_receiver_created": 1, "rid_receiver_position_deviation": 1, "rid_receiver_status_changed": 2,
-		"rid_receiver_keys_rotated": 2, "rid_receiver_deleted": 1}
+		"rid_receiver_keys_rotated": 2, "rid_frames_viewed": 3, "rid_receiver_deleted": 1}
 	for et, n := range want {
 		if counts[et] != n {
 			t.Errorf("%s: %d events, want %d (all %v)", et, counts[et], n, counts)
 		}
+	}
+	var purpose string
+	if err := db.QueryRow(`SELECT purpose FROM events WHERE event_type = 'rid_frames_viewed' ORDER BY id LIMIT 1`).Scan(&purpose); err != nil || purpose != "incident 42" {
+		t.Fatalf("frames purpose %q %v", purpose, err)
 	}
 }
 

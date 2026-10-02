@@ -2,6 +2,7 @@ package receivers
 
 import (
 	"context"
+	"encoding/hex"
 	"time"
 
 	"github.com/rootxkit/uspace-core/core"
@@ -12,10 +13,11 @@ import (
 
 var noStore = "no-store"
 
-// Handler serves the admin operations of /v1/rid/receivers* (generated
-// strict server).
+// Handler serves the admin operations of /v1/rid/receivers* and the raw
+// frames (generated strict server).
 type Handler struct {
 	Service *Service
+	Frames  *Frames
 }
 
 func configOut(c Config) gen.RIDReceiverConfig {
@@ -209,4 +211,57 @@ func (h Handler) RotateRIDReceiverKeys(ctx context.Context, req gen.RotateRIDRec
 	return gen.RotateRIDReceiverKeys200JSONResponse{
 		Body: createdOut(&r, creds), Headers: gen.RotateRIDReceiverKeys200ResponseHeaders{CacheControl: &noStore},
 	}, nil
+}
+
+func frameOut(f *Frame) gen.RIDFrame {
+	out := gen.RIDFrame{
+		FrameId: f.FrameID, IngestTs: f.IngestTS, RxTs: f.RxTS, ReceiverId: f.ReceiverID, Transmitter: f.Transmitter,
+		MsgType: f.MsgType, PayloadHex: hex.EncodeToString(f.Payload), PayloadSha256Hex: hex.EncodeToString(f.PayloadSHA256),
+		RssiDbm: f.RSSIDBM, Backlog: f.Backlog, SentAtMs: f.SentAtMS, Nonce: f.Nonce,
+	}
+	if f.ReceiverPosition != nil {
+		out.ReceiverPosition = positionOut(f.ReceiverPosition)
+	}
+	return out
+}
+
+func pageOut(frames []Frame, truncated bool) gen.RIDFramePage {
+	out := gen.RIDFramePage{Frames: make([]gen.RIDFrame, 0, len(frames)), Truncated: truncated}
+	for i := range frames {
+		out.Frames = append(out.Frames, frameOut(&frames[i]))
+	}
+	return out
+}
+
+// ListRIDFrames answers raw frames in a window, purpose-logged.
+func (h Handler) ListRIDFrames(ctx context.Context, req gen.ListRIDFramesRequestObject) (gen.ListRIDFramesResponseObject, error) {
+	actor, err := audit.ActorOf(ctx)
+	if err != nil {
+		return nil, err
+	}
+	p := req.Params
+	limit := 1000
+	if p.Limit != nil {
+		limit = *p.Limit
+	}
+	frames, truncated, err := h.Frames.List(ctx, actor, FrameQuery{
+		From: p.From, To: p.To, Transmitter: p.Transmitter, ReceiverID: p.ReceiverId, Limit: limit, Purpose: p.Purpose,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return gen.ListRIDFrames200JSONResponse(pageOut(frames, truncated)), nil
+}
+
+// GetRIDFrame answers every stored row of one frame id, purpose-logged.
+func (h Handler) GetRIDFrame(ctx context.Context, req gen.GetRIDFrameRequestObject) (gen.GetRIDFrameResponseObject, error) {
+	actor, err := audit.ActorOf(ctx)
+	if err != nil {
+		return nil, err
+	}
+	frames, err := h.Frames.Get(ctx, actor, req.FrameId, req.Params.Purpose)
+	if err != nil {
+		return nil, err
+	}
+	return gen.GetRIDFrame200JSONResponse(pageOut(frames, false)), nil
 }

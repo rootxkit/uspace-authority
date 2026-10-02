@@ -71,6 +71,8 @@ tags:
       heartbeat endpoints.
   - name: rid-ingest
     description: Signed observation batches from receivers, served by rid-ingest (WP-7).
+  - name: rid-frames
+    description: Raw Remote ID frames as stored, purpose-logged (WP-7, LESSONS R-15).
 
 paths:
   # WP-0: health paths, served by every process on its admin port.
@@ -1437,8 +1439,9 @@ paths:
           $ref: "#/components/responses/Problem"
 
   # WP-7: the Remote ID receiver registry (admin), the two receiver
-  # endpoints (config and heartbeat, served by api) and the observation
-  # ingest (served by rid-ingest) (spec 02 F9, 06 §2 T2). A receiver authenticates with its bearer key (receiverKey) and,
+  # endpoints (config and heartbeat, served by api), the observation
+  # ingest (served by rid-ingest) and the raw frames (spec 02 F9, 06 §2
+  # T2). A receiver authenticates with its bearer key (receiverKey) and,
   # on every request with a body, an HMAC-SHA256 of the exact body bytes
   # under a separate secret in X-Report-Signature (64 lower-case hex
   # characters); the body carries sent_at_ms (30 s window) and a nonce
@@ -1767,6 +1770,59 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/rid/frames:
+    get:
+      operationId: listRIDFrames
+      tags: [rid-frames]
+      summary: Raw Remote ID frames in a time window (purpose required, audited)
+      description: |
+        Read-only from `rid_observations`, by ingest time in [from, to).
+        A window longer than 24 h is refused, never thinned (B-13); a
+        page holds at most `limit` frames and says `truncated` when the
+        window holds more (narrow it, or start the next window at the
+        last `ingest_ts`). Every read is an events row with its purpose.
+      security:
+        - sessionCookie: []
+      x-roles: [incident_officer, inspector]
+      x-audit: {event_type: rid_frames_viewed, entity_type: rid_observations, purpose: required}
+      parameters:
+        - {name: from, in: query, required: true, schema: {type: string, format: date-time}}
+        - {name: to, in: query, required: true, schema: {type: string, format: date-time}}
+        - {name: transmitter, in: query, schema: {type: string, maxLength: 64}}
+        - {name: receiver_id, in: query, schema: {type: string, maxLength: 63}}
+        - {name: purpose, in: query, required: true, schema: {type: string, minLength: 1, maxLength: 200}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 5000, default: 1000}}
+      responses:
+        "200":
+          description: The frames, oldest first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RIDFramePage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/rid/frames/{frame_id}:
+    parameters:
+      - {name: frame_id, in: path, required: true, schema: {type: string, pattern: "^[0-9a-f]{32}$"}}
+    get:
+      operationId: getRIDFrame
+      tags: [rid-frames]
+      summary: Every stored row of one frame id (purpose required, audited)
+      security:
+        - sessionCookie: []
+      x-roles: [incident_officer, inspector]
+      x-audit: {event_type: rid_frames_viewed, entity_type: rid_observations, purpose: required}
+      parameters:
+        - {name: purpose, in: query, required: true, schema: {type: string, minLength: 1, maxLength: 200}}
+      responses:
+        "200":
+          description: The rows of the frame.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RIDFramePage"
         default:
           $ref: "#/components/responses/Problem"
 
@@ -2842,3 +2898,28 @@ components:
         batch_id: {type: string, description: "<receiver_id>:<nonce>"}
         accepted: {type: integer, description: Observations written to the work queue.}
         duplicates: {type: integer, description: Observations already accepted within the dedupe window, not queued again.}
+    RIDFrame:
+      type: object
+      required: [frame_id, ingest_ts, receiver_id, transmitter, payload_hex, payload_sha256_hex, backlog, sent_at_ms, nonce]
+      properties:
+        frame_id: {type: string}
+        ingest_ts: {type: string, format: date-time}
+        rx_ts: {type: string, format: date-time}
+        receiver_id: {type: string}
+        transmitter: {type: string}
+        msg_type: {type: integer}
+        payload_hex: {type: string}
+        payload_sha256_hex: {type: string}
+        rssi_dbm: {type: number, format: double}
+        backlog: {type: boolean}
+        receiver_position: {$ref: "#/components/schemas/RIDPosition"}
+        sent_at_ms: {type: integer, format: int64}
+        nonce: {type: string}
+    RIDFramePage:
+      type: object
+      required: [frames, truncated]
+      properties:
+        frames:
+          type: array
+          items: {$ref: "#/components/schemas/RIDFrame"}
+        truncated: {type: boolean, description: The window holds more frames than were returned.}
