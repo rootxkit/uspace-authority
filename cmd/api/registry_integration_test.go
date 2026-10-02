@@ -25,7 +25,9 @@ func TestIntegrationRegistryThroughTheProcess(t *testing.T) {
 	var stdout, stderr lines
 	ctx, cancel := context.WithCancel(context.Background())
 	exit := make(chan int, 1)
-	go func() { exit <- proc.Main(ctx, specWith(&config.API{}, identify), nil, &stdout, &stderr, env(baseEnv(t, u))) }()
+	go func() {
+		exit <- proc.Main(ctx, specWith(&config.API{}, identify), nil, &stdout, &stderr, env(baseEnv(t, u)))
+	}()
 	t.Cleanup(func() {
 		cancel()
 		select {
