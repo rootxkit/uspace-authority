@@ -112,3 +112,18 @@ Unreleased; the format follows Keep a Changelog.
   the later hypertables, `TEMPORARY` for the writer role;
   `schemas/tsw/rows/v1.json`, `schemas/tsw/gap/v1.json`; the tsdb-writer
   runbook.
+- WP-8: the Remote ID pipeline (`internal/ridpipe.Pipeline`, rid-ingest's
+  Sink): T-02 receipt placement, `odid.Decode` with refusals counted by
+  phrase, `timeplace.PlaceBroadcast`, `rid.Tracker` per transmitter (a
+  live and a backlog tracker), `rid.AltitudeSelector` with the geoid,
+  `rid.VelocityNED`/`Airborne`, `identify.ResolveRemoteID` over the
+  registry projection (read by rid-ingest, `registry_unavailable` until
+  loaded), all bounded and counted; `internal/track` (track/telemetry/v1
+  typed from the lab's common schema, T11 validation, `trk.v1` subjects,
+  `ident.v1` changes with `schemas/ident/change/v1.json`, tracks rows);
+  timeseries `00006` (decoded `rid_observations` columns, the `tracks`
+  hypertable) handed over by the worker on `tsw.v1.tracks`; the `RID_*`
+  thresholds; the five Remote ID vector files run through the ingest
+  adapters and scenarios SC-06, SC-10, SC-11, SC-22 in process.
+  tsdb-writer records a purge of `TSW` as a `stream_purge` gap
+  (timeseries `00007`, `writer_positions`).

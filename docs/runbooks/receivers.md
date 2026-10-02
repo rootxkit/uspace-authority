@@ -164,8 +164,11 @@ switch within a second (KV watch and push) and refuses with 503
 
 ## Not yet here
 
-- Decoding, identity, time placement and tracks are WP-8 (`ridpipe.Sink`);
-  until then rows are stored raw and `pipeline.rows_not_decoded` counts
-  them, as the start line says.
-- The writer of `rid_observations` and `writer_gaps` is WP-9
-  (`tsdb-writer`).
+- The geoid is WP-11: until it is configured, Remote ID tracks carry
+  no `alt_amsl_m` (`ridpipe.alt_amsl_unavailable_no_geoid`), and the
+  start line and every status line (`geoid`) say they are not judged
+  vertically.
+- The registry projection is read from `TS_URL`; until it has loaded,
+  every serial resolves `registry_unavailable`
+  (`ridpipe.identification_registry_unavailable`, `projection_loaded`
+  false on the status line).

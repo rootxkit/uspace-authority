@@ -53,6 +53,65 @@ type RidObservation struct {
 	ReceiverAltHaeM *float64
 	SentAtMs        int64
 	Nonce           string
+	Serial          *string
+	OperatorReg     *string
+	IDType          *int16
+	LatDeg          *float64
+	LonDeg          *float64
+	AltWgs84M       *float64
+	AltPressureM    *float64
+	HeightM         *float64
+	HeightRef       *string
+	SpeedMs         *float64
+	TrackDeg        *float64
+	VspeedMs        *float64
+	Status          *string
+	TsBroadcast     *time.Time
+	CapturedAt      *time.Time
+	TimeSource      *string
+	DecodeError     *string
+}
+
+type Track struct {
+	CapturedAt            time.Time
+	TrackID               string
+	DedupeKey             string
+	MsgID                 string
+	Ts                    *time.Time
+	RxTs                  time.Time
+	TimeSource            string
+	Backlog               bool
+	Source                string
+	SourceInstance        string
+	Trust                 string
+	LatDeg                float64
+	LonDeg                float64
+	AltWgs84M             *float64
+	AltAmslM              *float64
+	AltSource             string
+	AltPressureM          *float64
+	HeightM               *float64
+	HeightRef             *string
+	SpeedMs               *float64
+	TrackDeg              *float64
+	VspeedMs              *float64
+	AccuracyHM            *float64
+	AccuracyVM            *float64
+	Status                *string
+	Emergency             bool
+	Airborne              *bool
+	IdentStatus           string
+	IdentReason           string
+	IdentMismatch         bool
+	IdentBasis            string
+	Serial                *string
+	OperatorReg           *string
+	RegisteredOperatorReg *string
+	RegistryUasID         *string
+	FlightID              *string
+	UsspID                *string
+	Cell5                 *string
+	IdentityReceiver      *string
 }
 
 type WriterGap struct {
@@ -68,4 +127,11 @@ type WriterGap struct {
 	ReceiverID *string
 	Detail     *string
 	RecordedAt time.Time
+}
+
+type WriterPosition struct {
+	TableName string
+	Stream    string
+	LastSeq   int64
+	UpdatedAt time.Time
 }

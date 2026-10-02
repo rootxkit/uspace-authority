@@ -57,7 +57,9 @@ type Frames struct {
 // SlugWindowTooLarge refuses a window above MaxWindow.
 const SlugWindowTooLarge = "window_too_large"
 
-func frameFrom(o *reader.RidObservation) Frame {
+// frameFrom maps a raw row; both frame queries select the same raw
+// columns (not the decoded ones WP-8 added), so their rows convert.
+func frameFrom(o *reader.RIDFramesRow) Frame {
 	f := Frame{
 		IngestTS: o.IngestTs.UTC(), FrameID: o.FrameID, ReceiverID: o.ReceiverID, Transmitter: o.Transmitter,
 		ReceiverTS: o.ReceiverTs, Payload: o.Payload, PayloadSHA256: o.PayloadSha256, Backlog: o.Backlog,
@@ -150,7 +152,7 @@ func (f *Frames) Get(ctx context.Context, actor audit.Actor, frameID, purpose st
 	}
 	out := make([]Frame, 0, len(rows))
 	for i := range rows {
-		out = append(out, frameFrom(&rows[i]))
+		out = append(out, frameFrom((*reader.RIDFramesRow)(&rows[i])))
 	}
 	if err := f.recordView(ctx, actor, purpose, frameID, map[string]any{"frames": len(out)}); err != nil {
 		return nil, err

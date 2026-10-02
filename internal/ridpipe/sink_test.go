@@ -3,10 +3,14 @@ package ridpipe
 import (
 	"context"
 	"encoding/json"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/rootxkit/uspace-core/core"
+
+	"github.com/rootxkit/uspace-authority/internal/store/ts"
+	"github.com/rootxkit/uspace-authority/internal/track"
 )
 
 // The stand-in Sink decodes nothing and says so in a counter, row by row
@@ -25,17 +29,30 @@ func TestUndecodedCountsEveryRow(t *testing.T) {
 	}
 }
 
-// The row's JSON names are the rid_observations columns, so tsdb-writer
-// maps them one to one.
+// The row's JSON names are the rid_observations columns (WP-7's and
+// WP-8's), so tsdb-writer maps them one to one; the tracks rows never go
+// into the queued batch.
 func TestRowJSONNamesAreTheColumns(t *testing.T) {
 	raw, err := json.Marshal(Row{Payload: []byte{1}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, col := range []string{"ingest_ts", "frame_id", "receiver_id", "transmitter", "receiver_ts", "msg_type", "payload",
-		"payload_sha256", "rssi_dbm", "backlog", "receiver_lat_deg", "receiver_lon_deg", "receiver_alt_hae_m", "sent_at_ms", "nonce"} {
-		if !strings.Contains(string(raw), `"`+col+`":`) {
-			t.Errorf("column %s missing from %s", col, raw)
-		}
+	var got map[string]any
+	if err := json.Unmarshal(raw, &got); err != nil {
+		t.Fatal(err)
+	}
+	names := make([]string, 0, len(got))
+	for k := range got {
+		names = append(names, k)
+	}
+	slices.Sort(names)
+	want := ts.RIDObservations.ColumnNames()
+	slices.Sort(want)
+	if !slices.Equal(names, want) {
+		t.Fatalf("row %v, columns %v", names, want)
+	}
+	b, _ := json.Marshal(Batch{Tracks: make([]track.Row, 1)})
+	if strings.Contains(string(b), "track") {
+		t.Fatalf("tracks rows in the queued batch: %s", b)
 	}
 }

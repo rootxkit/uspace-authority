@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/rootxkit/uspace-core/core"
+	"github.com/rootxkit/uspace-core/geoid"
 
 	"github.com/rootxkit/uspace-authority/internal/bus"
 	"github.com/rootxkit/uspace-authority/internal/config"
@@ -20,14 +21,15 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/sources"
 )
 
-// Options are what Run needs beyond the configuration: the decode
-// pipeline (WP-8) and the source-control gate. A nil Sink takes the
-// stand-in ridpipe.Undecoded until WP-8; a nil Gate is the process's
-// internal/sources follower of the published switches (tests give their
-// own).
+// Options are what Run needs beyond the configuration. A nil Sink is
+// the Remote ID pipeline (WP-8, ridpipe.Pipeline); a nil Gate is the
+// process's internal/sources follower of the published switches (tests
+// give their own). Geoid is the pipeline's geoid; nil until WP-11 wires
+// one, and the process says its aircraft are not judged vertically.
 type Options struct {
-	Sink ridpipe.Sink
-	Gate Gate
+	Sink  ridpipe.Sink
+	Gate  Gate
+	Geoid geoid.Undulator
 }
 
 // LoopbackAddr replaces addr's host with 127.0.0.1 (R-06: an ingest
@@ -89,11 +91,9 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.RIDIngest, o Options
 	}
 
 	sink, gate := o.Sink, o.Gate
+	var runPipeline func(context.Context)
 	if sink == nil {
-		c := &core.Counters{}
-		rt.AddCounters("pipeline", c)
-		sink = ridpipe.Undecoded{Counters: c}
-		rt.Logger.Warn("no decode pipeline in this build (WP-8): observations are stored raw and no track is published")
+		sink, runPipeline = startPipeline(rt, cfg, bp, o)
 	}
 	// Source control (WP-10): the follower of the published switches,
 	// fed by the KV watch, the push subject and the re-read; with the
@@ -153,6 +153,9 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.RIDIngest, o Options
 	})
 	if followSources != nil {
 		wg.Go(func() { followSources(ctx) })
+	}
+	if runPipeline != nil {
+		wg.Go(func() { runPipeline(ctx) })
 	}
 	wg.Go(func() { worker.Run(ctx, queue.EnsureQueue) })
 	wg.Go(func() { status.Run(ctx, time.Duration(t.StatusIntervalMS)*time.Millisecond) })

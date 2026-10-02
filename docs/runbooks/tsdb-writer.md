@@ -10,11 +10,13 @@ what an operator does about each.
 | Table | Producer | Dedupe key | Policies |
 |---|---|---|---|
 | `rid_observations` | rid-ingest (WP-7) | `(frame_id, ingest_ts)`; `frame_id` hashes (receiver, transmitter, `receiver_ts`, payload hash) | 1-day chunks, compressed after 7 days (`segmentby transmitter`), no retention until WP-27's archive |
+| `tracks` | rid-ingest's Remote ID pipeline (WP-8) | `(dedupe_key, captured_at)`; `dedupe_key` is `direct_rid:<frame_id>` of the frame that carried the Location | 1-day chunks, compressed after 7 days (`segmentby track_id`), no retention until WP-27's archive |
 | `writer_gaps` | rid-ingest's shed batches; tsdb-writer itself | `dedupe_key` | none |
+| `writer_positions` | tsdb-writer itself, with every write | `(table_name, stream)`, raised, never lowered | not a hypertable |
 
-`tracks` (WP-8), `ussp_flights` (WP-14, 24 h retention) and
-`manned_tracks` (WP-15) are added by their work packages, with
-`authority_hypertable_policies` (timeseries `00005`).
+`ussp_flights` (WP-14, 24 h retention) and `manned_tracks` (WP-15) are
+added by their work packages, with `authority_hypertable_policies`
+(timeseries `00005`).
 
 ## Reading the status line
 
@@ -82,11 +84,12 @@ causes.
 | `cause` | Recorded by | Means | `count_unit` |
 |---|---|---|---|
 | `ingest_queue_full`, `ingest_queue_age`, `ingest_queue_corrupt` | rid-ingest | Queued receiver batches were shed before they were handed over (`docs/runbooks/receivers.md`). `stream` is `INGEST`. | rows |
-| `stream_retention` | tsdb-writer | TSW messages left the stream before this table's consumer reached them: the sequences the consumer was delivered stepped over sequences the stream no longer holds. | messages |
+| `stream_retention` | tsdb-writer | TSW messages left the stream before this table's consumer reached them: the sequences the consumer was delivered stepped over sequences the stream no longer holds, while the consumer was not caught up (stopped, spilling, or with messages undelivered). A quiet table's consumer is caught up, so other tables' aged-out messages are not counted for it. | messages |
+| `stream_purge` | tsdb-writer | The TSW stream was purged (or messages deleted) before this table's consumer was delivered them: the consumer's acknowledgement floor moved past sequences the writer never wrote. Seen at the next delivery or within 10 s on an idle table while the writer runs, and at start by comparing the floor with the position the table was written to (`writer_positions`) when the purge happened while it was stopped. | messages |
 | `malformed` | tsdb-writer | A TSW message could not be read (`detail` says why). It is acknowledged with the record. | rows when countable, else messages |
 | `rejected` | tsdb-writer | The database refused a message's rows (a CHECK or type error, in `detail`). The rest of the batch is written. | rows |
 
-A `stream_retention` count is of TSW messages, not rows. It is an upper
+A `stream_retention` or `stream_purge` count is of TSW messages, not rows. It is an upper
 bound for the table that records it: one stream carries every table,
 and a lost message's table cannot be read once the message is gone.
 Each table's consumer records the hole it saw, so one outage can appear
@@ -112,10 +115,30 @@ FROM writer_gaps ORDER BY at DESC LIMIT 50;
   was refused too. Those rows are lost and only counted; the log line
   has the stream sequence. Report it.
 
-**Not observed.** `nats stream purge TSW` moves every consumer past the
-purged messages, so the writer sees no step and records nothing. Never
-purge `TSW`. If it has been purged, record the hole by hand from the
-purge's sequence range.
+- `stream_purge`: someone purged `TSW` (`nats stream purge TSW`) or
+  deleted messages from it. Never purge `TSW`: every message in it is a
+  row not yet written. Find who did it; the rows in the range are lost
+  and the record is their only trace. The log line is "TSW stream
+  purged: messages never delivered to this table were removed; recorded
+  as a gap".
+
+**Quiet tables.** A table whose consumer is caught up (an idle check
+every 10 s finds nothing of it undelivered) records neither a
+`stream_retention` nor a `stream_purge` gap: none of its messages can
+have been aged out or purged unseen. A purge seen while caught up is
+counted (`purge_steps_while_caught_up`) and logged at info. Measured on
+the compose stack's nats-server (`TestIntegrationQuietTableRecordsNoGap`):
+a filtered consumer's ack floor does not move when its own or other
+tables' messages age out, also across a server restart. Messages that
+age out while the writer is stopped cannot be told apart by table and
+are recorded as an upper bound.
+
+**Position.** Every write commits the highest TSW sequence it covers in
+`writer_positions` (one row per table); a caught-up idle consumer with
+nothing waiting to be written also stores the stream's last sequence
+there, and a restart measures steps from it. At start nothing is written
+until that position has been read; while it cannot be (the database is
+down) the state is `write_failing` and `position_read_failed` rises.
 
 ## deduplicated
 

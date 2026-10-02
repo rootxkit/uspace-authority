@@ -46,6 +46,10 @@ type Column struct {
 type Table struct {
 	Name    string
 	Columns []Column
+	// OnConflict is the conflict clause of the insert ("DO NOTHING" when
+	// empty: a row whose dedupe key is stored is counted, not written
+	// twice). Only writer_positions, which is updated, sets it.
+	OnConflict string
 }
 
 // ColumnNames lists the columns in COPY order.
@@ -156,9 +160,9 @@ func decodeValue(c Column, v json.RawMessage) (any, error) {
 	return nil, core.Fieldf(c.Name, "unknown column kind %d", c.Kind)
 }
 
-// RIDObservations is rid_observations (timeseries 00004, WP-7): the raw
-// side rid-ingest fills, ridpipe.Row's JSON. WP-8 adds its decoded
-// columns here and in its migration together.
+// RIDObservations is rid_observations (timeseries 00004, WP-7, and
+// 00006, WP-8): the raw side rid-ingest fills and the columns its
+// pipeline decodes, ridpipe.Row's JSON.
 var RIDObservations = Table{Name: "rid_observations", Columns: []Column{
 	{Name: "ingest_ts", Kind: KindTime},
 	{Name: "frame_id", Kind: KindText},
@@ -175,6 +179,67 @@ var RIDObservations = Table{Name: "rid_observations", Columns: []Column{
 	{Name: "receiver_alt_hae_m", Kind: KindFloat, Nullable: true},
 	{Name: "sent_at_ms", Kind: KindInt},
 	{Name: "nonce", Kind: KindText},
+	{Name: "serial", Kind: KindText, Nullable: true},
+	{Name: "operator_reg", Kind: KindText, Nullable: true},
+	{Name: "id_type", Kind: KindInt, Nullable: true},
+	{Name: "lat_deg", Kind: KindFloat, Nullable: true},
+	{Name: "lon_deg", Kind: KindFloat, Nullable: true},
+	{Name: "alt_wgs84_m", Kind: KindFloat, Nullable: true},
+	{Name: "alt_pressure_m", Kind: KindFloat, Nullable: true},
+	{Name: "height_m", Kind: KindFloat, Nullable: true},
+	{Name: "height_ref", Kind: KindText, Nullable: true},
+	{Name: "speed_ms", Kind: KindFloat, Nullable: true},
+	{Name: "track_deg", Kind: KindFloat, Nullable: true},
+	{Name: "vspeed_ms", Kind: KindFloat, Nullable: true},
+	{Name: "status", Kind: KindText, Nullable: true},
+	{Name: "ts_broadcast", Kind: KindTime, Nullable: true},
+	{Name: "captured_at", Kind: KindTime, Nullable: true},
+	{Name: "time_source", Kind: KindText, Nullable: true},
+	{Name: "decode_error", Kind: KindText, Nullable: true},
+}}
+
+// Tracks is tracks (timeseries 00006, WP-8): the published picture,
+// internal/track.Row's JSON.
+var Tracks = Table{Name: "tracks", Columns: []Column{
+	{Name: "captured_at", Kind: KindTime},
+	{Name: "track_id", Kind: KindText},
+	{Name: "dedupe_key", Kind: KindText},
+	{Name: "msg_id", Kind: KindText},
+	{Name: "ts", Kind: KindTime, Nullable: true},
+	{Name: "rx_ts", Kind: KindTime},
+	{Name: "time_source", Kind: KindText},
+	{Name: "backlog", Kind: KindBool},
+	{Name: "source", Kind: KindText},
+	{Name: "source_instance", Kind: KindText},
+	{Name: "trust", Kind: KindText},
+	{Name: "lat_deg", Kind: KindFloat},
+	{Name: "lon_deg", Kind: KindFloat},
+	{Name: "alt_wgs84_m", Kind: KindFloat, Nullable: true},
+	{Name: "alt_amsl_m", Kind: KindFloat, Nullable: true},
+	{Name: "alt_source", Kind: KindText},
+	{Name: "alt_pressure_m", Kind: KindFloat, Nullable: true},
+	{Name: "height_m", Kind: KindFloat, Nullable: true},
+	{Name: "height_ref", Kind: KindText, Nullable: true},
+	{Name: "speed_ms", Kind: KindFloat, Nullable: true},
+	{Name: "track_deg", Kind: KindFloat, Nullable: true},
+	{Name: "vspeed_ms", Kind: KindFloat, Nullable: true},
+	{Name: "accuracy_h_m", Kind: KindFloat, Nullable: true},
+	{Name: "accuracy_v_m", Kind: KindFloat, Nullable: true},
+	{Name: "status", Kind: KindText, Nullable: true},
+	{Name: "emergency", Kind: KindBool},
+	{Name: "airborne", Kind: KindBool, Nullable: true},
+	{Name: "ident_status", Kind: KindText},
+	{Name: "ident_reason", Kind: KindText},
+	{Name: "ident_mismatch", Kind: KindBool},
+	{Name: "ident_basis", Kind: KindText},
+	{Name: "serial", Kind: KindText, Nullable: true},
+	{Name: "operator_reg", Kind: KindText, Nullable: true},
+	{Name: "registered_operator_reg", Kind: KindText, Nullable: true},
+	{Name: "registry_uas_id", Kind: KindText, Nullable: true},
+	{Name: "flight_id", Kind: KindText, Nullable: true},
+	{Name: "ussp_id", Kind: KindText, Nullable: true},
+	{Name: "cell5", Kind: KindText, Nullable: true},
+	{Name: "identity_receiver", Kind: KindText, Nullable: true},
 }}
 
 // WriterGaps is writer_gaps (timeseries 00005): every hole, with its
@@ -193,11 +258,26 @@ var WriterGaps = Table{Name: "writer_gaps", Columns: []Column{
 	{Name: "detail", Kind: KindText, Nullable: true},
 }}
 
+// WriterPositions is writer_positions (timeseries 00007): the highest
+// TSW sequence written per table, raised in the transaction of the rows
+// it covers, never lowered.
+var WriterPositions = Table{Name: "writer_positions", Columns: []Column{
+	{Name: "table_name", Kind: KindText},
+	{Name: "stream", Kind: KindText},
+	{Name: "last_seq", Kind: KindInt},
+}, OnConflict: "(table_name, stream) DO UPDATE SET last_seq = GREATEST(writer_positions.last_seq, EXCLUDED.last_seq), updated_at = now()"}
+
+// PositionRow is the writer_positions row of table at seq on stream.
+func PositionRow(table, stream string, seq uint64) []any {
+	return []any{table, stream, int64(seq)}
+}
+
 // Tables are the hypertables tsdb-writer consumes tsw.v1.<table> for,
-// by name. tracks (WP-8), ussp_flights (WP-14) and manned_tracks
-// (WP-15) are added by their WPs with their migrations.
+// by name. ussp_flights (WP-14) and manned_tracks (WP-15) are added by
+// their WPs with their migrations.
 var Tables = map[string]Table{
 	RIDObservations.Name: RIDObservations,
+	Tracks.Name:          Tracks,
 }
 
 // Gap is one writer_gaps row.

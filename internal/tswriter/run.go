@@ -63,6 +63,15 @@ func (l *LazyStore) Write(ctx context.Context, parts ...ts.Part) ([]ts.Written, 
 	return p.Write(ctx, parts...)
 }
 
+// Position implements Store.
+func (l *LazyStore) Position(ctx context.Context, table, stream string) (uint64, bool, error) {
+	p := l.get()
+	if p == nil {
+		return 0, false, ErrDatabaseUnavailable
+	}
+	return p.Position(ctx, table, stream)
+}
+
 // OlderThan implements OlderThaner.
 func (l *LazyStore) OlderThan(ctx context.Context, table, column string, age time.Duration) (int64, error) {
 	p := l.get()

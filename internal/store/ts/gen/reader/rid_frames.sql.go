@@ -19,17 +19,35 @@ ORDER BY ingest_ts
 LIMIT 16
 `
 
+type RIDFrameByIDRow struct {
+	IngestTs        time.Time
+	FrameID         string
+	ReceiverID      string
+	Transmitter     string
+	ReceiverTs      *time.Time
+	MsgType         *int16
+	Payload         []byte
+	PayloadSha256   []byte
+	RssiDbm         *float32
+	Backlog         bool
+	ReceiverLatDeg  *float64
+	ReceiverLonDeg  *float64
+	ReceiverAltHaeM *float64
+	SentAtMs        int64
+	Nonce           string
+}
+
 // WP-7: every stored row of one frame id (a frame written twice by a
 // redelivery shows as two rows rather than being hidden).
-func (q *Queries) RIDFrameByID(ctx context.Context, frameID string) ([]RidObservation, error) {
+func (q *Queries) RIDFrameByID(ctx context.Context, frameID string) ([]RIDFrameByIDRow, error) {
 	rows, err := q.db.Query(ctx, rIDFrameByID, frameID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []RidObservation{}
+	items := []RIDFrameByIDRow{}
 	for rows.Next() {
-		var i RidObservation
+		var i RIDFrameByIDRow
 		if err := rows.Scan(
 			&i.IngestTs,
 			&i.FrameID,
@@ -76,11 +94,29 @@ type RIDFramesParams struct {
 	RowLimit    int32
 }
 
+type RIDFramesRow struct {
+	IngestTs        time.Time
+	FrameID         string
+	ReceiverID      string
+	Transmitter     string
+	ReceiverTs      *time.Time
+	MsgType         *int16
+	Payload         []byte
+	PayloadSha256   []byte
+	RssiDbm         *float32
+	Backlog         bool
+	ReceiverLatDeg  *float64
+	ReceiverLonDeg  *float64
+	ReceiverAltHaeM *float64
+	SentAtMs        int64
+	Nonce           string
+}
+
 // WP-7: raw Remote ID frames in [from_ts, to_ts) by ingest time, with
 // optional transmitter and receiver filters, oldest first, one row more
 // than the page so the caller can say the page was cut (B-13: a window is
 // refused or paged, never thinned).
-func (q *Queries) RIDFrames(ctx context.Context, arg RIDFramesParams) ([]RidObservation, error) {
+func (q *Queries) RIDFrames(ctx context.Context, arg RIDFramesParams) ([]RIDFramesRow, error) {
 	rows, err := q.db.Query(ctx, rIDFrames,
 		arg.FromTs,
 		arg.ToTs,
@@ -92,9 +128,9 @@ func (q *Queries) RIDFrames(ctx context.Context, arg RIDFramesParams) ([]RidObse
 		return nil, err
 	}
 	defer rows.Close()
-	items := []RidObservation{}
+	items := []RIDFramesRow{}
 	for rows.Next() {
-		var i RidObservation
+		var i RIDFramesRow
 		if err := rows.Scan(
 			&i.IngestTs,
 			&i.FrameID,

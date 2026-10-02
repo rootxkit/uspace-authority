@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.uspace.ge/ident/change/v1.json",
+  "title": "ident/change/v1",
+  "description": "A track's identification block, emitted on its own when its status, reason or mismatch changes (spec 04 §3.2: carried inside every track/telemetry/v1 and emitted on its own when it changes). Internal to this system, on ident.v1.<track_id> (JetStream IDENT, 24 h; docs/PLAN.md §6), in the 04 §2 envelope with the times of the track message that carried the change. Owned by uspace-authority (WP-8): no shared schema exists for the standalone block (a spec gap recorded in the WP-8 pull request). `identification` and `previous` are the shape of uspace-lab track/telemetry/v1 `$defs/identification` (uspace-core core.Identification).",
+  "allOf": [{ "$ref": "https://schemas.uspace.ge/envelope/v1.json" }],
+  "properties": {
+    "schema": { "const": "ident/change/v1" },
+    "body": {
+      "type": "object",
+      "required": ["track_id", "trust", "source", "source_instance", "identification", "previous"],
+      "additionalProperties": false,
+      "properties": {
+        "track_id": { "type": "string", "minLength": 1 },
+        "trust": { "$ref": "https://schemas.uspace.ge/envelope/v1.json#/$defs/trust" },
+        "source": { "$ref": "https://schemas.uspace.ge/envelope/v1.json#/$defs/source" },
+        "source_instance": { "type": "string", "minLength": 1 },
+        "identification": { "$ref": "https://schemas.uspace.ge/track/telemetry/v1.json#/$defs/identification" },
+        "previous": {
+          "description": "The block this one replaces; null for the first published for the track id since this process started (or since the id left its bounded memory).",
+          "oneOf": [{ "$ref": "https://schemas.uspace.ge/track/telemetry/v1.json#/$defs/identification" }, { "type": "null" }]
+        }
+      }
+    }
+  }
+}

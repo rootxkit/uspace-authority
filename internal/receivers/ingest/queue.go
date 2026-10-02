@@ -29,6 +29,11 @@ const (
 	GapsSubject = "tsw.v1.writer_gaps"
 	// RowsTable is the table of every row and gap record here.
 	RowsTable = "rid_observations"
+	// TracksSubject carries the tracks rows of the Remote ID pipeline
+	// (WP-8) to tsdb-writer.
+	TracksSubject = "tsw.v1.tracks"
+	// TracksTable is their table.
+	TracksTable = "tracks"
 )
 
 // QueueSubject is the work-queue subject of a batch from the cell3 named

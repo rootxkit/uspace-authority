@@ -12,6 +12,7 @@ import (
 	"github.com/rootxkit/uspace-core/core"
 
 	"github.com/rootxkit/uspace-authority/internal/ridpipe"
+	"github.com/rootxkit/uspace-authority/internal/track"
 )
 
 type fakeMsg struct {
@@ -30,11 +31,23 @@ func (m *fakeMsg) NakWithDelay(time.Duration) error          { m.naked++; return
 func (m *fakeMsg) Term() error                               { m.termed++; return nil }
 
 type fakeStore struct {
-	mu      sync.Mutex
-	rows    []*ridpipe.Batch
-	gaps    []Gap
-	rowsErr error
-	gapsErr error
+	mu        sync.Mutex
+	rows      []*ridpipe.Batch
+	tracks    []*ridpipe.Batch
+	gaps      []Gap
+	rowsErr   error
+	tracksErr error
+	gapsErr   error
+}
+
+func (s *fakeStore) PutTracks(_ context.Context, b *ridpipe.Batch) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.tracksErr != nil {
+		return s.tracksErr
+	}
+	s.tracks = append(s.tracks, b)
+	return nil
 }
 
 func (s *fakeStore) PutRows(_ context.Context, b *ridpipe.Batch) error {
@@ -253,4 +266,39 @@ func FuzzWorkerHandle(f *testing.F) {
 			t.Fatalf("settled %d times", m.acked+m.naked+m.termed)
 		}
 	})
+}
+
+// trackingSink publishes one track per row, as the pipeline does.
+type trackingSink struct{ seen int }
+
+func (s *trackingSink) Observe(_ context.Context, b *ridpipe.Batch) error {
+	s.seen++
+	b.Tracks = make([]track.Row, len(b.Rows))
+	return nil
+}
+
+// WP-8, B-05, SC-18: the tracks rows the pipeline published are handed
+// over after the raw rows, under the same retry: while they cannot be
+// handed over the batch waits in the queue (nothing acknowledged, not
+// decoded again), and once they can, both are stored and acknowledged.
+// A batch that published no track hands over no tracks message.
+func TestWorkerHandsTracksOverAfterTheRowsWithTheirRetry(t *testing.T) {
+	now := time.Unix(10_000, 0)
+	sink, store := &trackingSink{}, &fakeStore{tracksErr: errors.New("TSW unavailable")}
+	w := newWorker(sink, store, now)
+	m := queued(t, "rx-1:a", 2, 1, 0, now)
+	w.Handle(context.Background(), m)
+	w.Handle(context.Background(), m)
+	if m.acked != 0 || m.naked != 2 || len(store.tracks) != 0 || sink.seen != 1 || w.Counters.Get(CounterStorageUnavailable) != 2 {
+		t.Fatalf("tracks down: acked %d naked %d tracks %d seen %d", m.acked, m.naked, len(store.tracks), sink.seen)
+	}
+	store.tracksErr = nil
+	w.Handle(context.Background(), m)
+	if m.acked != 1 || len(store.tracks) != 1 || len(store.tracks[0].Tracks) != 2 || w.Counters.Get(CounterTrackRowsStored) != 2 {
+		t.Fatalf("tracks up: acked %d tracks %d %v", m.acked, len(store.tracks), w.Counters.Snapshot())
+	}
+	// No track from a batch: nothing on tsw.v1.tracks (JetRows.PutTracks).
+	if err := (JetRows{}).PutTracks(context.Background(), &ridpipe.Batch{ID: "x"}); err != nil {
+		t.Fatalf("an empty tracks hand-over published: %v", err)
+	}
 }

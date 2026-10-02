@@ -83,6 +83,25 @@ func (s *JetSource) AckFloor(ctx context.Context) (uint64, error) {
 	return info.AckFloor.Stream, nil
 }
 
+// Cursor implements Source: the stream first, then the consumer.
+func (s *JetSource) Cursor(ctx context.Context) (Cursor, error) {
+	st, c, err := s.get(ctx)
+	if err != nil {
+		return Cursor{}, err
+	}
+	si, err := st.Info(ctx)
+	if err != nil {
+		s.reset()
+		return Cursor{}, err
+	}
+	ci, err := c.Info(ctx)
+	if err != nil {
+		s.reset()
+		return Cursor{}, err
+	}
+	return Cursor{StreamLast: si.State.LastSeq, AckFloor: ci.AckFloor.Stream, NumPending: ci.NumPending}, nil
+}
+
 // Holes implements Source: the stream's limits remove messages from its
 // head, so every sequence of a jump below the stream's first sequence is
 // gone; interior deletes (an operator's DeleteMsg) are read from the

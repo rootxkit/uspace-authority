@@ -10,6 +10,7 @@ import (
 
 	"github.com/rootxkit/uspace-core/sources"
 
+	"github.com/rootxkit/uspace-authority/internal/config"
 	"github.com/rootxkit/uspace-authority/internal/receivers"
 )
 
@@ -119,5 +120,18 @@ func TestPublishSendsTheEnvelopePerReceiver(t *testing.T) {
 	pub.err = errors.New("down")
 	if n := f.status.Publish(f.now); n != 0 {
 		t.Fatal(n)
+	}
+}
+
+// The pipeline's thresholds are the configuration's, with the policy's
+// defaults (INV-03).
+func TestPipelineSettingsFromTheConfiguration(t *testing.T) {
+	cfg := config.RIDPipelineTuning{IdentityTTLS: 15, MaxGapS: 3, IdentifyWithinS: 4, BroadcastToleranceS: 1, MaxLatencyS: 5,
+		MinVerticalAccuracy: 2, PressureHoldS: 10, MaxBatchSpacingS: 120, MaxTransmitters: 7, MaxTracks: 9}
+	s := PipelineSettings(cfg)
+	if s.Tracker.IdentityTTLS != 15 || s.Tracker.MaxGapS != 3 || s.Tracker.IdentifyWithinS != 4 || s.Tracker.MaxTransmitters != 7 ||
+		s.Broadcast.ToleranceS != 1 || s.Broadcast.MaxLatencyS != 5 || s.Altitude.MinVerticalAccuracy != 2 || !s.Altitude.HoldPressure ||
+		s.Altitude.PressureHoldS != 10 || s.MaxBatchSpacing != 120*time.Second || s.MaxTracks != 9 || s.Producer != Producer {
+		t.Fatalf("%+v", s)
 	}
 }

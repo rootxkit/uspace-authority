@@ -31,7 +31,9 @@ func ridRow(i int, at time.Time) []any {
 	sum := sha256.Sum256(payload)
 	frame := sha256.Sum256(fmt.Appendf(nil, "rx-1|TEST%d|%d", i, i))
 	return []any{at, hex.EncodeToString(frame[:16]), "rx-1", fmt.Sprintf("TEST%d", i), at.Add(-time.Second), int64(1),
-		payload, sum[:], -70.0, false, 41.7, 44.8, nil, int64(1), "n"}
+		payload, sum[:], -70.0, false, 41.7, 44.8, nil, int64(1), "n",
+		// The decoded columns of WP-8 (timeseries 00006), none decoded.
+		nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil}
 }
 
 // Each registered table is the migrated table: same columns, in the

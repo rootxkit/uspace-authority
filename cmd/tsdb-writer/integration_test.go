@@ -453,6 +453,138 @@ func TestIntegrationForcedSequenceGapIsRecorded(t *testing.T) {
 	h.lastStatus(10*time.Second, func(s status) bool { return s.Counters[tswriter.CounterGapsObserved] == 2 })
 }
 
+// B-13, WP-8: a purge of the TSW stream while the writer is stopped
+// moves its consumers past the purged messages, so the writer is
+// delivered no step; the floor is compared with the position the table
+// was written to (writer_positions) and the purge recorded as a
+// stream_purge gap at restart. The twin first: a restart without a
+// purge records nothing (E-01).
+func TestIntegrationPurgeWhileStoppedIsRecorded(t *testing.T) {
+	h := newHarness(t)
+	ctx := context.Background()
+	h.start(nil, tswriter.Options{})
+	h.put(h.batch(2)) // seq 1
+	waitUntil(t, 20*time.Second, "first rows", func() bool { n, _ := h.rows(); return n == 2 })
+	waitUntil(t, 10*time.Second, "position", func() bool {
+		return h.count(`SELECT count(*) FROM writer_positions WHERE table_name = 'rid_observations' AND stream = 'TSW' AND last_seq = 1`) == 1
+	})
+	h.stop()
+	h.start(nil, tswriter.Options{})
+	h.put(h.batch(2)) // seq 2
+	waitUntil(t, 20*time.Second, "rows after a clean restart", func() bool { n, _ := h.rows(); return n == 4 })
+	if g := h.gapRows(); len(g) != 0 {
+		t.Fatalf("a restart without a purge recorded %v", g)
+	}
+	h.stop()
+	for range 3 {
+		h.put(h.batch(2)) // seq 3, 4, 5: never delivered
+	}
+	s, err := h.js.Stream(ctx, bus.StreamTSW)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Purge(ctx); err != nil {
+		t.Fatal(err)
+	}
+	h.start(nil, tswriter.Options{})
+	waitUntil(t, 10*time.Second, "purge gap", func() bool { return h.count(`SELECT count(*) FROM writer_gaps`) >= 1 })
+	want := "rid_observations TSW 3-5 3 messages stream_purge"
+	if got := h.gapRows(); len(got) != 1 || got[0] != want {
+		t.Fatalf("gaps %v, want %s", got, want)
+	}
+	h.stdout.waitFor(t, 5*time.Second, "TSW stream purged: messages never delivered to this table were removed; recorded as a gap", nil)
+	h.put(h.batch(2)) // seq 6: written, no further gap
+	waitUntil(t, 20*time.Second, "rows after the purge", func() bool { n, _ := h.rows(); return n == 6 })
+	time.Sleep(500 * time.Millisecond)
+	if got := h.gapRows(); len(got) != 1 {
+		t.Fatalf("gaps after the purge %v", got)
+	}
+	h.lastStatus(10*time.Second, func(s status) bool { return s.Counters[tswriter.CounterPurgesObserved] == 1 })
+}
+
+// traffic publishes n records on another table (writer_gaps) every
+// interval: the busy table whose messages age out around a quiet one.
+func (h *harness) traffic(n int, every time.Duration) {
+	h.t.Helper()
+	for i := range n {
+		g := ts.GapMessage{Table: "other_table", FromSeq: 0, ToSeq: 0, Cause: "test_traffic", Count: 1, At: time.Now().UTC(),
+			Detail: fmt.Sprint(i)}
+		data, _ := json.Marshal(g)
+		if _, err := h.js.Publish(context.Background(), "tsw.v1.writer_gaps", data); err != nil {
+			h.t.Fatal(err)
+		}
+		time.Sleep(every)
+	}
+}
+
+// quietGaps are the gap records of rid_observations other than the
+// traffic's.
+func (h *harness) quietGaps() []string {
+	var out []string
+	for _, g := range h.gapRows() {
+		if strings.HasPrefix(g, "rid_observations ") {
+			out = append(out, g)
+		}
+	}
+	return out
+}
+
+// Review of PR #14, measured on the compose stack's nats-server: a
+// filtered consumer's ack floor does not move when its own last message
+// ages out of the stream, nor when other tables' messages do, so a quiet
+// table is never mistaken for a purge. And a quiet table records no gap
+// at all: neither while the writer runs (the idle check finds it caught
+// up and moves past the aged-out sequences) nor after a restart (the
+// last sequence accounted for is kept in writer_positions). Messages
+// that age out while the writer is stopped are another matter: whose
+// they were cannot be read, so they are recorded as an upper bound
+// (TestIntegrationForcedSequenceGapIsRecorded). TSW ages
+// messages out after 4 s here, 10 min in production. The twin, a real
+// loss recorded, is TestIntegrationForcedSequenceGapIsRecorded.
+func TestIntegrationQuietTableRecordsNoGap(t *testing.T) {
+	h := newHarness(t)
+	ctx := context.Background()
+	cfg, _ := bus.NewTopology(bus.DefaultLimits()).Stream(bus.StreamTSW)
+	cfg.MaxAge, cfg.Duplicates = 4*time.Second, time.Second
+	s, err := h.js.CreateStream(ctx, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h.start(nil, tswriter.Options{})
+	h.put(h.batch(2)) // seq 1, then rid_observations is quiet
+	waitUntil(t, 20*time.Second, "first rows", func() bool { n, _ := h.rows(); return n == 2 })
+	h.traffic(24, 500*time.Millisecond) // 12 s of the other table; seq 1 and the oldest age out
+	c, err := s.Consumer(ctx, tswriter.ConsumerPrefix+"rid_observations")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ci, err := c.Info(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	si, _ := s.Info(ctx)
+	t.Logf("quiet consumer after its message and others aged out: ack floor %d, stream first %d last %d",
+		ci.AckFloor.Stream, si.State.FirstSeq, si.State.LastSeq)
+	if ci.AckFloor.Stream != 1 || si.State.FirstSeq <= 2 {
+		t.Fatalf("ack floor %d, stream first %d: the measurement this test rests on changed", ci.AckFloor.Stream, si.State.FirstSeq)
+	}
+	h.put(h.batch(2)) // the quiet table speaks again, past the aged-out sequences
+	waitUntil(t, 20*time.Second, "rows while running", func() bool { n, _ := h.rows(); return n == 4 })
+	if g := h.quietGaps(); len(g) != 0 {
+		t.Fatalf("a quiet table recorded %v while the writer ran", g)
+	}
+	h.traffic(24, 500*time.Millisecond) // 12 s more, aging out past the last delivery
+	time.Sleep(11 * time.Second)        // an idle check stores the mark
+	h.stop()
+	h.start(nil, tswriter.Options{})
+	h.put(h.batch(2))
+	waitUntil(t, 20*time.Second, "rows after a restart", func() bool { n, _ := h.rows(); return n == 6 })
+	time.Sleep(time.Second)
+	if g := h.quietGaps(); len(g) != 0 {
+		t.Fatalf("a quiet table recorded %v after a restart", g)
+	}
+}
+
 // SC-18 as the writer sees it, E-02: the database is stopped for 60 s
 // while rows keep arriving, then started. The queue fills to its bound
 // and the writer spills (stops pulling, counted); after recovery every
@@ -562,7 +694,11 @@ func TestIntegrationOlderSchemaStopsTheWriter(t *testing.T) {
 	out := &lines{}
 	code := proc.Main(context.Background(), specWith(&config.TSDBWriter{}, tswriter.Options{}), nil, out, io.Discard,
 		func(k string) (string, bool) { v, ok := m[k]; return v, ok })
-	if code != proc.ExitFailed || !strings.Contains(out.tail(10), "timeseries schema is at version 4, this build needs 5") {
+	latest, err := migrate.Latest(migrate.Timeseries)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := fmt.Sprintf("timeseries schema is at version 4, this build needs %d", latest); code != proc.ExitFailed || !strings.Contains(out.tail(10), want) {
 		t.Fatalf("exit %d:\n%s", code, out.tail(10))
 	}
 }
