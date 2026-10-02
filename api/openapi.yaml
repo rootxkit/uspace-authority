@@ -364,10 +364,21 @@ paths:
       operationId: getSession
       tags: [auth]
       summary: The session of the caller
+      description: >-
+        The caller's session, checked against its sessions row. A read
+        is the console's activity and moves the idle expiry, unless
+        `activity=false`: a check-only read (picture-ws re-checks every
+        open stream with it) leaves `last_seen_at` as it was, so an idle
+        console still ends at the idle timeout.
       security:
         - sessionCookie: []
       x-session: any
       x-audit: none
+      parameters:
+        - name: activity
+          in: query
+          description: false checks the session without counting the request as activity.
+          schema: {type: boolean, default: true}
       responses:
         "200":
           description: The session.

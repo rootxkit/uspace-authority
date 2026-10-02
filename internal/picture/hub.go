@@ -1133,7 +1133,7 @@ func (h *Hub) recheck(ctx context.Context, c *client, sessions Checker) {
 			return
 		case <-t.C:
 		}
-		_, err := sessions.Check(ctx, c.token)
+		_, err := sessions.Recheck(ctx, c.token)
 		now := h.cfg.Now()
 		switch {
 		case err == nil:

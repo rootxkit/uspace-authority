@@ -421,6 +421,10 @@ func (f *fakeChecker) Check(context.Context, string) (Session, error) {
 	return f.sess, f.err
 }
 
+func (f *fakeChecker) Recheck(ctx context.Context, token string) (Session, error) {
+	return f.Check(ctx, token)
+}
+
 func (f *fakeChecker) set(s Session, err error) {
 	f.mu.Lock()
 	f.sess, f.err = s, err

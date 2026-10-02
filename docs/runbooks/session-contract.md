@@ -41,7 +41,10 @@ oldest.
    recovery_codes?}`. `recovery_codes` appear once, at the sign-in that
    confirms enrolment.
 3. `POST /v1/auth/logout` with the session as bearer ends it.
-   `GET /v1/auth/session` reads it.
+   `GET /v1/auth/session` reads it. Every request with a session is
+   activity and moves its idle expiry, except
+   `GET /v1/auth/session?activity=false`, a check-only read for services
+   that re-check an open stream (picture-ws).
 
 Wrong TOTP or recovery codes count against the account in the
 database, across challenges, addresses and api replicas (NIST SP
@@ -96,7 +99,8 @@ the token with uspace-core's verifier and asks api's
 `GET /v1/auth/session` (with the token as bearer) whether the row is
 live, at the upgrade and every `PICTURE_SESSION_RECHECK_S`, so a logout
 or a revocation closes a live stream with 4401; a check that cannot be
-made is 1013 (`docs/runbooks/picture.md`).
+made is 1013 (`docs/runbooks/picture.md`). The re-checks are check-only
+(`?activity=false`): an open stream does not keep an idle session alive.
 
 ## Machine tokens are not sessions
 

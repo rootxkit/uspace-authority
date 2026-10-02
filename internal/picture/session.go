@@ -71,9 +71,13 @@ type Session struct {
 func (s Session) Console() bool { return s.Realm == RealmConsole }
 
 // Checker checks a session token: a Session, or an error wrapping
-// ErrRefused or ErrUnavailable.
+// ErrRefused or ErrUnavailable. Check is the console's own action (the
+// upgrade, an HTTP read) and counts as its activity; Recheck is the same
+// check made by picture-ws on an open stream and does not, so an idle
+// console still reaches its idle timeout.
 type Checker interface {
 	Check(ctx context.Context, token string) (Session, error)
+	Recheck(ctx context.Context, token string) (Session, error)
 }
 
 // TokenVerifier is core's auth.Verifier (or LazyVerifier).
@@ -118,7 +122,16 @@ type sessionInfo struct {
 
 // Check implements Checker. The error never contains the token.
 func (c *APIChecker) Check(ctx context.Context, token string) (Session, error) {
-	s, err := c.check(ctx, token)
+	return c.counted(c.check(ctx, token, true))
+}
+
+// Recheck implements Checker: api is asked with ?activity=false, which
+// checks the sessions row without moving its last_seen_at.
+func (c *APIChecker) Recheck(ctx context.Context, token string) (Session, error) {
+	return c.counted(c.check(ctx, token, false))
+}
+
+func (c *APIChecker) counted(s Session, err error) (Session, error) {
 	switch {
 	case err == nil:
 		c.inc(CounterSessionAccepted)
@@ -130,7 +143,7 @@ func (c *APIChecker) Check(ctx context.Context, token string) (Session, error) {
 	return s, err
 }
 
-func (c *APIChecker) check(ctx context.Context, token string) (Session, error) {
+func (c *APIChecker) check(ctx context.Context, token string, activity bool) (Session, error) {
 	if strings.TrimSpace(token) == "" {
 		return Session{}, refused("no session token")
 	}
@@ -158,6 +171,11 @@ func (c *APIChecker) check(ctx context.Context, token string) (Session, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.URL, http.NoBody) //nolint:gosec // the URL is the operator's configuration (PICTURE_SESSION_URL)
 	if err != nil {
 		return Session{}, unavailable("session check request: %v", err)
+	}
+	if !activity {
+		q := req.URL.Query()
+		q.Set("activity", "false")
+		req.URL.RawQuery = q.Encode()
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Accept", "application/json")

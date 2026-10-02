@@ -130,8 +130,13 @@ margin.
   says whether its `sessions` row is live: picture-ws never opens the
   relational database (B-15), and a logout, a revocation, a disabled
   account or the idle expiry ends the stream as it ends every api call.
-- The session is checked again every `PICTURE_SESSION_RECHECK_S` (15 s):
-  a session that has ended closes the connection with **4401**; at the
+- The session is checked again every `PICTURE_SESSION_RECHECK_S` (15 s)
+  with `GET /v1/auth/session?activity=false`. That read checks the row
+  without counting as activity, so watching the picture does not keep a
+  session alive: only the console's own requests do, and an idle console
+  ends at the idle timeout. The check at the upgrade is the console's own
+  action and counts as activity.
+  A session that has ended closes the connection with **4401**; at the
   token's `exp` too. When api cannot be reached the connection is kept
   for `PICTURE_SESSION_GRACE_S` (60 s), says `session_unchecked`, then
   closes with **1013**. A redirect from api is never followed.

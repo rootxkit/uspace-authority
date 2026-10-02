@@ -252,6 +252,31 @@ func WithRequestInfo(ctx context.Context, ri RequestInfo) context.Context {
 	return context.WithValue(ctx, requestInfoKey{}, ri)
 }
 
+type noActivityKey struct{}
+
+// WithoutActivity returns ctx marking a check-only request: the session
+// is checked as on any request but the request is not the user's
+// activity, so the idle expiry does not move (GET
+// /v1/auth/session?activity=false).
+func WithoutActivity(ctx context.Context) context.Context {
+	return context.WithValue(ctx, noActivityKey{}, true)
+}
+
+// NoActivity reports a check-only request (WithoutActivity).
+func NoActivity(ctx context.Context) bool {
+	v, _ := ctx.Value(noActivityKey{}).(bool)
+	return v
+}
+
+// checkOnly reports a request that asked not to count as activity; only
+// getSession has the parameter.
+func checkOnly(request any) bool {
+	if r, ok := request.(gen.GetSessionRequestObject); ok {
+		return r.Params.Activity != nil && !*r.Params.Activity
+	}
+	return false
+}
+
 // IdentifyFunc resolves the identity of a request.
 type IdentifyFunc func(r *http.Request) (Identity, error)
 
@@ -294,6 +319,10 @@ func Authorize(identify IdentifyFunc, rules Rules) Middleware {
 			if !hasRoles && !anySession && !hasScope {
 				httpx.NewProblem(http.StatusForbidden, httpx.SlugForbidden, "", "this operation has no role rule").Write(w, r)
 				return nil, nil
+			}
+			if checkOnly(request) {
+				ctx = WithoutActivity(ctx)
+				r = r.WithContext(WithoutActivity(r.Context()))
 			}
 			id, err := identify(r)
 			if err != nil {

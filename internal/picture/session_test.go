@@ -17,11 +17,15 @@ import (
 // fakeAPI is api's GET /v1/auth/session: 200 for the live sessions, 401
 // for the rest, 500 when broken; it counts the calls.
 type fakeAPI struct {
-	srv    *httptest.Server
-	calls  atomic.Int64
-	broken atomic.Bool
-	live   map[string]bool
-	jwks   []byte
+	srv   *httptest.Server
+	calls atomic.Int64
+	// checkOnly and activity count the calls with ?activity=false and
+	// those without it.
+	checkOnly atomic.Int64
+	activity  atomic.Int64
+	broken    atomic.Bool
+	live      map[string]bool
+	jwks      []byte
 }
 
 func newFakeAPI(t *testing.T, ti *testIssuer, live ...string) *fakeAPI {
@@ -43,6 +47,11 @@ func newFakeAPI(t *testing.T, ti *testIssuer, live ...string) *fakeAPI {
 	})
 	mux.HandleFunc("GET /v1/auth/session", func(w http.ResponseWriter, r *http.Request) {
 		f.calls.Add(1)
+		if r.URL.Query().Get("activity") == "false" {
+			f.checkOnly.Add(1)
+		} else {
+			f.activity.Add(1)
+		}
 		if f.broken.Load() {
 			http.Error(w, "down", http.StatusInternalServerError)
 			return
@@ -248,4 +257,41 @@ func waitClosed(t *testing.T, conn *fakeConn, want interface{ String() string })
 		time.Sleep(10 * time.Millisecond)
 	}
 	t.Fatalf("not closed with %s", want)
+}
+
+// The upgrade's check is the console's own action and counts as its
+// activity; the periodic re-checks are not, so they ask api with
+// ?activity=false and an idle console still reaches its idle timeout
+// (api's TestSessionCheckOnlyIsNotActivity). Both are made (the pair).
+func TestRecheckIsNotActivity(t *testing.T) {
+	ti := newTestIssuer(t)
+	api := newFakeAPI(t, ti, "live-1")
+	checker := api.checker(t, ti)
+	tok := ti.session(t, RealmConsole, "live-1", time.Hour)
+	sess, err := checker.Check(context.Background(), tok)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if api.activity.Load() != 1 || api.checkOnly.Load() != 0 {
+		t.Fatalf("the upgrade's check: %d with activity, %d check-only", api.activity.Load(), api.checkOnly.Load())
+	}
+	h := testHub(t, func(c *Config, _ *Inputs) { c.SessionRecheck, c.StatusInterval = 20*time.Millisecond, time.Hour })
+	conn := newFakeConn(4096)
+	if !h.Reserve() {
+		t.Fatal("hub full")
+	}
+	go h.Serve(conn, sess, tok, checker)
+	deadline := time.Now().Add(2 * time.Second)
+	for api.checkOnly.Load() < 3 {
+		if time.Now().After(deadline) {
+			t.Fatalf("re-checks: %d check-only, %d with activity", api.checkOnly.Load(), api.activity.Load()-1)
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	if n := api.activity.Load(); n != 1 {
+		t.Fatalf("%d re-checks counted as the console's activity", n-1)
+	}
+	if _, _, closed := conn.closeCode(); closed {
+		t.Fatal("a live session was closed")
+	}
 }
