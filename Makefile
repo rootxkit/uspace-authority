@@ -19,6 +19,7 @@ GOVULNCHECK_VERSION   ?= v1.8.0
 # credentials of a throwaway local container.
 DEV_PG_URL ?= postgres://authority:authority@localhost:56432/authority?sslmode=disable
 DEV_TS_URL ?= postgres://postgres:authority@localhost:56433/authority_ts?sslmode=disable
+DEV_NATS_URL ?= nats://127.0.0.1:56422
 
 .PHONY: all build vet fmt fmt-check tools staticcheck lint test race cover vectors \
         generate verify-generated integration migrate up down image tidy secrets \
@@ -71,7 +72,7 @@ cover:
 	$(GO) tool cover -func=coverage.out | tail -n 1
 
 # uspace-core's own vector tests, run from the module cache at the pinned
-# version, then this repository's RunOwned tests (none before WP-7).
+# version, then this repository's RunOwned tests.
 vectors:
 	$(GO) test -count=1 -run 'Vector|Manifest|Version' $(CORE)/...
 	$(GO) test -count=1 -run 'Vector|Manifest|Version' $(PKGS)
@@ -84,7 +85,7 @@ verify-generated:
 
 # Tests that need the development stack (make up).
 integration:
-	INTEGRATION=1 PG_URL='$(DEV_PG_URL)' TS_URL='$(DEV_TS_URL)' $(GO) test -count=1 -run Integration $(PKGS)
+	INTEGRATION=1 PG_URL='$(DEV_PG_URL)' TS_URL='$(DEV_TS_URL)' NATS_URL='$(DEV_NATS_URL)' $(GO) test -count=1 -run Integration $(PKGS)
 
 # Both trees against the development stack, as the one-shot service does.
 migrate:

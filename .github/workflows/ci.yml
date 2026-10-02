@@ -137,7 +137,9 @@ jobs:
     if: needs.changes.outputs.go == 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # Only the databases WP-0 touches; NATS joins when a WP needs it.
+    # The two databases as service containers; NATS (WP-7 onwards) is
+    # started in a step, because JetStream needs the -js flag and a
+    # service container cannot be given a command.
     services:
       postgis:
         image: postgis/postgis:16-3.4
@@ -161,12 +163,21 @@ jobs:
     env:
       PG_URL: postgres://authority:authority@localhost:56432/authority?sslmode=disable
       TS_URL: postgres://postgres:authority@localhost:56433/authority_ts?sslmode=disable
+      NATS_URL: nats://127.0.0.1:56422
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache: true
+      - name: NATS with JetStream
+        run: |
+          docker run -d --name nats -p 127.0.0.1:56422:4222 -p 127.0.0.1:56822:8222 nats:2-alpine -js -m 8222
+          for i in $(seq 1 30); do
+            if curl -fsS 'http://127.0.0.1:56822/healthz?js-enabled-only=true' >/dev/null; then echo "NATS ready"; exit 0; fi
+            sleep 1
+          done
+          docker logs nats; exit 1
       # D7: the migrate subcommand applies both trees before anything runs.
       - name: migrate both trees
         run: go run ./cmd/uspace-authority migrate
