@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.uspace.ge/rid/observation/v1.json",
+  "title": "rid/observation/v1",
+  "description": "A batch of Remote ID observations a receiver posts to the authority (spec 02 F9; POST /v1/rid/observations, the RIDObservationBatch schema of api/openapi.yaml). Owned by uspace-authority (decision record M14). The body is the exact bytes the receiver signs: HMAC-SHA256 under its per-receiver secret, hex, in the X-Report-Signature header; the bearer key names the receiver (docs/runbooks/receivers.md). At most 65536 bytes, 64 observations and about one second of reception. Decoding the payload is the authority's (uspace-core odid); nothing here is decoded by the receiver. Unknown members are ignored within the major version (02 §1).",
+  "type": "object",
+  "required": ["receiver_id", "sent_at_ms", "nonce", "observations"],
+  "properties": {
+    "receiver_id": {
+      "description": "The receiver's slug as registered; the same receiver the bearer key names.",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,62}$"
+    },
+    "sent_at_ms": {
+      "description": "When the receiver sent the batch, epoch milliseconds on its own clock; refused when more than 30 s from the authority's clock (LESSONS R-06).",
+      "type": "integer"
+    },
+    "nonce": {
+      "description": "Unique per batch: a nonce seen again from the same receiver within 60 s is refused as a replay. No control characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "backlog": {
+      "description": "True when the batch replays observations buffered while the authority was unreachable, with their original rx_ts (LESSONS T-04).",
+      "type": "boolean",
+      "default": false
+    },
+    "observations": {
+      "type": "array",
+      "maxItems": 64,
+      "items": { "$ref": "#/$defs/observation" }
+    }
+  },
+  "$defs": {
+    "position": {
+      "type": "object",
+      "required": ["lat_deg", "lon_deg"],
+      "properties": {
+        "lat_deg": { "type": "number", "minimum": -90, "maximum": 90 },
+        "lon_deg": { "type": "number", "minimum": -180, "maximum": 180 },
+        "alt_hae_m": {
+          "description": "Height above the WGS-84 ellipsoid, as the receiver's GNSS reports it.",
+          "type": ["number", "null"],
+          "minimum": -1000,
+          "maximum": 10000
+        }
+      }
+    },
+    "observation": {
+      "type": "object",
+      "required": ["transmitter", "payload_hex"],
+      "properties": {
+        "transmitter": {
+          "description": "The Bluetooth or Wi-Fi MAC address the frame came from; stored upper-case.",
+          "type": "string",
+          "pattern": "^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$"
+        },
+        "payload_hex": {
+          "description": "The Open Drone ID message or message pack exactly as received, hex (at most 512 bytes).",
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 1024,
+          "pattern": "^([0-9A-Fa-f]{2})+$"
+        },
+        "rssi_dbm": { "type": ["number", "null"], "minimum": -200, "maximum": 50 },
+        "rx_ts": {
+          "description": "Reception time on the receiver's clock, RFC 3339 in UTC ending in Z; null when unknown, in which case the authority places the frame at arrival and never merges it with another (LESSONS T-12).",
+          "type": ["string", "null"],
+          "format": "date-time"
+        },
+        "receiver_position": { "$ref": "#/$defs/position" }
+      }
+    }
+  }
+}

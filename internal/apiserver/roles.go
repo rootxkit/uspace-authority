@@ -74,6 +74,27 @@ var Roles = map[string][]string{
 	"SetRegistryPilotStatus":          {RoleRegistrar},
 	"GetRegistryPilotPersonalData":    {RoleRegistrar, RoleInspector},
 	"RecordPilotCompetency":           {RoleRegistrar},
+
+	"ListRIDReceivers":      {RoleAdmin},
+	"CreateRIDReceiver":     {RoleAdmin},
+	"GetRIDReceiver":        {RoleAdmin},
+	"UpdateRIDReceiver":     {RoleAdmin},
+	"DeleteRIDReceiver":     {RoleAdmin},
+	"SetRIDReceiverStatus":  {RoleAdmin},
+	"RotateRIDReceiverKeys": {RoleAdmin},
+	"ListRIDFrames":         {RoleIncidentOfficer, RoleInspector},
+	"GetRIDFrame":           {RoleIncidentOfficer, RoleInspector},
+}
+
+// Receiver lists the operations a Remote ID receiver calls (`x-receiver:
+// true` in the contract, WP-7): its bearer key and the HMAC of its body
+// authenticate it inside internal/receivers, so they are excluded from
+// the generated server (api/oapi-codegen.yaml) and never reach
+// Authorize. A test holds the three lists to each other.
+var Receiver = map[string]bool{
+	"GetRIDReceiverConfig":     true,
+	"PostRIDReceiverHeartbeat": true,
+	"PostRIDObservations":      true,
 }
 
 // PIIRoles are the only roles that may read personal data: an operation

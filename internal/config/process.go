@@ -57,6 +57,23 @@ type API struct {
 	Auth
 	Peers
 	Registry
+	Receivers
+}
+
+// Receivers is the Remote ID receiver registry of api (WP-7). The
+// defaults are what a receiver is told when its own config leaves a
+// member out (INV-03: no default is a literal in a row).
+type Receivers struct {
+	RIDDefaultBatchIntervalMS    int     `env:"RID_DEFAULT_BATCH_INTERVAL_MS" default:"1000" min:"100" max:"1000" help:"how often a receiver posts a batch unless its config says otherwise (F9: batches of at most 1 s)"`
+	RIDDefaultBacklogCap         int     `env:"RID_DEFAULT_BACKLOG_CAP" default:"50000" min:"1" max:"10000000" help:"observations a receiver buffers while the ingest is unreachable unless its config says otherwise"`
+	RIDDefaultHeartbeatIntervalS int     `env:"RID_DEFAULT_HEARTBEAT_INTERVAL_S" default:"10" min:"1" max:"300" help:"receiver heartbeat interval unless its config says otherwise (F9: 10 s)"`
+	RIDDefaultPositionToleranceM float64 `env:"RID_DEFAULT_POSITION_TOLERANCE_M" default:"100" min:"1" max:"100000" help:"distance of a heartbeat's position from the pinned one beyond which it is counted as a deviation (T2) unless the receiver's config says otherwise"`
+	RIDKeyRotationGraceS         int     `env:"RID_KEY_ROTATION_GRACE_S" default:"3600" min:"0" max:"604800" help:"how long a rotated receiver key keeps working unless the rotation says otherwise"`
+	RIDKeysetReprojectS          int     `env:"RID_KEYSET_REPROJECT_S" default:"60" min:"5" max:"3600" help:"seconds between full re-projections of the receiver key set into KV rid_receiver_keys (repair of a lost bucket)"`
+	RIDFramesMaxWindowS          int     `env:"RID_FRAMES_MAX_WINDOW_S" default:"86400" min:"60" max:"86400" help:"longest window of GET /v1/rid/frames; a longer one is refused, never thinned (B-13)"`
+	RIDKVTimeoutMS               int     `env:"RID_KV_TIMEOUT_MS" default:"2000" min:"50" max:"60000" help:"bound on one write of the receiver key set; a change whose write fails is refused with 503"`
+	RIDKeysetBucket              string  `env:"RID_KEYSET_BUCKET" default:"rid_receiver_keys" help:"KV bucket of the receiver key set that rid-ingest reads (the same variable there)"`
+	TSReaderRole                 string  `env:"TS_READER_ROLE" default:"authority_ts_reader" help:"role SET on api's telemetry connections that read the raw Remote ID frames (SELECT only)"`
 }
 
 // Registry is the registry of api (WP-3).
@@ -169,13 +186,53 @@ func (c *API) String() string { return Describe(c) }
 type RIDIngest struct {
 	Common
 	HTTP
-	Addr    string `env:"RID_INGEST_ADDR" default:":8081" help:"public listen address of /v1/rid/observations (behind Caddy)"`
+	Addr    string `env:"RID_INGEST_ADDR" default:":8081" help:"public listen address of /v1/rid/observations (behind Caddy); with no receiver keys the host is replaced by 127.0.0.1 (R-06)"`
 	TSURL   string `env:"TS_URL" required:"true" secret:"true" kind:"url" help:"telemetry database (projections, read only)"`
 	NATSURL string `env:"NATS_URL" required:"true" secret:"true" kind:"url" help:"NATS JetStream"`
+	RIDIngestTuning
+}
+
+// RIDIngestTuning are rid-ingest's bounds (WP-7). The receiver protocol's
+// own bounds (batch size, observations, sent_at_ms window) are the
+// contract and live in internal/receivers.
+type RIDIngestTuning struct {
+	QueueMaxBatches     int    `env:"RID_INGEST_QUEUE_MAX_BATCHES" default:"60000" min:"1" max:"10000000" help:"work-queue depth beyond which the oldest undelivered batch is shed with a writer_gaps record (05 §5); about 10 min of 50 receivers posting every second, doubled"`
+	QueueMaxAgeS        int    `env:"RID_INGEST_QUEUE_MAX_AGE_S" default:"600" min:"1" max:"86400" help:"a queued batch older than this is shed with a writer_gaps record (the 10-minute bound of ingest.v1)"`
+	QueueMaxAckPending  int    `env:"RID_INGEST_QUEUE_MAX_ACK_PENDING" default:"256" min:"1" max:"100000" help:"batches delivered to this process and not yet settled"`
+	StorageRetryMS      int    `env:"RID_INGEST_STORAGE_RETRY_MS" default:"1000" min:"10" max:"60000" help:"delay before a batch whose rows were not handed to tsdb-writer is delivered again"`
+	NonceMemory         int    `env:"RID_INGEST_NONCE_MEMORY" default:"4096" min:"16" max:"1000000" help:"nonces remembered per receiver key generation (core auth.WithNonceMemory); beyond it the oldest is forgotten and counted (nonces_evicted)"`
+	DedupeWindowS       int    `env:"RID_INGEST_DEDUPE_WINDOW_S" default:"60" min:"1" max:"3600" help:"window per receiver in which an observation (transmitter, rx_ts, payload hash) is queued once (B-05)"`
+	DedupeMaxPerRx      int    `env:"RID_INGEST_DEDUPE_MAX_PER_RECEIVER" default:"20000" min:"1" max:"10000000" help:"observations remembered per receiver in the dedupe window; beyond it the oldest is forgotten and counted"`
+	MaxReceivers        int    `env:"RID_INGEST_MAX_RECEIVERS" default:"10000" min:"1" max:"1000000" help:"receivers whose dedupe window and status counters are kept (E-10)"`
+	KeysetRereadS       int    `env:"RID_INGEST_KEYSET_REREAD_S" default:"60" min:"1" max:"3600" help:"seconds between full re-reads of the key set besides the KV watch"`
+	StatusIntervalMS    int    `env:"RID_INGEST_STATUS_INTERVAL_MS" default:"2000" min:"100" max:"60000" help:"interval of src.v1.direct_rid.<receiver> status messages (04 §3.6: every 2 s)"`
+	StaleAfterS         int    `env:"RID_INGEST_STALE_AFTER_S" default:"15" min:"1" max:"3600" help:"a receiver silent for longer is stale (silent since T)"`
+	LagAfterS           int    `env:"RID_INGEST_LAG_AFTER_S" default:"15" min:"1" max:"3600" help:"a receiver replaying backlog older than this is lagging with lag_s (B-03)"`
+	DisabledRetryAfterS int    `env:"RID_INGEST_DISABLED_RETRY_AFTER_S" default:"30" min:"1" max:"3600" help:"Retry-After of a disabled receiver's refusal (B-10)"`
+	QueueRetryAfterS    int    `env:"RID_INGEST_QUEUE_RETRY_AFTER_S" default:"2" min:"1" max:"3600" help:"Retry-After of a work-queue refusal"`
+	NATSTimeoutMS       int    `env:"RID_INGEST_NATS_TIMEOUT_MS" default:"2000" min:"50" max:"60000" help:"bound on one queue write, row hand-over or key-set read"`
+	KeysetBucket        string `env:"RID_KEYSET_BUCKET" default:"rid_receiver_keys" help:"KV bucket of the receiver key set, written by api (the same variable there)"`
+	KeyCheckSlots       int    `env:"RID_INGEST_KEY_CHECK_SLOTS" default:"2" min:"1" max:"64" help:"concurrent argon2id checks of bearer keys not yet seen (T8); beyond it a request waits briefly and is refused with 503"`
 }
 
 // String redacts secrets.
 func (c *RIDIngest) String() string { return Describe(c) }
+
+// Validate checks what the tags cannot.
+func (c *RIDIngest) Validate() error {
+	var errs []error
+	if c.Addr == c.AdminAddr && !strings.HasSuffix(c.Addr, ":0") {
+		errs = append(errs, &core.FieldError{Field: "ADMIN_ADDR", Reason: "must differ from RID_INGEST_ADDR"})
+	}
+	for _, p := range c.TrustedProxies {
+		if _, err := netip.ParsePrefix(p); err != nil {
+			if _, err := netip.ParseAddr(p); err != nil {
+				errs = append(errs, core.Fieldf("AUTHORITY_TRUSTED_PROXIES", "%q is neither a CIDR nor an address", p))
+			}
+		}
+	}
+	return errors.Join(errs...)
+}
 
 // DPPoller is the F3411 Display Provider.
 type DPPoller struct {

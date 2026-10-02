@@ -20,6 +20,7 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/passhash"
 	"github.com/rootxkit/uspace-authority/internal/policy"
 	"github.com/rootxkit/uspace-authority/internal/proc"
+	"github.com/rootxkit/uspace-authority/internal/receivers"
 	"github.com/rootxkit/uspace-authority/internal/registry"
 	"github.com/rootxkit/uspace-authority/internal/store"
 	"github.com/rootxkit/uspace-authority/internal/store/pg"
@@ -154,20 +155,47 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 				time.Duration(cfg.RepairRetryS)*time.Second)
 		})
 
+		rx, err := receivers.Assemble(ctx, receivers.Setup{
+			DB: db, Audit: auditWriter, Hasher: hasher, PIIKeyID: cfg.PIIKeyID, PIIKeyFile: cfg.PIIKeyFile,
+			NATSURL: cfg.NATSURL, Bucket: cfg.RIDKeysetBucket, KVTimeout: time.Duration(cfg.RIDKVTimeoutMS) * time.Millisecond,
+			TSURL: cfg.TSURL, TSRole: cfg.TSReaderRole, TSMaxConns: cfg.TSMaxConns,
+			StatementTimeout: time.Duration(cfg.PGStatementTimeoutS) * time.Second,
+			Defaults: receivers.Defaults{
+				BatchIntervalMS: cfg.RIDDefaultBatchIntervalMS, BacklogCap: cfg.RIDDefaultBacklogCap,
+				HeartbeatIntervalS: cfg.RIDDefaultHeartbeatIntervalS, PositionToleranceM: cfg.RIDDefaultPositionToleranceM,
+			},
+			RotationGrace:   time.Duration(cfg.RIDKeyRotationGraceS) * time.Second,
+			FramesMaxWindow: time.Duration(cfg.RIDFramesMaxWindowS) * time.Second,
+			Logger:          rt.Logger, Limiter: rt.Limiter,
+		})
+		if err != nil {
+			return err
+		}
+		defer func() { cancel(); wg.Wait(); rx.Close() }()
+		rt.AddCounters("rid_receivers", rx.Counters)
+		rt.AddCounters("rid_receiver_keys", rx.KeyringCounters)
+		wg.Go(func() {
+			rx.Service.RunReprojection(ctx, time.Duration(cfg.RIDKeysetReprojectS)*time.Second, rt.Limiter)
+		})
+
 		mux := http.NewServeMux()
 		apiserver.Mount(mux, apiserver.Server{
-			PolicyHandler:     policy.Handler{Service: svc},
-			AuditHandler:      audit.Handler{Writer: auditWriter},
-			TokenHandler:      tok.Handler,
-			OAuthAdminHandler: tok.Handler,
-			AuthHandler:       az.Handler,
-			UsersHandler:      az.Handler,
-			RegistryHandler:   reg.Handler,
+			PolicyHandler:       policy.Handler{Service: svc},
+			AuditHandler:        audit.Handler{Writer: auditWriter},
+			TokenHandler:        tok.Handler,
+			OAuthAdminHandler:   tok.Handler,
+			AuthHandler:         az.Handler,
+			UsersHandler:        az.Handler,
+			RegistryHandler:     reg.Handler,
+			RIDReceiversHandler: rx.Handler,
 		}, apiserver.Options{
 			Logger:      rt.Logger,
 			Middlewares: []apiserver.Middleware{tok.Handler.FormGuard(), apiserver.Authorize(identify, apiserver.DefaultRules())},
 			Keep:        apiserver.PathPrefix("/v1/", "/oauth/", "/.well-known/"),
 		})
+		// The receivers' own config and heartbeat (x-receiver): bearer key
+		// and body HMAC, outside the generated server.
+		rx.Receiver.Mount(mux)
 		return rt.ServePublic(ctx, cfg.HTTP, cfg.Addr, mux)
 	}}
 }

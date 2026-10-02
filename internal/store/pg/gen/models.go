@@ -129,6 +129,41 @@ type RemotePilot struct {
 	UpdatedBy       string
 }
 
+type RidReceiver struct {
+	ID                 string
+	Name               string
+	LatDeg             float64
+	LonDeg             float64
+	Geom               interface{}
+	Owner              string
+	OwnerName          *string
+	KeyGeneration      int32
+	KeyHash            string
+	PiiKeyID           string
+	HmacSecretEnc      []byte
+	PrevKeyHash        *string
+	PrevPiiKeyID       *string
+	PrevHmacSecretEnc  []byte
+	PrevValidUntil     *time.Time
+	Status             string
+	DisabledBy         *string
+	DisabledReason     *string
+	DisabledAt         *time.Time
+	LastSeenAt         *time.Time
+	LastLatDeg         *float64
+	LastLonDeg         *float64
+	LastAltHaeM        *float64
+	PositionDeviationM *float64
+	PositionDeviations int64
+	Firmware           *string
+	Config             []byte
+	Version            int64
+	CreatedAt          time.Time
+	CreatedBy          string
+	UpdatedAt          time.Time
+	UpdatedBy          string
+}
+
 type Session struct {
 	Jti          string
 	UserID       string
