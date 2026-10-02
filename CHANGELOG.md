@@ -68,3 +68,6 @@ Unreleased; the format follows Keep a Changelog.
   `tsw.v1.rid_observations` behind the `ridpipe.Sink` seam WP-8 fills;
   `src.v1.direct_rid.<receiver>` every 2 s; loopback only without keys;
   purpose-logged raw frames `/v1/rid/frames*`; the receivers runbook.
+  The type-level (and instance-level) `direct_rid` source-control switch
+  has no effect until WP-10 feeds rid-ingest's follower; the registry
+  disable is the working switch until then.

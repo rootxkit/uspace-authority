@@ -103,7 +103,7 @@ stored twice.
 | 401 | `skew` | `sent_at_ms` more than 30 s from the authority's clock | fix the clock; resend with a fresh `sent_at_ms` and nonce |
 | 409 | `replay` | the nonce was seen within 60 s | resend with a new nonce |
 | 413 | `body_too_large` | over 65,536 bytes (heartbeat: 4,096) | split the batch |
-| 503 | `source_disabled` | the receiver or the whole `direct_rid` source is disabled by the authority; nothing was stored | keep buffering; retry after `Retry-After` (never give up on a 503) |
+| 503 | `source_disabled` | the receiver is disabled in the registry, or (from WP-10) the `direct_rid` source is disabled by type or instance; nothing was stored | keep buffering; retry after `Retry-After` (never give up on a 503) |
 | 503 | `queue_full`, `queue_unavailable`, `in_flight`, `busy` | the authority cannot take the batch now; nothing was accepted | retry after `Retry-After` with a fresh nonce |
 
 The authority never answers a receiver with 403 (LESSONS B-10): 401 is
@@ -156,8 +156,13 @@ The authority never answers a receiver with 403 (LESSONS B-10): 401 is
 - Decoding, identity, time placement and tracks are WP-8 (`ridpipe.Sink`);
   until then rows are stored raw and `pipeline.rows_not_decoded` counts
   them, as the start line says.
-- Source control by type and instance is WP-10 (`internal/sources`);
-  until its follower is fed, every receiver is enabled by source control
-  (registry disables still apply), as the start line says.
+- Source control by type and instance is WP-10 (`internal/sources`).
+  **Until WP-10 lands, a `direct_rid` switch (by type or by instance) has
+  no effect on rid-ingest**: nothing feeds its follower, so every
+  receiver is enabled by source control, as the start line says. To stop
+  a receiver now, disable it in the registry
+  (`POST /v1/rid/receivers/{id}/status`), which takes effect within a
+  second; there is no way yet to stop all receivers at once short of
+  disabling each.
 - The writer of `rid_observations` and `writer_gaps` is WP-9
   (`tsdb-writer`).
