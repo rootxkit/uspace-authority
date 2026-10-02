@@ -47,6 +47,8 @@ jobs:
               - 'Makefile'
               - '.golangci.yml'
               - 'Dockerfile'
+              - 'internal/**/testdata/**'
+              - 'deploy/fetch-ground.sh'
               - '.github/workflows/ci.yml'
 
   build-vet-lint:
@@ -109,7 +111,19 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      # The GeographicLib grids, SHA-256-pinned by deploy/fetch-ground.sh,
+      # so terrain_geoid.json's reference cases run instead of skipping
+      # (core's from the module cache and internal/ground's through Env).
+      # A cache hit is re-verified by the script and downloads nothing.
+      - uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/geoid
+          key: geoid-${{ hashFiles('deploy/fetch-ground.sh') }}
+      - name: geoid grids
+        run: deploy/fetch-ground.sh --geoid-only "$RUNNER_TEMP/geoid"
       - name: uspace-core vectors at the pinned version, then this repository's
+        env:
+          USPACE_GEOID_DIR: ${{ runner.temp }}/geoid
         run: |
           set -o pipefail
           { go test -count=1 -run 'Vector|Manifest|Version' -v github.com/rootxkit/uspace-core/... &&

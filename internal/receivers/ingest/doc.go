@@ -42,8 +42,9 @@
 // key set with an invalid entry or an id twice stops it at start (B-14).
 // The pipeline resolves against the registry projection, read as
 // authority_ts_reader from TS_URL (opened lazily; registry_unavailable
-// until it loads, said at start and on the status line), and has no
-// geoid until WP-11 (no AMSL altitude, said likewise). The source-control
+// until it loads, said at start and on the status line), and converts
+// HAE to AMSL through GEOID_FILE's grid (internal/ground, WP-11); without
+// a usable one there is no AMSL altitude, said likewise. The source-control
 // gate is the process's internal/sources follower of the
 // published switches (WP-10): direct_rid by type and by receiver.
 package ingest

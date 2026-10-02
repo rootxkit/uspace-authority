@@ -24,8 +24,9 @@ import (
 // Options are what Run needs beyond the configuration. A nil Sink is
 // the Remote ID pipeline (WP-8, ridpipe.Pipeline); a nil Gate is the
 // process's internal/sources follower of the published switches (tests
-// give their own). Geoid is the pipeline's geoid; nil until WP-11 wires
-// one, and the process says its aircraft are not judged vertically.
+// give their own). Geoid is the pipeline's geoid; nil is GEOID_FILE's
+// grid (internal/ground), and without one the process says its aircraft
+// have no AMSL altitude and are not judged vertically.
 type Options struct {
 	Sink  ridpipe.Sink
 	Gate  Gate

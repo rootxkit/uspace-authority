@@ -164,10 +164,11 @@ switch within a second (KV watch and push) and refuses with 503
 
 ## Not yet here
 
-- The geoid is WP-11: until it is configured, Remote ID tracks carry
-  no `alt_amsl_m` (`ridpipe.alt_amsl_unavailable_no_geoid`), and the
-  start line and every status line (`geoid`) say they are not judged
-  vertically.
+- The geoid is `GEOID_FILE` (WP-11, `docs/runbooks/ground.md`): until
+  it is configured and readable, Remote ID tracks carry no
+  `alt_amsl_m` (`ridpipe.alt_amsl_unavailable_no_geoid`), and the
+  start line and every status line (`geoid`, `geoid_grid`) say they are
+  not judged vertically.
 - The registry projection is read from `TS_URL`; until it has loaded,
   every serial resolves `registry_unavailable`
   (`ridpipe.identification_registry_unavailable`, `projection_loaded`

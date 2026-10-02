@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -105,5 +106,32 @@ func TestIntegrationDetectClaimsItsCellsOrRefusesToStart(t *testing.T) {
 	l, code, out = run(t, map[string]string{"DETECT_WORKER_ID": "detect-nobody", "CELLS": "all"}, "cells claimed")
 	if code != proc.ExitOK || l == nil || l["all"] != true {
 		t.Fatalf("CELLS=all: exit %d %v\n%s", code, l, out.b.String())
+	}
+}
+
+// E-02, Z-09, D-05: detect says at start what ground it has. With nothing
+// configured both inputs are "not configured" and each is a warning that
+// names what is not judged; with internal/ground's generated volume both
+// are loaded and the start line carries the dataset and the Copernicus
+// attribution.
+func TestIntegrationDetectSaysWhatGroundItHas(t *testing.T) {
+	l, code, out := run(t, map[string]string{"CELLS": "all"}, "cells claimed")
+	if code != proc.ExitOK || l == nil {
+		t.Fatalf("exit %d\n%s", code, out.b.String())
+	}
+	g := out.line("ground datasets")
+	if g == nil || g["terrain"] != "not configured" || g["geoid"] != "not configured" ||
+		out.line("terrain not configured: AGL zone limits are not judged (limit_not_judged) and the height limit is not evaluated") == nil {
+		t.Fatalf("nothing configured: %v\n%s", g, out.b.String())
+	}
+
+	testdata := filepath.Join("..", "..", "internal", "ground", "testdata")
+	_, code, out = run(t, map[string]string{
+		"CELLS": "all", "GROUND_DIR": filepath.Join(testdata, "tiles"), "GEOID_FILE": filepath.Join(testdata, "geoid-constant.pgm"),
+	}, "cells claimed")
+	g = out.line("ground datasets")
+	if code != proc.ExitOK || g == nil || g["terrain"] != "loaded" || g["geoid"] != "loaded" ||
+		!strings.Contains(g["terrain_attribution"].(string), "Copernicus") || len(g["terrain_datasets"].([]any)) != 1 {
+		t.Fatalf("loaded: exit %d %v\n%s", code, g, out.b.String())
 	}
 }
