@@ -92,8 +92,6 @@ github.com/prometheus/procfs v0.22.0 h1:6q9+/JL9IKAPbCmBrv9n5O5Ty3NKnciV5X7YGw0o
 github.com/prometheus/procfs v0.22.0/go.mod h1:CvmFr/GVhIjIvWJZW3tgkODBQMRIf0EyWMQLHCHab58=
 github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec h1:W09IVJc94icq4NjY3clb7Lk8O1qJ8BdBEF8z0ibU0rE=
 github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
-github.com/rootxkit/uspace-core v1.2.0 h1:J/Lierxp/GoZu+7byO2YLZZ4wn18R+MXTVv1gFFBDlQ=
-github.com/rootxkit/uspace-core v1.2.0/go.mod h1:hlIxpRJvV0uT6qbjiSTre+Ty6hR+qlz9jmy3zRlOICw=
 github.com/rootxkit/uspace-core v1.3.0 h1:0AoPS+sQT+6LI1BZsKoOd00euFdPVG5pAnoDMvct6es=
 github.com/rootxkit/uspace-core v1.3.0/go.mod h1:hlIxpRJvV0uT6qbjiSTre+Ty6hR+qlz9jmy3zRlOICw=
 github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 h1:KRzFb2m7YtdldCEkzs6KqmJw4nqEVZGK7IN2kJkjTuQ=
