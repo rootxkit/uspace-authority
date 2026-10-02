@@ -383,7 +383,7 @@ func (s *Service) VerifyMFA(ctx context.Context, challenge, code, recovery strin
 		if u.MFALockedUntil != nil && now.Before(*u.MFALockedUntil) {
 			return refuse(actor, "mfa_locked", "too many wrong codes: try again after "+u.MFALockedUntil.UTC().Format(time.RFC3339))
 		}
-		m, err := tx.MFA(ctx, u.ID)
+		m, err := tx.MFAForUpdate(ctx, u.ID)
 		if errors.Is(err, ErrNotFound) {
 			return refuse(actor, "mfa_reset", "the challenge is not valid; sign in again")
 		}

@@ -664,3 +664,22 @@ func (q *Queries) UserMFA(ctx context.Context, userID string) (UserMfa, error) {
 	)
 	return i, err
 }
+
+const userMFAForUpdate = `-- name: UserMFAForUpdate :one
+SELECT user_id, key_id, secret_enc, enrolled_at, last_step, recovery_hashes, updated_at FROM user_mfa WHERE user_id = $1 FOR UPDATE
+`
+
+func (q *Queries) UserMFAForUpdate(ctx context.Context, userID string) (UserMfa, error) {
+	row := q.db.QueryRow(ctx, userMFAForUpdate, userID)
+	var i UserMfa
+	err := row.Scan(
+		&i.UserID,
+		&i.KeyID,
+		&i.SecretEnc,
+		&i.EnrolledAt,
+		&i.LastStep,
+		&i.RecoveryHashes,
+		&i.UpdatedAt,
+	)
+	return i, err
+}

@@ -170,3 +170,61 @@ func TestIntegrationMFALockoutAcrossReplicas(t *testing.T) {
 		t.Fatalf("after the unlock on the other replica: %v", err)
 	}
 }
+
+// Two challenges of one account racing: one TOTP code, or one recovery
+// code, is spent once (user_mfa read FOR UPDATE); two different
+// recovery codes both succeed.
+func TestIntegrationConcurrentChallengesCannotShareACode(t *testing.T) {
+	u := storetest.Migrated(t, migrate.Relational)
+	db, err := pg.Open(context.Background(), store.PoolOptions{URL: u, Role: pg.AppRole, MaxConns: 8})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(db.Close)
+	ctx := context.Background()
+	f := newFixture(t, fxOpts{maxSessions: 50})
+	f.svc.Store = PG{DB: db, Audit: audit.NewWriter(db)}
+	f.clk.t = time.Now().UTC().Truncate(time.Second)
+	if f.admin, err = f.svc.CreateUser(ctx, NewUser{Username: "admin", Password: adminPW, Realm: "console", Roles: []string{"admin"}}, adminActor); err != nil {
+		t.Fatal(err)
+	}
+	first := f.signIn(t, "admin", adminPW)
+	race := func(codes, recoveries [2]string) int {
+		var tokens [2]string
+		for i := range tokens {
+			lr, err := f.svc.Login(ctx, "admin", adminPW, ri)
+			if err != nil {
+				t.Fatal(err)
+			}
+			tokens[i] = lr.Token
+		}
+		results := make(chan error, 2)
+		for i := range tokens {
+			go func() {
+				_, err := f.svc.VerifyMFA(ctx, tokens[i], codes[i], recoveries[i], ri)
+				results <- err
+			}()
+		}
+		ok := 0
+		for range 2 {
+			if <-results == nil {
+				ok++
+			}
+		}
+		return ok
+	}
+	for round := range 5 {
+		f.clk.Advance(TOTPPeriod)
+		code, _ := totp.GenerateCode(f.secrets["admin"], f.clk.Now())
+		if n := race([2]string{code, code}, [2]string{}); n != 1 {
+			t.Fatalf("round %d: one TOTP code accepted %d times", round, n)
+		}
+		rc := first.RecoveryCodes[round]
+		if n := race([2]string{}, [2]string{rc, rc}); n != 1 {
+			t.Fatalf("round %d: one recovery code accepted %d times", round, n)
+		}
+	}
+	if n := race([2]string{}, [2]string{first.RecoveryCodes[8], first.RecoveryCodes[9]}); n != 2 {
+		t.Fatalf("two different recovery codes: %d accepted", n)
+	}
+}

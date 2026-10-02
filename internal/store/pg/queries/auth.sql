@@ -107,3 +107,6 @@ UPDATE users
 SET mfa_failures = sqlc.arg(mfa_failures), mfa_locked_until = sqlc.narg(mfa_locked_until),
     mfa_hard_locked = sqlc.arg(mfa_hard_locked)
 WHERE id = sqlc.arg(id);
+
+-- name: UserMFAForUpdate :one
+SELECT * FROM user_mfa WHERE user_id = sqlc.arg(user_id) FOR UPDATE;

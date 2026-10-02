@@ -238,6 +238,8 @@ func (t memTx) MFA(_ context.Context, id string) (MFA, error) {
 	return f, nil
 }
 
+func (t memTx) MFAForUpdate(ctx context.Context, id string) (MFA, error) { return t.MFA(ctx, id) }
+
 func (t memTx) SaveMFA(_ context.Context, f MFA, _ time.Time) error {
 	t.m.mfa[f.UserID] = f
 	return nil

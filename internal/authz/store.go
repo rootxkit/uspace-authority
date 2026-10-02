@@ -111,6 +111,9 @@ type Tx interface {
 	SetUserStatus(ctx context.Context, id, status string, at time.Time, by string) (User, error)
 	SetPassword(ctx context.Context, userID, hash string, at time.Time) error
 	MFA(ctx context.Context, userID string) (MFA, error)
+	// MFAForUpdate reads the MFA row and locks it to the end of the
+	// transaction, so two challenges cannot spend one code.
+	MFAForUpdate(ctx context.Context, userID string) (MFA, error)
 	SaveMFA(ctx context.Context, m MFA, at time.Time) error
 	DeleteMFA(ctx context.Context, userID string) error
 	InsertChallenge(ctx context.Context, c Challenge) error
@@ -284,6 +287,19 @@ func (t pgTx) SetPassword(ctx context.Context, userID, hash string, at time.Time
 
 // MFA implements Tx.
 func (t pgTx) MFA(ctx context.Context, userID string) (MFA, error) { return mfaOf(ctx, t.q, userID) }
+
+// MFAForUpdate implements Tx.
+func (t pgTx) MFAForUpdate(ctx context.Context, userID string) (MFA, error) {
+	r, err := t.q.UserMFAForUpdate(ctx, userID)
+	if store.IsNoRows(err) {
+		return MFA{}, ErrNotFound
+	}
+	if err != nil {
+		return MFA{}, err
+	}
+	return MFA{UserID: r.UserID, KeyID: r.KeyID, SecretEnc: r.SecretEnc, EnrolledAt: r.EnrolledAt, LastStep: r.LastStep,
+		RecoveryHashes: slices.Clone(r.RecoveryHashes)}, nil
+}
 
 // SaveMFA implements Tx.
 func (t pgTx) SaveMFA(ctx context.Context, m MFA, at time.Time) error {
