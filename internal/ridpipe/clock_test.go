@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rootxkit/uspace-core/identify"
 	"github.com/rootxkit/uspace-core/odid"
 )
 
@@ -57,5 +58,48 @@ func TestScenarioSC10ReplayedAsBacklog(t *testing.T) {
 	old, newRows, held := sc10Backlog(t, seed)
 	if old != 0 || newRows == 0 || held != 0 {
 		t.Fatalf("seed %d replayed: %d under the old serial, %d under the new, tracker_clock_held %d", seed, old, newRows, held)
+	}
+}
+
+// Review of PR #14: the per-track memories belong to one tracker. One
+// poor backlog fix of an aircraft must not put its live track on
+// pressure for the hold (R-08), and a backlog identification must not
+// make the live track announce again on ident.v1. The twin: a poor live
+// fix does put the live track on pressure.
+func TestBacklogNeverTouchesTheLiveTrackMemories(t *testing.T) {
+	reg := testRegistry(t)
+	unavailable := false
+	p, rec := pipe(DefaultSettings(), Deps{Geoid: constGeoid{15.9}, Registry: func() identify.Lookup {
+		if unavailable {
+			return nil
+		}
+		return reg()
+	}})
+	send := func(when time.Time, backlog bool, code uint8) {
+		l := loc(baseLatDeg, baseLonDeg)
+		l.VertAccuracy = code
+		observe(t, p, batchOf("rx-1", when, backlog, rxRow("rx-1", "TX-1", identified(t, "TESTREG0001", "GEOTEST00000001", l), at(when))))
+	}
+	send(t0, false, 4)
+	unavailable = true
+	send(t0.Add(500*time.Millisecond), true, 1) // a replayed poor fix, while the projection is away
+	unavailable = false
+	send(t0.Add(time.Second), false, 4)
+	ms := rec.tracks(t)
+	if last := ms[len(ms)-1]; last.Backlog || last.Body.AltSource != "geodetic" || last.Body.AltAMSLM == nil {
+		t.Fatalf("live track after a backlog poor fix: %s %v", last.Body.AltSource, last.Body.AltAMSLM)
+	}
+	live := 0
+	for _, c := range rec.idents(t) {
+		if !c.Backlog {
+			live++
+		}
+	}
+	if live != 1 {
+		t.Fatalf("live identification announced %d times", live)
+	}
+	send(t0.Add(2*time.Second), false, 1)
+	if last := rec.tracks(t); last[len(last)-1].Body.AltSource != "pressure" {
+		t.Fatal("a live poor fix did not put the live track on pressure")
 	}
 }

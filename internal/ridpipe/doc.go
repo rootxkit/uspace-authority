@@ -54,7 +54,8 @@
 //     D6: the id the DP path gives the same serial). A Location the
 //     tracker held for its identity keeps the placement of the row that
 //     carried it.
-//  5. Altitude (rid.AltitudeSelector per track, with the geoid of WP-11;
+//  5. Altitude (rid.AltitudeSelector per track and tracker, so a
+//     replayed poor fix never holds the live track on pressure; geoid of WP-11;
 //     R-07, R-08). alt_amsl_m is HAE minus the undulation and nothing
 //     else; a pressure altitude stays in alt_pressure_m with alt_source
 //     pressure and the 10 s hold, never in alt_amsl_m. With no geoid
@@ -79,8 +80,9 @@
 //     source direct_rid, source_instance the receiver, on
 //     trk.v1.<cell3>.<cell5>.<track_id> (internal/track, internal/cell);
 //     the identification on ident.v1.<track_id> when its status, reason
-//     or mismatch differs from the last one published for the id
-//     (bounded to MaxTracks ids, E-10; an evicted id announces again);
+//     or mismatch differs from the last one published for the id by the
+//     same tracker (bounded to MaxTracks ids, E-10; an evicted id
+//     announces again);
 //     the tracks row of each published observation into Batch.Tracks,
 //     which rid-ingest's worker hands to tsdb-writer on tsw.v1.tracks
 //     after the raw rows, with their retry and acknowledgement (B-05,

@@ -110,6 +110,14 @@ type trackerState struct {
 	memos *lru[memoKey, placement]
 }
 
+// trackKey is one track as one tracker publishes it: the live and the
+// backlog tracker publish the same track ids, and neither's history may
+// reach the other's altitude hold or announced identification (T-04).
+type trackKey struct {
+	backlog bool
+	trackID string
+}
+
 // memoKey is one receiver's view of one transmitter.
 type memoKey struct{ receiver, transmitter string }
 
@@ -139,8 +147,8 @@ type Pipeline struct {
 	mu       sync.Mutex
 	live     trackerState
 	backlog  trackerState
-	alts     *lru[string, *rid.AltitudeSelector]
-	idents   *lru[string, core.Identification]
+	alts     *lru[trackKey, *rid.AltitudeSelector]
+	idents   *lru[trackKey, core.Identification]
 	refusals map[string]bool
 }
 
@@ -182,8 +190,8 @@ func New(s Settings, d Deps) *Pipeline {
 		s: s, d: d, log: d.Logger, lim: d.Limiter, cnt: d.Counters, trk: live.Counters(), bklog: backlog.Counters(),
 		live:     trackerState{t: live, memos: newLRU[memoKey, placement](memoMax)},
 		backlog:  trackerState{t: backlog, memos: newLRU[memoKey, placement](memoMax)},
-		alts:     newLRU[string, *rid.AltitudeSelector](s.MaxTracks),
-		idents:   newLRU[string, core.Identification](s.MaxTracks),
+		alts:     newLRU[trackKey, *rid.AltitudeSelector](s.MaxTracks),
+		idents:   newLRU[trackKey, core.Identification](s.MaxTracks),
 		refusals: map[string]bool{},
 	}
 }
@@ -448,7 +456,7 @@ func (p *Pipeline) publish(st *trackerState, obs *rid.Observation, backlog bool)
 	if body.Status == nil {
 		p.cnt.Inc(CounterStatusUnknown)
 	}
-	p.altitude(&body, loc, obs.DroneID, st.nowS)
+	p.altitude(&body, loc, trackKey{backlog, obs.DroneID}, st.nowS)
 	p.velocity(&body, loc)
 	body.Identification = p.identify(obs)
 
@@ -464,7 +472,7 @@ func (p *Pipeline) publish(st *trackerState, obs *rid.Observation, backlog bool)
 	} else {
 		p.cnt.Inc(CounterPublished)
 	}
-	p.identChange(m)
+	p.identChange(m, trackKey{backlog, obs.DroneID})
 	airborne := rid.Airborne(loc.Status)
 	dedupe := "direct_rid:" + pl.frameID
 	if pl.frameID == "" {
@@ -479,7 +487,7 @@ func (p *Pipeline) publish(st *trackerState, obs *rid.Observation, backlog bool)
 // undulation; a pressure altitude stays in alt_pressure_m with
 // alt_source pressure and never in alt_amsl_m; without a geoid there is
 // no AMSL altitude.
-func (p *Pipeline) altitude(b *track.Body, loc *odid.Location, trackID string, nowS float64) {
+func (p *Pipeline) altitude(b *track.Body, loc *odid.Location, key trackKey, nowS float64) {
 	in := rid.AltInput{AltHAEM: loc.AltHAEM, AltPressureM: loc.AltBaroM, VertAccuracyCode: loc.VertAccuracy}
 	if p.d.Geoid != nil {
 		n, err := p.d.Geoid.UndulationM(core.LatLon{LatDeg: *loc.LatDeg, LonDeg: *loc.LonDeg})
@@ -491,10 +499,10 @@ func (p *Pipeline) altitude(b *track.Body, loc *odid.Location, trackID string, n
 			in.UndulationM = &n
 		}
 	}
-	sel, ok := p.alts.get(trackID)
+	sel, ok := p.alts.get(key)
 	if !ok {
 		sel = rid.NewAltitudeSelector(p.s.Altitude)
-		if p.alts.put(trackID, sel) {
+		if p.alts.put(key, sel) {
 			p.cnt.Inc(CounterAltHoldsEvicted)
 		}
 	}
@@ -550,9 +558,9 @@ func (p *Pipeline) identify(obs *rid.Observation) core.Identification {
 
 // identChange publishes the track's identification on ident.v1 when it
 // differs from the last one published for the track id.
-func (p *Pipeline) identChange(m *track.Message) {
+func (p *Pipeline) identChange(m *track.Message, key trackKey) {
 	id := m.Body.Identification
-	prev, ok := p.idents.get(m.Body.TrackID)
+	prev, ok := p.idents.get(key)
 	var before *core.Identification
 	if ok {
 		before = &prev
@@ -560,7 +568,7 @@ func (p *Pipeline) identChange(m *track.Message) {
 	if !track.IdentChanged(before, id) {
 		return
 	}
-	if p.idents.put(m.Body.TrackID, id) {
+	if p.idents.put(key, id) {
 		p.cnt.Inc(CounterIdentMemoryEvicted)
 	}
 	if err := track.PublishIdent(p.d.Publisher, track.NewIdentChange(m, before, p.now())); err != nil {
