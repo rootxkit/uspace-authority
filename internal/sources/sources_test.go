@@ -145,6 +145,23 @@ func TestFollowerSaysWhoDisabledASource(t *testing.T) {
 	}
 }
 
+// InstancesOff lists the instance rows that switch an instance off,
+// sorted, and neither a type row nor an instance switched on (E-01).
+func TestFollowerListsTheInstancesSwitchedOff(t *testing.T) {
+	f := NewFollower()
+	if got := f.InstancesOff(); len(got) != 0 {
+		t.Fatalf("no state: %v", got)
+	}
+	f.Apply(Document{Epoch: "e", Version: 1, Controls: []Control{
+		ctl(TypeDirectRID, nil, false, "admin-type"), ctl(TypeDirectRID, strp("rx-1"), true, "admin-on"),
+		ctl(TypeNetworkRID, strp("ussp-2"), false, "admin-b"), ctl(TypeDirectRID, strp("rx-9"), false, "admin-a"),
+	}})
+	got := f.InstancesOff()
+	if len(got) != 2 || *got[0].InstanceID != "rx-9" || got[0].Actor != "admin-a" || *got[1].InstanceID != "ussp-2" {
+		t.Fatalf("instances off %+v", got)
+	}
+}
+
 // A value that is not a document is ignored and counted; the state held
 // stays (never fail closed).
 func TestFollowerIgnoresAMalformedValueAndKeepsItsState(t *testing.T) {
