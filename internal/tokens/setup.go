@@ -76,6 +76,7 @@ func Assemble(ctx context.Context, s Setup) (*Parts, error) {
 		return nil, err
 	}
 	counters := &core.Counters{}
+	keys.Counters = counters
 	mgr := &KeyManager{
 		Store: s.Store, Keys: keys, Counters: counters, Logger: s.Logger,
 		TwoPerson: s.TwoPerson, ConfirmWindow: s.ConfirmWindow, Now: s.Now,

@@ -298,3 +298,50 @@ func TestNewIDIsRandomHex(t *testing.T) {
 		t.Fatalf("%q %q", a, b)
 	}
 }
+
+// The JWKS publishes the public part of a stored key only, and only
+// under its own thumbprint: a row carrying private members is published
+// without them; a row whose kid names another key is left out and
+// counted; the honest row is published.
+func TestTokenKeysPublishOnlyTheThumbprintedPublicKey(t *testing.T) {
+	f := newFixture(t, fixtureOpts{})
+	now := f.clock.Now()
+	active := f.parts.Keys.Rows()[0]
+	priv, err := importPrivate(f.parts.Keys.Files()[0], active.KID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, _ := NewKeyFile("x", tokentest.Key(t, 4))
+	from := now.Add(-time.Minute)
+	rows := []KeyRow{
+		{KID: active.KID, Purpose: PurposeToken, PublicJWK: priv, ActiveFrom: active.ActiveFrom},
+		{KID: "not-the-thumbprint-of-it-0000000", Purpose: PurposeToken, PublicJWK: other.PublicJWK, ActiveFrom: &from, RetiredAt: &now},
+		{KID: other.KID, Purpose: PurposeToken, PublicJWK: []byte(`{"kty":"oct","k":"c2VjcmV0"}`), ActiveFrom: &from, RetiredAt: &now},
+	}
+	if err := f.parts.Keys.Apply(rows); err != nil {
+		t.Fatal(err)
+	}
+	set, err := f.parts.Keys.TokenKeys(now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := json.Marshal(set)
+	if set.Len() != 1 || strings.Contains(string(raw), `"d"`) || strings.Contains(string(raw), `"p"`) {
+		t.Fatalf("published %s", raw)
+	}
+	k, _ := set.Key(0)
+	if kid, _ := k.KeyID(); kid != active.KID {
+		t.Fatalf("kid %q", kid)
+	}
+	if got := f.parts.Counters.Get(CounterKeyRejected); got != 2 {
+		t.Fatalf("%d rows rejected, want 2", got)
+	}
+	// Tokens still verify against the cleaned set.
+	tok, _ := f.parts.Keys.Issue("x", cispHost, nil, time.Hour, now)
+	if _, err := f.verifier(t, cispHost).Verify(context.Background(), tok.Token); err != nil {
+		t.Fatalf("verify: %v", err)
+	}
+	if _, err := PublicJWK([]byte("{"), "x"); err == nil {
+		t.Fatal("garbage accepted")
+	}
+}

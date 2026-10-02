@@ -234,6 +234,46 @@ type Keys struct {
 	mu     sync.RWMutex
 	rows   []KeyRow
 	active *activeKey
+
+	// Counters counts stored keys left out of the JWKS
+	// (signing_key_rejected); nil counts nothing.
+	Counters *core.Counters
+}
+
+// CounterKeyRejected counts a signing_keys row left out of the JWKS
+// because its public JWK does not parse or is not the key its kid names.
+const CounterKeyRejected = "signing_key_rejected"
+
+// PublicJWK is the JWK to publish for a stored row: the public part
+// only (jwk.PublicKeyOf drops any private member a tampered or mistaken
+// row carries), RSA, with alg RS256 and use sig set here, and only when
+// kid is the RFC 7638 thumbprint of that public key, so a row cannot
+// publish one key under another key's kid.
+func PublicJWK(raw []byte, kid string) (jwk.Key, error) {
+	stored, err := jwk.ParseKey(raw)
+	if err != nil {
+		return nil, fmt.Errorf("the stored public JWK does not parse: %w", err)
+	}
+	pub, err := jwk.PublicKeyOf(stored)
+	if err != nil {
+		return nil, fmt.Errorf("the stored JWK has no public key: %w", err)
+	}
+	if _, ok := pub.(jwk.RSAPublicKey); !ok {
+		return nil, errors.New("the stored JWK is not an RSA key")
+	}
+	tp, err := pub.Thumbprint(crypto.SHA256)
+	if err != nil {
+		return nil, err
+	}
+	if base64.RawURLEncoding.EncodeToString(tp) != kid {
+		return nil, errors.New("the kid is not the thumbprint of the stored key")
+	}
+	for name, v := range map[string]any{jwk.KeyIDKey: kid, jwk.AlgorithmKey: jwa.RS256(), jwk.KeyUsageKey: "sig"} {
+		if err := pub.Set(name, v); err != nil {
+			return nil, err
+		}
+	}
+	return pub, nil
 }
 
 type activeKey struct {
@@ -499,9 +539,14 @@ func (k *Keys) TokenKeys(now time.Time) (jwk.Set, error) {
 		if r.Purpose != PurposeToken || !r.Published(now, k.grace) {
 			continue
 		}
-		key, err := jwk.ParseKey(r.PublicJWK)
+		key, err := PublicJWK(r.PublicJWK, r.KID)
 		if err != nil {
-			return nil, fmt.Errorf("signing key %s: stored public JWK does not parse: %w", r.KID, err)
+			// One bad row never takes the whole JWKS down: it is left
+			// out and counted.
+			if k.Counters != nil {
+				k.Counters.Inc(CounterKeyRejected)
+			}
+			continue
 		}
 		if err := set.AddKey(key); err != nil {
 			return nil, err
