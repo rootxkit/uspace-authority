@@ -1,6 +1,7 @@
 package ridpipe
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -101,5 +102,28 @@ func TestBacklogNeverTouchesTheLiveTrackMemories(t *testing.T) {
 	send(t0.Add(2*time.Second), false, 1)
 	if last := rec.tracks(t); last[len(last)-1].Body.AltSource != "pressure" {
 		t.Fatal("a live poor fix did not put the live track on pressure")
+	}
+}
+
+// Review of PR #14: an identification is remembered as announced only
+// once ident.v1 took it, so a failed publish is retried with the next
+// observation instead of being lost until the identification changes.
+func TestFailedIdentPublishIsRetried(t *testing.T) {
+	rec := &recorder{identErr: errors.New("nats: connection closed")}
+	p, _ := pipe(DefaultSettings(), Deps{Publisher: rec, Registry: testRegistry(t)})
+	send := func(when time.Time) {
+		observe(t, p, batchOf("rx-1", when, false, rxRow("rx-1", "TX-1", identified(t, "TESTREG0001", "GEOTEST00000001", loc(baseLatDeg, baseLonDeg)), at(when))))
+	}
+	send(t0)
+	if p.Counters().Get(CounterIdentPublishFailed) != 1 || len(rec.idents(t)) != 0 {
+		t.Fatalf("%v", p.Counters().Snapshot())
+	}
+	rec.mu.Lock()
+	rec.identErr = nil
+	rec.mu.Unlock()
+	send(t0.Add(time.Second))
+	send(t0.Add(2 * time.Second))
+	if n := len(rec.idents(t)); n != 1 {
+		t.Fatalf("announced %d times after the bus returned, want 1", n)
 	}
 }

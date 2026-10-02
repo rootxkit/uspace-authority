@@ -31,6 +31,8 @@ type recorder struct {
 	mu   sync.Mutex
 	msgs []published
 	err  error
+	// identErr fails ident.v1 publishes only.
+	identErr error
 }
 
 type published struct {
@@ -43,6 +45,9 @@ func (r *recorder) Publish(subject string, data []byte) error {
 	defer r.mu.Unlock()
 	if r.err != nil {
 		return r.err
+	}
+	if r.identErr != nil && strings.HasPrefix(subject, "ident.v1.") {
+		return r.identErr
 	}
 	r.msgs = append(r.msgs, published{subject, append([]byte(nil), data...)})
 	return nil

@@ -568,14 +568,16 @@ func (p *Pipeline) identChange(m *track.Message, key trackKey) {
 	if !track.IdentChanged(before, id) {
 		return
 	}
-	if p.idents.put(key, id) {
-		p.cnt.Inc(CounterIdentMemoryEvicted)
-	}
 	if err := track.PublishIdent(p.d.Publisher, track.NewIdentChange(m, before, p.now())); err != nil {
+		// Not remembered: the next observation of the track announces it
+		// again.
 		p.cnt.Inc(CounterIdentPublishFailed)
-		p.lim.Limited("rid_ident_publish").Warn("identification change not published", slog.String("track_id", m.Body.TrackID),
-			slog.String("error", err.Error()))
+		p.lim.Limited("rid_ident_publish").Warn("identification change not published; retried with the track's next observation",
+			slog.String("track_id", m.Body.TrackID), slog.String("error", err.Error()))
 		return
 	}
 	p.cnt.Inc(CounterIdentChanges)
+	if p.idents.put(key, id) {
+		p.cnt.Inc(CounterIdentMemoryEvicted)
+	}
 }
