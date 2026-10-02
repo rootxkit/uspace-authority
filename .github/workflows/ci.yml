@@ -104,7 +104,7 @@ jobs:
       - name: go test -race -shuffle=on
         run: go test -race -count=1 -shuffle=on -coverprofile=coverage.out -covermode=atomic ./...
       - name: coverage summary
-        run: go tool cover -func=coverage.out | tail -n 1
+        run: go tool cover -func=planted-missing.out | tail -n 1
 
   vectors:
     name: knowledge vectors
