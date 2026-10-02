@@ -2,14 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.uspace.ge/tsw/rows/v1.json",
   "title": "tsw/rows/v1",
-  "description": "Rows handed to tsdb-writer on the internal subject tsw.v1.<table> (JetStream stream TSW, 10 min; docs/PLAN.md §6). Owned by uspace-authority (WP-9). Internal to this system: NATS never crosses a system, and the message carries no 04 §2 envelope (it is a storage hand-over, not an event). Producers publish with internal/store/ts.Writer (or, for rid_observations, rid-ingest's JetRows, WP-7) and set Nats-Msg-Id so a retried publish is stored once within the stream's duplicate window; tsdb-writer's dedupe key covers redelivery beyond it. At most 1 MiB (the stream's maximum message size). tsdb-writer refuses a message whose table is not the subject's, which has no rows, or whose row lacks a NOT NULL column, has a value of the wrong kind or a member the table does not have; a refused message is recorded in writer_gaps as malformed, never dropped silently.",
+  "description": "Rows handed to tsdb-writer on the internal subject tsw.v1.<table> (JetStream stream TSW, 10 min; docs/PLAN.md §6). Owned by uspace-authority (WP-9). Internal to this system: NATS never crosses a system, and the message carries no 04 §2 envelope (it is a storage hand-over, not an event). Producers publish with internal/store/ts.Writer (or, for rid_observations and tracks, rid-ingest's JetRows, WP-7 and WP-8) and set Nats-Msg-Id so a retried publish is stored once within the stream's duplicate window; tsdb-writer's dedupe key covers redelivery beyond it. At most 1 MiB (the stream's maximum message size). tsdb-writer refuses a message whose table is not the subject's, which has no rows, or whose row lacks a NOT NULL column, has a value of the wrong kind or a member the table does not have; a refused message is recorded in writer_gaps as malformed, never dropped silently.",
   "type": "object",
   "required": ["table", "rows"],
   "properties": {
     "table": {
       "description": "The hypertable; equal to the <table> token of the subject.",
       "type": "string",
-      "enum": ["rid_observations"]
+      "enum": ["rid_observations", "tracks"]
     },
     "rows": {
       "description": "Rows of the table. Each member is a column of the table (migrations/timeseries), by its column name: timestamptz as an RFC 3339 string, bytea as standard base64, integers and floats as JSON numbers, booleans as JSON booleans; a nullable column may be null or absent.",
@@ -20,7 +20,7 @@
   },
   "$defs": {
     "rid_observations": {
-      "description": "One rid_observations row (timeseries 00004; internal/ridpipe.Row's JSON).",
+      "description": "One rid_observations row (timeseries 00004 and 00006; internal/ridpipe.Row's JSON). The decoded columns (WP-8) are null when the frame did not carry the value or could not be decoded.",
       "type": "object",
       "required": ["ingest_ts", "frame_id", "receiver_id", "transmitter", "payload", "payload_sha256", "backlog", "sent_at_ms", "nonce"],
       "additionalProperties": false,
@@ -39,7 +39,70 @@
         "receiver_lon_deg": { "type": ["number", "null"] },
         "receiver_alt_hae_m": { "type": ["number", "null"] },
         "sent_at_ms": { "type": "integer" },
-        "nonce": { "type": "string" }
+        "nonce": { "type": "string" },
+        "serial": { "type": ["string", "null"] },
+        "operator_reg": { "type": ["string", "null"] },
+        "id_type": { "type": ["integer", "null"], "minimum": 0, "maximum": 15 },
+        "lat_deg": { "type": ["number", "null"] },
+        "lon_deg": { "type": ["number", "null"] },
+        "alt_wgs84_m": { "type": ["number", "null"] },
+        "alt_pressure_m": { "type": ["number", "null"] },
+        "height_m": { "type": ["number", "null"] },
+        "height_ref": { "enum": ["TakeoffLocation", "GroundLevel", null] },
+        "speed_ms": { "type": ["number", "null"] },
+        "track_deg": { "type": ["number", "null"] },
+        "vspeed_ms": { "type": ["number", "null"] },
+        "status": { "enum": ["Undeclared", "Ground", "Airborne", "Emergency", "RemoteIDSystemFailure", null] },
+        "ts_broadcast": { "type": ["string", "null"], "format": "date-time" },
+        "captured_at": { "type": ["string", "null"], "format": "date-time" },
+        "time_source": { "enum": ["source_clock", "broadcast", "receiver", "provider", "system", null] },
+        "decode_error": { "type": ["string", "null"] }
+      }
+    },
+    "tracks": {
+      "description": "One tracks row (timeseries 00006; internal/track.Row's JSON): a published track/telemetry/v1 flattened. alt_amsl_m is geodetic or network only; a pressure altitude is in alt_pressure_m (R-08).",
+      "type": "object",
+      "required": ["captured_at", "track_id", "dedupe_key", "msg_id", "rx_ts", "time_source", "backlog", "source", "source_instance", "trust", "lat_deg", "lon_deg", "alt_source", "emergency", "ident_status", "ident_reason", "ident_mismatch", "ident_basis"],
+      "additionalProperties": false,
+      "properties": {
+        "captured_at": { "type": "string", "format": "date-time" },
+        "track_id": { "type": "string" },
+        "dedupe_key": { "type": "string" },
+        "msg_id": { "type": "string" },
+        "ts": { "type": ["string", "null"], "format": "date-time" },
+        "rx_ts": { "type": "string", "format": "date-time" },
+        "time_source": { "enum": ["source_clock", "broadcast", "receiver", "provider", "system"] },
+        "backlog": { "type": "boolean" },
+        "source": { "enum": ["operator_ws", "network_rid", "direct_rid", "ansp_feed", "adsb_rx"] },
+        "source_instance": { "type": "string" },
+        "trust": { "enum": ["authenticated", "provider", "surveillance", "broadcast", "sensor"] },
+        "lat_deg": { "type": "number", "minimum": -90, "maximum": 90 },
+        "lon_deg": { "type": "number", "minimum": -180, "maximum": 180 },
+        "alt_wgs84_m": { "type": ["number", "null"] },
+        "alt_amsl_m": { "type": ["number", "null"] },
+        "alt_source": { "enum": ["geodetic", "pressure", "network", "none"] },
+        "alt_pressure_m": { "type": ["number", "null"] },
+        "height_m": { "type": ["number", "null"] },
+        "height_ref": { "enum": ["TakeoffLocation", "GroundLevel", null] },
+        "speed_ms": { "type": ["number", "null"] },
+        "track_deg": { "type": ["number", "null"] },
+        "vspeed_ms": { "type": ["number", "null"] },
+        "accuracy_h_m": { "type": ["number", "null"] },
+        "accuracy_v_m": { "type": ["number", "null"] },
+        "status": { "enum": ["Undeclared", "Ground", "Airborne", "Emergency", "RemoteIDSystemFailure", null] },
+        "emergency": { "type": "boolean" },
+        "airborne": { "type": ["boolean", "null"] },
+        "ident_status": { "enum": ["registered", "suspended", "unknown_operator", "unidentified"] },
+        "ident_reason": { "type": "string" },
+        "ident_mismatch": { "type": "boolean" },
+        "ident_basis": { "enum": ["authenticated", "as_broadcast", "provider"] },
+        "serial": { "type": ["string", "null"] },
+        "operator_reg": { "type": ["string", "null"] },
+        "registered_operator_reg": { "type": ["string", "null"] },
+        "registry_uas_id": { "type": ["string", "null"] },
+        "flight_id": { "type": ["string", "null"] },
+        "ussp_id": { "type": ["string", "null"] },
+        "cell5": { "type": ["string", "null"] }
       }
     }
   }

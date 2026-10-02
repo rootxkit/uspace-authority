@@ -562,7 +562,11 @@ func TestIntegrationOlderSchemaStopsTheWriter(t *testing.T) {
 	out := &lines{}
 	code := proc.Main(context.Background(), specWith(&config.TSDBWriter{}, tswriter.Options{}), nil, out, io.Discard,
 		func(k string) (string, bool) { v, ok := m[k]; return v, ok })
-	if code != proc.ExitFailed || !strings.Contains(out.tail(10), "timeseries schema is at version 4, this build needs 5") {
+	latest, err := migrate.Latest(migrate.Timeseries)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := fmt.Sprintf("timeseries schema is at version 4, this build needs %d", latest); code != proc.ExitFailed || !strings.Contains(out.tail(10), want) {
 		t.Fatalf("exit %d:\n%s", code, out.tail(10))
 	}
 }
