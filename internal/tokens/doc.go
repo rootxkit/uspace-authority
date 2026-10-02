@@ -28,8 +28,8 @@
 // here (TokenKeys leaves it out).
 //
 // Issuance (service.go): client_secret_post (argon2id, internal/passhash)
-// or private_key_jwt (RFC 7523, assertion ids remembered until they
-// expire in a bounded ReplayMemory); scopes in table B, grantable and on
+// or private_key_jwt (RFC 7523, assertion ids recorded in assertion_jtis
+// until they expire, so each is used once across replicas); scopes in table B, grantable and on
 // the client's list; aud the host of the requested audience or RFC 8707
 // resource (M18), on the client's list for national scopes, any host for
 // utm.* and rid.*; TTL at most 1 h; a per-client rate limit. Every

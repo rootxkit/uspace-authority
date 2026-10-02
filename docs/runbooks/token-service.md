@@ -104,7 +104,6 @@ Configuration:
 | `PUBLICATION_KEY_FILE` | — | the detached-JWS key of WP-6, listed in the JWKS under its own kid |
 | `TOKEN_TTL_S` | 3600 | machine token lifetime (at most 3600) |
 | `TOKEN_RATE_LIMIT_PER_MIN`, `TOKEN_RATE_LIMIT_BURST`, `TOKEN_RATE_LIMIT_MAX_CLIENTS` | 60, 20, 1000 | per-client issuance limit |
-| `ASSERTION_REPLAY_MAX` | 100000 | `private_key_jwt` assertion ids held until they expire |
 | `KEY_RETIRE_GRACE_S` | 86400 | a retired key stays in the JWKS this long (the verifiers' JWKS cache TTL) |
 | `KEY_ROTATION_TWO_PERSON`, `KEY_ROTATION_CONFIRM_S` | true, 600 | the two-person rule |
 | `KEY_REFRESH_S` | 60 | how often every replica re-reads `signing_keys` |
@@ -149,7 +148,9 @@ the public JWK and the file path.
      2048 bits, `kid` on every key, no private members). The client
      signs an assertion with `iss` = `sub` = its client id, `aud` =
      `ISSUER_URL` or its `/oauth/token`, `exp` at most 5 minutes ahead,
-     a fresh `jti` each time.
+     a fresh `jti` each time. Each `jti` is recorded in the
+     `assertion_jtis` table until the assertion expires, so a replay is
+     refused by every api replica.
 3. The client requests tokens:
 
    ```

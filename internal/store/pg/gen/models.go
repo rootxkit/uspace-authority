@@ -10,6 +10,12 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AssertionJti struct {
+	ClientID  string
+	Jti       string
+	ExpiresAt time.Time
+}
+
 type AuthorityPolicy struct {
 	Version                 int64
 	HeightLimitAglM         float64

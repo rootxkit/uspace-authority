@@ -50,3 +50,11 @@ WHERE kid = sqlc.arg(kid) AND active_from IS NOT NULL AND retired_at IS NULL;
 -- name: RequestKeyRotation :exec
 UPDATE signing_keys SET requested_by = sqlc.arg(requested_by), requested_at = sqlc.arg(requested_at)
 WHERE kid = sqlc.arg(kid) AND active_from IS NULL;
+
+-- name: DeleteExpiredAssertionJTIs :execrows
+DELETE FROM assertion_jtis WHERE expires_at < sqlc.arg(before);
+
+-- name: InsertAssertionJTI :execrows
+INSERT INTO assertion_jtis (client_id, jti, expires_at)
+VALUES (sqlc.arg(client_id), sqlc.arg(jti), sqlc.arg(expires_at))
+ON CONFLICT (client_id, jti) DO NOTHING;

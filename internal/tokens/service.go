@@ -102,7 +102,6 @@ type Service struct {
 	Keys     *Keys
 	Hasher   *passhash.Hasher
 	Limiter  *httpx.RateLimiter // per authenticated client
-	Replay   *ReplayMemory
 	Counters *core.Counters
 	Logger   *slog.Logger
 	Config   ServiceConfig
@@ -251,10 +250,22 @@ func (s *Service) authenticateAssertion(ctx context.Context, req TokenRequest, n
 		}
 		return ClientRecord{}, invalid
 	}
-	if err := s.Replay.Use(c.ID, jti, exp, now); err != nil {
-		if errors.Is(err, ErrReplayFull) {
-			return ClientRecord{}, refuse(http.StatusServiceUnavailable, ErrTemporarily, "assertion_replay_memory_full", "try again shortly")
-		}
+	if len(jti) > MaxAssertionJTI {
+		invalid.Reason = "client_assertion_jti_too_long"
+		return ClientRecord{}, invalid
+	}
+	fresh := false
+	err = s.Store.InTx(ctx, func(tx Tx) error {
+		var err error
+		fresh, err = tx.UseAssertionJTI(ctx, c.ID, jti, exp.Add(auth.DefaultMaxSkew), now)
+		return err
+	})
+	if err != nil {
+		logging.Error(ctx, s.logger(), "assertion id not recorded", err, slog.String("client_id", c.ID))
+		return ClientRecord{}, refuse(http.StatusInternalServerError, ErrTemporarily, "store_failed", "the assertion could not be recorded")
+	}
+	if !fresh {
+		s.count(CounterReplayed)
 		invalid.Reason = "client_assertion_replayed"
 		return ClientRecord{}, invalid
 	}

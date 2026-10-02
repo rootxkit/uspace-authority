@@ -4,10 +4,8 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/rootxkit/uspace-core/auth"
@@ -22,10 +20,9 @@ const AssertionType = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
 // limit it).
 const MaxAssertionLifetime = 5 * time.Minute
 
-// Counters of client assertions.
+// Counter of client assertions.
 const (
-	CounterReplayFull = "assertion_replay_memory_full" // a valid assertion refused because the replay memory is full of live ids
-	CounterReplayed   = "assertion_replayed"           // an assertion id used twice
+	CounterReplayed = "assertion_replayed" // an assertion id used twice
 )
 
 // UnverifiedIssuer reads the iss of a compact JWT without verifying it,
@@ -89,63 +86,5 @@ func VerifyAssertion(ctx context.Context, c ClientRecord, assertion string, audi
 	return cl.JTI, cl.ExpiresAt, nil
 }
 
-// ErrReplayed is an assertion id seen before.
-var ErrReplayed = errors.New("the assertion was used before")
-
-// ErrReplayFull is a replay memory full of ids that have not expired.
-var ErrReplayFull = errors.New("the assertion replay memory is full")
-
-// ReplayMemory remembers assertion ids until their exp (plus skew), so
-// each is used once (RFC 7523 §3 item 7). It is bounded (E-10): expired
-// ids are dropped first; when every id held is live, a new one is
-// refused rather than an old one forgotten, because forgetting would
-// allow a replay.
-type ReplayMemory struct {
-	max      int
-	skew     time.Duration
-	counters *core.Counters
-
-	mu  sync.Mutex
-	ids map[string]time.Time
-}
-
-// NewReplayMemory holds at most max ids.
-func NewReplayMemory(maxIDs int, counters *core.Counters) *ReplayMemory {
-	if counters == nil {
-		counters = &core.Counters{}
-	}
-	return &ReplayMemory{max: maxIDs, skew: auth.DefaultMaxSkew, counters: counters, ids: map[string]time.Time{}}
-}
-
-// Use records client's jti until exp. It refuses an id seen before
-// (ErrReplayed) and, when the memory is full of live ids, a new one
-// (ErrReplayFull).
-func (m *ReplayMemory) Use(client, jti string, exp, now time.Time) error {
-	key := client + "\x00" + jti
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if until, seen := m.ids[key]; seen && now.Before(until) {
-		m.counters.Inc(CounterReplayed)
-		return ErrReplayed
-	}
-	if len(m.ids) >= m.max {
-		for k, until := range m.ids {
-			if !now.Before(until) {
-				delete(m.ids, k)
-			}
-		}
-	}
-	if len(m.ids) >= m.max {
-		m.counters.Inc(CounterReplayFull)
-		return ErrReplayFull
-	}
-	m.ids[key] = exp.Add(m.skew)
-	return nil
-}
-
-// Len is the number of ids held.
-func (m *ReplayMemory) Len() int {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	return len(m.ids)
-}
+// MaxAssertionJTI bounds the jti of an assertion.
+const MaxAssertionJTI = 256

@@ -115,51 +115,48 @@ func TestPrivateKeyJWTRefusalsBesideAcceptance(t *testing.T) {
 	}
 }
 
-// E-10: the replay memory refuses rather than forgets when full of live
-// ids, and drops expired ids to make room.
-func TestReplayMemoryIsBounded(t *testing.T) {
-	m := NewReplayMemory(3, nil)
-	now := time.Now()
-	exp := now.Add(time.Minute)
-	for _, j := range []string{"a", "b", "c"} {
-		if err := m.Use("c1", j, exp, now); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if err := m.Use("c1", "a", exp, now); !errors.Is(err, ErrReplayed) {
-		t.Fatalf("replay: %v", err)
-	}
-	if err := m.Use("c2", "a", exp, now); !errors.Is(err, ErrReplayFull) {
-		t.Fatalf("over the bound: %v", err)
-	}
-	if m.Len() != 3 || m.counters.Get(CounterReplayFull) != 1 || m.counters.Get(CounterReplayed) != 1 {
-		t.Fatalf("len %d counters %v", m.Len(), m.counters.Snapshot())
-	}
-	later := exp.Add(auth.DefaultMaxSkew + time.Second)
-	if err := m.Use("c2", "a", later.Add(time.Minute), later); err != nil {
-		t.Fatalf("after expiry: %v", err)
-	}
-	if m.Len() != 1 {
-		t.Fatalf("expired ids kept: %d", m.Len())
-	}
-}
-
-// A full replay memory refuses the grant as temporarily unavailable.
-func TestFullReplayMemoryRefusesTheGrant(t *testing.T) {
-	f := newFixture(t, fixtureOpts{replayMax: 1})
+// E-10: assertion ids live until they expire and are then deleted, so
+// the record stays bounded; an id is refused while it lives and may be
+// reused after (the assertion itself has expired by then).
+func TestAssertionIDsExpireFromTheRecord(t *testing.T) {
+	f := newFixture(t, fixtureOpts{})
 	ctx := context.Background()
 	if _, _, err := f.parts.Registry.Create(ctx, ClientInput{ID: "ussp-GEO1-01", Scopes: []string{"rid.service_provider"},
 		AuthMethod: MethodPrivateKeyJWT, JWKS: clientJWKS(t, 3, clientKID)}, admin); err != nil {
 		t.Fatal(err)
 	}
-	now := f.clock.Now()
 	ep := testIssuer + "/oauth/token"
-	if _, oerr := f.token(assertionReq(assertion(t, 3, clientKID, "ussp-GEO1-01", "ussp-GEO1-01", ep, time.Minute, now), "rid.service_provider", "p.example.test")); oerr != nil {
+	for i := range 20 {
+		a := assertion(t, 3, clientKID, "ussp-GEO1-01", "ussp-GEO1-01", ep, time.Minute, f.clock.Now())
+		if _, oerr := f.token(assertionReq(a, "rid.service_provider", "p.example.test")); oerr != nil {
+			t.Fatalf("assertion %d: %v", i, oerr)
+		}
+		f.clock.Advance(30 * time.Second)
+	}
+	if n := len(f.st.jtis); n > 4 {
+		t.Fatalf("%d assertion ids held; expired ones are not deleted", n)
+	}
+	if f.parts.Counters.Get(CounterReplayed) != 0 {
+		t.Fatal("a fresh assertion counted as replayed")
+	}
+}
+
+// Two replicas (two services on one store): an assertion spent on one
+// is refused on the other.
+func TestAssertionReplayRefusedAcrossReplicas(t *testing.T) {
+	f := newFixture(t, fixtureOpts{})
+	ctx := context.Background()
+	if _, _, err := f.parts.Registry.Create(ctx, ClientInput{ID: "ussp-GEO1-01", Scopes: []string{"rid.service_provider"},
+		AuthMethod: MethodPrivateKeyJWT, JWKS: clientJWKS(t, 3, clientKID)}, admin); err != nil {
+		t.Fatal(err)
+	}
+	other := *f.parts.Service
+	a := assertion(t, 3, clientKID, "ussp-GEO1-01", "ussp-GEO1-01", testIssuer+"/oauth/token", time.Minute, f.clock.Now())
+	if _, oerr := f.parts.Service.Token(ctx, assertionReq(a, "rid.service_provider", "p.example.test")); oerr != nil {
 		t.Fatal(oerr)
 	}
-	_, oerr := f.token(assertionReq(assertion(t, 3, clientKID, "ussp-GEO1-01", "ussp-GEO1-01", ep, time.Minute, now), "rid.service_provider", "p.example.test"))
-	if oerr == nil || oerr.Code != ErrTemporarily || oerr.Reason != "assertion_replay_memory_full" {
-		t.Fatalf("%+v", oerr)
+	if _, oerr := other.Token(ctx, assertionReq(a, "rid.service_provider", "p.example.test")); oerr == nil || oerr.Reason != "client_assertion_replayed" {
+		t.Fatalf("replayed on the other replica: %+v", oerr)
 	}
 }
 

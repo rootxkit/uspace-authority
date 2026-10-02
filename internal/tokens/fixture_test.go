@@ -60,7 +60,6 @@ type fixtureOpts struct {
 	publication bool // a publication key (shared key 9)
 	twoPerson   bool
 	burst       int
-	replayMax   int
 }
 
 func newFixture(t testing.TB, o fixtureOpts) *fixture {
@@ -71,9 +70,6 @@ func newFixture(t testing.TB, o fixtureOpts) *fixture {
 	if o.burst == 0 {
 		o.burst = 1000
 	}
-	if o.replayMax == 0 {
-		o.replayMax = 1000
-	}
 	dir := t.TempDir()
 	files := make([]string, 0, o.keys)
 	for i := range o.keys {
@@ -82,7 +78,7 @@ func newFixture(t testing.TB, o fixtureOpts) *fixture {
 	s := Setup{
 		Issuer: testIssuer, SigningKeyFiles: files, TTL: time.Hour, RetireGrace: 24 * time.Hour,
 		TwoPerson: o.twoPerson, ConfirmWindow: 10 * time.Minute, RatePerMin: 60, RateBurst: o.burst,
-		RateMaxClients: 100, ReplayMax: o.replayMax, Hasher: cheapHasher(t),
+		RateMaxClients: 100, Hasher: cheapHasher(t),
 	}
 	if o.publication {
 		s.PublicationKeyFile = tokentest.WriteKey(t, dir, 9)

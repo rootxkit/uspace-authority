@@ -18,6 +18,7 @@ type memStore struct {
 	mu      sync.Mutex
 	clients map[string]ClientRecord
 	keys    []KeyRow
+	jtis    map[string]time.Time
 	events  []audit.Event
 	// failRecord makes Record fail (an audit outage).
 	failRecord bool
@@ -176,6 +177,23 @@ func (t memTx) RetireSigningKey(_ context.Context, kid string, at time.Time) err
 		r.RetiredAt = &at
 	}
 	return nil
+}
+
+func (t memTx) UseAssertionJTI(_ context.Context, client, jti string, expires, now time.Time) (bool, error) {
+	if t.m.jtis == nil {
+		t.m.jtis = map[string]time.Time{}
+	}
+	for k, until := range t.m.jtis {
+		if until.Before(now) {
+			delete(t.m.jtis, k)
+		}
+	}
+	key := client + "\x00" + jti
+	if _, seen := t.m.jtis[key]; seen {
+		return false, nil
+	}
+	t.m.jtis[key] = expires
+	return true, nil
 }
 
 func (t memTx) RequestKeyRotation(_ context.Context, kid, by string, at time.Time) error {

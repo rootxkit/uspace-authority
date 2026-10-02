@@ -88,7 +88,7 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 			TTL: time.Duration(cfg.TokenTTLS) * time.Second, RetireGrace: time.Duration(cfg.KeyRetireGraceS) * time.Second,
 			TwoPerson: cfg.KeyRotationTwoPerson, ConfirmWindow: time.Duration(cfg.KeyRotationConfirmS) * time.Second,
 			RatePerMin: cfg.TokenRatePerMin, RateBurst: cfg.TokenRateBurst, RateMaxClients: cfg.TokenRateMaxClients,
-			ReplayMax: cfg.AssertionReplayMax, Store: tokens.PG{DB: db, Audit: auditWriter}, Hasher: hasher, Logger: rt.Logger,
+			Store: tokens.PG{DB: db, Audit: auditWriter}, Hasher: hasher, Logger: rt.Logger,
 		})
 		if err != nil {
 			return err

@@ -26,6 +26,38 @@ func (q *Queries) ActivateSigningKey(ctx context.Context, arg ActivateSigningKey
 	return err
 }
 
+const deleteExpiredAssertionJTIs = `-- name: DeleteExpiredAssertionJTIs :execrows
+DELETE FROM assertion_jtis WHERE expires_at < $1
+`
+
+func (q *Queries) DeleteExpiredAssertionJTIs(ctx context.Context, before time.Time) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteExpiredAssertionJTIs, before)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const insertAssertionJTI = `-- name: InsertAssertionJTI :execrows
+INSERT INTO assertion_jtis (client_id, jti, expires_at)
+VALUES ($1, $2, $3)
+ON CONFLICT (client_id, jti) DO NOTHING
+`
+
+type InsertAssertionJTIParams struct {
+	ClientID  string
+	Jti       string
+	ExpiresAt time.Time
+}
+
+func (q *Queries) InsertAssertionJTI(ctx context.Context, arg InsertAssertionJTIParams) (int64, error) {
+	result, err := q.db.Exec(ctx, insertAssertionJTI, arg.ClientID, arg.Jti, arg.ExpiresAt)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const insertOAuthClient = `-- name: InsertOAuthClient :one
 INSERT INTO oauth_clients (
     client_id, system, scopes, audiences, auth_method, secret_hash, jwks,

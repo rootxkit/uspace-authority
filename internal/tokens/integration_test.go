@@ -31,7 +31,7 @@ func pgParts(t *testing.T, keys int, twoPerson bool) (*Parts, *pg.DB, string) {
 	parts, err := Assemble(context.Background(), Setup{
 		Issuer: testIssuer, SigningKeyFiles: files, PublicationKeyFile: tokentest.WriteKey(t, dir, 9),
 		TTL: time.Hour, RetireGrace: 24 * time.Hour, TwoPerson: twoPerson, ConfirmWindow: 10 * time.Minute,
-		RatePerMin: 600, RateBurst: 100, RateMaxClients: 100, ReplayMax: 100,
+		RatePerMin: 600, RateBurst: 100, RateMaxClients: 100,
 		Store: PG{DB: db, Audit: audit.NewWriter(db)}, Hasher: cheapHasher(t),
 	})
 	if err != nil {
@@ -172,5 +172,29 @@ func TestIntegrationClientConstraints(t *testing.T) {
 		if _, err := sdb.Exec(ins, bad[0], bad[1], bad[2]); err == nil {
 			t.Errorf("%v accepted", bad)
 		}
+	}
+}
+
+// The assertion record is in the database: an assertion spent through
+// one replica is refused by another on the same database.
+func TestIntegrationAssertionReplayAcrossReplicas(t *testing.T) {
+	a, db, _ := pgParts(t, 1, false)
+	ctx := context.Background()
+	if _, _, err := a.Registry.Create(ctx, ClientInput{ID: "ussp-GEO1-01", Scopes: []string{"rid.service_provider"},
+		AuthMethod: MethodPrivateKeyJWT, JWKS: clientJWKS(t, 3, clientKID)}, admin); err != nil {
+		t.Fatal(err)
+	}
+	b := *a.Service
+	b.Store = PG{DB: db, Audit: audit.NewWriter(db)}
+	as := assertion(t, 3, clientKID, "ussp-GEO1-01", "ussp-GEO1-01", testIssuer+"/oauth/token", time.Minute, time.Now())
+	if _, oerr := a.Service.Token(ctx, assertionReq(as, "rid.service_provider", "p.example.test")); oerr != nil {
+		t.Fatal(oerr)
+	}
+	if _, oerr := b.Token(ctx, assertionReq(as, "rid.service_provider", "p.example.test")); oerr == nil || oerr.Reason != "client_assertion_replayed" {
+		t.Fatalf("replay on another replica: %+v", oerr)
+	}
+	fresh := assertion(t, 3, clientKID, "ussp-GEO1-01", "ussp-GEO1-01", testIssuer+"/oauth/token", time.Minute, time.Now())
+	if _, oerr := b.Token(ctx, assertionReq(fresh, "rid.service_provider", "p.example.test")); oerr != nil {
+		t.Fatalf("a fresh assertion on the other replica: %v", oerr)
 	}
 }

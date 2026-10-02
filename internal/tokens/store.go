@@ -74,6 +74,10 @@ type Tx interface {
 	ActivateSigningKey(ctx context.Context, kid string, at time.Time) error
 	RetireSigningKey(ctx context.Context, kid string, at time.Time) error
 	RequestKeyRotation(ctx context.Context, kid, by string, at time.Time) error
+	// UseAssertionJTI deletes the assertion ids expired before now and
+	// records client's jti until expires; false when it was recorded
+	// already (a replay), on this replica or another.
+	UseAssertionJTI(ctx context.Context, clientID, jti string, expires, now time.Time) (bool, error)
 }
 
 // PG is Store on the relational database, recording events through the
@@ -191,6 +195,15 @@ func (t pgTx) RetireSigningKey(ctx context.Context, kid string, at time.Time) er
 // RequestKeyRotation implements Tx.
 func (t pgTx) RequestKeyRotation(ctx context.Context, kid, by string, at time.Time) error {
 	return t.q.RequestKeyRotation(ctx, gen.RequestKeyRotationParams{Kid: kid, RequestedBy: &by, RequestedAt: &at})
+}
+
+// UseAssertionJTI implements Tx.
+func (t pgTx) UseAssertionJTI(ctx context.Context, clientID, jti string, expires, now time.Time) (bool, error) {
+	if _, err := t.q.DeleteExpiredAssertionJTIs(ctx, now); err != nil {
+		return false, err
+	}
+	n, err := t.q.InsertAssertionJTI(ctx, gen.InsertAssertionJTIParams{ClientID: clientID, Jti: jti, ExpiresAt: expires})
+	return n == 1, err
 }
 
 func clientByID(ctx context.Context, q *gen.Queries, id string) (ClientRecord, error) {

@@ -24,7 +24,6 @@ type Setup struct {
 	RatePerMin         float64
 	RateBurst          int
 	RateMaxClients     int
-	ReplayMax          int
 	Store              Store
 	Hasher             *passhash.Hasher
 	Logger             *slog.Logger
@@ -87,7 +86,6 @@ func Assemble(ctx context.Context, s Setup) (*Parts, error) {
 	svc := &Service{
 		Store: s.Store, Keys: keys, Hasher: s.Hasher,
 		Limiter:  httpx.NewRateLimiter(s.RatePerMin/60, s.RateBurst, s.RateMaxClients, counters),
-		Replay:   NewReplayMemory(s.ReplayMax, counters),
 		Counters: counters, Logger: s.Logger,
 		Config: ServiceConfig{TokenEndpoint: s.Issuer + "/oauth/token", TTL: s.TTL, Now: s.Now},
 	}
