@@ -78,6 +78,90 @@ func (e ClassLabel) Valid() bool {
 	}
 }
 
+// Defines values for GovGeKindRuleLowerReference.
+const (
+	GovGeKindRuleLowerReferenceAGL   GovGeKindRuleLowerReference = "AGL"
+	GovGeKindRuleLowerReferenceAMSL  GovGeKindRuleLowerReference = "AMSL"
+	GovGeKindRuleLowerReferenceWGS84 GovGeKindRuleLowerReference = "WGS84"
+)
+
+// Valid indicates whether the value is a known member of the GovGeKindRuleLowerReference enum.
+func (e GovGeKindRuleLowerReference) Valid() bool {
+	switch e {
+	case GovGeKindRuleLowerReferenceAGL:
+		return true
+	case GovGeKindRuleLowerReferenceAMSL:
+		return true
+	case GovGeKindRuleLowerReferenceWGS84:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovGeKindRuleRestriction.
+const (
+	GovGeKindRuleRestrictionCONDITIONAL      GovGeKindRuleRestriction = "CONDITIONAL"
+	GovGeKindRuleRestrictionNORESTRICTION    GovGeKindRuleRestriction = "NO_RESTRICTION"
+	GovGeKindRuleRestrictionPROHIBITED       GovGeKindRuleRestriction = "PROHIBITED"
+	GovGeKindRuleRestrictionREQAUTHORISATION GovGeKindRuleRestriction = "REQ_AUTHORISATION"
+)
+
+// Valid indicates whether the value is a known member of the GovGeKindRuleRestriction enum.
+func (e GovGeKindRuleRestriction) Valid() bool {
+	switch e {
+	case GovGeKindRuleRestrictionCONDITIONAL:
+		return true
+	case GovGeKindRuleRestrictionNORESTRICTION:
+		return true
+	case GovGeKindRuleRestrictionPROHIBITED:
+		return true
+	case GovGeKindRuleRestrictionREQAUTHORISATION:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovGeKindRuleUom.
+const (
+	GovGeKindRuleUomFT GovGeKindRuleUom = "FT"
+	GovGeKindRuleUomM  GovGeKindRuleUom = "M"
+)
+
+// Valid indicates whether the value is a known member of the GovGeKindRuleUom enum.
+func (e GovGeKindRuleUom) Valid() bool {
+	switch e {
+	case GovGeKindRuleUomFT:
+		return true
+	case GovGeKindRuleUomM:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovGeKindRuleUpperReference.
+const (
+	GovGeKindRuleUpperReferenceAGL   GovGeKindRuleUpperReference = "AGL"
+	GovGeKindRuleUpperReferenceAMSL  GovGeKindRuleUpperReference = "AMSL"
+	GovGeKindRuleUpperReferenceWGS84 GovGeKindRuleUpperReference = "WGS84"
+)
+
+// Valid indicates whether the value is a known member of the GovGeKindRuleUpperReference enum.
+func (e GovGeKindRuleUpperReference) Valid() bool {
+	switch e {
+	case GovGeKindRuleUpperReferenceAGL:
+		return true
+	case GovGeKindRuleUpperReferenceAMSL:
+		return true
+	case GovGeKindRuleUpperReferenceWGS84:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for HealthStatus.
 const (
 	HealthStatusOk HealthStatus = "ok"
@@ -258,6 +342,36 @@ func (e PolicyInputHeightLimitInUspace) Valid() bool {
 	case PolicyInputHeightLimitInUspaceEvaluate:
 		return true
 	case PolicyInputHeightLimitInUspaceSkipWhenAuthorised:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublicationRowState.
+const (
+	PublicationRowStateAcknowledged PublicationRowState = "acknowledged"
+	PublicationRowStateConflict     PublicationRowState = "conflict"
+	PublicationRowStateFailed       PublicationRowState = "failed"
+	PublicationRowStatePending      PublicationRowState = "pending"
+	PublicationRowStateSent         PublicationRowState = "sent"
+	PublicationRowStateSuperseded   PublicationRowState = "superseded"
+)
+
+// Valid indicates whether the value is a known member of the PublicationRowState enum.
+func (e PublicationRowState) Valid() bool {
+	switch e {
+	case PublicationRowStateAcknowledged:
+		return true
+	case PublicationRowStateConflict:
+		return true
+	case PublicationRowStateFailed:
+		return true
+	case PublicationRowStatePending:
+		return true
+	case PublicationRowStateSent:
+		return true
+	case PublicationRowStateSuperseded:
 		return true
 	default:
 		return false
@@ -759,6 +873,36 @@ func (e TokenResponseTokenType) Valid() bool {
 	}
 }
 
+// Defines values for USpaceDesignationServicesRequired.
+const (
+	USpaceDesignationServicesRequiredCM  USpaceDesignationServicesRequired = "CM"
+	USpaceDesignationServicesRequiredFA  USpaceDesignationServicesRequired = "FA"
+	USpaceDesignationServicesRequiredGEO USpaceDesignationServicesRequired = "GEO"
+	USpaceDesignationServicesRequiredNID USpaceDesignationServicesRequired = "NID"
+	USpaceDesignationServicesRequiredTI  USpaceDesignationServicesRequired = "TI"
+	USpaceDesignationServicesRequiredWX  USpaceDesignationServicesRequired = "WX"
+)
+
+// Valid indicates whether the value is a known member of the USpaceDesignationServicesRequired enum.
+func (e USpaceDesignationServicesRequired) Valid() bool {
+	switch e {
+	case USpaceDesignationServicesRequiredCM:
+		return true
+	case USpaceDesignationServicesRequiredFA:
+		return true
+	case USpaceDesignationServicesRequiredGEO:
+		return true
+	case USpaceDesignationServicesRequiredNID:
+		return true
+	case USpaceDesignationServicesRequiredTI:
+		return true
+	case USpaceDesignationServicesRequiredWX:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for UserStatus.
 const (
 	UserStatusActive   UserStatus = "active"
@@ -771,6 +915,114 @@ func (e UserStatus) Valid() bool {
 	case UserStatusActive:
 		return true
 	case UserStatusDisabled:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ZoneApplicabilityApplicability.
+const (
+	ZoneApplicabilityApplicabilityApplies       ZoneApplicabilityApplicability = "applies"
+	ZoneApplicabilityApplicabilityNotApplicable ZoneApplicabilityApplicability = "not_applicable"
+	ZoneApplicabilityApplicabilityUnknown       ZoneApplicabilityApplicability = "unknown"
+)
+
+// Valid indicates whether the value is a known member of the ZoneApplicabilityApplicability enum.
+func (e ZoneApplicabilityApplicability) Valid() bool {
+	switch e {
+	case ZoneApplicabilityApplicabilityApplies:
+		return true
+	case ZoneApplicabilityApplicabilityNotApplicable:
+		return true
+	case ZoneApplicabilityApplicabilityUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ZoneDataset.
+const (
+	ZoneDatasetUspaceAirspace ZoneDataset = "uspace_airspace"
+	ZoneDatasetZones          ZoneDataset = "zones"
+)
+
+// Valid indicates whether the value is a known member of the ZoneDataset enum.
+func (e ZoneDataset) Valid() bool {
+	switch e {
+	case ZoneDatasetUspaceAirspace:
+		return true
+	case ZoneDatasetZones:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ZoneImportResultFormat.
+const (
+	ZoneImportResultFormatEd269 ZoneImportResultFormat = "ed269"
+	ZoneImportResultFormatEd318 ZoneImportResultFormat = "ed318"
+)
+
+// Valid indicates whether the value is a known member of the ZoneImportResultFormat enum.
+func (e ZoneImportResultFormat) Valid() bool {
+	switch e {
+	case ZoneImportResultFormatEd269:
+		return true
+	case ZoneImportResultFormatEd318:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ZoneState.
+const (
+	ZoneStateApproved   ZoneState = "approved"
+	ZoneStateDraft      ZoneState = "draft"
+	ZoneStatePublished  ZoneState = "published"
+	ZoneStateSuperseded ZoneState = "superseded"
+)
+
+// Valid indicates whether the value is a known member of the ZoneState enum.
+func (e ZoneState) Valid() bool {
+	switch e {
+	case ZoneStateApproved:
+		return true
+	case ZoneStateDraft:
+		return true
+	case ZoneStatePublished:
+		return true
+	case ZoneStateSuperseded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ZoneVersionType.
+const (
+	ZoneVersionTypeCONDITIONAL      ZoneVersionType = "CONDITIONAL"
+	ZoneVersionTypeNORESTRICTION    ZoneVersionType = "NO_RESTRICTION"
+	ZoneVersionTypePROHIBITED       ZoneVersionType = "PROHIBITED"
+	ZoneVersionTypeREQAUTHORIZATION ZoneVersionType = "REQ_AUTHORIZATION"
+	ZoneVersionTypeUSPACE           ZoneVersionType = "USPACE"
+)
+
+// Valid indicates whether the value is a known member of the ZoneVersionType enum.
+func (e ZoneVersionType) Valid() bool {
+	switch e {
+	case ZoneVersionTypeCONDITIONAL:
+		return true
+	case ZoneVersionTypeNORESTRICTION:
+		return true
+	case ZoneVersionTypePROHIBITED:
+		return true
+	case ZoneVersionTypeREQAUTHORIZATION:
+		return true
+	case ZoneVersionTypeUSPACE:
 		return true
 	default:
 		return false
@@ -837,11 +1089,68 @@ type CompetencyValidity struct {
 	ValidUntil time.Time `json:"valid_until"`
 }
 
+// ED318Collection An ED-318 FeatureCollection exactly as uspace-core ed318.Export writes it.
+type ED318Collection = json.RawMessage
+
+// ED318Feature One ED-318 UASZone feature (GeoJSON Feature), validated by uspace-core ed318.Parse; kept as given.
+type ED318Feature = json.RawMessage
+
 // FieldProblem defines model for FieldProblem.
 type FieldProblem struct {
 	// Field JSON path or parameter name, as core.FieldError writes it.
 	Field  string `json:"field"`
 	Reason string `json:"reason"`
+}
+
+// GovGeImportInput defines model for GovGeImportInput.
+type GovGeImportInput struct {
+	Lang *string `json:"lang,omitempty"`
+
+	// PageHtml The saved page
+	PageHtml string `json:"page_html"`
+
+	// PointsJs The saved /Airspace/leaflet/zone/points.js.
+	PointsJs  string     `json:"points_js"`
+	Rules     GovGeRules `json:"rules"`
+	ValidFrom *time.Time `json:"valid_from,omitempty"`
+	ValidTo   *time.Time `json:"valid_to,omitempty"`
+}
+
+// GovGeKindRule What the authority says one kind of airspace.gov.ge zone is; nothing has a default.
+type GovGeKindRule struct {
+	// Applicability ED-269 applicability periods, as published in an ED-269 file.
+	Applicability  []map[string]interface{}    `json:"applicability"`
+	LowerLimit     *float64                    `json:"lower_limit,omitempty"`
+	LowerReference GovGeKindRuleLowerReference `json:"lower_reference"`
+	Message        *string                     `json:"message,omitempty"`
+	Reason         *[]string                   `json:"reason,omitempty"`
+	Restriction    GovGeKindRuleRestriction    `json:"restriction"`
+	Uom            GovGeKindRuleUom            `json:"uom"`
+	UpperLimit     *float64                    `json:"upper_limit,omitempty"`
+	UpperReference GovGeKindRuleUpperReference `json:"upper_reference"`
+}
+
+// GovGeKindRuleLowerReference defines model for GovGeKindRule.LowerReference.
+type GovGeKindRuleLowerReference string
+
+// GovGeKindRuleRestriction defines model for GovGeKindRule.Restriction.
+type GovGeKindRuleRestriction string
+
+// GovGeKindRuleUom defines model for GovGeKindRule.Uom.
+type GovGeKindRuleUom string
+
+// GovGeKindRuleUpperReference defines model for GovGeKindRule.UpperReference.
+type GovGeKindRuleUpperReference string
+
+// GovGeRules defines model for GovGeRules.
+type GovGeRules struct {
+	// Authority The ED-269 zoneAuthority entry every zone names (name, purpose, ...).
+	Authority map[string]string `json:"authority"`
+	Country   string            `json:"country"`
+
+	// Identifiers Variable name -> ED-269 identifier, for names longer than 7 characters.
+	Identifiers *map[string]string       `json:"identifiers,omitempty"`
+	Kinds       map[string]GovGeKindRule `json:"kinds"`
 }
 
 // Health defines model for Health.
@@ -1186,6 +1495,24 @@ type Problem struct {
 	// Type `https://schemas.uspace.ge/problems/<slug>`, slug = the counter or refusal name.
 	Type string `json:"type"`
 }
+
+// PublicationRow The F1 outbox row (dataset, version, payload hash). `signature` is
+// null and `state` pending until WP-6 signs and sends it.
+type PublicationRow struct {
+	CreatedAt    time.Time `json:"created_at"`
+	Dataset      string    `json:"dataset"`
+	FeatureCount int       `json:"feature_count"`
+	Id           int64     `json:"id"`
+
+	// PayloadHash SHA-256 of the payload bytes
+	PayloadHash string              `json:"payload_hash"`
+	Signature   *string             `json:"signature"`
+	State       PublicationRowState `json:"state"`
+	Version     int64               `json:"version"`
+}
+
+// PublicationRowState defines model for PublicationRow.State.
+type PublicationRowState string
 
 // RIDCapability defines model for RIDCapability.
 type RIDCapability string
@@ -1922,6 +2249,64 @@ type UASValidity struct {
 	Status RegistryValidityStatus `json:"status"`
 }
 
+// USpaceDesignation The 03 §1 designation of a U-space airspace (2021/664 Art. 3 and
+// 5); `airspace_name` is the 03 §1 `name` column (the feature's
+// ED-318 name list is the published one).
+type USpaceDesignation struct {
+	AdjacentIds *[]string `json:"adjacent_ids,omitempty"`
+	AipRef      *string   `json:"aip_ref,omitempty"`
+
+	// AirspaceConstraints Art. 3(4)(d), including any height ceiling.
+	AirspaceConstraints  USpaceDesignation_AirspaceConstraints `json:"airspace_constraints"`
+	AirspaceName         string                                `json:"airspace_name"`
+	AtsProviderId        *string                               `json:"ats_provider_id,omitempty"`
+	CispId               *string                               `json:"cisp_id,omitempty"`
+	DesignationRef       *string                               `json:"designation_ref,omitempty"`
+	InControlledAirspace bool                                  `json:"in_controlled_airspace"`
+
+	// OperationalConditions Art. 3(4)(b).
+	OperationalConditions map[string]interface{} `json:"operational_conditions"`
+	RiskAssessmentRef     *string                `json:"risk_assessment_ref,omitempty"`
+
+	// ServicePerformance Art. 3(4)(c); nid_update_hz, ti_update_hz and cis_latency_s are required, other members pass.
+	ServicePerformance USpaceDesignation_ServicePerformance `json:"service_performance"`
+	ServicesRequired   []USpaceDesignationServicesRequired  `json:"services_required"`
+
+	// UasRequirements Art. 3(4)(a).
+	UasRequirements map[string]interface{} `json:"uas_requirements"`
+}
+
+// USpaceDesignation_AirspaceConstraints Art. 3(4)(d), including any height ceiling.
+type USpaceDesignation_AirspaceConstraints struct {
+	MaxHeightAglM        *float64               `json:"max_height_agl_m,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// USpaceDesignation_ServicePerformance Art. 3(4)(c); nid_update_hz, ti_update_hz and cis_latency_s are required, other members pass.
+type USpaceDesignation_ServicePerformance struct {
+	CisLatencyS          float64                `json:"cis_latency_s"`
+	NidUpdateHz          float64                `json:"nid_update_hz"`
+	TiUpdateHz           float64                `json:"ti_update_hz"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// USpaceDesignationServicesRequired defines model for USpaceDesignation.ServicesRequired.
+type USpaceDesignationServicesRequired string
+
+// USpaceDraftInput defines model for USpaceDraftInput.
+type USpaceDraftInput struct {
+	DesignatedFrom time.Time `json:"designated_from"`
+	DesignatedTo   time.Time `json:"designated_to"`
+
+	// Designation The 03 §1 designation of a U-space airspace (2021/664 Art. 3 and
+	// 5); `airspace_name` is the 03 §1 `name` column (the feature's
+	// ED-318 name list is the published one).
+	Designation USpaceDesignation `json:"designation"`
+
+	// Feature One ED-318 UASZone feature (GeoJSON Feature), validated by uspace-core ed318.Parse; kept as given.
+	Feature ED318Feature `json:"feature"`
+}
+
 // User defines model for User.
 type User struct {
 	CreatedAt   time.Time `json:"created_at"`
@@ -1961,6 +2346,113 @@ type UserInput struct {
 // UserList defines model for UserList.
 type UserList struct {
 	Users []User `json:"users"`
+}
+
+// ZoneApplicability defines model for ZoneApplicability.
+type ZoneApplicability struct {
+	Applicability ZoneApplicabilityApplicability `json:"applicability"`
+	At            time.Time                      `json:"at"`
+	Identifier    string                         `json:"identifier"`
+	Reason        *string                        `json:"reason,omitempty"`
+	ZoneVersion   int                            `json:"zone_version"`
+}
+
+// ZoneApplicabilityApplicability defines model for ZoneApplicability.Applicability.
+type ZoneApplicabilityApplicability string
+
+// ZoneApproveInput defines model for ZoneApproveInput.
+type ZoneApproveInput struct {
+	// ZoneVersion The version approved; it must be the newest and a draft.
+	ZoneVersion int `json:"zone_version"`
+}
+
+// ZoneDataset defines model for ZoneDataset.
+type ZoneDataset string
+
+// ZoneDraftInput defines model for ZoneDraftInput.
+type ZoneDraftInput struct {
+	// Feature One ED-318 UASZone feature (GeoJSON Feature), validated by uspace-core ed318.Parse; kept as given.
+	Feature ED318Feature `json:"feature"`
+
+	// ValidFrom Start of the period of validity (947 Art. 15(3)).
+	ValidFrom time.Time `json:"valid_from"`
+
+	// ValidTo End of the period of validity; after valid_from.
+	ValidTo time.Time `json:"valid_to"`
+}
+
+// ZoneExtension A member that uses this project's extension of ED-318 (LESSONS Z-05).
+type ZoneExtension struct {
+	Field  string `json:"field"`
+	Reason string `json:"reason"`
+}
+
+// ZoneImportResult defines model for ZoneImportResult.
+type ZoneImportResult struct {
+	Created []ZoneVersion          `json:"created"`
+	Format  ZoneImportResultFormat `json:"format"`
+}
+
+// ZoneImportResultFormat defines model for ZoneImportResult.Format.
+type ZoneImportResultFormat string
+
+// ZonePublication defines model for ZonePublication.
+type ZonePublication struct {
+	Dataset ZoneDataset `json:"dataset"`
+
+	// Publication The F1 outbox row (dataset, version, payload hash). `signature` is
+	// null and `state` pending until WP-6 signs and sends it.
+	Publication  PublicationRow `json:"publication"`
+	Published    []ZoneVersion  `json:"published"`
+	ZonesVersion int64          `json:"zones_version"`
+}
+
+// ZoneState defines model for ZoneState.
+type ZoneState string
+
+// ZoneVersion defines model for ZoneVersion.
+type ZoneVersion struct {
+	ApprovedAt *time.Time  `json:"approved_at,omitempty"`
+	ApprovedBy *string     `json:"approved_by,omitempty"`
+	Country    string      `json:"country"`
+	CreatedAt  time.Time   `json:"created_at"`
+	CreatedBy  string      `json:"created_by"`
+	Dataset    ZoneDataset `json:"dataset"`
+
+	// Designation The 03 §1 designation of a U-space airspace (2021/664 Art. 3 and
+	// 5); `airspace_name` is the 03 §1 `name` column (the feature's
+	// ED-318 name list is the published one).
+	Designation *USpaceDesignation `json:"designation,omitempty"`
+	Extensions  []ZoneExtension    `json:"extensions"`
+
+	// Feature One ED-318 UASZone feature (GeoJSON Feature), validated by uspace-core ed318.Parse; kept as given.
+	Feature          ED318Feature    `json:"feature"`
+	Identifier       string          `json:"identifier"`
+	PublishedAt      *time.Time      `json:"published_at,omitempty"`
+	PublishedBy      *string         `json:"published_by,omitempty"`
+	PublishedVersion *int64          `json:"published_version,omitempty"`
+	State            ZoneState       `json:"state"`
+	Type             ZoneVersionType `json:"type"`
+	ValidFrom        time.Time       `json:"valid_from"`
+	ValidTo          time.Time       `json:"valid_to"`
+	ZoneVersion      int             `json:"zone_version"`
+}
+
+// ZoneVersionType defines model for ZoneVersion.Type.
+type ZoneVersionType string
+
+// ZoneVersionList defines model for ZoneVersionList.
+type ZoneVersionList struct {
+	// NextAfter Pass as `after` for the next page; absent on the last.
+	NextAfter *string       `json:"next_after,omitempty"`
+	Zones     []ZoneVersion `json:"zones"`
+}
+
+// ZoneVersionPage defines model for ZoneVersionPage.
+type ZoneVersionPage struct {
+	// NextBefore Pass as `before` for the next page; absent on the last.
+	NextBefore *int          `json:"next_before,omitempty"`
+	Versions   []ZoneVersion `json:"versions"`
 }
 
 // OAuthError A problem (M28) that also carries the RFC 6749 §5.2 members, so
@@ -2085,6 +2577,60 @@ type DeleteRIDReceiverParams struct {
 	Reason string `form:"reason" json:"reason"`
 }
 
+// ListUSpaceAirspacesParams defines parameters for ListUSpaceAirspaces.
+type ListUSpaceAirspacesParams struct {
+	State *ZoneState `form:"state,omitempty" json:"state,omitempty"`
+	After *string    `form:"after,omitempty" json:"after,omitempty"`
+	Limit *int       `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListUSpaceVersionsParams defines parameters for ListUSpaceVersions.
+type ListUSpaceVersionsParams struct {
+	Before *int `form:"before,omitempty" json:"before,omitempty"`
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListZonesParams defines parameters for ListZones.
+type ListZonesParams struct {
+	State *ZoneState `form:"state,omitempty" json:"state,omitempty"`
+
+	// After The next_after of the previous page.
+	After *string `form:"after,omitempty" json:"after,omitempty"`
+	Limit *int    `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ExportZonesParams defines parameters for ExportZones.
+type ExportZonesParams struct {
+	// At RFC 3339 instant with an offset.
+	At *time.Time `form:"at,omitempty" json:"at,omitempty"`
+
+	// AppliesAt RFC 3339 instant with an offset.
+	AppliesAt *time.Time `form:"applies_at,omitempty" json:"applies_at,omitempty"`
+}
+
+// ImportZonesParams defines parameters for ImportZones.
+type ImportZonesParams struct {
+	ValidFrom *time.Time `form:"valid_from,omitempty" json:"valid_from,omitempty"`
+	ValidTo   *time.Time `form:"valid_to,omitempty" json:"valid_to,omitempty"`
+
+	// Lang Language of an ED-269 file's texts (default en-GB).
+	Lang *string `form:"lang,omitempty" json:"lang,omitempty"`
+}
+
+// GetZoneApplicabilityParams defines parameters for GetZoneApplicability.
+type GetZoneApplicabilityParams struct {
+	// At RFC 3339 instant with an offset.
+	At          time.Time `form:"at" json:"at"`
+	ZoneVersion *int      `form:"zone_version,omitempty" json:"zone_version,omitempty"`
+}
+
+// ListZoneVersionsParams defines parameters for ListZoneVersions.
+type ListZoneVersionsParams struct {
+	// Before The next_before of the previous page.
+	Before *int `form:"before,omitempty" json:"before,omitempty"`
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // RequestTokenFormdataRequestBody defines body for RequestToken for application/x-www-form-urlencoded ContentType.
 type RequestTokenFormdataRequestBody = TokenRequest
 
@@ -2165,6 +2711,187 @@ type CreateUserJSONRequestBody = UserInput
 
 // SetUserRolesJSONRequestBody defines body for SetUserRoles for application/json ContentType.
 type SetUserRolesJSONRequestBody = RolesInput
+
+// CreateUSpaceAirspaceJSONRequestBody defines body for CreateUSpaceAirspace for application/json ContentType.
+type CreateUSpaceAirspaceJSONRequestBody = USpaceDraftInput
+
+// ReplaceUSpaceAirspaceJSONRequestBody defines body for ReplaceUSpaceAirspace for application/json ContentType.
+type ReplaceUSpaceAirspaceJSONRequestBody = USpaceDraftInput
+
+// DesignateUSpaceAirspaceJSONRequestBody defines body for DesignateUSpaceAirspace for application/json ContentType.
+type DesignateUSpaceAirspaceJSONRequestBody = ZoneApproveInput
+
+// CreateZoneJSONRequestBody defines body for CreateZone for application/json ContentType.
+type CreateZoneJSONRequestBody = ZoneDraftInput
+
+// ImportGovGeZonesJSONRequestBody defines body for ImportGovGeZones for application/json ContentType.
+type ImportGovGeZonesJSONRequestBody = GovGeImportInput
+
+// ReplaceZoneJSONRequestBody defines body for ReplaceZone for application/json ContentType.
+type ReplaceZoneJSONRequestBody = ZoneDraftInput
+
+// ApproveZoneJSONRequestBody defines body for ApproveZone for application/json ContentType.
+type ApproveZoneJSONRequestBody = ZoneApproveInput
+
+// Getter for additional properties for USpaceDesignation_AirspaceConstraints. Returns the specified
+// element and whether it was found
+func (a USpaceDesignation_AirspaceConstraints) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for USpaceDesignation_AirspaceConstraints
+func (a *USpaceDesignation_AirspaceConstraints) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for USpaceDesignation_AirspaceConstraints to handle AdditionalProperties
+func (a *USpaceDesignation_AirspaceConstraints) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["max_height_agl_m"]; found {
+		err = json.Unmarshal(raw, &a.MaxHeightAglM)
+		if err != nil {
+			return fmt.Errorf("error reading 'max_height_agl_m': %w", err)
+		}
+		delete(object, "max_height_agl_m")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for USpaceDesignation_AirspaceConstraints to handle AdditionalProperties
+func (a USpaceDesignation_AirspaceConstraints) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.MaxHeightAglM != nil {
+		object["max_height_agl_m"], err = json.Marshal(a.MaxHeightAglM)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'max_height_agl_m': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for USpaceDesignation_ServicePerformance. Returns the specified
+// element and whether it was found
+func (a USpaceDesignation_ServicePerformance) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for USpaceDesignation_ServicePerformance
+func (a *USpaceDesignation_ServicePerformance) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for USpaceDesignation_ServicePerformance to handle AdditionalProperties
+func (a *USpaceDesignation_ServicePerformance) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["cis_latency_s"]; found {
+		err = json.Unmarshal(raw, &a.CisLatencyS)
+		if err != nil {
+			return fmt.Errorf("error reading 'cis_latency_s': %w", err)
+		}
+		delete(object, "cis_latency_s")
+	}
+
+	if raw, found := object["nid_update_hz"]; found {
+		err = json.Unmarshal(raw, &a.NidUpdateHz)
+		if err != nil {
+			return fmt.Errorf("error reading 'nid_update_hz': %w", err)
+		}
+		delete(object, "nid_update_hz")
+	}
+
+	if raw, found := object["ti_update_hz"]; found {
+		err = json.Unmarshal(raw, &a.TiUpdateHz)
+		if err != nil {
+			return fmt.Errorf("error reading 'ti_update_hz': %w", err)
+		}
+		delete(object, "ti_update_hz")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for USpaceDesignation_ServicePerformance to handle AdditionalProperties
+func (a USpaceDesignation_ServicePerformance) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["cis_latency_s"], err = json.Marshal(a.CisLatencyS)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'cis_latency_s': %w", err)
+	}
+
+	object["nid_update_hz"], err = json.Marshal(a.NidUpdateHz)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'nid_update_hz': %w", err)
+	}
+
+	object["ti_update_hz"], err = json.Marshal(a.TiUpdateHz)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'ti_update_hz': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
 
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -3198,6 +3925,278 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /v1/users/{user_id}/sessions/revoke (the `RevokeUserSessions` operationId).
 	RevokeUserSessions(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListUSpaceAirspaces The newest version of every U-space airspace
+	//
+	// Corresponds with GET /v1/uspace (the `ListUSpaceAirspaces` operationId).
+	ListUSpaceAirspaces(ctx context.Context, params *ListUSpaceAirspacesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateUSpaceAirspaceWithBody Draft a U-space airspace designation (version 1)
+	//
+	// The feature is an ED-318 feature of type USPACE without
+	// extendedProperties.uspace_requirements: this service writes that
+	// block from `designation`. services_required always holds NID,
+	// GEO, FA and TI (Art. 3(3)); WX and CM are optional.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/uspace (the `CreateUSpaceAirspace` operationId).
+	CreateUSpaceAirspaceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateUSpaceAirspace Draft a U-space airspace designation (version 1)
+	//
+	// The feature is an ED-318 feature of type USPACE without
+	// extendedProperties.uspace_requirements: this service writes that
+	// block from `designation`. services_required always holds NID,
+	// GEO, FA and TI (Art. 3(3)); WX and CM are optional.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/uspace (the `CreateUSpaceAirspace` operationId).
+	CreateUSpaceAirspace(ctx context.Context, body CreateUSpaceAirspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PublishUSpaceAirspaces Publish every designated U-space airspace version
+	//
+	// As /v1/zones/publish, for the dataset `uspace_airspace`. Every
+	// `adjacent` identifier must be a U-space airspace of the same
+	// publication (cis/uspace_requirements/v1); otherwise 409, naming
+	// it.
+	//
+	// Corresponds with POST /v1/uspace/publish (the `PublishUSpaceAirspaces` operationId).
+	PublishUSpaceAirspaces(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetUSpaceAirspace The newest version of a U-space airspace
+	//
+	// Corresponds with GET /v1/uspace/{identifier} (the `GetUSpaceAirspace` operationId).
+	GetUSpaceAirspace(ctx context.Context, identifier string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReplaceUSpaceAirspaceWithBody Draft a new version of a U-space airspace
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /v1/uspace/{identifier} (the `ReplaceUSpaceAirspace` operationId).
+	ReplaceUSpaceAirspaceWithBody(ctx context.Context, identifier string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReplaceUSpaceAirspace Draft a new version of a U-space airspace
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /v1/uspace/{identifier} (the `ReplaceUSpaceAirspace` operationId).
+	ReplaceUSpaceAirspace(ctx context.Context, identifier string, body ReplaceUSpaceAirspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DesignateUSpaceAirspaceWithBody Designate (approve) a draft U-space airspace version
+	//
+	// Only the identifier's newest version, and only a draft (409 otherwise).
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/uspace/{identifier}/designate (the `DesignateUSpaceAirspace` operationId).
+	DesignateUSpaceAirspaceWithBody(ctx context.Context, identifier string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DesignateUSpaceAirspace Designate (approve) a draft U-space airspace version
+	//
+	// Only the identifier's newest version, and only a draft (409 otherwise).
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/uspace/{identifier}/designate (the `DesignateUSpaceAirspace` operationId).
+	DesignateUSpaceAirspace(ctx context.Context, identifier string, body DesignateUSpaceAirspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListUSpaceVersions A U-space airspace's versions, newest first
+	//
+	// Corresponds with GET /v1/uspace/{identifier}/versions (the `ListUSpaceVersions` operationId).
+	ListUSpaceVersions(ctx context.Context, identifier string, params *ListUSpaceVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListZones The newest version of every geo-zone, in identifier order
+	//
+	// Corresponds with GET /v1/zones (the `ListZones` operationId).
+	ListZones(ctx context.Context, params *ListZonesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateZoneWithBody Author a new geo-zone (version 1, draft)
+	//
+	// The feature must be an ED-318 UASZone feature that uspace-core
+	// ed318.Parse accepts, that ed318.ToZones can judge (rings, limits,
+	// an applicability it can evaluate), and of any type but USPACE
+	// (a U-space airspace is authored under /v1/uspace). 409 when the
+	// identifier is taken in either dataset.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/zones (the `CreateZone` operationId).
+	CreateZoneWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateZone Author a new geo-zone (version 1, draft)
+	//
+	// The feature must be an ED-318 UASZone feature that uspace-core
+	// ed318.Parse accepts, that ed318.ToZones can judge (rings, limits,
+	// an applicability it can evaluate), and of any type but USPACE
+	// (a U-space airspace is authored under /v1/uspace). 409 when the
+	// identifier is taken in either dataset.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/zones (the `CreateZone` operationId).
+	CreateZone(ctx context.Context, body CreateZoneJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ExportZones The published geo-zones as an ED-318 FeatureCollection
+	//
+	// Per identifier, the newest published version whose period of
+	// validity holds at the instant (both ends included): `at` when
+	// given, else the database's now. With `at` the features that do
+	// not apply at `at` (uspace-core ed318.Applies at the centre of the
+	// feature's bounding box) are left out and every feature whose
+	// applicability cannot be evaluated is kept with
+	// extendedProperties.cis_applicability `unknown`, never dropped.
+	// `applies_at` annotates without filtering: every feature carries
+	// extendedProperties.cis_applicability `applies`, `not_applicable`
+	// or `unknown` at that instant (M17). `at` and `applies_at`
+	// together are refused 400 filter_conflict. Daylight events are
+	// resolved by the ground package; until it is wired they cannot
+	// be (the answer is `unknown`). The collection metadata uses
+	// ed318.Metadata's names: `issued` (the database's now) and
+	// `provider` (ZONES_PROVIDER_NAME).
+	//
+	// Corresponds with GET /v1/zones/export (the `ExportZones` operationId).
+	ExportZones(ctx context.Context, params *ExportZonesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ImportZonesWithBody Import an ED-318 or ED-269 file as drafts, all or nothing
+	//
+	// The body is the file's bytes (at most 4 MiB, uspace-core
+	// ed269.DefaultLimits; a UTF-8 byte order mark is accepted). The
+	// format is detected by its wrapper: a top-level `type`
+	// FeatureCollection is ED-318; `features` without it, or
+	// `UASZoneList`, is ED-269, parsed by ed269.Parse and mapped by
+	// ed318.FromED269 (what ED-318 cannot hold is refused by name).
+	// Every zone is validated as a single write is; the file is
+	// accepted whole (one draft version per zone, in one transaction)
+	// or refused whole with every problem by JSON path (at most 100,
+	// `truncated` beyond). The period of validity is `valid_from` and
+	// `valid_to`, else the ED-318 collection's metadata validFrom and
+	// validTo; without one the import is refused (947 Art. 15(3)).
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/zones/import (the `ImportZones` operationId).
+	ImportZonesWithBody(ctx context.Context, params *ImportZonesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ImportGovGeZonesWithBody Convert airspace.gov.ge's zone files with a rules file, then import
+	//
+	// airspace.gov.ge publishes no feed, no limits and no times (LESSONS
+	// Z-13): its zones are JavaScript variables in `points.js`
+	// (`var NAME_points = [[lat, lon], ...];` polygons, `var NAME_point
+	// = [lat, lon];` circle centres) and the circles' radii are in the
+	// page's `L.circle(NAME_point, {radius: <m>})` calls. The rules file
+	// says, per kind of zone (the variable name's last `_` part), the
+	// restriction, limits, applicability and reasons; a kind without a
+	// rule refuses the conversion by name. The result is an ED-269
+	// document imported exactly as /v1/zones/import does.
+	// docs/runbooks/zones.md documents the rules format. Nothing here
+	// fetches the site.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/zones/import/airspace-gov-ge (the `ImportGovGeZones` operationId).
+	ImportGovGeZonesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ImportGovGeZones Convert airspace.gov.ge's zone files with a rules file, then import
+	//
+	// airspace.gov.ge publishes no feed, no limits and no times (LESSONS
+	// Z-13): its zones are JavaScript variables in `points.js`
+	// (`var NAME_points = [[lat, lon], ...];` polygons, `var NAME_point
+	// = [lat, lon];` circle centres) and the circles' radii are in the
+	// page's `L.circle(NAME_point, {radius: <m>})` calls. The rules file
+	// says, per kind of zone (the variable name's last `_` part), the
+	// restriction, limits, applicability and reasons; a kind without a
+	// rule refuses the conversion by name. The result is an ED-269
+	// document imported exactly as /v1/zones/import does.
+	// docs/runbooks/zones.md documents the rules format. Nothing here
+	// fetches the site.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/zones/import/airspace-gov-ge (the `ImportGovGeZones` operationId).
+	ImportGovGeZones(ctx context.Context, body ImportGovGeZonesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PublishZones Publish every approved geo-zone version
+	//
+	// In one transaction under the zones advisory lock: every approved
+	// version becomes published under a new zones version and
+	// supersedes the identifier's older published versions; the zones
+	// projection is rewritten in the telemetry database (a failed write
+	// rolls the publication back, 503 projection_unavailable); the full
+	// set in force now is exported (ED-318, ed318.Export) into the F1
+	// outbox row of dataset `zones`, state `pending`, signature null
+	// until WP-6 signs and sends it. Then zones.v1.changed and KV
+	// zones_version announce the version. 409 nothing_to_publish when
+	// no version is approved.
+	//
+	// Corresponds with POST /v1/zones/publish (the `PublishZones` operationId).
+	PublishZones(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetZone The newest version of a geo-zone
+	//
+	// Corresponds with GET /v1/zones/{identifier} (the `GetZone` operationId).
+	GetZone(ctx context.Context, identifier string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReplaceZoneWithBody Author a new version of a geo-zone (draft)
+	//
+	// Validated as a creation is; the feature's identifier must be the
+	// path's. The identifier's unpublished versions are superseded;
+	// its published version stays in force until this one is
+	// published.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /v1/zones/{identifier} (the `ReplaceZone` operationId).
+	ReplaceZoneWithBody(ctx context.Context, identifier string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReplaceZone Author a new version of a geo-zone (draft)
+	//
+	// Validated as a creation is; the feature's identifier must be the
+	// path's. The identifier's unpublished versions are superseded;
+	// its published version stays in force until this one is
+	// published.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /v1/zones/{identifier} (the `ReplaceZone` operationId).
+	ReplaceZone(ctx context.Context, identifier string, body ReplaceZoneJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetZoneApplicability Whether a zone version applies at an instant
+	//
+	// uspace-core ed318.Applies over the version's limitedApplicability
+	// at the centre of its bounding box (the newest version unless
+	// `zone_version` names one). A daylight event (BMCT, SR, SS, EECT)
+	// needs the ground package's sunrise and sunset; until it is wired
+	// such a question is refused 503 daylight_unavailable rather than
+	// guessed. Any other event that cannot be resolved answers
+	// `unknown` with the reason.
+	//
+	// Corresponds with GET /v1/zones/{identifier}/applies (the `GetZoneApplicability` operationId).
+	GetZoneApplicability(ctx context.Context, identifier string, params *GetZoneApplicabilityParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ApproveZoneWithBody Approve a draft version for publication
+	//
+	// Only the identifier's newest version, and only a draft (409 otherwise).
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/zones/{identifier}/approve (the `ApproveZone` operationId).
+	ApproveZoneWithBody(ctx context.Context, identifier string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ApproveZone Approve a draft version for publication
+	//
+	// Only the identifier's newest version, and only a draft (409 otherwise).
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/zones/{identifier}/approve (the `ApproveZone` operationId).
+	ApproveZone(ctx context.Context, identifier string, body ApproveZoneJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListZoneVersions A geo-zone's versions, newest first
+	//
+	// Corresponds with GET /v1/zones/{identifier}/versions (the `ListZoneVersions` operationId).
+	ListZoneVersions(ctx context.Context, identifier string, params *ListZoneVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 // GetJWKS The issuer's public keys
@@ -5059,6 +6058,528 @@ func (c *Client) SetUserRoles(ctx context.Context, userId string, body SetUserRo
 // Corresponds with POST /v1/users/{user_id}/sessions/revoke (the `RevokeUserSessions` operationId).
 func (c *Client) RevokeUserSessions(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRevokeUserSessionsRequest(c.Server, userId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListUSpaceAirspaces The newest version of every U-space airspace
+//
+// Corresponds with GET /v1/uspace (the `ListUSpaceAirspaces` operationId).
+func (c *Client) ListUSpaceAirspaces(ctx context.Context, params *ListUSpaceAirspacesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListUSpaceAirspacesRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateUSpaceAirspaceWithBody Draft a U-space airspace designation (version 1)
+//
+// The feature is an ED-318 feature of type USPACE without
+// extendedProperties.uspace_requirements: this service writes that
+// block from `designation`. services_required always holds NID,
+// GEO, FA and TI (Art. 3(3)); WX and CM are optional.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/uspace (the `CreateUSpaceAirspace` operationId).
+func (c *Client) CreateUSpaceAirspaceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateUSpaceAirspaceRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateUSpaceAirspace Draft a U-space airspace designation (version 1)
+//
+// The feature is an ED-318 feature of type USPACE without
+// extendedProperties.uspace_requirements: this service writes that
+// block from `designation`. services_required always holds NID,
+// GEO, FA and TI (Art. 3(3)); WX and CM are optional.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/uspace (the `CreateUSpaceAirspace` operationId).
+func (c *Client) CreateUSpaceAirspace(ctx context.Context, body CreateUSpaceAirspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateUSpaceAirspaceRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PublishUSpaceAirspaces Publish every designated U-space airspace version
+//
+// As /v1/zones/publish, for the dataset `uspace_airspace`. Every
+// `adjacent` identifier must be a U-space airspace of the same
+// publication (cis/uspace_requirements/v1); otherwise 409, naming
+// it.
+//
+// Corresponds with POST /v1/uspace/publish (the `PublishUSpaceAirspaces` operationId).
+func (c *Client) PublishUSpaceAirspaces(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPublishUSpaceAirspacesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetUSpaceAirspace The newest version of a U-space airspace
+//
+// Corresponds with GET /v1/uspace/{identifier} (the `GetUSpaceAirspace` operationId).
+func (c *Client) GetUSpaceAirspace(ctx context.Context, identifier string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetUSpaceAirspaceRequest(c.Server, identifier)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ReplaceUSpaceAirspaceWithBody Draft a new version of a U-space airspace
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /v1/uspace/{identifier} (the `ReplaceUSpaceAirspace` operationId).
+func (c *Client) ReplaceUSpaceAirspaceWithBody(ctx context.Context, identifier string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceUSpaceAirspaceRequestWithBody(c.Server, identifier, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ReplaceUSpaceAirspace Draft a new version of a U-space airspace
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /v1/uspace/{identifier} (the `ReplaceUSpaceAirspace` operationId).
+func (c *Client) ReplaceUSpaceAirspace(ctx context.Context, identifier string, body ReplaceUSpaceAirspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceUSpaceAirspaceRequest(c.Server, identifier, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DesignateUSpaceAirspaceWithBody Designate (approve) a draft U-space airspace version
+//
+// Only the identifier's newest version, and only a draft (409 otherwise).
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/uspace/{identifier}/designate (the `DesignateUSpaceAirspace` operationId).
+func (c *Client) DesignateUSpaceAirspaceWithBody(ctx context.Context, identifier string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDesignateUSpaceAirspaceRequestWithBody(c.Server, identifier, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DesignateUSpaceAirspace Designate (approve) a draft U-space airspace version
+//
+// Only the identifier's newest version, and only a draft (409 otherwise).
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/uspace/{identifier}/designate (the `DesignateUSpaceAirspace` operationId).
+func (c *Client) DesignateUSpaceAirspace(ctx context.Context, identifier string, body DesignateUSpaceAirspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDesignateUSpaceAirspaceRequest(c.Server, identifier, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListUSpaceVersions A U-space airspace's versions, newest first
+//
+// Corresponds with GET /v1/uspace/{identifier}/versions (the `ListUSpaceVersions` operationId).
+func (c *Client) ListUSpaceVersions(ctx context.Context, identifier string, params *ListUSpaceVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListUSpaceVersionsRequest(c.Server, identifier, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListZones The newest version of every geo-zone, in identifier order
+//
+// Corresponds with GET /v1/zones (the `ListZones` operationId).
+func (c *Client) ListZones(ctx context.Context, params *ListZonesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListZonesRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateZoneWithBody Author a new geo-zone (version 1, draft)
+//
+// The feature must be an ED-318 UASZone feature that uspace-core
+// ed318.Parse accepts, that ed318.ToZones can judge (rings, limits,
+// an applicability it can evaluate), and of any type but USPACE
+// (a U-space airspace is authored under /v1/uspace). 409 when the
+// identifier is taken in either dataset.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/zones (the `CreateZone` operationId).
+func (c *Client) CreateZoneWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateZoneRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateZone Author a new geo-zone (version 1, draft)
+//
+// The feature must be an ED-318 UASZone feature that uspace-core
+// ed318.Parse accepts, that ed318.ToZones can judge (rings, limits,
+// an applicability it can evaluate), and of any type but USPACE
+// (a U-space airspace is authored under /v1/uspace). 409 when the
+// identifier is taken in either dataset.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/zones (the `CreateZone` operationId).
+func (c *Client) CreateZone(ctx context.Context, body CreateZoneJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateZoneRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ExportZones The published geo-zones as an ED-318 FeatureCollection
+//
+// Per identifier, the newest published version whose period of
+// validity holds at the instant (both ends included): `at` when
+// given, else the database's now. With `at` the features that do
+// not apply at `at` (uspace-core ed318.Applies at the centre of the
+// feature's bounding box) are left out and every feature whose
+// applicability cannot be evaluated is kept with
+// extendedProperties.cis_applicability `unknown`, never dropped.
+// `applies_at` annotates without filtering: every feature carries
+// extendedProperties.cis_applicability `applies`, `not_applicable`
+// or `unknown` at that instant (M17). `at` and `applies_at`
+// together are refused 400 filter_conflict. Daylight events are
+// resolved by the ground package; until it is wired they cannot
+// be (the answer is `unknown`). The collection metadata uses
+// ed318.Metadata's names: `issued` (the database's now) and
+// `provider` (ZONES_PROVIDER_NAME).
+//
+// Corresponds with GET /v1/zones/export (the `ExportZones` operationId).
+func (c *Client) ExportZones(ctx context.Context, params *ExportZonesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewExportZonesRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ImportZonesWithBody Import an ED-318 or ED-269 file as drafts, all or nothing
+//
+// The body is the file's bytes (at most 4 MiB, uspace-core
+// ed269.DefaultLimits; a UTF-8 byte order mark is accepted). The
+// format is detected by its wrapper: a top-level `type`
+// FeatureCollection is ED-318; `features` without it, or
+// `UASZoneList`, is ED-269, parsed by ed269.Parse and mapped by
+// ed318.FromED269 (what ED-318 cannot hold is refused by name).
+// Every zone is validated as a single write is; the file is
+// accepted whole (one draft version per zone, in one transaction)
+// or refused whole with every problem by JSON path (at most 100,
+// `truncated` beyond). The period of validity is `valid_from` and
+// `valid_to`, else the ED-318 collection's metadata validFrom and
+// validTo; without one the import is refused (947 Art. 15(3)).
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/zones/import (the `ImportZones` operationId).
+func (c *Client) ImportZonesWithBody(ctx context.Context, params *ImportZonesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewImportZonesRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ImportGovGeZonesWithBody Convert airspace.gov.ge's zone files with a rules file, then import
+//
+// airspace.gov.ge publishes no feed, no limits and no times (LESSONS
+// Z-13): its zones are JavaScript variables in `points.js`
+// (`var NAME_points = [[lat, lon], ...];` polygons, `var NAME_point
+// = [lat, lon];` circle centres) and the circles' radii are in the
+// page's `L.circle(NAME_point, {radius: <m>})` calls. The rules file
+// says, per kind of zone (the variable name's last `_` part), the
+// restriction, limits, applicability and reasons; a kind without a
+// rule refuses the conversion by name. The result is an ED-269
+// document imported exactly as /v1/zones/import does.
+// docs/runbooks/zones.md documents the rules format. Nothing here
+// fetches the site.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/zones/import/airspace-gov-ge (the `ImportGovGeZones` operationId).
+func (c *Client) ImportGovGeZonesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewImportGovGeZonesRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ImportGovGeZones Convert airspace.gov.ge's zone files with a rules file, then import
+//
+// airspace.gov.ge publishes no feed, no limits and no times (LESSONS
+// Z-13): its zones are JavaScript variables in `points.js`
+// (`var NAME_points = [[lat, lon], ...];` polygons, `var NAME_point
+// = [lat, lon];` circle centres) and the circles' radii are in the
+// page's `L.circle(NAME_point, {radius: <m>})` calls. The rules file
+// says, per kind of zone (the variable name's last `_` part), the
+// restriction, limits, applicability and reasons; a kind without a
+// rule refuses the conversion by name. The result is an ED-269
+// document imported exactly as /v1/zones/import does.
+// docs/runbooks/zones.md documents the rules format. Nothing here
+// fetches the site.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/zones/import/airspace-gov-ge (the `ImportGovGeZones` operationId).
+func (c *Client) ImportGovGeZones(ctx context.Context, body ImportGovGeZonesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewImportGovGeZonesRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PublishZones Publish every approved geo-zone version
+//
+// In one transaction under the zones advisory lock: every approved
+// version becomes published under a new zones version and
+// supersedes the identifier's older published versions; the zones
+// projection is rewritten in the telemetry database (a failed write
+// rolls the publication back, 503 projection_unavailable); the full
+// set in force now is exported (ED-318, ed318.Export) into the F1
+// outbox row of dataset `zones`, state `pending`, signature null
+// until WP-6 signs and sends it. Then zones.v1.changed and KV
+// zones_version announce the version. 409 nothing_to_publish when
+// no version is approved.
+//
+// Corresponds with POST /v1/zones/publish (the `PublishZones` operationId).
+func (c *Client) PublishZones(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPublishZonesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetZone The newest version of a geo-zone
+//
+// Corresponds with GET /v1/zones/{identifier} (the `GetZone` operationId).
+func (c *Client) GetZone(ctx context.Context, identifier string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetZoneRequest(c.Server, identifier)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ReplaceZoneWithBody Author a new version of a geo-zone (draft)
+//
+// Validated as a creation is; the feature's identifier must be the
+// path's. The identifier's unpublished versions are superseded;
+// its published version stays in force until this one is
+// published.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /v1/zones/{identifier} (the `ReplaceZone` operationId).
+func (c *Client) ReplaceZoneWithBody(ctx context.Context, identifier string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceZoneRequestWithBody(c.Server, identifier, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ReplaceZone Author a new version of a geo-zone (draft)
+//
+// Validated as a creation is; the feature's identifier must be the
+// path's. The identifier's unpublished versions are superseded;
+// its published version stays in force until this one is
+// published.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /v1/zones/{identifier} (the `ReplaceZone` operationId).
+func (c *Client) ReplaceZone(ctx context.Context, identifier string, body ReplaceZoneJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceZoneRequest(c.Server, identifier, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetZoneApplicability Whether a zone version applies at an instant
+//
+// uspace-core ed318.Applies over the version's limitedApplicability
+// at the centre of its bounding box (the newest version unless
+// `zone_version` names one). A daylight event (BMCT, SR, SS, EECT)
+// needs the ground package's sunrise and sunset; until it is wired
+// such a question is refused 503 daylight_unavailable rather than
+// guessed. Any other event that cannot be resolved answers
+// `unknown` with the reason.
+//
+// Corresponds with GET /v1/zones/{identifier}/applies (the `GetZoneApplicability` operationId).
+func (c *Client) GetZoneApplicability(ctx context.Context, identifier string, params *GetZoneApplicabilityParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetZoneApplicabilityRequest(c.Server, identifier, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ApproveZoneWithBody Approve a draft version for publication
+//
+// Only the identifier's newest version, and only a draft (409 otherwise).
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/zones/{identifier}/approve (the `ApproveZone` operationId).
+func (c *Client) ApproveZoneWithBody(ctx context.Context, identifier string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewApproveZoneRequestWithBody(c.Server, identifier, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ApproveZone Approve a draft version for publication
+//
+// Only the identifier's newest version, and only a draft (409 otherwise).
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/zones/{identifier}/approve (the `ApproveZone` operationId).
+func (c *Client) ApproveZone(ctx context.Context, identifier string, body ApproveZoneJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewApproveZoneRequest(c.Server, identifier, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListZoneVersions A geo-zone's versions, newest first
+//
+// Corresponds with GET /v1/zones/{identifier}/versions (the `ListZoneVersions` operationId).
+func (c *Client) ListZoneVersions(ctx context.Context, identifier string, params *ListZoneVersionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListZoneVersionsRequest(c.Server, identifier, params)
 	if err != nil {
 		return nil, err
 	}
@@ -8038,6 +9559,953 @@ func NewRevokeUserSessionsRequest(server string, userId string) (*http.Request, 
 	return req, nil
 }
 
+// NewListUSpaceAirspacesRequest constructs an http.Request for the ListUSpaceAirspaces method
+func NewListUSpaceAirspacesRequest(server string, params *ListUSpaceAirspacesParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/uspace")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.State != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "state", *params.State, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.After != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "after", *params.After, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateUSpaceAirspaceRequest calls the generic CreateUSpaceAirspace builder with application/json body
+func NewCreateUSpaceAirspaceRequest(server string, body CreateUSpaceAirspaceJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateUSpaceAirspaceRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateUSpaceAirspaceRequestWithBody constructs an http.Request for the CreateUSpaceAirspace method, with any body, and a specified content type
+func NewCreateUSpaceAirspaceRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/uspace")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPublishUSpaceAirspacesRequest constructs an http.Request for the PublishUSpaceAirspaces method
+func NewPublishUSpaceAirspacesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/uspace/publish")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetUSpaceAirspaceRequest constructs an http.Request for the GetUSpaceAirspace method
+func NewGetUSpaceAirspaceRequest(server string, identifier string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "identifier", identifier, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/uspace/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewReplaceUSpaceAirspaceRequest calls the generic ReplaceUSpaceAirspace builder with application/json body
+func NewReplaceUSpaceAirspaceRequest(server string, identifier string, body ReplaceUSpaceAirspaceJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewReplaceUSpaceAirspaceRequestWithBody(server, identifier, "application/json", bodyReader)
+}
+
+// NewReplaceUSpaceAirspaceRequestWithBody constructs an http.Request for the ReplaceUSpaceAirspace method, with any body, and a specified content type
+func NewReplaceUSpaceAirspaceRequestWithBody(server string, identifier string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "identifier", identifier, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/uspace/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDesignateUSpaceAirspaceRequest calls the generic DesignateUSpaceAirspace builder with application/json body
+func NewDesignateUSpaceAirspaceRequest(server string, identifier string, body DesignateUSpaceAirspaceJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewDesignateUSpaceAirspaceRequestWithBody(server, identifier, "application/json", bodyReader)
+}
+
+// NewDesignateUSpaceAirspaceRequestWithBody constructs an http.Request for the DesignateUSpaceAirspace method, with any body, and a specified content type
+func NewDesignateUSpaceAirspaceRequestWithBody(server string, identifier string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "identifier", identifier, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/uspace/%s/designate", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListUSpaceVersionsRequest constructs an http.Request for the ListUSpaceVersions method
+func NewListUSpaceVersionsRequest(server string, identifier string, params *ListUSpaceVersionsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "identifier", identifier, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/uspace/%s/versions", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Before != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "before", *params.Before, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListZonesRequest constructs an http.Request for the ListZones method
+func NewListZonesRequest(server string, params *ListZonesParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/zones")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.State != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "state", *params.State, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.After != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "after", *params.After, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateZoneRequest calls the generic CreateZone builder with application/json body
+func NewCreateZoneRequest(server string, body CreateZoneJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateZoneRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateZoneRequestWithBody constructs an http.Request for the CreateZone method, with any body, and a specified content type
+func NewCreateZoneRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/zones")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewExportZonesRequest constructs an http.Request for the ExportZones method
+func NewExportZonesRequest(server string, params *ExportZonesParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/zones/export")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.At != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "at", *params.At, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.AppliesAt != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "applies_at", *params.AppliesAt, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewImportZonesRequestWithBody constructs an http.Request for the ImportZones method, with any body, and a specified content type
+func NewImportZonesRequestWithBody(server string, params *ImportZonesParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/zones/import")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.ValidFrom != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "valid_from", *params.ValidFrom, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ValidTo != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "valid_to", *params.ValidTo, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Lang != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "lang", *params.Lang, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewImportGovGeZonesRequest calls the generic ImportGovGeZones builder with application/json body
+func NewImportGovGeZonesRequest(server string, body ImportGovGeZonesJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewImportGovGeZonesRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewImportGovGeZonesRequestWithBody constructs an http.Request for the ImportGovGeZones method, with any body, and a specified content type
+func NewImportGovGeZonesRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/zones/import/airspace-gov-ge")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPublishZonesRequest constructs an http.Request for the PublishZones method
+func NewPublishZonesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/zones/publish")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetZoneRequest constructs an http.Request for the GetZone method
+func NewGetZoneRequest(server string, identifier string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "identifier", identifier, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/zones/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewReplaceZoneRequest calls the generic ReplaceZone builder with application/json body
+func NewReplaceZoneRequest(server string, identifier string, body ReplaceZoneJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewReplaceZoneRequestWithBody(server, identifier, "application/json", bodyReader)
+}
+
+// NewReplaceZoneRequestWithBody constructs an http.Request for the ReplaceZone method, with any body, and a specified content type
+func NewReplaceZoneRequestWithBody(server string, identifier string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "identifier", identifier, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/zones/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetZoneApplicabilityRequest constructs an http.Request for the GetZoneApplicability method
+func NewGetZoneApplicabilityRequest(server string, identifier string, params *GetZoneApplicabilityParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "identifier", identifier, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/zones/%s/applies", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "at", params.At, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if params.ZoneVersion != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "zone_version", *params.ZoneVersion, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewApproveZoneRequest calls the generic ApproveZone builder with application/json body
+func NewApproveZoneRequest(server string, identifier string, body ApproveZoneJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewApproveZoneRequestWithBody(server, identifier, "application/json", bodyReader)
+}
+
+// NewApproveZoneRequestWithBody constructs an http.Request for the ApproveZone method, with any body, and a specified content type
+func NewApproveZoneRequestWithBody(server string, identifier string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "identifier", identifier, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/zones/%s/approve", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListZoneVersionsRequest constructs an http.Request for the ListZoneVersions method
+func NewListZoneVersionsRequest(server string, identifier string, params *ListZoneVersionsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "identifier", identifier, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/zones/%s/versions", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Before != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "before", *params.Before, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -9114,6 +11582,298 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /v1/users/{user_id}/sessions/revoke (the `RevokeUserSessions` operationId).
 	RevokeUserSessionsWithResponse(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*RevokeUserSessionsResponse, error)
+
+	// ListUSpaceAirspacesWithResponse The newest version of every U-space airspace
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/uspace (the `ListUSpaceAirspaces` operationId).
+	ListUSpaceAirspacesWithResponse(ctx context.Context, params *ListUSpaceAirspacesParams, reqEditors ...RequestEditorFn) (*ListUSpaceAirspacesResponse, error)
+
+	// CreateUSpaceAirspaceWithBodyWithResponse Draft a U-space airspace designation (version 1)
+	//
+	// The feature is an ED-318 feature of type USPACE without
+	// extendedProperties.uspace_requirements: this service writes that
+	// block from `designation`. services_required always holds NID,
+	// GEO, FA and TI (Art. 3(3)); WX and CM are optional.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/uspace (the `CreateUSpaceAirspace` operationId).
+	CreateUSpaceAirspaceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateUSpaceAirspaceResponse, error)
+
+	// CreateUSpaceAirspaceWithResponse Draft a U-space airspace designation (version 1)
+	//
+	// The feature is an ED-318 feature of type USPACE without
+	// extendedProperties.uspace_requirements: this service writes that
+	// block from `designation`. services_required always holds NID,
+	// GEO, FA and TI (Art. 3(3)); WX and CM are optional.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/uspace (the `CreateUSpaceAirspace` operationId).
+	CreateUSpaceAirspaceWithResponse(ctx context.Context, body CreateUSpaceAirspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateUSpaceAirspaceResponse, error)
+
+	// PublishUSpaceAirspacesWithResponse Publish every designated U-space airspace version
+	//
+	// As /v1/zones/publish, for the dataset `uspace_airspace`. Every
+	// `adjacent` identifier must be a U-space airspace of the same
+	// publication (cis/uspace_requirements/v1); otherwise 409, naming
+	// it.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/uspace/publish (the `PublishUSpaceAirspaces` operationId).
+	PublishUSpaceAirspacesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*PublishUSpaceAirspacesResponse, error)
+
+	// GetUSpaceAirspaceWithResponse The newest version of a U-space airspace
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/uspace/{identifier} (the `GetUSpaceAirspace` operationId).
+	GetUSpaceAirspaceWithResponse(ctx context.Context, identifier string, reqEditors ...RequestEditorFn) (*GetUSpaceAirspaceResponse, error)
+
+	// ReplaceUSpaceAirspaceWithBodyWithResponse Draft a new version of a U-space airspace
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /v1/uspace/{identifier} (the `ReplaceUSpaceAirspace` operationId).
+	ReplaceUSpaceAirspaceWithBodyWithResponse(ctx context.Context, identifier string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceUSpaceAirspaceResponse, error)
+
+	// ReplaceUSpaceAirspaceWithResponse Draft a new version of a U-space airspace
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /v1/uspace/{identifier} (the `ReplaceUSpaceAirspace` operationId).
+	ReplaceUSpaceAirspaceWithResponse(ctx context.Context, identifier string, body ReplaceUSpaceAirspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceUSpaceAirspaceResponse, error)
+
+	// DesignateUSpaceAirspaceWithBodyWithResponse Designate (approve) a draft U-space airspace version
+	//
+	// Only the identifier's newest version, and only a draft (409 otherwise).
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/uspace/{identifier}/designate (the `DesignateUSpaceAirspace` operationId).
+	DesignateUSpaceAirspaceWithBodyWithResponse(ctx context.Context, identifier string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DesignateUSpaceAirspaceResponse, error)
+
+	// DesignateUSpaceAirspaceWithResponse Designate (approve) a draft U-space airspace version
+	//
+	// Only the identifier's newest version, and only a draft (409 otherwise).
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/uspace/{identifier}/designate (the `DesignateUSpaceAirspace` operationId).
+	DesignateUSpaceAirspaceWithResponse(ctx context.Context, identifier string, body DesignateUSpaceAirspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*DesignateUSpaceAirspaceResponse, error)
+
+	// ListUSpaceVersionsWithResponse A U-space airspace's versions, newest first
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/uspace/{identifier}/versions (the `ListUSpaceVersions` operationId).
+	ListUSpaceVersionsWithResponse(ctx context.Context, identifier string, params *ListUSpaceVersionsParams, reqEditors ...RequestEditorFn) (*ListUSpaceVersionsResponse, error)
+
+	// ListZonesWithResponse The newest version of every geo-zone, in identifier order
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/zones (the `ListZones` operationId).
+	ListZonesWithResponse(ctx context.Context, params *ListZonesParams, reqEditors ...RequestEditorFn) (*ListZonesResponse, error)
+
+	// CreateZoneWithBodyWithResponse Author a new geo-zone (version 1, draft)
+	//
+	// The feature must be an ED-318 UASZone feature that uspace-core
+	// ed318.Parse accepts, that ed318.ToZones can judge (rings, limits,
+	// an applicability it can evaluate), and of any type but USPACE
+	// (a U-space airspace is authored under /v1/uspace). 409 when the
+	// identifier is taken in either dataset.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/zones (the `CreateZone` operationId).
+	CreateZoneWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateZoneResponse, error)
+
+	// CreateZoneWithResponse Author a new geo-zone (version 1, draft)
+	//
+	// The feature must be an ED-318 UASZone feature that uspace-core
+	// ed318.Parse accepts, that ed318.ToZones can judge (rings, limits,
+	// an applicability it can evaluate), and of any type but USPACE
+	// (a U-space airspace is authored under /v1/uspace). 409 when the
+	// identifier is taken in either dataset.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/zones (the `CreateZone` operationId).
+	CreateZoneWithResponse(ctx context.Context, body CreateZoneJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateZoneResponse, error)
+
+	// ExportZonesWithResponse The published geo-zones as an ED-318 FeatureCollection
+	//
+	// Per identifier, the newest published version whose period of
+	// validity holds at the instant (both ends included): `at` when
+	// given, else the database's now. With `at` the features that do
+	// not apply at `at` (uspace-core ed318.Applies at the centre of the
+	// feature's bounding box) are left out and every feature whose
+	// applicability cannot be evaluated is kept with
+	// extendedProperties.cis_applicability `unknown`, never dropped.
+	// `applies_at` annotates without filtering: every feature carries
+	// extendedProperties.cis_applicability `applies`, `not_applicable`
+	// or `unknown` at that instant (M17). `at` and `applies_at`
+	// together are refused 400 filter_conflict. Daylight events are
+	// resolved by the ground package; until it is wired they cannot
+	// be (the answer is `unknown`). The collection metadata uses
+	// ed318.Metadata's names: `issued` (the database's now) and
+	// `provider` (ZONES_PROVIDER_NAME).
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/zones/export (the `ExportZones` operationId).
+	ExportZonesWithResponse(ctx context.Context, params *ExportZonesParams, reqEditors ...RequestEditorFn) (*ExportZonesResponse, error)
+
+	// ImportZonesWithBodyWithResponse Import an ED-318 or ED-269 file as drafts, all or nothing
+	//
+	// The body is the file's bytes (at most 4 MiB, uspace-core
+	// ed269.DefaultLimits; a UTF-8 byte order mark is accepted). The
+	// format is detected by its wrapper: a top-level `type`
+	// FeatureCollection is ED-318; `features` without it, or
+	// `UASZoneList`, is ED-269, parsed by ed269.Parse and mapped by
+	// ed318.FromED269 (what ED-318 cannot hold is refused by name).
+	// Every zone is validated as a single write is; the file is
+	// accepted whole (one draft version per zone, in one transaction)
+	// or refused whole with every problem by JSON path (at most 100,
+	// `truncated` beyond). The period of validity is `valid_from` and
+	// `valid_to`, else the ED-318 collection's metadata validFrom and
+	// validTo; without one the import is refused (947 Art. 15(3)).
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/zones/import (the `ImportZones` operationId).
+	ImportZonesWithBodyWithResponse(ctx context.Context, params *ImportZonesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ImportZonesResponse, error)
+
+	// ImportGovGeZonesWithBodyWithResponse Convert airspace.gov.ge's zone files with a rules file, then import
+	//
+	// airspace.gov.ge publishes no feed, no limits and no times (LESSONS
+	// Z-13): its zones are JavaScript variables in `points.js`
+	// (`var NAME_points = [[lat, lon], ...];` polygons, `var NAME_point
+	// = [lat, lon];` circle centres) and the circles' radii are in the
+	// page's `L.circle(NAME_point, {radius: <m>})` calls. The rules file
+	// says, per kind of zone (the variable name's last `_` part), the
+	// restriction, limits, applicability and reasons; a kind without a
+	// rule refuses the conversion by name. The result is an ED-269
+	// document imported exactly as /v1/zones/import does.
+	// docs/runbooks/zones.md documents the rules format. Nothing here
+	// fetches the site.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/zones/import/airspace-gov-ge (the `ImportGovGeZones` operationId).
+	ImportGovGeZonesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ImportGovGeZonesResponse, error)
+
+	// ImportGovGeZonesWithResponse Convert airspace.gov.ge's zone files with a rules file, then import
+	//
+	// airspace.gov.ge publishes no feed, no limits and no times (LESSONS
+	// Z-13): its zones are JavaScript variables in `points.js`
+	// (`var NAME_points = [[lat, lon], ...];` polygons, `var NAME_point
+	// = [lat, lon];` circle centres) and the circles' radii are in the
+	// page's `L.circle(NAME_point, {radius: <m>})` calls. The rules file
+	// says, per kind of zone (the variable name's last `_` part), the
+	// restriction, limits, applicability and reasons; a kind without a
+	// rule refuses the conversion by name. The result is an ED-269
+	// document imported exactly as /v1/zones/import does.
+	// docs/runbooks/zones.md documents the rules format. Nothing here
+	// fetches the site.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/zones/import/airspace-gov-ge (the `ImportGovGeZones` operationId).
+	ImportGovGeZonesWithResponse(ctx context.Context, body ImportGovGeZonesJSONRequestBody, reqEditors ...RequestEditorFn) (*ImportGovGeZonesResponse, error)
+
+	// PublishZonesWithResponse Publish every approved geo-zone version
+	//
+	// In one transaction under the zones advisory lock: every approved
+	// version becomes published under a new zones version and
+	// supersedes the identifier's older published versions; the zones
+	// projection is rewritten in the telemetry database (a failed write
+	// rolls the publication back, 503 projection_unavailable); the full
+	// set in force now is exported (ED-318, ed318.Export) into the F1
+	// outbox row of dataset `zones`, state `pending`, signature null
+	// until WP-6 signs and sends it. Then zones.v1.changed and KV
+	// zones_version announce the version. 409 nothing_to_publish when
+	// no version is approved.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/zones/publish (the `PublishZones` operationId).
+	PublishZonesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*PublishZonesResponse, error)
+
+	// GetZoneWithResponse The newest version of a geo-zone
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/zones/{identifier} (the `GetZone` operationId).
+	GetZoneWithResponse(ctx context.Context, identifier string, reqEditors ...RequestEditorFn) (*GetZoneResponse, error)
+
+	// ReplaceZoneWithBodyWithResponse Author a new version of a geo-zone (draft)
+	//
+	// Validated as a creation is; the feature's identifier must be the
+	// path's. The identifier's unpublished versions are superseded;
+	// its published version stays in force until this one is
+	// published.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /v1/zones/{identifier} (the `ReplaceZone` operationId).
+	ReplaceZoneWithBodyWithResponse(ctx context.Context, identifier string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceZoneResponse, error)
+
+	// ReplaceZoneWithResponse Author a new version of a geo-zone (draft)
+	//
+	// Validated as a creation is; the feature's identifier must be the
+	// path's. The identifier's unpublished versions are superseded;
+	// its published version stays in force until this one is
+	// published.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /v1/zones/{identifier} (the `ReplaceZone` operationId).
+	ReplaceZoneWithResponse(ctx context.Context, identifier string, body ReplaceZoneJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceZoneResponse, error)
+
+	// GetZoneApplicabilityWithResponse Whether a zone version applies at an instant
+	//
+	// uspace-core ed318.Applies over the version's limitedApplicability
+	// at the centre of its bounding box (the newest version unless
+	// `zone_version` names one). A daylight event (BMCT, SR, SS, EECT)
+	// needs the ground package's sunrise and sunset; until it is wired
+	// such a question is refused 503 daylight_unavailable rather than
+	// guessed. Any other event that cannot be resolved answers
+	// `unknown` with the reason.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/zones/{identifier}/applies (the `GetZoneApplicability` operationId).
+	GetZoneApplicabilityWithResponse(ctx context.Context, identifier string, params *GetZoneApplicabilityParams, reqEditors ...RequestEditorFn) (*GetZoneApplicabilityResponse, error)
+
+	// ApproveZoneWithBodyWithResponse Approve a draft version for publication
+	//
+	// Only the identifier's newest version, and only a draft (409 otherwise).
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/zones/{identifier}/approve (the `ApproveZone` operationId).
+	ApproveZoneWithBodyWithResponse(ctx context.Context, identifier string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApproveZoneResponse, error)
+
+	// ApproveZoneWithResponse Approve a draft version for publication
+	//
+	// Only the identifier's newest version, and only a draft (409 otherwise).
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/zones/{identifier}/approve (the `ApproveZone` operationId).
+	ApproveZoneWithResponse(ctx context.Context, identifier string, body ApproveZoneJSONRequestBody, reqEditors ...RequestEditorFn) (*ApproveZoneResponse, error)
+
+	// ListZoneVersionsWithResponse A geo-zone's versions, newest first
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/zones/{identifier}/versions (the `ListZoneVersions` operationId).
+	ListZoneVersionsWithResponse(ctx context.Context, identifier string, params *ListZoneVersionsParams, reqEditors ...RequestEditorFn) (*ListZoneVersionsResponse, error)
 }
 
 // GetJWKSResponse200Headers the declared response headers of an HTTP 200 response for GetJWKS
@@ -12420,6 +15180,905 @@ func (r RevokeUserSessionsResponse) ContentType() string {
 	return ""
 }
 
+type ListUSpaceAirspacesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ZoneVersionList
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListUSpaceAirspacesResponse) GetJSON200() *ZoneVersionList {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ListUSpaceAirspacesResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListUSpaceAirspacesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListUSpaceAirspacesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListUSpaceAirspacesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListUSpaceAirspacesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateUSpaceAirspaceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *ZoneVersion
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateUSpaceAirspaceResponse) GetJSON201() *ZoneVersion {
+	return r.JSON201
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r CreateUSpaceAirspaceResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateUSpaceAirspaceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateUSpaceAirspaceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateUSpaceAirspaceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateUSpaceAirspaceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PublishUSpaceAirspacesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ZonePublication
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PublishUSpaceAirspacesResponse) GetJSON200() *ZonePublication {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r PublishUSpaceAirspacesResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r PublishUSpaceAirspacesResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r PublishUSpaceAirspacesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PublishUSpaceAirspacesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PublishUSpaceAirspacesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PublishUSpaceAirspacesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetUSpaceAirspaceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ZoneVersion
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetUSpaceAirspaceResponse) GetJSON200() *ZoneVersion {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetUSpaceAirspaceResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetUSpaceAirspaceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetUSpaceAirspaceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetUSpaceAirspaceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetUSpaceAirspaceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ReplaceUSpaceAirspaceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *ZoneVersion
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r ReplaceUSpaceAirspaceResponse) GetJSON201() *ZoneVersion {
+	return r.JSON201
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ReplaceUSpaceAirspaceResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ReplaceUSpaceAirspaceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ReplaceUSpaceAirspaceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReplaceUSpaceAirspaceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ReplaceUSpaceAirspaceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DesignateUSpaceAirspaceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ZoneVersion
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r DesignateUSpaceAirspaceResponse) GetJSON200() *ZoneVersion {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r DesignateUSpaceAirspaceResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r DesignateUSpaceAirspaceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DesignateUSpaceAirspaceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DesignateUSpaceAirspaceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DesignateUSpaceAirspaceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListUSpaceVersionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ZoneVersionPage
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListUSpaceVersionsResponse) GetJSON200() *ZoneVersionPage {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ListUSpaceVersionsResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListUSpaceVersionsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListUSpaceVersionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListUSpaceVersionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListUSpaceVersionsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListZonesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ZoneVersionList
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListZonesResponse) GetJSON200() *ZoneVersionList {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ListZonesResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListZonesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListZonesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListZonesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListZonesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateZoneResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *ZoneVersion
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateZoneResponse) GetJSON201() *ZoneVersion {
+	return r.JSON201
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r CreateZoneResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateZoneResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateZoneResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateZoneResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateZoneResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ExportZonesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// ApplicationgeoJSON200 the response for an HTTP 200 `application/geo+json` response
+	ApplicationgeoJSON200 *ED318Collection
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetApplicationgeoJSON200 returns the response for an HTTP 200 `application/geo+json` response
+func (r ExportZonesResponse) GetApplicationgeoJSON200() *ED318Collection {
+	return r.ApplicationgeoJSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ExportZonesResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ExportZonesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ExportZonesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ExportZonesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ExportZonesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ImportZonesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *ZoneImportResult
+	// ApplicationproblemJSON413 the response for an HTTP 413 `application/problem+json` response
+	ApplicationproblemJSON413 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r ImportZonesResponse) GetJSON201() *ZoneImportResult {
+	return r.JSON201
+}
+
+// GetApplicationproblemJSON413 returns the response for an HTTP 413 `application/problem+json` response
+func (r ImportZonesResponse) GetApplicationproblemJSON413() *Problem {
+	return r.ApplicationproblemJSON413
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ImportZonesResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ImportZonesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ImportZonesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ImportZonesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ImportZonesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ImportGovGeZonesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *ZoneImportResult
+	// ApplicationproblemJSON413 the response for an HTTP 413 `application/problem+json` response
+	ApplicationproblemJSON413 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r ImportGovGeZonesResponse) GetJSON201() *ZoneImportResult {
+	return r.JSON201
+}
+
+// GetApplicationproblemJSON413 returns the response for an HTTP 413 `application/problem+json` response
+func (r ImportGovGeZonesResponse) GetApplicationproblemJSON413() *Problem {
+	return r.ApplicationproblemJSON413
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ImportGovGeZonesResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ImportGovGeZonesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ImportGovGeZonesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ImportGovGeZonesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ImportGovGeZonesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PublishZonesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ZonePublication
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PublishZonesResponse) GetJSON200() *ZonePublication {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r PublishZonesResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r PublishZonesResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r PublishZonesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PublishZonesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PublishZonesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PublishZonesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetZoneResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ZoneVersion
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetZoneResponse) GetJSON200() *ZoneVersion {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetZoneResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetZoneResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetZoneResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetZoneResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetZoneResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ReplaceZoneResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *ZoneVersion
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r ReplaceZoneResponse) GetJSON201() *ZoneVersion {
+	return r.JSON201
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ReplaceZoneResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ReplaceZoneResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ReplaceZoneResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReplaceZoneResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ReplaceZoneResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetZoneApplicabilityResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ZoneApplicability
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetZoneApplicabilityResponse) GetJSON200() *ZoneApplicability {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r GetZoneApplicabilityResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetZoneApplicabilityResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetZoneApplicabilityResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetZoneApplicabilityResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetZoneApplicabilityResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetZoneApplicabilityResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ApproveZoneResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ZoneVersion
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ApproveZoneResponse) GetJSON200() *ZoneVersion {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ApproveZoneResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ApproveZoneResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ApproveZoneResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ApproveZoneResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ApproveZoneResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListZoneVersionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ZoneVersionPage
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListZoneVersionsResponse) GetJSON200() *ZoneVersionPage {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ListZoneVersionsResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListZoneVersionsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListZoneVersionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListZoneVersionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListZoneVersionsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // GetJWKSWithResponse The issuer's public keys
 //
 // Every RS256 key a verifier may meet (`use: sig`, distinguished by
@@ -13997,6 +17656,448 @@ func (c *ClientWithResponses) RevokeUserSessionsWithResponse(ctx context.Context
 		return nil, err
 	}
 	return ParseRevokeUserSessionsResponse(rsp)
+}
+
+// ListUSpaceAirspacesWithResponse The newest version of every U-space airspace
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/uspace (the `ListUSpaceAirspaces` operationId).
+func (c *ClientWithResponses) ListUSpaceAirspacesWithResponse(ctx context.Context, params *ListUSpaceAirspacesParams, reqEditors ...RequestEditorFn) (*ListUSpaceAirspacesResponse, error) {
+	rsp, err := c.ListUSpaceAirspaces(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListUSpaceAirspacesResponse(rsp)
+}
+
+// CreateUSpaceAirspaceWithBodyWithResponse Draft a U-space airspace designation (version 1)
+//
+// The feature is an ED-318 feature of type USPACE without
+// extendedProperties.uspace_requirements: this service writes that
+// block from `designation`. services_required always holds NID,
+// GEO, FA and TI (Art. 3(3)); WX and CM are optional.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/uspace (the `CreateUSpaceAirspace` operationId).
+func (c *ClientWithResponses) CreateUSpaceAirspaceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateUSpaceAirspaceResponse, error) {
+	rsp, err := c.CreateUSpaceAirspaceWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateUSpaceAirspaceResponse(rsp)
+}
+
+// CreateUSpaceAirspaceWithResponse Draft a U-space airspace designation (version 1)
+//
+// The feature is an ED-318 feature of type USPACE without
+// extendedProperties.uspace_requirements: this service writes that
+// block from `designation`. services_required always holds NID,
+// GEO, FA and TI (Art. 3(3)); WX and CM are optional.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/uspace (the `CreateUSpaceAirspace` operationId).
+func (c *ClientWithResponses) CreateUSpaceAirspaceWithResponse(ctx context.Context, body CreateUSpaceAirspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateUSpaceAirspaceResponse, error) {
+	rsp, err := c.CreateUSpaceAirspace(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateUSpaceAirspaceResponse(rsp)
+}
+
+// PublishUSpaceAirspacesWithResponse Publish every designated U-space airspace version
+//
+// As /v1/zones/publish, for the dataset `uspace_airspace`. Every
+// `adjacent` identifier must be a U-space airspace of the same
+// publication (cis/uspace_requirements/v1); otherwise 409, naming
+// it.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/uspace/publish (the `PublishUSpaceAirspaces` operationId).
+func (c *ClientWithResponses) PublishUSpaceAirspacesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*PublishUSpaceAirspacesResponse, error) {
+	rsp, err := c.PublishUSpaceAirspaces(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePublishUSpaceAirspacesResponse(rsp)
+}
+
+// GetUSpaceAirspaceWithResponse The newest version of a U-space airspace
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/uspace/{identifier} (the `GetUSpaceAirspace` operationId).
+func (c *ClientWithResponses) GetUSpaceAirspaceWithResponse(ctx context.Context, identifier string, reqEditors ...RequestEditorFn) (*GetUSpaceAirspaceResponse, error) {
+	rsp, err := c.GetUSpaceAirspace(ctx, identifier, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetUSpaceAirspaceResponse(rsp)
+}
+
+// ReplaceUSpaceAirspaceWithBodyWithResponse Draft a new version of a U-space airspace
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /v1/uspace/{identifier} (the `ReplaceUSpaceAirspace` operationId).
+func (c *ClientWithResponses) ReplaceUSpaceAirspaceWithBodyWithResponse(ctx context.Context, identifier string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceUSpaceAirspaceResponse, error) {
+	rsp, err := c.ReplaceUSpaceAirspaceWithBody(ctx, identifier, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceUSpaceAirspaceResponse(rsp)
+}
+
+// ReplaceUSpaceAirspaceWithResponse Draft a new version of a U-space airspace
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /v1/uspace/{identifier} (the `ReplaceUSpaceAirspace` operationId).
+func (c *ClientWithResponses) ReplaceUSpaceAirspaceWithResponse(ctx context.Context, identifier string, body ReplaceUSpaceAirspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceUSpaceAirspaceResponse, error) {
+	rsp, err := c.ReplaceUSpaceAirspace(ctx, identifier, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceUSpaceAirspaceResponse(rsp)
+}
+
+// DesignateUSpaceAirspaceWithBodyWithResponse Designate (approve) a draft U-space airspace version
+//
+// Only the identifier's newest version, and only a draft (409 otherwise).
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/uspace/{identifier}/designate (the `DesignateUSpaceAirspace` operationId).
+func (c *ClientWithResponses) DesignateUSpaceAirspaceWithBodyWithResponse(ctx context.Context, identifier string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DesignateUSpaceAirspaceResponse, error) {
+	rsp, err := c.DesignateUSpaceAirspaceWithBody(ctx, identifier, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDesignateUSpaceAirspaceResponse(rsp)
+}
+
+// DesignateUSpaceAirspaceWithResponse Designate (approve) a draft U-space airspace version
+//
+// Only the identifier's newest version, and only a draft (409 otherwise).
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/uspace/{identifier}/designate (the `DesignateUSpaceAirspace` operationId).
+func (c *ClientWithResponses) DesignateUSpaceAirspaceWithResponse(ctx context.Context, identifier string, body DesignateUSpaceAirspaceJSONRequestBody, reqEditors ...RequestEditorFn) (*DesignateUSpaceAirspaceResponse, error) {
+	rsp, err := c.DesignateUSpaceAirspace(ctx, identifier, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDesignateUSpaceAirspaceResponse(rsp)
+}
+
+// ListUSpaceVersionsWithResponse A U-space airspace's versions, newest first
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/uspace/{identifier}/versions (the `ListUSpaceVersions` operationId).
+func (c *ClientWithResponses) ListUSpaceVersionsWithResponse(ctx context.Context, identifier string, params *ListUSpaceVersionsParams, reqEditors ...RequestEditorFn) (*ListUSpaceVersionsResponse, error) {
+	rsp, err := c.ListUSpaceVersions(ctx, identifier, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListUSpaceVersionsResponse(rsp)
+}
+
+// ListZonesWithResponse The newest version of every geo-zone, in identifier order
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/zones (the `ListZones` operationId).
+func (c *ClientWithResponses) ListZonesWithResponse(ctx context.Context, params *ListZonesParams, reqEditors ...RequestEditorFn) (*ListZonesResponse, error) {
+	rsp, err := c.ListZones(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListZonesResponse(rsp)
+}
+
+// CreateZoneWithBodyWithResponse Author a new geo-zone (version 1, draft)
+//
+// The feature must be an ED-318 UASZone feature that uspace-core
+// ed318.Parse accepts, that ed318.ToZones can judge (rings, limits,
+// an applicability it can evaluate), and of any type but USPACE
+// (a U-space airspace is authored under /v1/uspace). 409 when the
+// identifier is taken in either dataset.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/zones (the `CreateZone` operationId).
+func (c *ClientWithResponses) CreateZoneWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateZoneResponse, error) {
+	rsp, err := c.CreateZoneWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateZoneResponse(rsp)
+}
+
+// CreateZoneWithResponse Author a new geo-zone (version 1, draft)
+//
+// The feature must be an ED-318 UASZone feature that uspace-core
+// ed318.Parse accepts, that ed318.ToZones can judge (rings, limits,
+// an applicability it can evaluate), and of any type but USPACE
+// (a U-space airspace is authored under /v1/uspace). 409 when the
+// identifier is taken in either dataset.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/zones (the `CreateZone` operationId).
+func (c *ClientWithResponses) CreateZoneWithResponse(ctx context.Context, body CreateZoneJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateZoneResponse, error) {
+	rsp, err := c.CreateZone(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateZoneResponse(rsp)
+}
+
+// ExportZonesWithResponse The published geo-zones as an ED-318 FeatureCollection
+//
+// Per identifier, the newest published version whose period of
+// validity holds at the instant (both ends included): `at` when
+// given, else the database's now. With `at` the features that do
+// not apply at `at` (uspace-core ed318.Applies at the centre of the
+// feature's bounding box) are left out and every feature whose
+// applicability cannot be evaluated is kept with
+// extendedProperties.cis_applicability `unknown`, never dropped.
+// `applies_at` annotates without filtering: every feature carries
+// extendedProperties.cis_applicability `applies`, `not_applicable`
+// or `unknown` at that instant (M17). `at` and `applies_at`
+// together are refused 400 filter_conflict. Daylight events are
+// resolved by the ground package; until it is wired they cannot
+// be (the answer is `unknown`). The collection metadata uses
+// ed318.Metadata's names: `issued` (the database's now) and
+// `provider` (ZONES_PROVIDER_NAME).
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/zones/export (the `ExportZones` operationId).
+func (c *ClientWithResponses) ExportZonesWithResponse(ctx context.Context, params *ExportZonesParams, reqEditors ...RequestEditorFn) (*ExportZonesResponse, error) {
+	rsp, err := c.ExportZones(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseExportZonesResponse(rsp)
+}
+
+// ImportZonesWithBodyWithResponse Import an ED-318 or ED-269 file as drafts, all or nothing
+//
+// The body is the file's bytes (at most 4 MiB, uspace-core
+// ed269.DefaultLimits; a UTF-8 byte order mark is accepted). The
+// format is detected by its wrapper: a top-level `type`
+// FeatureCollection is ED-318; `features` without it, or
+// `UASZoneList`, is ED-269, parsed by ed269.Parse and mapped by
+// ed318.FromED269 (what ED-318 cannot hold is refused by name).
+// Every zone is validated as a single write is; the file is
+// accepted whole (one draft version per zone, in one transaction)
+// or refused whole with every problem by JSON path (at most 100,
+// `truncated` beyond). The period of validity is `valid_from` and
+// `valid_to`, else the ED-318 collection's metadata validFrom and
+// validTo; without one the import is refused (947 Art. 15(3)).
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/zones/import (the `ImportZones` operationId).
+func (c *ClientWithResponses) ImportZonesWithBodyWithResponse(ctx context.Context, params *ImportZonesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ImportZonesResponse, error) {
+	rsp, err := c.ImportZonesWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseImportZonesResponse(rsp)
+}
+
+// ImportGovGeZonesWithBodyWithResponse Convert airspace.gov.ge's zone files with a rules file, then import
+//
+// airspace.gov.ge publishes no feed, no limits and no times (LESSONS
+// Z-13): its zones are JavaScript variables in `points.js`
+// (`var NAME_points = [[lat, lon], ...];` polygons, `var NAME_point
+// = [lat, lon];` circle centres) and the circles' radii are in the
+// page's `L.circle(NAME_point, {radius: <m>})` calls. The rules file
+// says, per kind of zone (the variable name's last `_` part), the
+// restriction, limits, applicability and reasons; a kind without a
+// rule refuses the conversion by name. The result is an ED-269
+// document imported exactly as /v1/zones/import does.
+// docs/runbooks/zones.md documents the rules format. Nothing here
+// fetches the site.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/zones/import/airspace-gov-ge (the `ImportGovGeZones` operationId).
+func (c *ClientWithResponses) ImportGovGeZonesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ImportGovGeZonesResponse, error) {
+	rsp, err := c.ImportGovGeZonesWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseImportGovGeZonesResponse(rsp)
+}
+
+// ImportGovGeZonesWithResponse Convert airspace.gov.ge's zone files with a rules file, then import
+//
+// airspace.gov.ge publishes no feed, no limits and no times (LESSONS
+// Z-13): its zones are JavaScript variables in `points.js`
+// (`var NAME_points = [[lat, lon], ...];` polygons, `var NAME_point
+// = [lat, lon];` circle centres) and the circles' radii are in the
+// page's `L.circle(NAME_point, {radius: <m>})` calls. The rules file
+// says, per kind of zone (the variable name's last `_` part), the
+// restriction, limits, applicability and reasons; a kind without a
+// rule refuses the conversion by name. The result is an ED-269
+// document imported exactly as /v1/zones/import does.
+// docs/runbooks/zones.md documents the rules format. Nothing here
+// fetches the site.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/zones/import/airspace-gov-ge (the `ImportGovGeZones` operationId).
+func (c *ClientWithResponses) ImportGovGeZonesWithResponse(ctx context.Context, body ImportGovGeZonesJSONRequestBody, reqEditors ...RequestEditorFn) (*ImportGovGeZonesResponse, error) {
+	rsp, err := c.ImportGovGeZones(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseImportGovGeZonesResponse(rsp)
+}
+
+// PublishZonesWithResponse Publish every approved geo-zone version
+//
+// In one transaction under the zones advisory lock: every approved
+// version becomes published under a new zones version and
+// supersedes the identifier's older published versions; the zones
+// projection is rewritten in the telemetry database (a failed write
+// rolls the publication back, 503 projection_unavailable); the full
+// set in force now is exported (ED-318, ed318.Export) into the F1
+// outbox row of dataset `zones`, state `pending`, signature null
+// until WP-6 signs and sends it. Then zones.v1.changed and KV
+// zones_version announce the version. 409 nothing_to_publish when
+// no version is approved.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/zones/publish (the `PublishZones` operationId).
+func (c *ClientWithResponses) PublishZonesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*PublishZonesResponse, error) {
+	rsp, err := c.PublishZones(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePublishZonesResponse(rsp)
+}
+
+// GetZoneWithResponse The newest version of a geo-zone
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/zones/{identifier} (the `GetZone` operationId).
+func (c *ClientWithResponses) GetZoneWithResponse(ctx context.Context, identifier string, reqEditors ...RequestEditorFn) (*GetZoneResponse, error) {
+	rsp, err := c.GetZone(ctx, identifier, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetZoneResponse(rsp)
+}
+
+// ReplaceZoneWithBodyWithResponse Author a new version of a geo-zone (draft)
+//
+// Validated as a creation is; the feature's identifier must be the
+// path's. The identifier's unpublished versions are superseded;
+// its published version stays in force until this one is
+// published.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /v1/zones/{identifier} (the `ReplaceZone` operationId).
+func (c *ClientWithResponses) ReplaceZoneWithBodyWithResponse(ctx context.Context, identifier string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceZoneResponse, error) {
+	rsp, err := c.ReplaceZoneWithBody(ctx, identifier, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceZoneResponse(rsp)
+}
+
+// ReplaceZoneWithResponse Author a new version of a geo-zone (draft)
+//
+// Validated as a creation is; the feature's identifier must be the
+// path's. The identifier's unpublished versions are superseded;
+// its published version stays in force until this one is
+// published.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /v1/zones/{identifier} (the `ReplaceZone` operationId).
+func (c *ClientWithResponses) ReplaceZoneWithResponse(ctx context.Context, identifier string, body ReplaceZoneJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceZoneResponse, error) {
+	rsp, err := c.ReplaceZone(ctx, identifier, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceZoneResponse(rsp)
+}
+
+// GetZoneApplicabilityWithResponse Whether a zone version applies at an instant
+//
+// uspace-core ed318.Applies over the version's limitedApplicability
+// at the centre of its bounding box (the newest version unless
+// `zone_version` names one). A daylight event (BMCT, SR, SS, EECT)
+// needs the ground package's sunrise and sunset; until it is wired
+// such a question is refused 503 daylight_unavailable rather than
+// guessed. Any other event that cannot be resolved answers
+// `unknown` with the reason.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/zones/{identifier}/applies (the `GetZoneApplicability` operationId).
+func (c *ClientWithResponses) GetZoneApplicabilityWithResponse(ctx context.Context, identifier string, params *GetZoneApplicabilityParams, reqEditors ...RequestEditorFn) (*GetZoneApplicabilityResponse, error) {
+	rsp, err := c.GetZoneApplicability(ctx, identifier, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetZoneApplicabilityResponse(rsp)
+}
+
+// ApproveZoneWithBodyWithResponse Approve a draft version for publication
+//
+// Only the identifier's newest version, and only a draft (409 otherwise).
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/zones/{identifier}/approve (the `ApproveZone` operationId).
+func (c *ClientWithResponses) ApproveZoneWithBodyWithResponse(ctx context.Context, identifier string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApproveZoneResponse, error) {
+	rsp, err := c.ApproveZoneWithBody(ctx, identifier, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseApproveZoneResponse(rsp)
+}
+
+// ApproveZoneWithResponse Approve a draft version for publication
+//
+// Only the identifier's newest version, and only a draft (409 otherwise).
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/zones/{identifier}/approve (the `ApproveZone` operationId).
+func (c *ClientWithResponses) ApproveZoneWithResponse(ctx context.Context, identifier string, body ApproveZoneJSONRequestBody, reqEditors ...RequestEditorFn) (*ApproveZoneResponse, error) {
+	rsp, err := c.ApproveZone(ctx, identifier, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseApproveZoneResponse(rsp)
+}
+
+// ListZoneVersionsWithResponse A geo-zone's versions, newest first
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/zones/{identifier}/versions (the `ListZoneVersions` operationId).
+func (c *ClientWithResponses) ListZoneVersionsWithResponse(ctx context.Context, identifier string, params *ListZoneVersionsParams, reqEditors ...RequestEditorFn) (*ListZoneVersionsResponse, error) {
+	rsp, err := c.ListZoneVersions(ctx, identifier, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListZoneVersionsResponse(rsp)
 }
 
 // ParseGetJWKSResponse parses an HTTP response from a GetJWKSWithResponse call
@@ -16430,6 +20531,635 @@ func ParseRevokeUserSessionsResponse(rsp *http.Response) (*RevokeUserSessionsRes
 	return response, nil
 }
 
+// ParseListUSpaceAirspacesResponse parses an HTTP response from a ListUSpaceAirspacesWithResponse call
+func ParseListUSpaceAirspacesResponse(rsp *http.Response) (*ListUSpaceAirspacesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListUSpaceAirspacesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ZoneVersionList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateUSpaceAirspaceResponse parses an HTTP response from a CreateUSpaceAirspaceWithResponse call
+func ParseCreateUSpaceAirspaceResponse(rsp *http.Response) (*CreateUSpaceAirspaceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateUSpaceAirspaceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest ZoneVersion
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePublishUSpaceAirspacesResponse parses an HTTP response from a PublishUSpaceAirspacesWithResponse call
+func ParsePublishUSpaceAirspacesResponse(rsp *http.Response) (*PublishUSpaceAirspacesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PublishUSpaceAirspacesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ZonePublication
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetUSpaceAirspaceResponse parses an HTTP response from a GetUSpaceAirspaceWithResponse call
+func ParseGetUSpaceAirspaceResponse(rsp *http.Response) (*GetUSpaceAirspaceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetUSpaceAirspaceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ZoneVersion
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReplaceUSpaceAirspaceResponse parses an HTTP response from a ReplaceUSpaceAirspaceWithResponse call
+func ParseReplaceUSpaceAirspaceResponse(rsp *http.Response) (*ReplaceUSpaceAirspaceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReplaceUSpaceAirspaceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest ZoneVersion
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDesignateUSpaceAirspaceResponse parses an HTTP response from a DesignateUSpaceAirspaceWithResponse call
+func ParseDesignateUSpaceAirspaceResponse(rsp *http.Response) (*DesignateUSpaceAirspaceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DesignateUSpaceAirspaceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ZoneVersion
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListUSpaceVersionsResponse parses an HTTP response from a ListUSpaceVersionsWithResponse call
+func ParseListUSpaceVersionsResponse(rsp *http.Response) (*ListUSpaceVersionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListUSpaceVersionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ZoneVersionPage
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListZonesResponse parses an HTTP response from a ListZonesWithResponse call
+func ParseListZonesResponse(rsp *http.Response) (*ListZonesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListZonesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ZoneVersionList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateZoneResponse parses an HTTP response from a CreateZoneWithResponse call
+func ParseCreateZoneResponse(rsp *http.Response) (*CreateZoneResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateZoneResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest ZoneVersion
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseExportZonesResponse parses an HTTP response from a ExportZonesWithResponse call
+func ParseExportZonesResponse(rsp *http.Response) (*ExportZonesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ExportZonesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ED318Collection
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationgeoJSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseImportZonesResponse parses an HTTP response from a ImportZonesWithResponse call
+func ParseImportZonesResponse(rsp *http.Response) (*ImportZonesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ImportZonesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest ZoneImportResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseImportGovGeZonesResponse parses an HTTP response from a ImportGovGeZonesWithResponse call
+func ParseImportGovGeZonesResponse(rsp *http.Response) (*ImportGovGeZonesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ImportGovGeZonesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest ZoneImportResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePublishZonesResponse parses an HTTP response from a PublishZonesWithResponse call
+func ParsePublishZonesResponse(rsp *http.Response) (*PublishZonesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PublishZonesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ZonePublication
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetZoneResponse parses an HTTP response from a GetZoneWithResponse call
+func ParseGetZoneResponse(rsp *http.Response) (*GetZoneResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetZoneResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ZoneVersion
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReplaceZoneResponse parses an HTTP response from a ReplaceZoneWithResponse call
+func ParseReplaceZoneResponse(rsp *http.Response) (*ReplaceZoneResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReplaceZoneResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest ZoneVersion
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetZoneApplicabilityResponse parses an HTTP response from a GetZoneApplicabilityWithResponse call
+func ParseGetZoneApplicabilityResponse(rsp *http.Response) (*GetZoneApplicabilityResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetZoneApplicabilityResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ZoneApplicability
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseApproveZoneResponse parses an HTTP response from a ApproveZoneWithResponse call
+func ParseApproveZoneResponse(rsp *http.Response) (*ApproveZoneResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ApproveZoneResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ZoneVersion
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListZoneVersionsResponse parses an HTTP response from a ListZoneVersionsWithResponse call
+func ParseListZoneVersionsResponse(rsp *http.Response) (*ListZoneVersionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListZoneVersionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ZoneVersionPage
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// GetJWKS The issuer's public keys
@@ -16624,6 +21354,60 @@ type ServerInterface interface {
 	// RevokeUserSessions Revoke every session of an account
 	// (POST /v1/users/{user_id}/sessions/revoke)
 	RevokeUserSessions(w http.ResponseWriter, r *http.Request, userId string)
+	// ListUSpaceAirspaces The newest version of every U-space airspace
+	// (GET /v1/uspace)
+	ListUSpaceAirspaces(w http.ResponseWriter, r *http.Request, params ListUSpaceAirspacesParams)
+	// CreateUSpaceAirspace Draft a U-space airspace designation (version 1)
+	// (POST /v1/uspace)
+	CreateUSpaceAirspace(w http.ResponseWriter, r *http.Request)
+	// PublishUSpaceAirspaces Publish every designated U-space airspace version
+	// (POST /v1/uspace/publish)
+	PublishUSpaceAirspaces(w http.ResponseWriter, r *http.Request)
+	// GetUSpaceAirspace The newest version of a U-space airspace
+	// (GET /v1/uspace/{identifier})
+	GetUSpaceAirspace(w http.ResponseWriter, r *http.Request, identifier string)
+	// ReplaceUSpaceAirspace Draft a new version of a U-space airspace
+	// (PUT /v1/uspace/{identifier})
+	ReplaceUSpaceAirspace(w http.ResponseWriter, r *http.Request, identifier string)
+	// DesignateUSpaceAirspace Designate (approve) a draft U-space airspace version
+	// (POST /v1/uspace/{identifier}/designate)
+	DesignateUSpaceAirspace(w http.ResponseWriter, r *http.Request, identifier string)
+	// ListUSpaceVersions A U-space airspace's versions, newest first
+	// (GET /v1/uspace/{identifier}/versions)
+	ListUSpaceVersions(w http.ResponseWriter, r *http.Request, identifier string, params ListUSpaceVersionsParams)
+	// ListZones The newest version of every geo-zone, in identifier order
+	// (GET /v1/zones)
+	ListZones(w http.ResponseWriter, r *http.Request, params ListZonesParams)
+	// CreateZone Author a new geo-zone (version 1, draft)
+	// (POST /v1/zones)
+	CreateZone(w http.ResponseWriter, r *http.Request)
+	// ExportZones The published geo-zones as an ED-318 FeatureCollection
+	// (GET /v1/zones/export)
+	ExportZones(w http.ResponseWriter, r *http.Request, params ExportZonesParams)
+	// ImportZones Import an ED-318 or ED-269 file as drafts, all or nothing
+	// (POST /v1/zones/import)
+	ImportZones(w http.ResponseWriter, r *http.Request, params ImportZonesParams)
+	// ImportGovGeZones Convert airspace.gov.ge's zone files with a rules file, then import
+	// (POST /v1/zones/import/airspace-gov-ge)
+	ImportGovGeZones(w http.ResponseWriter, r *http.Request)
+	// PublishZones Publish every approved geo-zone version
+	// (POST /v1/zones/publish)
+	PublishZones(w http.ResponseWriter, r *http.Request)
+	// GetZone The newest version of a geo-zone
+	// (GET /v1/zones/{identifier})
+	GetZone(w http.ResponseWriter, r *http.Request, identifier string)
+	// ReplaceZone Author a new version of a geo-zone (draft)
+	// (PUT /v1/zones/{identifier})
+	ReplaceZone(w http.ResponseWriter, r *http.Request, identifier string)
+	// GetZoneApplicability Whether a zone version applies at an instant
+	// (GET /v1/zones/{identifier}/applies)
+	GetZoneApplicability(w http.ResponseWriter, r *http.Request, identifier string, params GetZoneApplicabilityParams)
+	// ApproveZone Approve a draft version for publication
+	// (POST /v1/zones/{identifier}/approve)
+	ApproveZone(w http.ResponseWriter, r *http.Request, identifier string)
+	// ListZoneVersions A geo-zone's versions, newest first
+	// (GET /v1/zones/{identifier}/versions)
+	ListZoneVersions(w http.ResponseWriter, r *http.Request, identifier string, params ListZoneVersionsParams)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -18532,6 +23316,620 @@ func (siw *ServerInterfaceWrapper) RevokeUserSessions(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// ListUSpaceAirspaces operation middleware
+func (siw *ServerInterfaceWrapper) ListUSpaceAirspaces(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListUSpaceAirspacesParams
+
+	// ------------- Optional query parameter "state" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "after" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "after", r.URL.Query(), &params.After, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "after"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "after", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListUSpaceAirspaces(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateUSpaceAirspace operation middleware
+func (siw *ServerInterfaceWrapper) CreateUSpaceAirspace(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateUSpaceAirspace(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PublishUSpaceAirspaces operation middleware
+func (siw *ServerInterfaceWrapper) PublishUSpaceAirspaces(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PublishUSpaceAirspaces(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetUSpaceAirspace operation middleware
+func (siw *ServerInterfaceWrapper) GetUSpaceAirspace(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "identifier" -------------
+	var identifier string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "identifier", r.PathValue("identifier"), &identifier, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "identifier", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetUSpaceAirspace(w, r, identifier)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReplaceUSpaceAirspace operation middleware
+func (siw *ServerInterfaceWrapper) ReplaceUSpaceAirspace(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "identifier" -------------
+	var identifier string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "identifier", r.PathValue("identifier"), &identifier, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "identifier", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReplaceUSpaceAirspace(w, r, identifier)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DesignateUSpaceAirspace operation middleware
+func (siw *ServerInterfaceWrapper) DesignateUSpaceAirspace(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "identifier" -------------
+	var identifier string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "identifier", r.PathValue("identifier"), &identifier, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "identifier", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DesignateUSpaceAirspace(w, r, identifier)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListUSpaceVersions operation middleware
+func (siw *ServerInterfaceWrapper) ListUSpaceVersions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "identifier" -------------
+	var identifier string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "identifier", r.PathValue("identifier"), &identifier, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "identifier", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListUSpaceVersionsParams
+
+	// ------------- Optional query parameter "before" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "before", r.URL.Query(), &params.Before, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "before"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "before", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListUSpaceVersions(w, r, identifier, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListZones operation middleware
+func (siw *ServerInterfaceWrapper) ListZones(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListZonesParams
+
+	// ------------- Optional query parameter "state" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "after" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "after", r.URL.Query(), &params.After, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "after"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "after", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListZones(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateZone operation middleware
+func (siw *ServerInterfaceWrapper) CreateZone(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateZone(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ExportZones operation middleware
+func (siw *ServerInterfaceWrapper) ExportZones(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ExportZonesParams
+
+	// ------------- Optional query parameter "at" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "at", r.URL.Query(), &params.At, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "at"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "at", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "applies_at" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "applies_at", r.URL.Query(), &params.AppliesAt, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "applies_at"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "applies_at", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ExportZones(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ImportZones operation middleware
+func (siw *ServerInterfaceWrapper) ImportZones(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ImportZonesParams
+
+	// ------------- Optional query parameter "valid_from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "valid_from", r.URL.Query(), &params.ValidFrom, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "valid_from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "valid_from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "valid_to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "valid_to", r.URL.Query(), &params.ValidTo, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "valid_to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "valid_to", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "lang" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "lang", r.URL.Query(), &params.Lang, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "lang"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "lang", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ImportZones(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ImportGovGeZones operation middleware
+func (siw *ServerInterfaceWrapper) ImportGovGeZones(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ImportGovGeZones(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PublishZones operation middleware
+func (siw *ServerInterfaceWrapper) PublishZones(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PublishZones(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetZone operation middleware
+func (siw *ServerInterfaceWrapper) GetZone(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "identifier" -------------
+	var identifier string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "identifier", r.PathValue("identifier"), &identifier, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "identifier", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetZone(w, r, identifier)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReplaceZone operation middleware
+func (siw *ServerInterfaceWrapper) ReplaceZone(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "identifier" -------------
+	var identifier string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "identifier", r.PathValue("identifier"), &identifier, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "identifier", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReplaceZone(w, r, identifier)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetZoneApplicability operation middleware
+func (siw *ServerInterfaceWrapper) GetZoneApplicability(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "identifier" -------------
+	var identifier string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "identifier", r.PathValue("identifier"), &identifier, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "identifier", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetZoneApplicabilityParams
+
+	// ------------- Required query parameter "at" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "at", r.URL.Query(), &params.At, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "at"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "at", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "zone_version" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "zone_version", r.URL.Query(), &params.ZoneVersion, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "zone_version"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "zone_version", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetZoneApplicability(w, r, identifier, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ApproveZone operation middleware
+func (siw *ServerInterfaceWrapper) ApproveZone(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "identifier" -------------
+	var identifier string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "identifier", r.PathValue("identifier"), &identifier, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "identifier", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ApproveZone(w, r, identifier)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListZoneVersions operation middleware
+func (siw *ServerInterfaceWrapper) ListZoneVersions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "identifier" -------------
+	var identifier string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "identifier", r.PathValue("identifier"), &identifier, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "identifier", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListZoneVersionsParams
+
+	// ------------- Optional query parameter "before" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "before", r.URL.Query(), &params.Before, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "before"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "before", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListZoneVersions(w, r, identifier, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -18716,6 +24114,24 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/sources", wrapper.ListSources)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/v1/sources/{source_type}", wrapper.SwitchSourceType)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/v1/sources/{source_type}/{instance_id}", wrapper.SwitchSourceInstance)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/zones", wrapper.ListZones)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/zones", wrapper.CreateZone)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/zones/export", wrapper.ExportZones)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/zones/import", wrapper.ImportZones)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/zones/import/airspace-gov-ge", wrapper.ImportGovGeZones)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/zones/publish", wrapper.PublishZones)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/zones/{identifier}", wrapper.GetZone)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/v1/zones/{identifier}", wrapper.ReplaceZone)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/zones/{identifier}/approve", wrapper.ApproveZone)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/zones/{identifier}/versions", wrapper.ListZoneVersions)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/zones/{identifier}/applies", wrapper.GetZoneApplicability)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/uspace", wrapper.ListUSpaceAirspaces)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/uspace", wrapper.CreateUSpaceAirspace)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/uspace/publish", wrapper.PublishUSpaceAirspaces)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/uspace/{identifier}", wrapper.GetUSpaceAirspace)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/v1/uspace/{identifier}", wrapper.ReplaceUSpaceAirspace)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/uspace/{identifier}/designate", wrapper.DesignateUSpaceAirspace)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/uspace/{identifier}/versions", wrapper.ListUSpaceVersions)
 
 	return m
 }
@@ -21689,6 +27105,794 @@ func (response RevokeUserSessionsdefaultApplicationProblemPlusJSONResponse) Visi
 	return err
 }
 
+type ListUSpaceAirspacesRequestObject struct {
+	Params ListUSpaceAirspacesParams
+}
+
+type ListUSpaceAirspacesResponseObject interface {
+	VisitListUSpaceAirspacesResponse(w http.ResponseWriter) error
+}
+
+type ListUSpaceAirspaces200JSONResponse ZoneVersionList
+
+func (response ListUSpaceAirspaces200JSONResponse) VisitListUSpaceAirspacesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListUSpaceAirspacesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListUSpaceAirspacesdefaultApplicationProblemPlusJSONResponse) VisitListUSpaceAirspacesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateUSpaceAirspaceRequestObject struct {
+	Body *CreateUSpaceAirspaceJSONRequestBody
+}
+
+type CreateUSpaceAirspaceResponseObject interface {
+	VisitCreateUSpaceAirspaceResponse(w http.ResponseWriter) error
+}
+
+type CreateUSpaceAirspace201JSONResponse ZoneVersion
+
+func (response CreateUSpaceAirspace201JSONResponse) VisitCreateUSpaceAirspaceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateUSpaceAirspacedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateUSpaceAirspacedefaultApplicationProblemPlusJSONResponse) VisitCreateUSpaceAirspaceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishUSpaceAirspacesRequestObject struct {
+}
+
+type PublishUSpaceAirspacesResponseObject interface {
+	VisitPublishUSpaceAirspacesResponse(w http.ResponseWriter) error
+}
+
+type PublishUSpaceAirspaces200JSONResponse ZonePublication
+
+func (response PublishUSpaceAirspaces200JSONResponse) VisitPublishUSpaceAirspacesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishUSpaceAirspaces503ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PublishUSpaceAirspaces503ApplicationProblemPlusJSONResponse) VisitPublishUSpaceAirspacesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishUSpaceAirspacesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response PublishUSpaceAirspacesdefaultApplicationProblemPlusJSONResponse) VisitPublishUSpaceAirspacesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetUSpaceAirspaceRequestObject struct {
+	Identifier string `json:"identifier"`
+}
+
+type GetUSpaceAirspaceResponseObject interface {
+	VisitGetUSpaceAirspaceResponse(w http.ResponseWriter) error
+}
+
+type GetUSpaceAirspace200JSONResponse ZoneVersion
+
+func (response GetUSpaceAirspace200JSONResponse) VisitGetUSpaceAirspaceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetUSpaceAirspacedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetUSpaceAirspacedefaultApplicationProblemPlusJSONResponse) VisitGetUSpaceAirspaceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceUSpaceAirspaceRequestObject struct {
+	Identifier string `json:"identifier"`
+	Body       *ReplaceUSpaceAirspaceJSONRequestBody
+}
+
+type ReplaceUSpaceAirspaceResponseObject interface {
+	VisitReplaceUSpaceAirspaceResponse(w http.ResponseWriter) error
+}
+
+type ReplaceUSpaceAirspace201JSONResponse ZoneVersion
+
+func (response ReplaceUSpaceAirspace201JSONResponse) VisitReplaceUSpaceAirspaceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceUSpaceAirspacedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ReplaceUSpaceAirspacedefaultApplicationProblemPlusJSONResponse) VisitReplaceUSpaceAirspaceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DesignateUSpaceAirspaceRequestObject struct {
+	Identifier string `json:"identifier"`
+	Body       *DesignateUSpaceAirspaceJSONRequestBody
+}
+
+type DesignateUSpaceAirspaceResponseObject interface {
+	VisitDesignateUSpaceAirspaceResponse(w http.ResponseWriter) error
+}
+
+type DesignateUSpaceAirspace200JSONResponse ZoneVersion
+
+func (response DesignateUSpaceAirspace200JSONResponse) VisitDesignateUSpaceAirspaceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DesignateUSpaceAirspacedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response DesignateUSpaceAirspacedefaultApplicationProblemPlusJSONResponse) VisitDesignateUSpaceAirspaceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListUSpaceVersionsRequestObject struct {
+	Identifier string `json:"identifier"`
+	Params     ListUSpaceVersionsParams
+}
+
+type ListUSpaceVersionsResponseObject interface {
+	VisitListUSpaceVersionsResponse(w http.ResponseWriter) error
+}
+
+type ListUSpaceVersions200JSONResponse ZoneVersionPage
+
+func (response ListUSpaceVersions200JSONResponse) VisitListUSpaceVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListUSpaceVersionsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListUSpaceVersionsdefaultApplicationProblemPlusJSONResponse) VisitListUSpaceVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListZonesRequestObject struct {
+	Params ListZonesParams
+}
+
+type ListZonesResponseObject interface {
+	VisitListZonesResponse(w http.ResponseWriter) error
+}
+
+type ListZones200JSONResponse ZoneVersionList
+
+func (response ListZones200JSONResponse) VisitListZonesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListZonesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListZonesdefaultApplicationProblemPlusJSONResponse) VisitListZonesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateZoneRequestObject struct {
+	Body *CreateZoneJSONRequestBody
+}
+
+type CreateZoneResponseObject interface {
+	VisitCreateZoneResponse(w http.ResponseWriter) error
+}
+
+type CreateZone201JSONResponse ZoneVersion
+
+func (response CreateZone201JSONResponse) VisitCreateZoneResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateZonedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateZonedefaultApplicationProblemPlusJSONResponse) VisitCreateZoneResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExportZonesRequestObject struct {
+	Params ExportZonesParams
+}
+
+type ExportZonesResponseObject interface {
+	VisitExportZonesResponse(w http.ResponseWriter) error
+}
+
+type ExportZones200ApplicationGeoPlusJSONResponse ED318Collection
+
+func (response ExportZones200ApplicationGeoPlusJSONResponse) VisitExportZonesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/geo+json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExportZonesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ExportZonesdefaultApplicationProblemPlusJSONResponse) VisitExportZonesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportZonesRequestObject struct {
+	Params ImportZonesParams
+	Body   io.Reader
+}
+
+type ImportZonesResponseObject interface {
+	VisitImportZonesResponse(w http.ResponseWriter) error
+}
+
+type ImportZones201JSONResponse ZoneImportResult
+
+func (response ImportZones201JSONResponse) VisitImportZonesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportZones413ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response ImportZones413ApplicationProblemPlusJSONResponse) VisitImportZonesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(413)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportZonesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ImportZonesdefaultApplicationProblemPlusJSONResponse) VisitImportZonesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportGovGeZonesRequestObject struct {
+	Body *ImportGovGeZonesJSONRequestBody
+}
+
+type ImportGovGeZonesResponseObject interface {
+	VisitImportGovGeZonesResponse(w http.ResponseWriter) error
+}
+
+type ImportGovGeZones201JSONResponse ZoneImportResult
+
+func (response ImportGovGeZones201JSONResponse) VisitImportGovGeZonesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportGovGeZones413ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response ImportGovGeZones413ApplicationProblemPlusJSONResponse) VisitImportGovGeZonesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(413)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportGovGeZonesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ImportGovGeZonesdefaultApplicationProblemPlusJSONResponse) VisitImportGovGeZonesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishZonesRequestObject struct {
+}
+
+type PublishZonesResponseObject interface {
+	VisitPublishZonesResponse(w http.ResponseWriter) error
+}
+
+type PublishZones200JSONResponse ZonePublication
+
+func (response PublishZones200JSONResponse) VisitPublishZonesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishZones503ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PublishZones503ApplicationProblemPlusJSONResponse) VisitPublishZonesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishZonesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response PublishZonesdefaultApplicationProblemPlusJSONResponse) VisitPublishZonesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetZoneRequestObject struct {
+	Identifier string `json:"identifier"`
+}
+
+type GetZoneResponseObject interface {
+	VisitGetZoneResponse(w http.ResponseWriter) error
+}
+
+type GetZone200JSONResponse ZoneVersion
+
+func (response GetZone200JSONResponse) VisitGetZoneResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetZonedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetZonedefaultApplicationProblemPlusJSONResponse) VisitGetZoneResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceZoneRequestObject struct {
+	Identifier string `json:"identifier"`
+	Body       *ReplaceZoneJSONRequestBody
+}
+
+type ReplaceZoneResponseObject interface {
+	VisitReplaceZoneResponse(w http.ResponseWriter) error
+}
+
+type ReplaceZone201JSONResponse ZoneVersion
+
+func (response ReplaceZone201JSONResponse) VisitReplaceZoneResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceZonedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ReplaceZonedefaultApplicationProblemPlusJSONResponse) VisitReplaceZoneResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetZoneApplicabilityRequestObject struct {
+	Identifier string `json:"identifier"`
+	Params     GetZoneApplicabilityParams
+}
+
+type GetZoneApplicabilityResponseObject interface {
+	VisitGetZoneApplicabilityResponse(w http.ResponseWriter) error
+}
+
+type GetZoneApplicability200JSONResponse ZoneApplicability
+
+func (response GetZoneApplicability200JSONResponse) VisitGetZoneApplicabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetZoneApplicability503ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetZoneApplicability503ApplicationProblemPlusJSONResponse) VisitGetZoneApplicabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetZoneApplicabilitydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetZoneApplicabilitydefaultApplicationProblemPlusJSONResponse) VisitGetZoneApplicabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveZoneRequestObject struct {
+	Identifier string `json:"identifier"`
+	Body       *ApproveZoneJSONRequestBody
+}
+
+type ApproveZoneResponseObject interface {
+	VisitApproveZoneResponse(w http.ResponseWriter) error
+}
+
+type ApproveZone200JSONResponse ZoneVersion
+
+func (response ApproveZone200JSONResponse) VisitApproveZoneResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveZonedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ApproveZonedefaultApplicationProblemPlusJSONResponse) VisitApproveZoneResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListZoneVersionsRequestObject struct {
+	Identifier string `json:"identifier"`
+	Params     ListZoneVersionsParams
+}
+
+type ListZoneVersionsResponseObject interface {
+	VisitListZoneVersionsResponse(w http.ResponseWriter) error
+}
+
+type ListZoneVersions200JSONResponse ZoneVersionPage
+
+func (response ListZoneVersions200JSONResponse) VisitListZoneVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListZoneVersionsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListZoneVersionsdefaultApplicationProblemPlusJSONResponse) VisitListZoneVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// GetJWKS The issuer's public keys
@@ -21883,6 +28087,60 @@ type StrictServerInterface interface {
 	// RevokeUserSessions Revoke every session of an account
 	// (POST /v1/users/{user_id}/sessions/revoke)
 	RevokeUserSessions(ctx context.Context, request RevokeUserSessionsRequestObject) (RevokeUserSessionsResponseObject, error)
+	// ListUSpaceAirspaces The newest version of every U-space airspace
+	// (GET /v1/uspace)
+	ListUSpaceAirspaces(ctx context.Context, request ListUSpaceAirspacesRequestObject) (ListUSpaceAirspacesResponseObject, error)
+	// CreateUSpaceAirspace Draft a U-space airspace designation (version 1)
+	// (POST /v1/uspace)
+	CreateUSpaceAirspace(ctx context.Context, request CreateUSpaceAirspaceRequestObject) (CreateUSpaceAirspaceResponseObject, error)
+	// PublishUSpaceAirspaces Publish every designated U-space airspace version
+	// (POST /v1/uspace/publish)
+	PublishUSpaceAirspaces(ctx context.Context, request PublishUSpaceAirspacesRequestObject) (PublishUSpaceAirspacesResponseObject, error)
+	// GetUSpaceAirspace The newest version of a U-space airspace
+	// (GET /v1/uspace/{identifier})
+	GetUSpaceAirspace(ctx context.Context, request GetUSpaceAirspaceRequestObject) (GetUSpaceAirspaceResponseObject, error)
+	// ReplaceUSpaceAirspace Draft a new version of a U-space airspace
+	// (PUT /v1/uspace/{identifier})
+	ReplaceUSpaceAirspace(ctx context.Context, request ReplaceUSpaceAirspaceRequestObject) (ReplaceUSpaceAirspaceResponseObject, error)
+	// DesignateUSpaceAirspace Designate (approve) a draft U-space airspace version
+	// (POST /v1/uspace/{identifier}/designate)
+	DesignateUSpaceAirspace(ctx context.Context, request DesignateUSpaceAirspaceRequestObject) (DesignateUSpaceAirspaceResponseObject, error)
+	// ListUSpaceVersions A U-space airspace's versions, newest first
+	// (GET /v1/uspace/{identifier}/versions)
+	ListUSpaceVersions(ctx context.Context, request ListUSpaceVersionsRequestObject) (ListUSpaceVersionsResponseObject, error)
+	// ListZones The newest version of every geo-zone, in identifier order
+	// (GET /v1/zones)
+	ListZones(ctx context.Context, request ListZonesRequestObject) (ListZonesResponseObject, error)
+	// CreateZone Author a new geo-zone (version 1, draft)
+	// (POST /v1/zones)
+	CreateZone(ctx context.Context, request CreateZoneRequestObject) (CreateZoneResponseObject, error)
+	// ExportZones The published geo-zones as an ED-318 FeatureCollection
+	// (GET /v1/zones/export)
+	ExportZones(ctx context.Context, request ExportZonesRequestObject) (ExportZonesResponseObject, error)
+	// ImportZones Import an ED-318 or ED-269 file as drafts, all or nothing
+	// (POST /v1/zones/import)
+	ImportZones(ctx context.Context, request ImportZonesRequestObject) (ImportZonesResponseObject, error)
+	// ImportGovGeZones Convert airspace.gov.ge's zone files with a rules file, then import
+	// (POST /v1/zones/import/airspace-gov-ge)
+	ImportGovGeZones(ctx context.Context, request ImportGovGeZonesRequestObject) (ImportGovGeZonesResponseObject, error)
+	// PublishZones Publish every approved geo-zone version
+	// (POST /v1/zones/publish)
+	PublishZones(ctx context.Context, request PublishZonesRequestObject) (PublishZonesResponseObject, error)
+	// GetZone The newest version of a geo-zone
+	// (GET /v1/zones/{identifier})
+	GetZone(ctx context.Context, request GetZoneRequestObject) (GetZoneResponseObject, error)
+	// ReplaceZone Author a new version of a geo-zone (draft)
+	// (PUT /v1/zones/{identifier})
+	ReplaceZone(ctx context.Context, request ReplaceZoneRequestObject) (ReplaceZoneResponseObject, error)
+	// GetZoneApplicability Whether a zone version applies at an instant
+	// (GET /v1/zones/{identifier}/applies)
+	GetZoneApplicability(ctx context.Context, request GetZoneApplicabilityRequestObject) (GetZoneApplicabilityResponseObject, error)
+	// ApproveZone Approve a draft version for publication
+	// (POST /v1/zones/{identifier}/approve)
+	ApproveZone(ctx context.Context, request ApproveZoneRequestObject) (ApproveZoneResponseObject, error)
+	// ListZoneVersions A geo-zone's versions, newest first
+	// (GET /v1/zones/{identifier}/versions)
+	ListZoneVersions(ctx context.Context, request ListZoneVersionsRequestObject) (ListZoneVersionsResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -23731,6 +29989,518 @@ func (sh *strictHandler) RevokeUserSessions(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RevokeUserSessionsResponseObject); ok {
 		if err := validResponse.VisitRevokeUserSessionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListUSpaceAirspaces operation middleware
+func (sh *strictHandler) ListUSpaceAirspaces(w http.ResponseWriter, r *http.Request, params ListUSpaceAirspacesParams) {
+	var request ListUSpaceAirspacesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListUSpaceAirspaces(ctx, request.(ListUSpaceAirspacesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListUSpaceAirspaces")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListUSpaceAirspacesResponseObject); ok {
+		if err := validResponse.VisitListUSpaceAirspacesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateUSpaceAirspace operation middleware
+func (sh *strictHandler) CreateUSpaceAirspace(w http.ResponseWriter, r *http.Request) {
+	var request CreateUSpaceAirspaceRequestObject
+
+	var body CreateUSpaceAirspaceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateUSpaceAirspace(ctx, request.(CreateUSpaceAirspaceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateUSpaceAirspace")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateUSpaceAirspaceResponseObject); ok {
+		if err := validResponse.VisitCreateUSpaceAirspaceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PublishUSpaceAirspaces operation middleware
+func (sh *strictHandler) PublishUSpaceAirspaces(w http.ResponseWriter, r *http.Request) {
+	var request PublishUSpaceAirspacesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PublishUSpaceAirspaces(ctx, request.(PublishUSpaceAirspacesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PublishUSpaceAirspaces")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PublishUSpaceAirspacesResponseObject); ok {
+		if err := validResponse.VisitPublishUSpaceAirspacesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetUSpaceAirspace operation middleware
+func (sh *strictHandler) GetUSpaceAirspace(w http.ResponseWriter, r *http.Request, identifier string) {
+	var request GetUSpaceAirspaceRequestObject
+
+	request.Identifier = identifier
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetUSpaceAirspace(ctx, request.(GetUSpaceAirspaceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetUSpaceAirspace")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetUSpaceAirspaceResponseObject); ok {
+		if err := validResponse.VisitGetUSpaceAirspaceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReplaceUSpaceAirspace operation middleware
+func (sh *strictHandler) ReplaceUSpaceAirspace(w http.ResponseWriter, r *http.Request, identifier string) {
+	var request ReplaceUSpaceAirspaceRequestObject
+
+	request.Identifier = identifier
+
+	var body ReplaceUSpaceAirspaceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReplaceUSpaceAirspace(ctx, request.(ReplaceUSpaceAirspaceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReplaceUSpaceAirspace")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReplaceUSpaceAirspaceResponseObject); ok {
+		if err := validResponse.VisitReplaceUSpaceAirspaceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DesignateUSpaceAirspace operation middleware
+func (sh *strictHandler) DesignateUSpaceAirspace(w http.ResponseWriter, r *http.Request, identifier string) {
+	var request DesignateUSpaceAirspaceRequestObject
+
+	request.Identifier = identifier
+
+	var body DesignateUSpaceAirspaceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DesignateUSpaceAirspace(ctx, request.(DesignateUSpaceAirspaceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DesignateUSpaceAirspace")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DesignateUSpaceAirspaceResponseObject); ok {
+		if err := validResponse.VisitDesignateUSpaceAirspaceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListUSpaceVersions operation middleware
+func (sh *strictHandler) ListUSpaceVersions(w http.ResponseWriter, r *http.Request, identifier string, params ListUSpaceVersionsParams) {
+	var request ListUSpaceVersionsRequestObject
+
+	request.Identifier = identifier
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListUSpaceVersions(ctx, request.(ListUSpaceVersionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListUSpaceVersions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListUSpaceVersionsResponseObject); ok {
+		if err := validResponse.VisitListUSpaceVersionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListZones operation middleware
+func (sh *strictHandler) ListZones(w http.ResponseWriter, r *http.Request, params ListZonesParams) {
+	var request ListZonesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListZones(ctx, request.(ListZonesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListZones")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListZonesResponseObject); ok {
+		if err := validResponse.VisitListZonesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateZone operation middleware
+func (sh *strictHandler) CreateZone(w http.ResponseWriter, r *http.Request) {
+	var request CreateZoneRequestObject
+
+	var body CreateZoneJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateZone(ctx, request.(CreateZoneRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateZone")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateZoneResponseObject); ok {
+		if err := validResponse.VisitCreateZoneResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ExportZones operation middleware
+func (sh *strictHandler) ExportZones(w http.ResponseWriter, r *http.Request, params ExportZonesParams) {
+	var request ExportZonesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ExportZones(ctx, request.(ExportZonesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ExportZones")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ExportZonesResponseObject); ok {
+		if err := validResponse.VisitExportZonesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ImportZones operation middleware
+func (sh *strictHandler) ImportZones(w http.ResponseWriter, r *http.Request, params ImportZonesParams) {
+	var request ImportZonesRequestObject
+
+	request.Params = params
+
+	request.Body = r.Body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ImportZones(ctx, request.(ImportZonesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ImportZones")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ImportZonesResponseObject); ok {
+		if err := validResponse.VisitImportZonesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ImportGovGeZones operation middleware
+func (sh *strictHandler) ImportGovGeZones(w http.ResponseWriter, r *http.Request) {
+	var request ImportGovGeZonesRequestObject
+
+	var body ImportGovGeZonesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ImportGovGeZones(ctx, request.(ImportGovGeZonesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ImportGovGeZones")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ImportGovGeZonesResponseObject); ok {
+		if err := validResponse.VisitImportGovGeZonesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PublishZones operation middleware
+func (sh *strictHandler) PublishZones(w http.ResponseWriter, r *http.Request) {
+	var request PublishZonesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PublishZones(ctx, request.(PublishZonesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PublishZones")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PublishZonesResponseObject); ok {
+		if err := validResponse.VisitPublishZonesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetZone operation middleware
+func (sh *strictHandler) GetZone(w http.ResponseWriter, r *http.Request, identifier string) {
+	var request GetZoneRequestObject
+
+	request.Identifier = identifier
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetZone(ctx, request.(GetZoneRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetZone")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetZoneResponseObject); ok {
+		if err := validResponse.VisitGetZoneResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReplaceZone operation middleware
+func (sh *strictHandler) ReplaceZone(w http.ResponseWriter, r *http.Request, identifier string) {
+	var request ReplaceZoneRequestObject
+
+	request.Identifier = identifier
+
+	var body ReplaceZoneJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReplaceZone(ctx, request.(ReplaceZoneRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReplaceZone")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReplaceZoneResponseObject); ok {
+		if err := validResponse.VisitReplaceZoneResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetZoneApplicability operation middleware
+func (sh *strictHandler) GetZoneApplicability(w http.ResponseWriter, r *http.Request, identifier string, params GetZoneApplicabilityParams) {
+	var request GetZoneApplicabilityRequestObject
+
+	request.Identifier = identifier
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetZoneApplicability(ctx, request.(GetZoneApplicabilityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetZoneApplicability")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetZoneApplicabilityResponseObject); ok {
+		if err := validResponse.VisitGetZoneApplicabilityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ApproveZone operation middleware
+func (sh *strictHandler) ApproveZone(w http.ResponseWriter, r *http.Request, identifier string) {
+	var request ApproveZoneRequestObject
+
+	request.Identifier = identifier
+
+	var body ApproveZoneJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ApproveZone(ctx, request.(ApproveZoneRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ApproveZone")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ApproveZoneResponseObject); ok {
+		if err := validResponse.VisitApproveZoneResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListZoneVersions operation middleware
+func (sh *strictHandler) ListZoneVersions(w http.ResponseWriter, r *http.Request, identifier string, params ListZoneVersionsParams) {
+	var request ListZoneVersionsRequestObject
+
+	request.Identifier = identifier
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListZoneVersions(ctx, request.(ListZoneVersionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListZoneVersions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListZoneVersionsResponseObject); ok {
+		if err := validResponse.VisitListZoneVersionsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

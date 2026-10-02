@@ -138,3 +138,19 @@ Unreleased; the format follows Keep a Changelog.
   has; `deploy/fetch-ground.sh` (SHA-256-pinned geoid grids, checked
   terrain tiles); CI runs the GeographicLib vector cases; the ground
   runbook.
+- WP-5: zones and U-space airspaces (`internal/zonesvc`, relational
+  `00012_geo_zones` and `00013_publications`, timeseries
+  `00009_zones_projection`, `/v1/zones*`, `/v1/uspace*`): versioned
+  ED-318 features stored as `ed318.Export` wrote them (draft, approved,
+  published, superseded; period of validity mandatory; circles as centre
+  and radius; WGS84 flagged as this project's extension); every write
+  through `ed318.Parse` and `ed318.ToZones`; ED-318 and ED-269 import all
+  or nothing with problems by path, and the airspace.gov.ge converter
+  with a rules file; U-space designations with the Art. 3(4) block in
+  the CISP's `cis/uspace_requirements/v1` shape; publication into a
+  pending, unsigned outbox row (signed and sent by WP-6), the
+  `proj_zones` projection written with it and repaired every 300 s, and
+  `zones.v1.changed` / KV `zones_version`; export `?at=` and
+  `?applies_at=` (M17); `ProjectionReader` building the `zones.Index`;
+  the ed318 round trip and zones applicability vectors through storage;
+  daylight schedules resolved through `ground.Daylight` (WP-11).

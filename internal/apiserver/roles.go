@@ -91,6 +91,26 @@ var Roles = map[string][]string{
 	"ListSources":          {RoleAdmin},
 	"SwitchSourceType":     {RoleAdmin},
 	"SwitchSourceInstance": {RoleAdmin},
+
+	"ListZones":            {RoleInspector, RoleAdmin, RoleViewer},
+	"GetZone":              {RoleInspector, RoleAdmin, RoleViewer},
+	"ListZoneVersions":     {RoleInspector, RoleAdmin, RoleViewer},
+	"GetZoneApplicability": {RoleInspector, RoleAdmin, RoleViewer},
+	"ExportZones":          {RoleInspector, RoleAdmin, RoleViewer},
+	"CreateZone":           {RoleInspector},
+	"ReplaceZone":          {RoleInspector},
+	"ImportZones":          {RoleInspector},
+	"ImportGovGeZones":     {RoleInspector},
+	"ApproveZone":          {RoleAdmin},
+	"PublishZones":         {RoleAdmin},
+
+	"ListUSpaceAirspaces":     {RoleAdmin},
+	"GetUSpaceAirspace":       {RoleAdmin},
+	"ListUSpaceVersions":      {RoleAdmin},
+	"CreateUSpaceAirspace":    {RoleAdmin},
+	"ReplaceUSpaceAirspace":   {RoleAdmin},
+	"DesignateUSpaceAirspace": {RoleAdmin},
+	"PublishUSpaceAirspaces":  {RoleAdmin},
 }
 
 // Receiver lists the operations a Remote ID receiver calls (`x-receiver:

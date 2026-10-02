@@ -37,6 +37,22 @@ type ProjRegistryUAS struct {
 	RegistryVersion    int64
 }
 
+type ProjZone struct {
+	Dataset       string
+	Identifier    string
+	ZoneVersion   int32
+	Feature       []byte
+	ValidFrom     time.Time
+	ValidTo       time.Time
+	Type          string
+	BboxMinLatDeg float64
+	BboxMinLonDeg float64
+	BboxMaxLatDeg float64
+	BboxMaxLonDeg float64
+	ProjectedAt   time.Time
+	ZonesVersion  int64
+}
+
 type RidObservation struct {
 	IngestTs        time.Time
 	FrameID         string

@@ -149,6 +149,19 @@ const (
 	EventCellOwnershipChanged      = "cell_ownership_changed"
 )
 
+// Event types of WP-5's zones (internal/zonesvc): every version authored,
+// approved or designated, every import, publication and export.
+const (
+	EventZoneDrafted      = "zone_drafted"
+	EventZoneApproved     = "zone_approved"
+	EventZonesImported    = "zones_imported"
+	EventZonesPublished   = "zones_published"
+	EventZonesExported    = "zones_exported"
+	EventUSpaceDrafted    = "uspace_drafted"
+	EventUSpaceDesignated = "uspace_designated"
+	EventUSpacePublished  = "uspace_published"
+)
+
 // DefaultCatalogue is the catalogue of this build.
 func DefaultCatalogue() Catalogue {
 	return Catalogue{
@@ -206,6 +219,15 @@ func DefaultCatalogue() Catalogue {
 		EventSourceEnabled:             {},
 		EventSourceControlEpochStarted: {},
 		EventCellOwnershipChanged:      {},
+
+		EventZoneDrafted:      {},
+		EventZoneApproved:     {},
+		EventZonesImported:    {},
+		EventZonesPublished:   {},
+		EventZonesExported:    {},
+		EventUSpaceDrafted:    {},
+		EventUSpaceDesignated: {},
+		EventUSpacePublished:  {},
 	}
 }
 

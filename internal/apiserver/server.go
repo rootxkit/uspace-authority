@@ -126,6 +126,34 @@ type SourcesHandler interface {
 	SwitchSourceInstance(ctx context.Context, request gen.SwitchSourceInstanceRequestObject) (gen.SwitchSourceInstanceResponseObject, error)
 }
 
+// ZonesHandler serves /v1/zones* (api, WP-5): geo-zone authoring,
+// import, export and publication.
+type ZonesHandler interface {
+	ListZones(ctx context.Context, request gen.ListZonesRequestObject) (gen.ListZonesResponseObject, error)
+	CreateZone(ctx context.Context, request gen.CreateZoneRequestObject) (gen.CreateZoneResponseObject, error)
+	ExportZones(ctx context.Context, request gen.ExportZonesRequestObject) (gen.ExportZonesResponseObject, error)
+	ImportZones(ctx context.Context, request gen.ImportZonesRequestObject) (gen.ImportZonesResponseObject, error)
+	ImportGovGeZones(ctx context.Context, request gen.ImportGovGeZonesRequestObject) (gen.ImportGovGeZonesResponseObject, error)
+	PublishZones(ctx context.Context, request gen.PublishZonesRequestObject) (gen.PublishZonesResponseObject, error)
+	GetZone(ctx context.Context, request gen.GetZoneRequestObject) (gen.GetZoneResponseObject, error)
+	ReplaceZone(ctx context.Context, request gen.ReplaceZoneRequestObject) (gen.ReplaceZoneResponseObject, error)
+	ApproveZone(ctx context.Context, request gen.ApproveZoneRequestObject) (gen.ApproveZoneResponseObject, error)
+	ListZoneVersions(ctx context.Context, request gen.ListZoneVersionsRequestObject) (gen.ListZoneVersionsResponseObject, error)
+	GetZoneApplicability(ctx context.Context, request gen.GetZoneApplicabilityRequestObject) (gen.GetZoneApplicabilityResponseObject, error)
+}
+
+// USpaceHandler serves /v1/uspace* (api, WP-5): U-space airspace
+// designations.
+type USpaceHandler interface {
+	ListUSpaceAirspaces(ctx context.Context, request gen.ListUSpaceAirspacesRequestObject) (gen.ListUSpaceAirspacesResponseObject, error)
+	CreateUSpaceAirspace(ctx context.Context, request gen.CreateUSpaceAirspaceRequestObject) (gen.CreateUSpaceAirspaceResponseObject, error)
+	PublishUSpaceAirspaces(ctx context.Context, request gen.PublishUSpaceAirspacesRequestObject) (gen.PublishUSpaceAirspacesResponseObject, error)
+	GetUSpaceAirspace(ctx context.Context, request gen.GetUSpaceAirspaceRequestObject) (gen.GetUSpaceAirspaceResponseObject, error)
+	ReplaceUSpaceAirspace(ctx context.Context, request gen.ReplaceUSpaceAirspaceRequestObject) (gen.ReplaceUSpaceAirspaceResponseObject, error)
+	DesignateUSpaceAirspace(ctx context.Context, request gen.DesignateUSpaceAirspaceRequestObject) (gen.DesignateUSpaceAirspaceResponseObject, error)
+	ListUSpaceVersions(ctx context.Context, request gen.ListUSpaceVersionsRequestObject) (gen.ListUSpaceVersionsResponseObject, error)
+}
+
 // Server implements gen.StrictServerInterface by delegating to one
 // handler per group. A group left nil must not be mounted.
 type Server struct {
@@ -140,6 +168,8 @@ type Server struct {
 	RIDReceiversHandler
 	CellsHandler
 	SourcesHandler
+	ZonesHandler
+	USpaceHandler
 }
 
 var _ gen.StrictServerInterface = Server{}
@@ -155,6 +185,10 @@ type Options struct {
 	Middlewares []Middleware
 	// Keep selects the ServeMux patterns ("GET /v1/policy") mounted.
 	Keep func(pattern string) bool
+	// BodyLimits sets the body cap of the patterns it names (an import
+	// larger than the listener's default), counted in BodyCounters.
+	BodyLimits   map[string]int64
+	BodyCounters *core.Counters
 }
 
 // PathPrefix keeps the patterns whose path starts with one of prefixes.
@@ -173,16 +207,28 @@ func PathPrefix(prefixes ...string) func(string) bool {
 // subsetMux registers only the patterns keep accepts.
 type subsetMux struct {
 	*http.ServeMux
-	keep    func(string) bool
-	mounted *[]string
+	keep     func(string) bool
+	mounted  *[]string
+	limits   map[string]int64
+	counters *core.Counters
 }
 
-// HandleFunc registers h when keep accepts pattern.
+// HandleFunc registers h when keep accepts pattern, under its own body
+// cap when limits names it.
 func (m subsetMux) HandleFunc(pattern string, h func(http.ResponseWriter, *http.Request)) {
-	if m.keep(pattern) {
-		m.ServeMux.HandleFunc(pattern, h)
-		*m.mounted = append(*m.mounted, pattern)
+	if !m.keep(pattern) {
+		return
 	}
+	if n, ok := m.limits[pattern]; ok {
+		counters := m.counters
+		if counters == nil {
+			counters = &core.Counters{}
+		}
+		m.Handle(pattern, httpx.BodyLimit(n, counters, http.HandlerFunc(h)))
+	} else {
+		m.ServeMux.HandleFunc(pattern, h)
+	}
+	*m.mounted = append(*m.mounted, pattern)
 }
 
 func badRequest(w http.ResponseWriter, r *http.Request, err error) {
@@ -212,7 +258,7 @@ func Mount(mux *http.ServeMux, s Server, o Options) []string {
 	})
 	var mounted []string
 	gen.HandlerWithOptions(strict, gen.StdHTTPServerOptions{
-		BaseRouter:       subsetMux{ServeMux: mux, keep: o.Keep, mounted: &mounted},
+		BaseRouter:       subsetMux{ServeMux: mux, keep: o.Keep, mounted: &mounted, limits: o.BodyLimits, counters: o.BodyCounters},
 		ErrorHandlerFunc: badRequest,
 	})
 	return mounted
