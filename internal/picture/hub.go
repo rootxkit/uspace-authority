@@ -39,6 +39,8 @@ const (
 	CounterSubscribes          = "subscribes"
 	CounterSubscribeTooLarge   = "subscribe_viewport_too_large"
 	CounterSnapshots           = "snapshots"
+	CounterSnapshotsTruncated  = "snapshots_truncated"
+	CounterSubscribesCoalesced = "subscribes_coalesced"
 	CounterTracks              = "tracks_received"
 	CounterTracksMalformed     = "tracks_malformed"
 	CounterTracksBacklog       = "tracks_backlog_not_shown"
@@ -166,6 +168,7 @@ type Config struct {
 	AlertForget          time.Duration
 	SubscribeMaxBytes    int64
 	SubscribeMinInterval time.Duration
+	SnapshotMaxBytes     int
 	SessionRecheck       time.Duration
 	SessionGrace         time.Duration
 	Now                  func() time.Time
@@ -198,6 +201,7 @@ func (c *Config) defaults() {
 	defD(&c.AlertForget, 120*time.Second)
 	defD(&c.SessionRecheck, 15*time.Second)
 	defD(&c.SessionGrace, 60*time.Second)
+	def(&c.SnapshotMaxBytes, 8<<20)
 	if c.SubscribeMaxBytes <= 0 {
 		c.SubscribeMaxBytes = 4096
 	}
@@ -239,6 +243,9 @@ type Hub struct {
 	lastEvictNS  atomic.Int64
 	degradedMu   sync.Mutex
 	degradedSeen map[string]time.Time
+
+	// testSnapshotHook, when set, runs while a snapshot is built.
+	testSnapshotHook func()
 }
 
 // NewHub returns a hub over sv (nil: no sources listed).
@@ -665,7 +672,7 @@ func (h *Hub) Tick(now time.Time) {
 	}
 	for _, c := range h.snapshotClients() {
 		for _, f := range srcFrames {
-			c.enqueue(f)
+			c.enqueueAny(f)
 			h.counters.Inc(CounterSourceStatusFrames)
 		}
 		c.mu.Lock()
@@ -676,12 +683,18 @@ func (h *Hub) Tick(now time.Time) {
 		} else {
 			h.counters.Inc(CounterFramesNotEncoded)
 		}
+		var resnap *snapshotFilter
+		var gen uint64
 		if forgotten > 0 && c.subscribed {
 			// A console replaces its store with a snapshot: what left
 			// the picture leaves the console with it, said, not silent.
-			h.pushSnapshotLocked(c, now)
+			gen = c.nextGenLocked()
+			resnap = &snapshotFilter{cells: c.cells, layers: c.layers, console: c.sess.Console()}
 		}
 		c.mu.Unlock()
+		if resnap != nil {
+			h.sendSnapshot(c, gen, *resnap, now)
+		}
 	}
 }
 
@@ -726,37 +739,69 @@ type snapshotFilter struct {
 	box *geodesy.BBox
 }
 
-// snapshotBody builds console/snapshot/v1's body at now.
+// snapshotBody builds console/snapshot/v1's body at now, its items
+// bounded to SnapshotMaxBytes: active violations first, then tracks,
+// then manned aircraft; past the bound the rest is left out and the body
+// says truncated. It takes no lock of the hub or of a console, so the
+// bus goroutine is never held behind a snapshot.
 func (h *Hub) snapshotBody(f snapshotFilter, now time.Time) SnapshotBody {
+	if h.testSnapshotHook != nil {
+		h.testSnapshotHook()
+	}
 	body := SnapshotBody{Tracks: []json.RawMessage{}, Alerts: []json.RawMessage{}, Manned: []json.RawMessage{}}
 	if h.in.Projections != nil {
 		body.ZonesVersion = h.in.Projections(now).ZonesVersion
 	}
-	if f.layers[LayerTracks] {
+	budget := h.cfg.SnapshotMaxBytes
+	fits := func(raw []byte) bool {
+		if len(raw)+1 > budget {
+			body.Truncated = true
+			return false
+		}
+		budget -= len(raw) + 1
+		return true
+	}
+	if f.layers[LayerAlerts] {
+		for _, raw := range h.alerts.inCells(f.cells) {
+			if !fits(raw) {
+				break
+			}
+			body.Alerts = append(body.Alerts, raw)
+		}
+	}
+	if f.layers[LayerTracks] && !body.Truncated {
 		items := h.tracks.inCells(f.cells)
 		slices.SortFunc(items, func(a, b *item) int { return compareStrings(a.key, b.key) })
 		for _, it := range items {
 			if f.box != nil && (it.pos == nil || !f.box.Contains(*it.pos)) {
 				continue
 			}
-			if fr := h.encodeTrack(it, now, h.sources.StateOf(it.sourceType, it.instance), f.console); fr != nil {
-				body.Tracks = append(body.Tracks, fr)
+			fr := h.encodeTrack(it, now, h.sources.StateOf(it.sourceType, it.instance), f.console)
+			if fr == nil {
+				continue
 			}
+			if !fits(fr) {
+				break
+			}
+			body.Tracks = append(body.Tracks, fr)
 		}
 	}
-	if f.layers[LayerManned] {
+	if f.layers[LayerManned] && !body.Truncated {
 		items := h.manned.inCells(f.cells)
 		slices.SortFunc(items, func(a, b *item) int { return compareStrings(a.key, b.key) })
 		for _, it := range items {
+			if !fits(it.raw) {
+				break
+			}
 			body.Manned = append(body.Manned, it.raw)
 		}
 	}
-	if f.layers[LayerAlerts] {
-		for _, raw := range h.alerts.inCells(f.cells) {
-			body.Alerts = append(body.Alerts, raw)
-		}
-	}
 	h.counters.Inc(CounterSnapshots)
+	if body.Truncated {
+		h.counters.Inc(CounterSnapshotsTruncated)
+		h.cfg.Limiter.Limited("picture_snapshot_truncated").Warn("snapshot truncated at its bound; the console should narrow its viewport",
+			slog.Int("max_bytes", h.cfg.SnapshotMaxBytes))
+	}
 	return body
 }
 
@@ -770,16 +815,29 @@ func compareStrings(a, b string) int {
 	return 0
 }
 
-// pushSnapshotLocked queues c's snapshot; c.mu is held, so no live frame
-// of the new viewport is queued before it.
-func (h *Hub) pushSnapshotLocked(c *client, now time.Time) {
-	body := h.snapshotBody(snapshotFilter{cells: c.cells, layers: c.layers, console: c.sess.Console()}, now)
-	f, err := systemFrame(SchemaSnapshot, now, body)
+// sendSnapshot builds the snapshot of generation gen of c's view with
+// no lock held and queues it, unless a newer view superseded it (whose
+// own snapshot follows). Live frames of generation gen queued meanwhile
+// are held by the writer until this snapshot is written, so none of
+// them reaches the console before it (write).
+func (h *Hub) sendSnapshot(c *client, gen uint64, f snapshotFilter, now time.Time) {
+	body := h.snapshotBody(f, now)
+	fr, err := systemFrame(SchemaSnapshot, now, body)
 	if err != nil {
 		h.counters.Inc(CounterFramesNotEncoded)
+		// An empty snapshot of the generation, so the held live frames
+		// still flow and the console still replaces its store.
+		empty := SnapshotBody{Tracks: []json.RawMessage{}, Alerts: []json.RawMessage{}, Manned: []json.RawMessage{}, Truncated: true}
+		if fr, err = systemFrame(SchemaSnapshot, now, empty); err != nil {
+			return
+		}
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.gen != gen {
 		return
 	}
-	c.pushSnapshot(f)
+	c.pushSnapshot(fr, gen)
 }
 
 // ---- connections ----------------------------------------------------
@@ -799,7 +857,7 @@ func (h *Hub) Serve(conn Conn, sess Session, token string, sessions Checker) {
 	c := &client{
 		id: bus.NewULID(now), sess: sess, token: token, conn: conn, hub: h, cancel: cancel, readCancel: readCancel, done: ctx.Done(),
 		cells: map[cell.ID]struct{}{}, layers: map[string]bool{}, lastSent: map[string]time.Time{},
-		data: make(chan []byte, h.cfg.SendBuffer), wake: make(chan struct{}, 1), openedAt: now,
+		data: make(chan queued, h.cfg.SendBuffer), wake: make(chan struct{}, 1), openedAt: now, subReady: make(chan struct{}, 1),
 	}
 	h.mu.Lock()
 	h.reserved--
@@ -814,12 +872,15 @@ func (h *Hub) Serve(conn Conn, sess Session, token string, sessions Checker) {
 	if f, err := h.statusFrameLocked(c, &parts, now); err == nil {
 		c.pushStatus(f)
 	}
-	h.pushSnapshotLocked(c, now)
+	gen := c.nextGenLocked()
+	filter := snapshotFilter{cells: c.cells, layers: c.layers, console: c.sess.Console()}
 	c.mu.Unlock()
+	h.sendSnapshot(c, gen, filter, now)
 
 	var wg sync.WaitGroup
 	wg.Go(func() { h.write(ctx, c) })
 	wg.Go(func() { h.read(readCtx, c) })
+	wg.Go(func() { h.applySubscriptions(ctx, c) })
 	if sessions != nil {
 		wg.Go(func() { h.recheck(ctx, c, sessions) })
 	}
@@ -877,20 +938,53 @@ func (h *Hub) write(ctx context.Context, c *client) {
 		h.counters.Inc(CounterFramesSent)
 		return true
 	}
+	// written is the generation of the last snapshot written. A live
+	// frame of a newer view waits in held until its snapshot is written;
+	// one of an older view is dropped, because the snapshot written after
+	// it holds that aircraft as new or newer.
+	var written uint64
+	var held []queued
 	for {
-		if f := c.takeControl(); f != nil {
+		if f, gen, snap := c.takeControl(); f != nil {
 			if !send(f) {
 				return
 			}
+			if !snap {
+				continue
+			}
+			written = gen
+			keep := held[:0]
+			for _, q := range held {
+				switch {
+				case q.gen == written:
+					if !send(q.f) {
+						return
+					}
+				case q.gen > written:
+					keep = append(keep, q)
+				}
+			}
+			clear(held[len(keep):])
+			held = keep
 			continue
 		}
 		select {
 		case <-ctx.Done():
 			return
 		case <-c.wake:
-		case f := <-c.data:
-			if !send(f) {
-				return
+		case q := <-c.data:
+			switch {
+			case q.any || q.gen == written:
+				if !send(q.f) {
+					return
+				}
+			case q.gen > written:
+				if len(held) >= cap(c.data) {
+					c.dropped.Add(1)
+					h.counters.Inc(CounterFramesQueueFull)
+					continue
+				}
+				held = append(held, q)
 			}
 		}
 	}
@@ -901,7 +995,6 @@ func (h *Hub) write(ctx context.Context, c *client) {
 // field at fault; one larger than SubscribeMaxBytes with 1009 (the
 // library's read limit).
 func (h *Hub) read(ctx context.Context, c *client) {
-	var last time.Time
 	for {
 		raw, err := c.conn.Read(ctx)
 		if err != nil {
@@ -913,21 +1006,44 @@ func (h *Hub) read(ctx context.Context, c *client) {
 			continue // detached: read on through the close handshake
 		default:
 		}
-		if wait := h.cfg.SubscribeMinInterval - time.Since(last); wait > 0 && !last.IsZero() {
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(wait):
-			}
-		}
-		last = time.Now()
 		box, layers, err := ParseSubscribe(raw)
 		if err != nil {
 			h.counters.Inc(CounterClosedInvalid)
 			h.detach(c, CloseInvalid, truncate(err.Error(), 120))
 			return
 		}
-		h.subscribe(c, box, layers, h.cfg.Now())
+		c.postSubscription(pendingSub{box: box, layers: layers}, h.counters)
+	}
+}
+
+// applySubscriptions applies c's subscriptions at most once per
+// SubscribeMinInterval: one arriving sooner waits, and those superseded
+// while it waits are never applied (counted subscribes_coalesced), so a
+// console re-subscribing in a loop builds at most one snapshot per
+// interval.
+func (h *Hub) applySubscriptions(ctx context.Context, c *client) {
+	var last time.Time
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-c.subReady:
+		}
+		if wait := h.cfg.SubscribeMinInterval - time.Since(last); wait > 0 && !last.IsZero() {
+			t := time.NewTimer(wait)
+			select {
+			case <-ctx.Done():
+				t.Stop()
+				return
+			case <-t.C:
+			}
+		}
+		sub, ok := c.takeSubscription()
+		if !ok {
+			continue
+		}
+		last = time.Now()
+		h.subscribe(c, sub.box, sub.layers, h.cfg.Now())
 	}
 }
 
@@ -939,9 +1055,10 @@ func (h *Hub) read(ctx context.Context, c *client) {
 func (h *Hub) subscribe(c *client, box geodesy.BBox, layers map[string]bool, now time.Time) {
 	h.counters.Inc(CounterSubscribes)
 	cells, err := ViewportCells(box, h.cfg.MaxCells)
+	parts := h.parts(now, h.sources.Snapshot(), 0, time.Time{})
 	c.mu.Lock()
-	defer c.mu.Unlock()
 	if err != nil {
+		defer c.mu.Unlock()
 		c.tooLarge = true
 		if c.tooLargeAt.IsZero() {
 			c.tooLargeAt = now
@@ -949,7 +1066,6 @@ func (h *Hub) subscribe(c *client, box geodesy.BBox, layers map[string]bool, now
 		h.counters.Inc(CounterSubscribeTooLarge)
 		h.cfg.Limiter.Limited("picture_viewport_too_large").Info("viewport refused; the connection keeps its previous one",
 			slog.String("connection_id", c.id), slog.String("error", err.Error()))
-		parts := h.parts(now, h.sources.Snapshot(), 0, time.Time{})
 		if f, err := h.statusFrameLocked(c, &parts, now); err == nil {
 			c.pushStatus(f)
 		}
@@ -976,16 +1092,20 @@ func (h *Hub) subscribe(c *client, box geodesy.BBox, layers map[string]bool, now
 		set[c] = struct{}{}
 	}
 	h.mu.Unlock()
-	c.indexed, c.cells, c.layers = cells, cells, layers
+	c.indexed, c.cells, c.layers, c.lastBox = cells, cells, layers, box
 	c.subscribed, c.tooLarge, c.tooLargeAt = true, false, time.Time{}
-	c.drainData()
+	gen := c.nextGenLocked()
 	c.viewTracks = h.tracks.countIn(cells)
 	clear(c.lastSent)
-	parts := h.parts(now, h.sources.Snapshot(), 0, time.Time{})
 	if f, err := h.statusFrameLocked(c, &parts, now); err == nil {
 		c.pushStatus(f)
 	}
-	h.pushSnapshotLocked(c, now)
+	filter := snapshotFilter{cells: cells, layers: layers, console: c.sess.Console()}
+	c.mu.Unlock()
+	// Built with no lock held: OfferTrack, on the one bus goroutine,
+	// takes every watching console's lock in turn, so a snapshot built
+	// under one would hold every console behind this one.
+	h.sendSnapshot(c, gen, filter, now)
 }
 
 // recheck asks the session checker again every SessionRecheck: a session
@@ -1060,13 +1180,24 @@ type client struct {
 	tooLargeAt time.Time
 	viewTracks int
 	lastSent   map[string]time.Time
+	lastBox    geodesy.BBox
 
-	data    chan []byte
+	// gen is the generation of the view (c.mu): every subscription and
+	// every snapshot of the same view takes a new one, and every live
+	// frame is queued with the generation it was offered under.
+	gen uint64
+
+	data    chan queued
 	wake    chan struct{}
 	ctrlMu  sync.Mutex
 	status  []byte
 	snap    []byte
+	snapGen uint64
 	dropped atomic.Uint64
+
+	subMu    sync.Mutex
+	nextSub  *pendingSub
+	subReady chan struct{}
 
 	uncheckedMu sync.Mutex
 	unchecked   time.Time
@@ -1088,16 +1219,68 @@ func (c *client) setUnchecked(since time.Time) {
 	}
 }
 
-// enqueue queues a live frame without blocking; a full queue drops it
-// and counts it in dropped_frames.
-func (c *client) enqueue(f []byte) bool {
+// queued is a live frame with the generation of the view it was offered
+// under; any marks a frame of no view (source/status/v1), always sent.
+type queued struct {
+	f   []byte
+	gen uint64
+	any bool
+}
+
+// pendingSub is a parsed subscription not yet applied.
+type pendingSub struct {
+	box    geodesy.BBox
+	layers map[string]bool
+}
+
+// postSubscription makes sub the next subscription to apply; one not
+// yet applied is superseded and counted.
+func (c *client) postSubscription(sub pendingSub, counters *core.Counters) {
+	c.subMu.Lock()
+	if c.nextSub != nil {
+		counters.Inc(CounterSubscribesCoalesced)
+	}
+	c.nextSub = &sub
+	c.subMu.Unlock()
+	select {
+	case c.subReady <- struct{}{}:
+	default:
+	}
+}
+
+func (c *client) takeSubscription() (pendingSub, bool) {
+	c.subMu.Lock()
+	defer c.subMu.Unlock()
+	if c.nextSub == nil {
+		return pendingSub{}, false
+	}
+	s := *c.nextSub
+	c.nextSub = nil
+	return s, true
+}
+
+// nextGenLocked starts a new generation of the view; c.mu is held.
+func (c *client) nextGenLocked() uint64 {
+	c.gen++
+	return c.gen
+}
+
+// enqueueAny queues a frame of no view (source/status/v1).
+func (c *client) enqueueAny(f []byte) bool { return c.put(queued{f: f, any: true}) }
+
+// enqueue queues a live frame of the current view; c.mu is held.
+func (c *client) enqueue(f []byte) bool { return c.put(queued{f: f, gen: c.gen}) }
+
+// put queues q without blocking; a full queue drops it and counts it in
+// dropped_frames.
+func (c *client) put(q queued) bool {
 	select {
 	case <-c.done:
 		return false
 	default:
 	}
 	select {
-	case c.data <- f:
+	case c.data <- q:
 		return true
 	default:
 		c.dropped.Add(1)
@@ -1148,17 +1331,6 @@ func (c *client) refreshViewLocked(tracks *cache, now time.Time, every time.Dura
 	}
 }
 
-// drainData discards the queued live frames (of a viewport left).
-func (c *client) drainData() {
-	for {
-		select {
-		case <-c.data:
-		default:
-			return
-		}
-	}
-}
-
 // pushStatus queues the status; a status not yet written is replaced by
 // the newer one.
 func (c *client) pushStatus(f []byte) {
@@ -1168,11 +1340,12 @@ func (c *client) pushStatus(f []byte) {
 	c.wakeUp()
 }
 
-// pushSnapshot queues the snapshot; one not yet written is replaced by
-// the newer one (its subscription superseded the older).
-func (c *client) pushSnapshot(f []byte) {
+// pushSnapshot queues the snapshot of generation gen; one not yet
+// written is replaced by the newer one (its subscription superseded the
+// older).
+func (c *client) pushSnapshot(f []byte, gen uint64) {
 	c.ctrlMu.Lock()
-	c.snap = f
+	c.snap, c.snapGen = f, gen
 	c.ctrlMu.Unlock()
 	c.wakeUp()
 }
@@ -1184,19 +1357,20 @@ func (c *client) wakeUp() {
 	}
 }
 
-// takeControl is the next control frame: the status, then the snapshot.
-func (c *client) takeControl() []byte {
+// takeControl is the next control frame: the status, then the snapshot
+// (snap true, with its generation).
+func (c *client) takeControl() (f []byte, gen uint64, snap bool) {
 	c.ctrlMu.Lock()
 	defer c.ctrlMu.Unlock()
 	if f := c.status; f != nil {
 		c.status = nil
-		return f
+		return f, 0, false
 	}
 	if f := c.snap; f != nil {
 		c.snap = nil
-		return f
+		return f, c.snapGen, true
 	}
-	return nil
+	return nil, 0, false
 }
 
 // PolicyVersion renders a policy version as the status frame carries it.

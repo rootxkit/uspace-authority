@@ -47,14 +47,15 @@ var (
 
 // schemaIDs are the schemas a frame is checked against.
 const (
-	idStatus        = "https://schemas.uspace.ge/console/status/v1.json"
-	idSnapshot      = "https://schemas.uspace.ge/console/snapshot/v1.json"
-	idSubscribe     = "https://schemas.uspace.ge/console/subscribe/v1.json"
-	idTrack         = "https://schemas.uspace.ge/track/telemetry/v1.json"
-	idSource        = "https://schemas.uspace.ge/source/status/v1.json"
-	idPictureStatus = "https://schemas.uspace.ge/picture/status/v1.json"
-	idPictureTrack  = "https://schemas.uspace.ge/picture/track/v1.json"
-	idViolation     = "https://schemas.uspace.ge/violation/v1.json"
+	idStatus          = "https://schemas.uspace.ge/console/status/v1.json"
+	idSnapshot        = "https://schemas.uspace.ge/console/snapshot/v1.json"
+	idSubscribe       = "https://schemas.uspace.ge/console/subscribe/v1.json"
+	idTrack           = "https://schemas.uspace.ge/track/telemetry/v1.json"
+	idSource          = "https://schemas.uspace.ge/source/status/v1.json"
+	idPictureStatus   = "https://schemas.uspace.ge/picture/status/v1.json"
+	idPictureTrack    = "https://schemas.uspace.ge/picture/track/v1.json"
+	idViolation       = "https://schemas.uspace.ge/violation/v1.json"
+	idPictureSnapshot = "https://schemas.uspace.ge/picture/snapshot/v1.json"
 )
 
 func compileSchemas() (map[string]*jsonschema.Schema, error) {
@@ -65,6 +66,7 @@ func compileSchemas() (map[string]*jsonschema.Schema, error) {
 		"testdata/lab/console/snapshot/v1/schema.json", "testdata/lab/console/subscribe/v1/schema.json",
 		"testdata/lab/track/telemetry/v1/schema.json", "testdata/lab/source/status/v1/schema.json",
 		"../../schemas/picture/status/v1.json", "../../schemas/picture/track/v1.json", "../../schemas/violation/v1.json",
+		"../../schemas/picture/snapshot/v1.json",
 	}
 	for _, f := range files {
 		raw, err := os.ReadFile(f)
@@ -81,7 +83,7 @@ func compileSchemas() (map[string]*jsonschema.Schema, error) {
 		}
 	}
 	out := map[string]*jsonschema.Schema{}
-	for _, id := range []string{idStatus, idSnapshot, idSubscribe, idTrack, idSource, idPictureStatus, idPictureTrack, idViolation} {
+	for _, id := range []string{idStatus, idSnapshot, idSubscribe, idTrack, idSource, idPictureStatus, idPictureTrack, idViolation, idPictureSnapshot} {
 		s, err := c.Compile(id)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", id, err)
@@ -123,6 +125,7 @@ func validateFrame(t testing.TB, raw []byte) frame {
 		validate(t, idPictureStatus, raw)
 	case SchemaSnapshot:
 		validate(t, idSnapshot, raw)
+		validate(t, idPictureSnapshot, raw)
 		var b SnapshotBody
 		if err := json.Unmarshal(f.Body, &b); err != nil {
 			t.Fatal(err)

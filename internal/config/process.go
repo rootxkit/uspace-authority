@@ -575,7 +575,8 @@ type PictureTuning struct {
 	TSMaxConns             int      `env:"TS_MAX_CONNS" default:"2" min:"1" max:"100" help:"connections of the read-only projection pool"`
 	PolicyRereadS          int      `env:"PICTURE_POLICY_REREAD_S" default:"60" min:"1" max:"3600" help:"period of the KV policy re-read besides its watch and ctl.policy (G-08)"`
 	SubscribeMaxBytes      int      `env:"PICTURE_SUBSCRIBE_MAX_BYTES" default:"4096" min:"256" max:"65536" help:"largest frame a console may send (console/subscribe/v1); a larger one closes the connection with 1009"`
-	SubscribeMinIntervalMS int      `env:"PICTURE_SUBSCRIBE_MIN_INTERVAL_MS" default:"100" min:"0" max:"10000" help:"subscriptions of one connection are taken at most this often; faster ones wait"`
+	SubscribeMinIntervalMS int      `env:"PICTURE_SUBSCRIBE_MIN_INTERVAL_MS" default:"100" min:"0" max:"10000" help:"subscriptions of one connection are applied at most this often; one arriving sooner waits, and those it supersedes meanwhile are never applied (subscribes_coalesced)"`
+	SnapshotMaxBytes       int      `env:"PICTURE_SNAPSHOT_MAX_BYTES" default:"8388608" min:"65536" max:"268435456" help:"bound on the items of one console/snapshot/v1 (violations first, then tracks, then manned); past it the rest is left out and the snapshot says truncated (E-10)"`
 	SourceStatusStaleS     int      `env:"SOURCE_STATUS_STALE_S" default:"10" min:"1" max:"3600" help:"an adapter whose last src.v1 status is older is silent: its sources are shown stale"`
 	SourceStatusMax        int      `env:"SOURCE_STATUS_MAX" default:"10000" min:"1" max:"1000000" help:"sources whose last status the picture keeps; past it the one heard longest ago is dropped and counted (E-10)"`
 }

@@ -100,6 +100,9 @@ type SnapshotBody struct {
 	Alerts       []json.RawMessage `json:"alerts"`
 	Manned       []json.RawMessage `json:"manned"`
 	ZonesVersion *string           `json:"zones_version"`
+	// Truncated says items were left out at PICTURE_SNAPSHOT_MAX_BYTES
+	// (schemas/picture/snapshot/v1.json).
+	Truncated bool `json:"truncated"`
 }
 
 // systemFrame is body in the 04 §2 envelope as picture-ws produces it at

@@ -40,6 +40,20 @@ are complete messages with their own envelopes. `alerts[]` holds the
 violations active in the viewport (C-08), `zones_version` the published
 zones version of the projection (null while there is none).
 
+A snapshot is bounded by `PICTURE_SNAPSHOT_MAX_BYTES` of items: active
+violations first, then tracks, then manned aircraft. Past the bound the
+rest is left out, `truncated` is `true` (`schemas/picture/snapshot/v1.json`)
+and `snapshots_truncated` is counted; the console should narrow its
+viewport. Live frames still arrive for every aircraft in view.
+
+A snapshot is built with no lock that the bus path takes, so a console
+that re-subscribes does not delay track delivery to the other consoles.
+Live frames of the new viewport that arrive while it is built are held
+for that console and sent after its snapshot. Subscriptions of one
+connection are applied at most once per `PICTURE_SUBSCRIBE_MIN_INTERVAL_MS`.
+Those superseded while one waits are never applied, and they are counted
+in `subscribes_coalesced`.
+
 ### This system's extras, in full
 
 `console/status/v1` body (`schemas/picture/status/v1.json`):

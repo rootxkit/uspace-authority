@@ -110,7 +110,8 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.PictureWS, o Options
 		ThrottleAbove: cfg.ThrottleAboveTracks, ThrottleEvery: time.Duration(float64(time.Second) / cfg.ThrottleHz),
 		AlertSilent: time.Duration(cfg.AlertSilentS) * time.Second, AlertForget: time.Duration(cfg.AlertForgetS) * time.Second,
 		SubscribeMaxBytes: int64(cfg.SubscribeMaxBytes), SubscribeMinInterval: time.Duration(cfg.SubscribeMinIntervalMS) * time.Millisecond,
-		SessionRecheck: time.Duration(cfg.SessionRecheckS) * time.Second, SessionGrace: time.Duration(cfg.SessionGraceS) * time.Second,
+		SnapshotMaxBytes: cfg.SnapshotMaxBytes,
+		SessionRecheck:   time.Duration(cfg.SessionRecheckS) * time.Second, SessionGrace: time.Duration(cfg.SessionGraceS) * time.Second,
 		Logger: rt.Logger, Limiter: rt.Limiter,
 	}, Inputs{
 		Policy: PolicyOf(pf), Projections: proj.View, Bus: watch.View, VerifierReady: verifierReady, SwitchesKnown: srcF.Known,
