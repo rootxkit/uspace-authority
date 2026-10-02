@@ -22,3 +22,16 @@ Unreleased; the format follows Keep a Changelog.
   create and activate, a `Follower` and `/v1/policy*`; the
   `authority_app`, `authority_ts_reader` and `authority_ts_writer` roles;
   the `requireRole` placeholder WP-2 replaces.
+- WP-2: uspace-core v1.1.0; the ecosystem token service (`/oauth/token`
+  client credentials with `client_secret_post` or `private_key_jwt`,
+  `aud` = target host, scopes from table B, every issuance and refusal
+  an event; `/.well-known/jwks.json` and issuer metadata; signing keys
+  from PEM files with two-person rotation and a 24 h overlap; the
+  publication key in the same JWKS; `/v1/oauth/clients*` and
+  `/v1/oauth/keys*`); console accounts with argon2id, TOTP MFA sealed
+  with the PII key, recovery codes, two-step sign-in without user
+  enumeration, rate limits, sessions of table A with idle expiry and
+  revocation, `/v1/auth/*` and `/v1/users*`, the first-admin bootstrap;
+  the core/auth verifier wiring (own keys, CISP, ANSP and lab issuers);
+  `tokens.Client` for outbound calls; the token-service and
+  session-contract runbooks.

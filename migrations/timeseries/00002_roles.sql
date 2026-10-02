@@ -7,7 +7,7 @@
 --                        of the hypertables. No UPDATE or DELETE.
 --
 -- Both are created NOLOGIN when missing (a deployment may provision them
--- beforehand); login users are granted membership by the deployment and
+-- beforehand); login roles are granted membership by the deployment and
 -- each process sets its role on connect (internal/store). Default
 -- privileges give every table a later migration of this tree creates
 -- the same grants, so a new hypertable never needs a grant to be

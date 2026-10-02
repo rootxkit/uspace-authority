@@ -10,6 +10,12 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AssertionJti struct {
+	ClientID  string
+	Jti       string
+	ExpiresAt time.Time
+}
+
 type AuthorityPolicy struct {
 	Version                 int64
 	HeightLimitAglM         float64
@@ -58,4 +64,96 @@ type GooseDbVersionRelational struct {
 	VersionID int64
 	IsApplied bool
 	Tstamp    pgtype.Timestamp
+}
+
+type LoginChallenge struct {
+	TokenHash string
+	UserID    string
+	CreatedAt time.Time
+	ExpiresAt time.Time
+	Attempts  int32
+	UsedAt    *time.Time
+	RemoteIp  string
+}
+
+type OauthClient struct {
+	ClientID      string
+	System        string
+	Scopes        []string
+	Audiences     []string
+	AuthMethod    string
+	SecretHash    *string
+	Jwks          []byte
+	MtlsSubject   *string
+	CertificateID *string
+	Status        string
+	Note          string
+	CreatedAt     time.Time
+	CreatedBy     string
+	UpdatedAt     time.Time
+	UpdatedBy     string
+}
+
+type Session struct {
+	Jti          string
+	UserID       string
+	Realm        string
+	Roles        []string
+	IssuedAt     time.Time
+	ExpiresAt    time.Time
+	LastSeenAt   time.Time
+	RevokedAt    *time.Time
+	RevokedBy    *string
+	RevokeReason *string
+	RemoteIp     string
+	UserAgent    string
+}
+
+type SigningKey struct {
+	Kid              string
+	Purpose          string
+	PublicJwk        []byte
+	PrivateRef       string
+	RegisteredAt     time.Time
+	ActiveFrom       *time.Time
+	RetiredAt        *time.Time
+	RequestedBy      *string
+	RequestedAt      *time.Time
+	CompromisedAt    *time.Time
+	CompromisedBy    *string
+	CompromiseReason *string
+}
+
+type User struct {
+	ID             string
+	Username       string
+	DisplayName    string
+	Roles          []string
+	Realm          string
+	Agency         *string
+	IpAllow        []string
+	Status         string
+	CreatedAt      time.Time
+	CreatedBy      string
+	UpdatedAt      time.Time
+	UpdatedBy      string
+	MfaFailures    int32
+	MfaLockedUntil *time.Time
+	MfaHardLocked  bool
+}
+
+type UserCredential struct {
+	UserID       string
+	PasswordHash string
+	UpdatedAt    time.Time
+}
+
+type UserMfa struct {
+	UserID         string
+	KeyID          string
+	SecretEnc      []byte
+	EnrolledAt     *time.Time
+	LastStep       int64
+	RecoveryHashes []string
+	UpdatedAt      time.Time
 }

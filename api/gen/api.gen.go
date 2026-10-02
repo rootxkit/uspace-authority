@@ -59,6 +59,123 @@ func (e HealthStatus) Valid() bool {
 	}
 }
 
+// Defines values for KeyRotationState.
+const (
+	KeyRotationStateActivated KeyRotationState = "activated"
+	KeyRotationStateRequested KeyRotationState = "requested"
+)
+
+// Valid indicates whether the value is a known member of the KeyRotationState enum.
+func (e KeyRotationState) Valid() bool {
+	switch e {
+	case KeyRotationStateActivated:
+		return true
+	case KeyRotationStateRequested:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OAuthAuthMethod.
+const (
+	OAuthAuthMethodClientSecretPost OAuthAuthMethod = "client_secret_post"
+	OAuthAuthMethodPrivateKeyJwt    OAuthAuthMethod = "private_key_jwt"
+)
+
+// Valid indicates whether the value is a known member of the OAuthAuthMethod enum.
+func (e OAuthAuthMethod) Valid() bool {
+	switch e {
+	case OAuthAuthMethodClientSecretPost:
+		return true
+	case OAuthAuthMethodPrivateKeyJwt:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OAuthClientSystem.
+const (
+	OAuthClientSystemAnsp      OAuthClientSystem = "ansp"
+	OAuthClientSystemAuthority OAuthClientSystem = "authority"
+	OAuthClientSystemCisp      OAuthClientSystem = "cisp"
+	OAuthClientSystemLab       OAuthClientSystem = "lab"
+	OAuthClientSystemUssp      OAuthClientSystem = "ussp"
+)
+
+// Valid indicates whether the value is a known member of the OAuthClientSystem enum.
+func (e OAuthClientSystem) Valid() bool {
+	switch e {
+	case OAuthClientSystemAnsp:
+		return true
+	case OAuthClientSystemAuthority:
+		return true
+	case OAuthClientSystemCisp:
+		return true
+	case OAuthClientSystemLab:
+		return true
+	case OAuthClientSystemUssp:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OAuthClientStatus.
+const (
+	OAuthClientStatusActive    OAuthClientStatus = "active"
+	OAuthClientStatusRevoked   OAuthClientStatus = "revoked"
+	OAuthClientStatusSuspended OAuthClientStatus = "suspended"
+)
+
+// Valid indicates whether the value is a known member of the OAuthClientStatus enum.
+func (e OAuthClientStatus) Valid() bool {
+	switch e {
+	case OAuthClientStatusActive:
+		return true
+	case OAuthClientStatusRevoked:
+		return true
+	case OAuthClientStatusSuspended:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OAuthProblemError.
+const (
+	OAuthProblemErrorInvalidClient          OAuthProblemError = "invalid_client"
+	OAuthProblemErrorInvalidRequest         OAuthProblemError = "invalid_request"
+	OAuthProblemErrorInvalidScope           OAuthProblemError = "invalid_scope"
+	OAuthProblemErrorInvalidTarget          OAuthProblemError = "invalid_target"
+	OAuthProblemErrorTemporarilyUnavailable OAuthProblemError = "temporarily_unavailable"
+	OAuthProblemErrorUnauthorizedClient     OAuthProblemError = "unauthorized_client"
+	OAuthProblemErrorUnsupportedGrantType   OAuthProblemError = "unsupported_grant_type"
+)
+
+// Valid indicates whether the value is a known member of the OAuthProblemError enum.
+func (e OAuthProblemError) Valid() bool {
+	switch e {
+	case OAuthProblemErrorInvalidClient:
+		return true
+	case OAuthProblemErrorInvalidRequest:
+		return true
+	case OAuthProblemErrorInvalidScope:
+		return true
+	case OAuthProblemErrorInvalidTarget:
+		return true
+	case OAuthProblemErrorTemporarilyUnavailable:
+		return true
+	case OAuthProblemErrorUnauthorizedClient:
+		return true
+	case OAuthProblemErrorUnsupportedGrantType:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PolicyHeightLimitInUspace.
 const (
 	PolicyHeightLimitInUspaceEvaluate           PolicyHeightLimitInUspace = "evaluate"
@@ -113,6 +230,69 @@ func (e ReadinessStatus) Valid() bool {
 	}
 }
 
+// Defines values for Realm.
+const (
+	RealmConsole Realm = "console"
+	RealmPolice  Realm = "police"
+)
+
+// Valid indicates whether the value is a known member of the Realm enum.
+func (e Realm) Valid() bool {
+	switch e {
+	case RealmConsole:
+		return true
+	case RealmPolice:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for Role.
+const (
+	RoleAdmin           Role = "admin"
+	RoleAuditor         Role = "auditor"
+	RoleIncidentOfficer Role = "incident_officer"
+	RoleInspector       Role = "inspector"
+	RoleRegistrar       Role = "registrar"
+	RoleViewer          Role = "viewer"
+)
+
+// Valid indicates whether the value is a known member of the Role enum.
+func (e Role) Valid() bool {
+	switch e {
+	case RoleAdmin:
+		return true
+	case RoleAuditor:
+		return true
+	case RoleIncidentOfficer:
+		return true
+	case RoleInspector:
+		return true
+	case RoleRegistrar:
+		return true
+	case RoleViewer:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SessionIssuedTokenType.
+const (
+	SessionIssuedTokenTypeBearer SessionIssuedTokenType = "Bearer"
+)
+
+// Valid indicates whether the value is a known member of the SessionIssuedTokenType enum.
+func (e SessionIssuedTokenType) Valid() bool {
+	switch e {
+	case SessionIssuedTokenTypeBearer:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for Severity.
 const (
 	SeverityCritical Severity = "critical"
@@ -128,6 +308,87 @@ func (e Severity) Valid() bool {
 	case SeverityInfo:
 		return true
 	case SeverityWarning:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SigningKeyPurpose.
+const (
+	SigningKeyPurposePublication SigningKeyPurpose = "publication"
+	SigningKeyPurposeToken       SigningKeyPurpose = "token"
+)
+
+// Valid indicates whether the value is a known member of the SigningKeyPurpose enum.
+func (e SigningKeyPurpose) Valid() bool {
+	switch e {
+	case SigningKeyPurposePublication:
+		return true
+	case SigningKeyPurposeToken:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SigningKeyState.
+const (
+	SigningKeyStateActive      SigningKeyState = "active"
+	SigningKeyStateCandidate   SigningKeyState = "candidate"
+	SigningKeyStateCompromised SigningKeyState = "compromised"
+	SigningKeyStateRequested   SigningKeyState = "requested"
+	SigningKeyStateRetired     SigningKeyState = "retired"
+	SigningKeyStateRetiring    SigningKeyState = "retiring"
+)
+
+// Valid indicates whether the value is a known member of the SigningKeyState enum.
+func (e SigningKeyState) Valid() bool {
+	switch e {
+	case SigningKeyStateActive:
+		return true
+	case SigningKeyStateCandidate:
+		return true
+	case SigningKeyStateCompromised:
+		return true
+	case SigningKeyStateRequested:
+		return true
+	case SigningKeyStateRetired:
+		return true
+	case SigningKeyStateRetiring:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TokenResponseTokenType.
+const (
+	TokenResponseTokenTypeBearer TokenResponseTokenType = "Bearer"
+)
+
+// Valid indicates whether the value is a known member of the TokenResponseTokenType enum.
+func (e TokenResponseTokenType) Valid() bool {
+	switch e {
+	case TokenResponseTokenTypeBearer:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UserStatus.
+const (
+	UserStatusActive   UserStatus = "active"
+	UserStatusDisabled UserStatus = "disabled"
+)
+
+// Valid indicates whether the value is a known member of the UserStatus enum.
+func (e UserStatus) Valid() bool {
+	switch e {
+	case UserStatusActive:
+		return true
+	case UserStatusDisabled:
 		return true
 	default:
 		return false
@@ -181,6 +442,158 @@ type Health struct {
 
 // HealthStatus defines model for Health.Status.
 type HealthStatus string
+
+// IssuerMetadata defines model for IssuerMetadata.
+type IssuerMetadata struct {
+	GrantTypesSupported                        []string `json:"grant_types_supported"`
+	Issuer                                     string   `json:"issuer"`
+	JwksUri                                    string   `json:"jwks_uri"`
+	ScopesSupported                            []string `json:"scopes_supported"`
+	TokenEndpoint                              string   `json:"token_endpoint"`
+	TokenEndpointAuthMethodsSupported          []string `json:"token_endpoint_auth_methods_supported"`
+	TokenEndpointAuthSigningAlgValuesSupported []string `json:"token_endpoint_auth_signing_alg_values_supported"`
+}
+
+// JWKS defines model for JWKS.
+type JWKS struct {
+	Keys []map[string]interface{} `json:"keys"`
+}
+
+// KeyRotation defines model for KeyRotation.
+type KeyRotation struct {
+	// ActiveKid The key that signs after this call.
+	ActiveKid     string     `json:"active_kid"`
+	ConfirmBefore *time.Time `json:"confirm_before,omitempty"`
+
+	// Kid The key requested or activated.
+	Kid         string           `json:"kid"`
+	PreviousKid *string          `json:"previous_kid,omitempty"`
+	RequestedBy *string          `json:"requested_by,omitempty"`
+	State       KeyRotationState `json:"state"`
+}
+
+// KeyRotationState defines model for KeyRotation.State.
+type KeyRotationState string
+
+// LoginChallenge defines model for LoginChallenge.
+type LoginChallenge struct {
+	// Enrolment Present only while the account has no confirmed TOTP.
+	Enrolment *MFAEnrolment `json:"enrolment,omitempty"`
+	ExpiresAt time.Time     `json:"expires_at"`
+
+	// MfaToken Single use; present it to /v1/auth/mfa.
+	MfaToken string `json:"mfa_token"`
+}
+
+// LoginRequest defines model for LoginRequest.
+type LoginRequest struct {
+	Password string `json:"password"`
+	Username string `json:"username"`
+}
+
+// MFAEnrolment Present only while the account has no confirmed TOTP.
+type MFAEnrolment struct {
+	OtpauthUri string `json:"otpauth_uri"`
+
+	// Secret Base32 TOTP secret (RFC 6238
+	Secret string `json:"secret"`
+}
+
+// MFARequest defines model for MFARequest.
+type MFARequest struct {
+	// Code The current TOTP code.
+	Code     *string `json:"code,omitempty"`
+	MfaToken string  `json:"mfa_token"`
+
+	// RecoveryCode One unused recovery code
+	RecoveryCode *string `json:"recovery_code,omitempty"`
+}
+
+// OAuthAuthMethod defines model for OAuthAuthMethod.
+type OAuthAuthMethod string
+
+// OAuthClient defines model for OAuthClient.
+type OAuthClient struct {
+	Audiences     []string          `json:"audiences"`
+	AuthMethod    OAuthAuthMethod   `json:"auth_method"`
+	CertificateId *string           `json:"certificate_id,omitempty"`
+	ClientId      string            `json:"client_id"`
+	CreatedAt     time.Time         `json:"created_at"`
+	CreatedBy     string            `json:"created_by"`
+	Jwks          *JWKS             `json:"jwks,omitempty"`
+	MtlsSubject   *string           `json:"mtls_subject,omitempty"`
+	Note          string            `json:"note"`
+	Scopes        []string          `json:"scopes"`
+	Status        OAuthClientStatus `json:"status"`
+	System        OAuthClientSystem `json:"system"`
+	UpdatedAt     time.Time         `json:"updated_at"`
+	UpdatedBy     string            `json:"updated_by"`
+}
+
+// OAuthClientSystem defines model for OAuthClient.System.
+type OAuthClientSystem string
+
+// OAuthClientCreated defines model for OAuthClientCreated.
+type OAuthClientCreated struct {
+	Client OAuthClient `json:"client"`
+
+	// ClientSecret The client_secret_post secret; shown here once and never again.
+	ClientSecret *string `json:"client_secret,omitempty"`
+}
+
+// OAuthClientInput defines model for OAuthClientInput.
+type OAuthClientInput struct {
+	// Audiences Hosts this client may name for national scopes.
+	Audiences     *[]string       `json:"audiences,omitempty"`
+	AuthMethod    OAuthAuthMethod `json:"auth_method"`
+	CertificateId *string         `json:"certificate_id,omitempty"`
+
+	// ClientId authority-01, cisp-01, ansp-01, ussp-<code>-01 or lab-01 (M24).
+	ClientId    string   `json:"client_id"`
+	Jwks        *JWKS    `json:"jwks,omitempty"`
+	MtlsSubject *string  `json:"mtls_subject,omitempty"`
+	Note        *string  `json:"note,omitempty"`
+	Scopes      []string `json:"scopes"`
+}
+
+// OAuthClientList defines model for OAuthClientList.
+type OAuthClientList struct {
+	Clients []OAuthClient `json:"clients"`
+}
+
+// OAuthClientPatch defines model for OAuthClientPatch.
+type OAuthClientPatch struct {
+	Audiences *[]string          `json:"audiences,omitempty"`
+	Note      *string            `json:"note,omitempty"`
+	Scopes    *[]string          `json:"scopes,omitempty"`
+	Status    *OAuthClientStatus `json:"status,omitempty"`
+}
+
+// OAuthClientStatus defines model for OAuthClientStatus.
+type OAuthClientStatus string
+
+// OAuthProblem A problem (M28) that also carries the RFC 6749 §5.2 members, so
+// an OAuth2 client library reads `error` and a uspace client reads
+// the problem. `error` is `invalid_request`, `invalid_client`,
+// `invalid_scope`, `invalid_target` (RFC 8707),
+// `unauthorized_client`, `unsupported_grant_type` or
+// `temporarily_unavailable` (rate limit).
+type OAuthProblem struct {
+	Detail           *string           `json:"detail,omitempty"`
+	Error            OAuthProblemError `json:"error"`
+	ErrorDescription *string           `json:"error_description,omitempty"`
+	Errors           []FieldProblem    `json:"errors"`
+	Instance         *string           `json:"instance,omitempty"`
+	Status           int               `json:"status"`
+	Title            string            `json:"title"`
+	Truncated        *bool             `json:"truncated,omitempty"`
+
+	// Type `https://schemas.uspace.ge/problems/<slug>`, slug = the counter or refusal name.
+	Type string `json:"type"`
+}
+
+// OAuthProblemError defines model for OAuthProblem.Error.
+type OAuthProblemError string
 
 // Policy defines model for Policy.
 type Policy struct {
@@ -325,8 +738,168 @@ type Readiness struct {
 // ReadinessStatus defines model for Readiness.Status.
 type ReadinessStatus string
 
+// Realm defines model for Realm.
+type Realm string
+
+// Revoked defines model for Revoked.
+type Revoked struct {
+	Revoked int `json:"revoked"`
+}
+
+// Role defines model for Role.
+type Role string
+
+// RolesInput defines model for RolesInput.
+type RolesInput struct {
+	Roles []Role `json:"roles"`
+}
+
+// SessionInfo defines model for SessionInfo.
+type SessionInfo struct {
+	ExpiresAt     time.Time `json:"expires_at"`
+	IdleExpiresAt time.Time `json:"idle_expires_at"`
+
+	// Jti The session id.
+	Jti   string   `json:"jti"`
+	Realm Realm    `json:"realm"`
+	Roles []string `json:"roles"`
+
+	// Sub The account id.
+	Sub string `json:"sub"`
+}
+
+// SessionIssued defines model for SessionIssued.
+type SessionIssued struct {
+	ExpiresAt    time.Time `json:"expires_at"`
+	IdleTimeoutS int       `json:"idle_timeout_s"`
+
+	// RecoveryCodes Shown once, at the sign-in that confirms enrolment.
+	RecoveryCodes *[]string   `json:"recovery_codes,omitempty"`
+	Session       SessionInfo `json:"session"`
+
+	// Token The session JWT (table A): the BFF puts it in the uspace_session cookie.
+	Token     string                 `json:"token"`
+	TokenType SessionIssuedTokenType `json:"token_type"`
+}
+
+// SessionIssuedTokenType defines model for SessionIssued.TokenType.
+type SessionIssuedTokenType string
+
 // Severity defines model for Severity.
 type Severity string
+
+// SigningKey defines model for SigningKey.
+type SigningKey struct {
+	ActiveFrom       *time.Time        `json:"active_from,omitempty"`
+	CompromiseReason *string           `json:"compromise_reason,omitempty"`
+	CompromisedAt    *time.Time        `json:"compromised_at,omitempty"`
+	CompromisedBy    *string           `json:"compromised_by,omitempty"`
+	Kid              string            `json:"kid"`
+	Purpose          SigningKeyPurpose `json:"purpose"`
+	RegisteredAt     time.Time         `json:"registered_at"`
+	RequestedAt      *time.Time        `json:"requested_at,omitempty"`
+	RequestedBy      *string           `json:"requested_by,omitempty"`
+	RetiredAt        *time.Time        `json:"retired_at,omitempty"`
+
+	// State retiring: retired but still in the JWKS; retired: no longer published.
+	State SigningKeyState `json:"state"`
+}
+
+// SigningKeyPurpose defines model for SigningKey.Purpose.
+type SigningKeyPurpose string
+
+// SigningKeyState retiring: retired but still in the JWKS; retired: no longer published.
+type SigningKeyState string
+
+// SigningKeyList defines model for SigningKeyList.
+type SigningKeyList struct {
+	Keys []SigningKey `json:"keys"`
+}
+
+// TokenRequest defines model for TokenRequest.
+type TokenRequest struct {
+	// Audience The target's host or base URL; its host becomes aud (M18).
+	Audience            *string `json:"audience,omitempty"`
+	ClientAssertion     *string `json:"client_assertion,omitempty"`
+	ClientAssertionType *string `json:"client_assertion_type,omitempty"`
+	ClientId            *string `json:"client_id,omitempty"`
+	ClientSecret        *string `json:"client_secret,omitempty"`
+	GrantType           string  `json:"grant_type"`
+
+	// Resource RFC 8707 resource indicator (one), an alternative to audience.
+	Resource *[]string `json:"resource,omitempty"`
+
+	// Scope Space-separated catalogue scopes (WP-2 table B).
+	Scope *string `json:"scope,omitempty"`
+}
+
+// TokenResponse defines model for TokenResponse.
+type TokenResponse struct {
+	AccessToken string `json:"access_token"`
+
+	// ExpiresIn Seconds until exp (at most 3600).
+	ExpiresIn int                    `json:"expires_in"`
+	Scope     string                 `json:"scope"`
+	TokenType TokenResponseTokenType `json:"token_type"`
+}
+
+// TokenResponseTokenType defines model for TokenResponse.TokenType.
+type TokenResponseTokenType string
+
+// User defines model for User.
+type User struct {
+	CreatedAt   time.Time `json:"created_at"`
+	CreatedBy   string    `json:"created_by"`
+	DisplayName string    `json:"display_name"`
+	Id          string    `json:"id"`
+	MfaEnrolled bool      `json:"mfa_enrolled"`
+
+	// MfaFailures Consecutive wrong MFA codes.
+	MfaFailures *int `json:"mfa_failures,omitempty"`
+
+	// MfaHardLocked MFA refused until an admin unlocks the account.
+	MfaHardLocked *bool `json:"mfa_hard_locked,omitempty"`
+
+	// MfaLockedUntil MFA refused until then.
+	MfaLockedUntil *time.Time `json:"mfa_locked_until,omitempty"`
+	Realm          Realm      `json:"realm"`
+	Roles          []string   `json:"roles"`
+	Status         UserStatus `json:"status"`
+	UpdatedAt      time.Time  `json:"updated_at"`
+	UpdatedBy      string     `json:"updated_by"`
+	Username       string     `json:"username"`
+}
+
+// UserStatus defines model for User.Status.
+type UserStatus string
+
+// UserInput defines model for UserInput.
+type UserInput struct {
+	DisplayName *string `json:"display_name,omitempty"`
+	Password    string  `json:"password"`
+	Realm       Realm   `json:"realm"`
+	Roles       []Role  `json:"roles"`
+	Username    string  `json:"username"`
+}
+
+// UserList defines model for UserList.
+type UserList struct {
+	Users []User `json:"users"`
+}
+
+// OAuthError A problem (M28) that also carries the RFC 6749 §5.2 members, so
+// an OAuth2 client library reads `error` and a uspace client reads
+// the problem. `error` is `invalid_request`, `invalid_client`,
+// `invalid_scope`, `invalid_target` (RFC 8707),
+// `unauthorized_client`, `unsupported_grant_type` or
+// `temporarily_unavailable` (rate limit).
+type OAuthError = OAuthProblem
+
+// RateLimited RFC 9457 problem details with the field-error extension of
+// decision M28; the shape of uspace-lab `schemas/common/problem/v1`.
+// `errors` is capped at 100 entries; `truncated` is true when it
+// was cut.
+type RateLimited = Problem
 
 // ListAuditEventsParams defines parameters for ListAuditEvents.
 type ListAuditEventsParams struct {
@@ -347,8 +920,37 @@ type ListAuditEventsParams struct {
 	Purpose *string `form:"purpose,omitempty" json:"purpose,omitempty"`
 }
 
+// CompromiseSigningKeyJSONBody defines parameters for CompromiseSigningKey.
+type CompromiseSigningKeyJSONBody struct {
+	Reason string `json:"reason"`
+}
+
+// RequestTokenFormdataRequestBody defines body for RequestToken for application/x-www-form-urlencoded ContentType.
+type RequestTokenFormdataRequestBody = TokenRequest
+
+// LoginJSONRequestBody defines body for Login for application/json ContentType.
+type LoginJSONRequestBody = LoginRequest
+
+// VerifyMFAJSONRequestBody defines body for VerifyMFA for application/json ContentType.
+type VerifyMFAJSONRequestBody = MFARequest
+
+// CreateOAuthClientJSONRequestBody defines body for CreateOAuthClient for application/json ContentType.
+type CreateOAuthClientJSONRequestBody = OAuthClientInput
+
+// UpdateOAuthClientJSONRequestBody defines body for UpdateOAuthClient for application/json ContentType.
+type UpdateOAuthClientJSONRequestBody = OAuthClientPatch
+
+// CompromiseSigningKeyJSONRequestBody defines body for CompromiseSigningKey for application/json ContentType.
+type CompromiseSigningKeyJSONRequestBody CompromiseSigningKeyJSONBody
+
 // CreatePolicyJSONRequestBody defines body for CreatePolicy for application/json ContentType.
 type CreatePolicyJSONRequestBody = PolicyInput
+
+// CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
+type CreateUserJSONRequestBody = UserInput
+
+// SetUserRolesJSONRequestBody defines body for SetUserRoles for application/json ContentType.
+type SetUserRolesJSONRequestBody = RolesInput
 
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -424,12 +1026,82 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
+	// GetJWKS The issuer's public keys
+	//
+	// Every RS256 key a verifier may meet (`use: sig`, distinguished by
+	// `kid`): the active token-signing key, retired token-signing keys
+	// until their retirement plus the JWKS cache TTL (24 h), and this
+	// system's publication-signing key of the detached
+	// `X-JWS-Signature` (M26). Cacheable for 300 s.
+	//
+	// Corresponds with GET /.well-known/jwks.json (the `GetJWKS` operationId).
+	GetJWKS(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetIssuerMetadata Issuer metadata
+	//
+	// The issuer, its JWKS URL and token endpoint, the grant type and
+	// the client authentication methods. This is an OAuth2 issuer, not
+	// an OpenID provider: there is no authorisation endpoint.
+	//
+	// Corresponds with GET /.well-known/openid-configuration (the `GetIssuerMetadata` operationId).
+	GetIssuerMetadata(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetHealthz Liveness
 	//
 	// 200 while the process runs. Says nothing about dependencies.
 	//
 	// Corresponds with GET /healthz (the `GetHealthz` operationId).
 	GetHealthz(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RequestTokenWithBody Client credentials grant
+	//
+	// RFC 6749 §4.4 client credentials. The client authenticates with
+	// `client_secret_post` (`client_id`, `client_secret`) or
+	// `private_key_jwt` (RFC 7523: `client_assertion_type` =
+	// `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`,
+	// `client_assertion` an RS256 JWT with `iss` = `sub` = the client
+	// id, `aud` = this issuer or its token endpoint, `exp` at most
+	// 5 min ahead and a `jti` used once). Parameters in the query
+	// string are refused. `scope` names catalogue scopes (WP-2 table
+	// B), a subset of the client's. `audience`, or one RFC 8707
+	// `resource`, names the target: a host or the target's base URL,
+	// reduced to its host, which becomes `aud` (M18). For national
+	// scopes the host must be on the client's audience list; for
+	// `utm.*` and `rid.*` any host is accepted. One audience per
+	// token. Errors carry RFC 6749 `error` and `error_description`
+	// beside the problem members. Issuance is rate-limited per
+	// client (429 with `Retry-After`). Every refusal is a
+	// `token_refused` event.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /oauth/token (the `RequestToken` operationId).
+	RequestTokenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RequestTokenWithFormdataBody Client credentials grant
+	//
+	// RFC 6749 §4.4 client credentials. The client authenticates with
+	// `client_secret_post` (`client_id`, `client_secret`) or
+	// `private_key_jwt` (RFC 7523: `client_assertion_type` =
+	// `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`,
+	// `client_assertion` an RS256 JWT with `iss` = `sub` = the client
+	// id, `aud` = this issuer or its token endpoint, `exp` at most
+	// 5 min ahead and a `jti` used once). Parameters in the query
+	// string are refused. `scope` names catalogue scopes (WP-2 table
+	// B), a subset of the client's. `audience`, or one RFC 8707
+	// `resource`, names the target: a host or the target's base URL,
+	// reduced to its host, which becomes `aud` (M18). For national
+	// scopes the host must be on the client's audience list; for
+	// `utm.*` and `rid.*` any host is accepted. One audience per
+	// token. Errors carry RFC 6749 `error` and `error_description`
+	// beside the problem members. Issuance is rate-limited per
+	// client (429 with `Retry-After`). Every refusal is a
+	// `token_refused` event.
+	//
+	// Takes a body of the `application/x-www-form-urlencoded` content type.
+	//
+	// Corresponds with POST /oauth/token (the `RequestToken` operationId).
+	RequestTokenWithFormdataBody(ctx context.Context, body RequestTokenFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetReadyz Readiness
 	//
@@ -449,6 +1121,186 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /v1/audit/events (the `ListAuditEvents` operationId).
 	ListAuditEvents(ctx context.Context, params *ListAuditEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// LoginWithBody First sign-in step (password)
+	//
+	// Checks the password and returns a short, single-use MFA
+	// challenge. An unknown user, a disabled user and a wrong password
+	// get the same answer after the same argon2id work (no user
+	// enumeration). An account without confirmed TOTP gets its
+	// enrolment secret here, after the password. Rate-limited per
+	// client address and per username (429 with `Retry-After`).
+	// Every attempt is an events row (`login_password_accepted` or
+	// `login_refused`).
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/auth/login (the `Login` operationId).
+	LoginWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// Login First sign-in step (password)
+	//
+	// Checks the password and returns a short, single-use MFA
+	// challenge. An unknown user, a disabled user and a wrong password
+	// get the same answer after the same argon2id work (no user
+	// enumeration). An account without confirmed TOTP gets its
+	// enrolment secret here, after the password. Rate-limited per
+	// client address and per username (429 with `Retry-After`).
+	// Every attempt is an events row (`login_password_accepted` or
+	// `login_refused`).
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/auth/login (the `Login` operationId).
+	Login(ctx context.Context, body LoginJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// Logout End the session of the caller
+	//
+	// Corresponds with POST /v1/auth/logout (the `Logout` operationId).
+	Logout(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// VerifyMFAWithBody Second sign-in step (TOTP or a recovery code)
+	//
+	// Exchanges the challenge and a TOTP code (or one recovery code)
+	// for a session. A code is accepted once; a challenge allows a
+	// bounded number of attempts and is used once. The first success
+	// after enrolment confirms it and returns the recovery codes,
+	// once. Every failure is an `mfa_refused` event; the session is a
+	// `session_started` event.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/auth/mfa (the `VerifyMFA` operationId).
+	VerifyMFAWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// VerifyMFA Second sign-in step (TOTP or a recovery code)
+	//
+	// Exchanges the challenge and a TOTP code (or one recovery code)
+	// for a session. A code is accepted once; a challenge allows a
+	// bounded number of attempts and is used once. The first success
+	// after enrolment confirms it and returns the recovery codes,
+	// once. Every failure is an `mfa_refused` event; the session is a
+	// `session_started` event.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/auth/mfa (the `VerifyMFA` operationId).
+	VerifyMFA(ctx context.Context, body VerifyMFAJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetSession The session of the caller
+	//
+	// Corresponds with GET /v1/auth/session (the `GetSession` operationId).
+	GetSession(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListOAuthClients Registered clients
+	//
+	// Corresponds with GET /v1/oauth/clients (the `ListOAuthClients` operationId).
+	ListOAuthClients(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateOAuthClientWithBody Register a client
+	//
+	// One client per calling system (M24). Scopes must be grantable
+	// to this client (in the catalogue, not reserved, not of a USSP's
+	// issuer, `dp.observe` for `lab-01` only); audiences are hosts.
+	// For `client_secret_post` the secret is generated here and
+	// returned once; only its argon2id hash is kept. For
+	// `private_key_jwt` the client's public JWKS is given (RSA keys of
+	// at least 2048 bits, no private members).
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/oauth/clients (the `CreateOAuthClient` operationId).
+	CreateOAuthClientWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateOAuthClient Register a client
+	//
+	// One client per calling system (M24). Scopes must be grantable
+	// to this client (in the catalogue, not reserved, not of a USSP's
+	// issuer, `dp.observe` for `lab-01` only); audiences are hosts.
+	// For `client_secret_post` the secret is generated here and
+	// returned once; only its argon2id hash is kept. For
+	// `private_key_jwt` the client's public JWKS is given (RSA keys of
+	// at least 2048 bits, no private members).
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/oauth/clients (the `CreateOAuthClient` operationId).
+	CreateOAuthClient(ctx context.Context, body CreateOAuthClientJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetOAuthClient One client
+	//
+	// Corresponds with GET /v1/oauth/clients/{client_id} (the `GetOAuthClient` operationId).
+	GetOAuthClient(ctx context.Context, clientId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateOAuthClientWithBody Change a client's status, scopes, audiences or note
+	//
+	// A suspended or revoked client gets no new token; tokens already
+	// issued expire within their TTL (at most 1 h).
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /v1/oauth/clients/{client_id} (the `UpdateOAuthClient` operationId).
+	UpdateOAuthClientWithBody(ctx context.Context, clientId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateOAuthClient Change a client's status, scopes, audiences or note
+	//
+	// A suspended or revoked client gets no new token; tokens already
+	// issued expire within their TTL (at most 1 h).
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /v1/oauth/clients/{client_id} (the `UpdateOAuthClient` operationId).
+	UpdateOAuthClient(ctx context.Context, clientId string, body UpdateOAuthClientJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListSigningKeys Signing keys and their state
+	//
+	// Corresponds with GET /v1/oauth/keys (the `ListSigningKeys` operationId).
+	ListSigningKeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RotateSigningKey Activate the next token-signing key
+	//
+	// The next key is the first key of `SIGNING_KEY_FILES` never
+	// activated. With the two-person rule (`KEY_ROTATION_TWO_PERSON`,
+	// default on) the first admin's call records the request (202)
+	// and a second admin's call within `KEY_ROTATION_CONFIRM_S`
+	// (600 s) activates it (200); the same admin twice is refused
+	// (409). The previous key is retired and stays in the JWKS for
+	// `KEY_RETIRE_GRACE_S` (24 h).
+	//
+	// Corresponds with POST /v1/oauth/keys/rotate (the `RotateSigningKey` operationId).
+	RotateSigningKey(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CompromiseSigningKeyWithBody Drop a compromised key now
+	//
+	// The emergency retirement: the key leaves the JWKS at once (no
+	// 24 h overlap), never signs again and is never a rotation
+	// candidate. An active token key is replaced by the next
+	// candidate; without one this issuer stops issuing until a key is
+	// added. One admin suffices; the act is a `signing_key_compromised`
+	// event with the reason. Other replicas follow within
+	// `KEY_REFRESH_S`; verifiers drop the key when their JWKS cache
+	// refreshes.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/oauth/keys/{kid}/compromised (the `CompromiseSigningKey` operationId).
+	CompromiseSigningKeyWithBody(ctx context.Context, kid string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CompromiseSigningKey Drop a compromised key now
+	//
+	// The emergency retirement: the key leaves the JWKS at once (no
+	// 24 h overlap), never signs again and is never a rotation
+	// candidate. An active token key is replaced by the next
+	// candidate; without one this issuer stops issuing until a key is
+	// added. One admin suffices; the act is a `signing_key_compromised`
+	// event with the reason. Other replicas follow within
+	// `KEY_REFRESH_S`; verifiers drop the key when their JWKS cache
+	// refreshes.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/oauth/keys/{kid}/compromised (the `CompromiseSigningKey` operationId).
+	CompromiseSigningKey(ctx context.Context, kid string, body CompromiseSigningKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetPolicy The active policy
 	//
@@ -488,6 +1340,130 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /v1/policy/{version}/activate (the `ActivatePolicy` operationId).
 	ActivatePolicy(ctx context.Context, version int64, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListUsers Console accounts
+	//
+	// Corresponds with GET /v1/users (the `ListUsers` operationId).
+	ListUsers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateUserWithBody Create an account
+	//
+	// The account signs in with the password given here and enrols
+	// TOTP at its first sign-in.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/users (the `CreateUser` operationId).
+	CreateUserWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateUser Create an account
+	//
+	// The account signs in with the password given here and enrols
+	// TOTP at its first sign-in.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/users (the `CreateUser` operationId).
+	CreateUser(ctx context.Context, body CreateUserJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetUser One account
+	//
+	// Corresponds with GET /v1/users/{user_id} (the `GetUser` operationId).
+	GetUser(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DisableUser Disable an account
+	//
+	// Revokes its sessions; it can no longer sign in. The last active admin cannot be disabled (409).
+	//
+	// Corresponds with POST /v1/users/{user_id}/disable (the `DisableUser` operationId).
+	DisableUser(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// EnableUser Enable a disabled account
+	//
+	// Corresponds with POST /v1/users/{user_id}/enable (the `EnableUser` operationId).
+	EnableUser(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ResetUserMFA Reset the TOTP of an account
+	//
+	// Deletes the TOTP secret and the recovery codes and revokes the sessions; the account enrols again at its next sign-in.
+	//
+	// Corresponds with POST /v1/users/{user_id}/mfa/reset (the `ResetUserMFA` operationId).
+	ResetUserMFA(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UnlockUserMFA Clear the MFA lock of an account
+	//
+	// Wrong TOTP or recovery codes count against the account across
+	// challenges and addresses (NIST SP 800-63B 5.2.2): from
+	// `MFA_LOCKOUT_AFTER` failures the account is locked for a time
+	// that doubles with each failure, and at `MFA_HARD_LOCK_AFTER`
+	// (at most 100) until an admin calls this. A success clears the
+	// count.
+	//
+	// Corresponds with POST /v1/users/{user_id}/mfa/unlock (the `UnlockUserMFA` operationId).
+	UnlockUserMFA(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetUserRolesWithBody Replace the roles of an account
+	//
+	// Revokes the sessions of the account, so the new roles apply at the next sign-in. The last active admin cannot lose the role (409).
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /v1/users/{user_id}/roles (the `SetUserRoles` operationId).
+	SetUserRolesWithBody(ctx context.Context, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetUserRoles Replace the roles of an account
+	//
+	// Revokes the sessions of the account, so the new roles apply at the next sign-in. The last active admin cannot lose the role (409).
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /v1/users/{user_id}/roles (the `SetUserRoles` operationId).
+	SetUserRoles(ctx context.Context, userId string, body SetUserRolesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RevokeUserSessions Revoke every session of an account
+	//
+	// Corresponds with POST /v1/users/{user_id}/sessions/revoke (the `RevokeUserSessions` operationId).
+	RevokeUserSessions(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+// GetJWKS The issuer's public keys
+//
+// Every RS256 key a verifier may meet (`use: sig`, distinguished by
+// `kid`): the active token-signing key, retired token-signing keys
+// until their retirement plus the JWKS cache TTL (24 h), and this
+// system's publication-signing key of the detached
+// `X-JWS-Signature` (M26). Cacheable for 300 s.
+//
+// Corresponds with GET /.well-known/jwks.json (the `GetJWKS` operationId).
+func (c *Client) GetJWKS(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetJWKSRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetIssuerMetadata Issuer metadata
+//
+// The issuer, its JWKS URL and token endpoint, the grant type and
+// the client authentication methods. This is an OAuth2 issuer, not
+// an OpenID provider: there is no authorisation endpoint.
+//
+// Corresponds with GET /.well-known/openid-configuration (the `GetIssuerMetadata` operationId).
+func (c *Client) GetIssuerMetadata(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetIssuerMetadataRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 // GetHealthz Liveness
@@ -497,6 +1473,76 @@ type ClientInterface interface {
 // Corresponds with GET /healthz (the `GetHealthz` operationId).
 func (c *Client) GetHealthz(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetHealthzRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RequestTokenWithBody Client credentials grant
+//
+// RFC 6749 §4.4 client credentials. The client authenticates with
+// `client_secret_post` (`client_id`, `client_secret`) or
+// `private_key_jwt` (RFC 7523: `client_assertion_type` =
+// `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`,
+// `client_assertion` an RS256 JWT with `iss` = `sub` = the client
+// id, `aud` = this issuer or its token endpoint, `exp` at most
+// 5 min ahead and a `jti` used once). Parameters in the query
+// string are refused. `scope` names catalogue scopes (WP-2 table
+// B), a subset of the client's. `audience`, or one RFC 8707
+// `resource`, names the target: a host or the target's base URL,
+// reduced to its host, which becomes `aud` (M18). For national
+// scopes the host must be on the client's audience list; for
+// `utm.*` and `rid.*` any host is accepted. One audience per
+// token. Errors carry RFC 6749 `error` and `error_description`
+// beside the problem members. Issuance is rate-limited per
+// client (429 with `Retry-After`). Every refusal is a
+// `token_refused` event.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /oauth/token (the `RequestToken` operationId).
+func (c *Client) RequestTokenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRequestTokenRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RequestTokenWithFormdataBody Client credentials grant
+//
+// RFC 6749 §4.4 client credentials. The client authenticates with
+// `client_secret_post` (`client_id`, `client_secret`) or
+// `private_key_jwt` (RFC 7523: `client_assertion_type` =
+// `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`,
+// `client_assertion` an RS256 JWT with `iss` = `sub` = the client
+// id, `aud` = this issuer or its token endpoint, `exp` at most
+// 5 min ahead and a `jti` used once). Parameters in the query
+// string are refused. `scope` names catalogue scopes (WP-2 table
+// B), a subset of the client's. `audience`, or one RFC 8707
+// `resource`, names the target: a host or the target's base URL,
+// reduced to its host, which becomes `aud` (M18). For national
+// scopes the host must be on the client's audience list; for
+// `utm.*` and `rid.*` any host is accepted. One audience per
+// token. Errors carry RFC 6749 `error` and `error_description`
+// beside the problem members. Issuance is rate-limited per
+// client (429 with `Retry-After`). Every refusal is a
+// `token_refused` event.
+//
+// Takes a body of the `application/x-www-form-urlencoded` content type.
+//
+// Corresponds with POST /oauth/token (the `RequestToken` operationId).
+func (c *Client) RequestTokenWithFormdataBody(ctx context.Context, body RequestTokenFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRequestTokenRequestWithFormdataBody(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -536,6 +1582,346 @@ func (c *Client) GetReadyz(ctx context.Context, reqEditors ...RequestEditorFn) (
 // Corresponds with GET /v1/audit/events (the `ListAuditEvents` operationId).
 func (c *Client) ListAuditEvents(ctx context.Context, params *ListAuditEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListAuditEventsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// LoginWithBody First sign-in step (password)
+//
+// Checks the password and returns a short, single-use MFA
+// challenge. An unknown user, a disabled user and a wrong password
+// get the same answer after the same argon2id work (no user
+// enumeration). An account without confirmed TOTP gets its
+// enrolment secret here, after the password. Rate-limited per
+// client address and per username (429 with `Retry-After`).
+// Every attempt is an events row (`login_password_accepted` or
+// `login_refused`).
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/auth/login (the `Login` operationId).
+func (c *Client) LoginWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewLoginRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// Login First sign-in step (password)
+//
+// Checks the password and returns a short, single-use MFA
+// challenge. An unknown user, a disabled user and a wrong password
+// get the same answer after the same argon2id work (no user
+// enumeration). An account without confirmed TOTP gets its
+// enrolment secret here, after the password. Rate-limited per
+// client address and per username (429 with `Retry-After`).
+// Every attempt is an events row (`login_password_accepted` or
+// `login_refused`).
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/auth/login (the `Login` operationId).
+func (c *Client) Login(ctx context.Context, body LoginJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewLoginRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// Logout End the session of the caller
+//
+// Corresponds with POST /v1/auth/logout (the `Logout` operationId).
+func (c *Client) Logout(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewLogoutRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// VerifyMFAWithBody Second sign-in step (TOTP or a recovery code)
+//
+// Exchanges the challenge and a TOTP code (or one recovery code)
+// for a session. A code is accepted once; a challenge allows a
+// bounded number of attempts and is used once. The first success
+// after enrolment confirms it and returns the recovery codes,
+// once. Every failure is an `mfa_refused` event; the session is a
+// `session_started` event.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/auth/mfa (the `VerifyMFA` operationId).
+func (c *Client) VerifyMFAWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewVerifyMFARequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// VerifyMFA Second sign-in step (TOTP or a recovery code)
+//
+// Exchanges the challenge and a TOTP code (or one recovery code)
+// for a session. A code is accepted once; a challenge allows a
+// bounded number of attempts and is used once. The first success
+// after enrolment confirms it and returns the recovery codes,
+// once. Every failure is an `mfa_refused` event; the session is a
+// `session_started` event.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/auth/mfa (the `VerifyMFA` operationId).
+func (c *Client) VerifyMFA(ctx context.Context, body VerifyMFAJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewVerifyMFARequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetSession The session of the caller
+//
+// Corresponds with GET /v1/auth/session (the `GetSession` operationId).
+func (c *Client) GetSession(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSessionRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListOAuthClients Registered clients
+//
+// Corresponds with GET /v1/oauth/clients (the `ListOAuthClients` operationId).
+func (c *Client) ListOAuthClients(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListOAuthClientsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateOAuthClientWithBody Register a client
+//
+// One client per calling system (M24). Scopes must be grantable
+// to this client (in the catalogue, not reserved, not of a USSP's
+// issuer, `dp.observe` for `lab-01` only); audiences are hosts.
+// For `client_secret_post` the secret is generated here and
+// returned once; only its argon2id hash is kept. For
+// `private_key_jwt` the client's public JWKS is given (RSA keys of
+// at least 2048 bits, no private members).
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/oauth/clients (the `CreateOAuthClient` operationId).
+func (c *Client) CreateOAuthClientWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateOAuthClientRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateOAuthClient Register a client
+//
+// One client per calling system (M24). Scopes must be grantable
+// to this client (in the catalogue, not reserved, not of a USSP's
+// issuer, `dp.observe` for `lab-01` only); audiences are hosts.
+// For `client_secret_post` the secret is generated here and
+// returned once; only its argon2id hash is kept. For
+// `private_key_jwt` the client's public JWKS is given (RSA keys of
+// at least 2048 bits, no private members).
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/oauth/clients (the `CreateOAuthClient` operationId).
+func (c *Client) CreateOAuthClient(ctx context.Context, body CreateOAuthClientJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateOAuthClientRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetOAuthClient One client
+//
+// Corresponds with GET /v1/oauth/clients/{client_id} (the `GetOAuthClient` operationId).
+func (c *Client) GetOAuthClient(ctx context.Context, clientId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetOAuthClientRequest(c.Server, clientId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateOAuthClientWithBody Change a client's status, scopes, audiences or note
+//
+// A suspended or revoked client gets no new token; tokens already
+// issued expire within their TTL (at most 1 h).
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /v1/oauth/clients/{client_id} (the `UpdateOAuthClient` operationId).
+func (c *Client) UpdateOAuthClientWithBody(ctx context.Context, clientId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateOAuthClientRequestWithBody(c.Server, clientId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateOAuthClient Change a client's status, scopes, audiences or note
+//
+// A suspended or revoked client gets no new token; tokens already
+// issued expire within their TTL (at most 1 h).
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /v1/oauth/clients/{client_id} (the `UpdateOAuthClient` operationId).
+func (c *Client) UpdateOAuthClient(ctx context.Context, clientId string, body UpdateOAuthClientJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateOAuthClientRequest(c.Server, clientId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListSigningKeys Signing keys and their state
+//
+// Corresponds with GET /v1/oauth/keys (the `ListSigningKeys` operationId).
+func (c *Client) ListSigningKeys(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSigningKeysRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RotateSigningKey Activate the next token-signing key
+//
+// The next key is the first key of `SIGNING_KEY_FILES` never
+// activated. With the two-person rule (`KEY_ROTATION_TWO_PERSON`,
+// default on) the first admin's call records the request (202)
+// and a second admin's call within `KEY_ROTATION_CONFIRM_S`
+// (600 s) activates it (200); the same admin twice is refused
+// (409). The previous key is retired and stays in the JWKS for
+// `KEY_RETIRE_GRACE_S` (24 h).
+//
+// Corresponds with POST /v1/oauth/keys/rotate (the `RotateSigningKey` operationId).
+func (c *Client) RotateSigningKey(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRotateSigningKeyRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CompromiseSigningKeyWithBody Drop a compromised key now
+//
+// The emergency retirement: the key leaves the JWKS at once (no
+// 24 h overlap), never signs again and is never a rotation
+// candidate. An active token key is replaced by the next
+// candidate; without one this issuer stops issuing until a key is
+// added. One admin suffices; the act is a `signing_key_compromised`
+// event with the reason. Other replicas follow within
+// `KEY_REFRESH_S`; verifiers drop the key when their JWKS cache
+// refreshes.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/oauth/keys/{kid}/compromised (the `CompromiseSigningKey` operationId).
+func (c *Client) CompromiseSigningKeyWithBody(ctx context.Context, kid string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCompromiseSigningKeyRequestWithBody(c.Server, kid, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CompromiseSigningKey Drop a compromised key now
+//
+// The emergency retirement: the key leaves the JWKS at once (no
+// 24 h overlap), never signs again and is never a rotation
+// candidate. An active token key is replaced by the next
+// candidate; without one this issuer stops issuing until a key is
+// added. One admin suffices; the act is a `signing_key_compromised`
+// event with the reason. Other replicas follow within
+// `KEY_REFRESH_S`; verifiers drop the key when their JWKS cache
+// refreshes.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/oauth/keys/{kid}/compromised (the `CompromiseSigningKey` operationId).
+func (c *Client) CompromiseSigningKey(ctx context.Context, kid string, body CompromiseSigningKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCompromiseSigningKeyRequest(c.Server, kid, body)
 	if err != nil {
 		return nil, err
 	}
@@ -625,6 +2011,254 @@ func (c *Client) ActivatePolicy(ctx context.Context, version int64, reqEditors .
 	return c.Client.Do(req)
 }
 
+// ListUsers Console accounts
+//
+// Corresponds with GET /v1/users (the `ListUsers` operationId).
+func (c *Client) ListUsers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListUsersRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateUserWithBody Create an account
+//
+// The account signs in with the password given here and enrols
+// TOTP at its first sign-in.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/users (the `CreateUser` operationId).
+func (c *Client) CreateUserWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateUserRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateUser Create an account
+//
+// The account signs in with the password given here and enrols
+// TOTP at its first sign-in.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/users (the `CreateUser` operationId).
+func (c *Client) CreateUser(ctx context.Context, body CreateUserJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateUserRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetUser One account
+//
+// Corresponds with GET /v1/users/{user_id} (the `GetUser` operationId).
+func (c *Client) GetUser(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetUserRequest(c.Server, userId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DisableUser Disable an account
+//
+// Revokes its sessions; it can no longer sign in. The last active admin cannot be disabled (409).
+//
+// Corresponds with POST /v1/users/{user_id}/disable (the `DisableUser` operationId).
+func (c *Client) DisableUser(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDisableUserRequest(c.Server, userId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// EnableUser Enable a disabled account
+//
+// Corresponds with POST /v1/users/{user_id}/enable (the `EnableUser` operationId).
+func (c *Client) EnableUser(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewEnableUserRequest(c.Server, userId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ResetUserMFA Reset the TOTP of an account
+//
+// Deletes the TOTP secret and the recovery codes and revokes the sessions; the account enrols again at its next sign-in.
+//
+// Corresponds with POST /v1/users/{user_id}/mfa/reset (the `ResetUserMFA` operationId).
+func (c *Client) ResetUserMFA(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewResetUserMFARequest(c.Server, userId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UnlockUserMFA Clear the MFA lock of an account
+//
+// Wrong TOTP or recovery codes count against the account across
+// challenges and addresses (NIST SP 800-63B 5.2.2): from
+// `MFA_LOCKOUT_AFTER` failures the account is locked for a time
+// that doubles with each failure, and at `MFA_HARD_LOCK_AFTER`
+// (at most 100) until an admin calls this. A success clears the
+// count.
+//
+// Corresponds with POST /v1/users/{user_id}/mfa/unlock (the `UnlockUserMFA` operationId).
+func (c *Client) UnlockUserMFA(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUnlockUserMFARequest(c.Server, userId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetUserRolesWithBody Replace the roles of an account
+//
+// Revokes the sessions of the account, so the new roles apply at the next sign-in. The last active admin cannot lose the role (409).
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /v1/users/{user_id}/roles (the `SetUserRoles` operationId).
+func (c *Client) SetUserRolesWithBody(ctx context.Context, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetUserRolesRequestWithBody(c.Server, userId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetUserRoles Replace the roles of an account
+//
+// Revokes the sessions of the account, so the new roles apply at the next sign-in. The last active admin cannot lose the role (409).
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /v1/users/{user_id}/roles (the `SetUserRoles` operationId).
+func (c *Client) SetUserRoles(ctx context.Context, userId string, body SetUserRolesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetUserRolesRequest(c.Server, userId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RevokeUserSessions Revoke every session of an account
+//
+// Corresponds with POST /v1/users/{user_id}/sessions/revoke (the `RevokeUserSessions` operationId).
+func (c *Client) RevokeUserSessions(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRevokeUserSessionsRequest(c.Server, userId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// NewGetJWKSRequest constructs an http.Request for the GetJWKS method
+func NewGetJWKSRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/.well-known/jwks.json")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetIssuerMetadataRequest constructs an http.Request for the GetIssuerMetadata method
+func NewGetIssuerMetadataRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/.well-known/openid-configuration")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetHealthzRequest constructs an http.Request for the GetHealthz method
 func NewGetHealthzRequest(server string) (*http.Request, error) {
 	var err error
@@ -648,6 +2282,46 @@ func NewGetHealthzRequest(server string) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewRequestTokenRequestWithFormdataBody calls the generic RequestToken builder with application/x-www-form-urlencoded body
+func NewRequestTokenRequestWithFormdataBody(server string, body RequestTokenFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewRequestTokenRequestWithBody(server, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewRequestTokenRequestWithBody constructs an http.Request for the RequestToken method, with any body, and a specified content type
+func NewRequestTokenRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/oauth/token")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -829,6 +2503,389 @@ func NewListAuditEventsRequest(server string, params *ListAuditEventsParams) (*h
 	return req, nil
 }
 
+// NewLoginRequest calls the generic Login builder with application/json body
+func NewLoginRequest(server string, body LoginJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewLoginRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewLoginRequestWithBody constructs an http.Request for the Login method, with any body, and a specified content type
+func NewLoginRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/auth/login")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewLogoutRequest constructs an http.Request for the Logout method
+func NewLogoutRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/auth/logout")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewVerifyMFARequest calls the generic VerifyMFA builder with application/json body
+func NewVerifyMFARequest(server string, body VerifyMFAJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewVerifyMFARequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewVerifyMFARequestWithBody constructs an http.Request for the VerifyMFA method, with any body, and a specified content type
+func NewVerifyMFARequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/auth/mfa")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetSessionRequest constructs an http.Request for the GetSession method
+func NewGetSessionRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/auth/session")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListOAuthClientsRequest constructs an http.Request for the ListOAuthClients method
+func NewListOAuthClientsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/oauth/clients")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateOAuthClientRequest calls the generic CreateOAuthClient builder with application/json body
+func NewCreateOAuthClientRequest(server string, body CreateOAuthClientJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateOAuthClientRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateOAuthClientRequestWithBody constructs an http.Request for the CreateOAuthClient method, with any body, and a specified content type
+func NewCreateOAuthClientRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/oauth/clients")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetOAuthClientRequest constructs an http.Request for the GetOAuthClient method
+func NewGetOAuthClientRequest(server string, clientId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "client_id", clientId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/oauth/clients/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateOAuthClientRequest calls the generic UpdateOAuthClient builder with application/json body
+func NewUpdateOAuthClientRequest(server string, clientId string, body UpdateOAuthClientJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateOAuthClientRequestWithBody(server, clientId, "application/json", bodyReader)
+}
+
+// NewUpdateOAuthClientRequestWithBody constructs an http.Request for the UpdateOAuthClient method, with any body, and a specified content type
+func NewUpdateOAuthClientRequestWithBody(server string, clientId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "client_id", clientId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/oauth/clients/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListSigningKeysRequest constructs an http.Request for the ListSigningKeys method
+func NewListSigningKeysRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/oauth/keys")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRotateSigningKeyRequest constructs an http.Request for the RotateSigningKey method
+func NewRotateSigningKeyRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/oauth/keys/rotate")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCompromiseSigningKeyRequest calls the generic CompromiseSigningKey builder with application/json body
+func NewCompromiseSigningKeyRequest(server string, kid string, body CompromiseSigningKeyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCompromiseSigningKeyRequestWithBody(server, kid, "application/json", bodyReader)
+}
+
+// NewCompromiseSigningKeyRequestWithBody constructs an http.Request for the CompromiseSigningKey method, with any body, and a specified content type
+func NewCompromiseSigningKeyRequestWithBody(server string, kid string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "kid", kid, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/oauth/keys/%s/compromised", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewGetPolicyRequest constructs an http.Request for the GetPolicy method
 func NewGetPolicyRequest(server string) (*http.Request, error) {
 	var err error
@@ -930,6 +2987,324 @@ func NewActivatePolicyRequest(server string, version int64) (*http.Request, erro
 	return req, nil
 }
 
+// NewListUsersRequest constructs an http.Request for the ListUsers method
+func NewListUsersRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/users")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateUserRequest calls the generic CreateUser builder with application/json body
+func NewCreateUserRequest(server string, body CreateUserJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateUserRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateUserRequestWithBody constructs an http.Request for the CreateUser method, with any body, and a specified content type
+func NewCreateUserRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/users")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetUserRequest constructs an http.Request for the GetUser method
+func NewGetUserRequest(server string, userId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "user_id", userId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/users/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDisableUserRequest constructs an http.Request for the DisableUser method
+func NewDisableUserRequest(server string, userId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "user_id", userId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/users/%s/disable", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewEnableUserRequest constructs an http.Request for the EnableUser method
+func NewEnableUserRequest(server string, userId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "user_id", userId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/users/%s/enable", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewResetUserMFARequest constructs an http.Request for the ResetUserMFA method
+func NewResetUserMFARequest(server string, userId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "user_id", userId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/users/%s/mfa/reset", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUnlockUserMFARequest constructs an http.Request for the UnlockUserMFA method
+func NewUnlockUserMFARequest(server string, userId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "user_id", userId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/users/%s/mfa/unlock", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSetUserRolesRequest calls the generic SetUserRoles builder with application/json body
+func NewSetUserRolesRequest(server string, userId string, body SetUserRolesJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetUserRolesRequestWithBody(server, userId, "application/json", bodyReader)
+}
+
+// NewSetUserRolesRequestWithBody constructs an http.Request for the SetUserRoles method, with any body, and a specified content type
+func NewSetUserRolesRequestWithBody(server string, userId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "user_id", userId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/users/%s/roles", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRevokeUserSessionsRequest constructs an http.Request for the RevokeUserSessions method
+func NewRevokeUserSessionsRequest(server string, userId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "user_id", userId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/users/%s/sessions/revoke", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -974,6 +3349,30 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
+	// GetJWKSWithResponse The issuer's public keys
+	//
+	// Every RS256 key a verifier may meet (`use: sig`, distinguished by
+	// `kid`): the active token-signing key, retired token-signing keys
+	// until their retirement plus the JWKS cache TTL (24 h), and this
+	// system's publication-signing key of the detached
+	// `X-JWS-Signature` (M26). Cacheable for 300 s.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /.well-known/jwks.json (the `GetJWKS` operationId).
+	GetJWKSWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetJWKSResponse, error)
+
+	// GetIssuerMetadataWithResponse Issuer metadata
+	//
+	// The issuer, its JWKS URL and token endpoint, the grant type and
+	// the client authentication methods. This is an OAuth2 issuer, not
+	// an OpenID provider: there is no authorisation endpoint.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /.well-known/openid-configuration (the `GetIssuerMetadata` operationId).
+	GetIssuerMetadataWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetIssuerMetadataResponse, error)
+
 	// GetHealthzWithResponse Liveness
 	//
 	// 200 while the process runs. Says nothing about dependencies.
@@ -982,6 +3381,56 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /healthz (the `GetHealthz` operationId).
 	GetHealthzWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetHealthzResponse, error)
+
+	// RequestTokenWithBodyWithResponse Client credentials grant
+	//
+	// RFC 6749 §4.4 client credentials. The client authenticates with
+	// `client_secret_post` (`client_id`, `client_secret`) or
+	// `private_key_jwt` (RFC 7523: `client_assertion_type` =
+	// `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`,
+	// `client_assertion` an RS256 JWT with `iss` = `sub` = the client
+	// id, `aud` = this issuer or its token endpoint, `exp` at most
+	// 5 min ahead and a `jti` used once). Parameters in the query
+	// string are refused. `scope` names catalogue scopes (WP-2 table
+	// B), a subset of the client's. `audience`, or one RFC 8707
+	// `resource`, names the target: a host or the target's base URL,
+	// reduced to its host, which becomes `aud` (M18). For national
+	// scopes the host must be on the client's audience list; for
+	// `utm.*` and `rid.*` any host is accepted. One audience per
+	// token. Errors carry RFC 6749 `error` and `error_description`
+	// beside the problem members. Issuance is rate-limited per
+	// client (429 with `Retry-After`). Every refusal is a
+	// `token_refused` event.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /oauth/token (the `RequestToken` operationId).
+	RequestTokenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestTokenResponse, error)
+
+	// RequestTokenWithFormdataBodyWithResponse Client credentials grant
+	//
+	// RFC 6749 §4.4 client credentials. The client authenticates with
+	// `client_secret_post` (`client_id`, `client_secret`) or
+	// `private_key_jwt` (RFC 7523: `client_assertion_type` =
+	// `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`,
+	// `client_assertion` an RS256 JWT with `iss` = `sub` = the client
+	// id, `aud` = this issuer or its token endpoint, `exp` at most
+	// 5 min ahead and a `jti` used once). Parameters in the query
+	// string are refused. `scope` names catalogue scopes (WP-2 table
+	// B), a subset of the client's. `audience`, or one RFC 8707
+	// `resource`, names the target: a host or the target's base URL,
+	// reduced to its host, which becomes `aud` (M18). For national
+	// scopes the host must be on the client's audience list; for
+	// `utm.*` and `rid.*` any host is accepted. One audience per
+	// token. Errors carry RFC 6749 `error` and `error_description`
+	// beside the problem members. Issuance is rate-limited per
+	// client (429 with `Retry-After`). Every refusal is a
+	// `token_refused` event.
+	//
+	// Takes a body of the `application/x-www-form-urlencoded` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /oauth/token (the `RequestToken` operationId).
+	RequestTokenWithFormdataBodyWithResponse(ctx context.Context, body RequestTokenFormdataRequestBody, reqEditors ...RequestEditorFn) (*RequestTokenResponse, error)
 
 	// GetReadyzWithResponse Readiness
 	//
@@ -1005,6 +3454,198 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /v1/audit/events (the `ListAuditEvents` operationId).
 	ListAuditEventsWithResponse(ctx context.Context, params *ListAuditEventsParams, reqEditors ...RequestEditorFn) (*ListAuditEventsResponse, error)
+
+	// LoginWithBodyWithResponse First sign-in step (password)
+	//
+	// Checks the password and returns a short, single-use MFA
+	// challenge. An unknown user, a disabled user and a wrong password
+	// get the same answer after the same argon2id work (no user
+	// enumeration). An account without confirmed TOTP gets its
+	// enrolment secret here, after the password. Rate-limited per
+	// client address and per username (429 with `Retry-After`).
+	// Every attempt is an events row (`login_password_accepted` or
+	// `login_refused`).
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/auth/login (the `Login` operationId).
+	LoginWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*LoginResponse, error)
+
+	// LoginWithResponse First sign-in step (password)
+	//
+	// Checks the password and returns a short, single-use MFA
+	// challenge. An unknown user, a disabled user and a wrong password
+	// get the same answer after the same argon2id work (no user
+	// enumeration). An account without confirmed TOTP gets its
+	// enrolment secret here, after the password. Rate-limited per
+	// client address and per username (429 with `Retry-After`).
+	// Every attempt is an events row (`login_password_accepted` or
+	// `login_refused`).
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/auth/login (the `Login` operationId).
+	LoginWithResponse(ctx context.Context, body LoginJSONRequestBody, reqEditors ...RequestEditorFn) (*LoginResponse, error)
+
+	// LogoutWithResponse End the session of the caller
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/auth/logout (the `Logout` operationId).
+	LogoutWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*LogoutResponse, error)
+
+	// VerifyMFAWithBodyWithResponse Second sign-in step (TOTP or a recovery code)
+	//
+	// Exchanges the challenge and a TOTP code (or one recovery code)
+	// for a session. A code is accepted once; a challenge allows a
+	// bounded number of attempts and is used once. The first success
+	// after enrolment confirms it and returns the recovery codes,
+	// once. Every failure is an `mfa_refused` event; the session is a
+	// `session_started` event.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/auth/mfa (the `VerifyMFA` operationId).
+	VerifyMFAWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*VerifyMFAResponse, error)
+
+	// VerifyMFAWithResponse Second sign-in step (TOTP or a recovery code)
+	//
+	// Exchanges the challenge and a TOTP code (or one recovery code)
+	// for a session. A code is accepted once; a challenge allows a
+	// bounded number of attempts and is used once. The first success
+	// after enrolment confirms it and returns the recovery codes,
+	// once. Every failure is an `mfa_refused` event; the session is a
+	// `session_started` event.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/auth/mfa (the `VerifyMFA` operationId).
+	VerifyMFAWithResponse(ctx context.Context, body VerifyMFAJSONRequestBody, reqEditors ...RequestEditorFn) (*VerifyMFAResponse, error)
+
+	// GetSessionWithResponse The session of the caller
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/auth/session (the `GetSession` operationId).
+	GetSessionWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetSessionResponse, error)
+
+	// ListOAuthClientsWithResponse Registered clients
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/oauth/clients (the `ListOAuthClients` operationId).
+	ListOAuthClientsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListOAuthClientsResponse, error)
+
+	// CreateOAuthClientWithBodyWithResponse Register a client
+	//
+	// One client per calling system (M24). Scopes must be grantable
+	// to this client (in the catalogue, not reserved, not of a USSP's
+	// issuer, `dp.observe` for `lab-01` only); audiences are hosts.
+	// For `client_secret_post` the secret is generated here and
+	// returned once; only its argon2id hash is kept. For
+	// `private_key_jwt` the client's public JWKS is given (RSA keys of
+	// at least 2048 bits, no private members).
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/oauth/clients (the `CreateOAuthClient` operationId).
+	CreateOAuthClientWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateOAuthClientResponse, error)
+
+	// CreateOAuthClientWithResponse Register a client
+	//
+	// One client per calling system (M24). Scopes must be grantable
+	// to this client (in the catalogue, not reserved, not of a USSP's
+	// issuer, `dp.observe` for `lab-01` only); audiences are hosts.
+	// For `client_secret_post` the secret is generated here and
+	// returned once; only its argon2id hash is kept. For
+	// `private_key_jwt` the client's public JWKS is given (RSA keys of
+	// at least 2048 bits, no private members).
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/oauth/clients (the `CreateOAuthClient` operationId).
+	CreateOAuthClientWithResponse(ctx context.Context, body CreateOAuthClientJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateOAuthClientResponse, error)
+
+	// GetOAuthClientWithResponse One client
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/oauth/clients/{client_id} (the `GetOAuthClient` operationId).
+	GetOAuthClientWithResponse(ctx context.Context, clientId string, reqEditors ...RequestEditorFn) (*GetOAuthClientResponse, error)
+
+	// UpdateOAuthClientWithBodyWithResponse Change a client's status, scopes, audiences or note
+	//
+	// A suspended or revoked client gets no new token; tokens already
+	// issued expire within their TTL (at most 1 h).
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v1/oauth/clients/{client_id} (the `UpdateOAuthClient` operationId).
+	UpdateOAuthClientWithBodyWithResponse(ctx context.Context, clientId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateOAuthClientResponse, error)
+
+	// UpdateOAuthClientWithResponse Change a client's status, scopes, audiences or note
+	//
+	// A suspended or revoked client gets no new token; tokens already
+	// issued expire within their TTL (at most 1 h).
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v1/oauth/clients/{client_id} (the `UpdateOAuthClient` operationId).
+	UpdateOAuthClientWithResponse(ctx context.Context, clientId string, body UpdateOAuthClientJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateOAuthClientResponse, error)
+
+	// ListSigningKeysWithResponse Signing keys and their state
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/oauth/keys (the `ListSigningKeys` operationId).
+	ListSigningKeysWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSigningKeysResponse, error)
+
+	// RotateSigningKeyWithResponse Activate the next token-signing key
+	//
+	// The next key is the first key of `SIGNING_KEY_FILES` never
+	// activated. With the two-person rule (`KEY_ROTATION_TWO_PERSON`,
+	// default on) the first admin's call records the request (202)
+	// and a second admin's call within `KEY_ROTATION_CONFIRM_S`
+	// (600 s) activates it (200); the same admin twice is refused
+	// (409). The previous key is retired and stays in the JWKS for
+	// `KEY_RETIRE_GRACE_S` (24 h).
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/oauth/keys/rotate (the `RotateSigningKey` operationId).
+	RotateSigningKeyWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*RotateSigningKeyResponse, error)
+
+	// CompromiseSigningKeyWithBodyWithResponse Drop a compromised key now
+	//
+	// The emergency retirement: the key leaves the JWKS at once (no
+	// 24 h overlap), never signs again and is never a rotation
+	// candidate. An active token key is replaced by the next
+	// candidate; without one this issuer stops issuing until a key is
+	// added. One admin suffices; the act is a `signing_key_compromised`
+	// event with the reason. Other replicas follow within
+	// `KEY_REFRESH_S`; verifiers drop the key when their JWKS cache
+	// refreshes.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/oauth/keys/{kid}/compromised (the `CompromiseSigningKey` operationId).
+	CompromiseSigningKeyWithBodyWithResponse(ctx context.Context, kid string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompromiseSigningKeyResponse, error)
+
+	// CompromiseSigningKeyWithResponse Drop a compromised key now
+	//
+	// The emergency retirement: the key leaves the JWKS at once (no
+	// 24 h overlap), never signs again and is never a rotation
+	// candidate. An active token key is replaced by the next
+	// candidate; without one this issuer stops issuing until a key is
+	// added. One admin suffices; the act is a `signing_key_compromised`
+	// event with the reason. Other replicas follow within
+	// `KEY_REFRESH_S`; verifiers drop the key when their JWKS cache
+	// refreshes.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/oauth/keys/{kid}/compromised (the `CompromiseSigningKey` operationId).
+	CompromiseSigningKeyWithResponse(ctx context.Context, kid string, body CompromiseSigningKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*CompromiseSigningKeyResponse, error)
 
 	// GetPolicyWithResponse The active policy
 	//
@@ -1048,6 +3689,214 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /v1/policy/{version}/activate (the `ActivatePolicy` operationId).
 	ActivatePolicyWithResponse(ctx context.Context, version int64, reqEditors ...RequestEditorFn) (*ActivatePolicyResponse, error)
+
+	// ListUsersWithResponse Console accounts
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/users (the `ListUsers` operationId).
+	ListUsersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListUsersResponse, error)
+
+	// CreateUserWithBodyWithResponse Create an account
+	//
+	// The account signs in with the password given here and enrols
+	// TOTP at its first sign-in.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/users (the `CreateUser` operationId).
+	CreateUserWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateUserResponse, error)
+
+	// CreateUserWithResponse Create an account
+	//
+	// The account signs in with the password given here and enrols
+	// TOTP at its first sign-in.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/users (the `CreateUser` operationId).
+	CreateUserWithResponse(ctx context.Context, body CreateUserJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateUserResponse, error)
+
+	// GetUserWithResponse One account
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/users/{user_id} (the `GetUser` operationId).
+	GetUserWithResponse(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*GetUserResponse, error)
+
+	// DisableUserWithResponse Disable an account
+	//
+	// Revokes its sessions; it can no longer sign in. The last active admin cannot be disabled (409).
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/users/{user_id}/disable (the `DisableUser` operationId).
+	DisableUserWithResponse(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*DisableUserResponse, error)
+
+	// EnableUserWithResponse Enable a disabled account
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/users/{user_id}/enable (the `EnableUser` operationId).
+	EnableUserWithResponse(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*EnableUserResponse, error)
+
+	// ResetUserMFAWithResponse Reset the TOTP of an account
+	//
+	// Deletes the TOTP secret and the recovery codes and revokes the sessions; the account enrols again at its next sign-in.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/users/{user_id}/mfa/reset (the `ResetUserMFA` operationId).
+	ResetUserMFAWithResponse(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*ResetUserMFAResponse, error)
+
+	// UnlockUserMFAWithResponse Clear the MFA lock of an account
+	//
+	// Wrong TOTP or recovery codes count against the account across
+	// challenges and addresses (NIST SP 800-63B 5.2.2): from
+	// `MFA_LOCKOUT_AFTER` failures the account is locked for a time
+	// that doubles with each failure, and at `MFA_HARD_LOCK_AFTER`
+	// (at most 100) until an admin calls this. A success clears the
+	// count.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/users/{user_id}/mfa/unlock (the `UnlockUserMFA` operationId).
+	UnlockUserMFAWithResponse(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*UnlockUserMFAResponse, error)
+
+	// SetUserRolesWithBodyWithResponse Replace the roles of an account
+	//
+	// Revokes the sessions of the account, so the new roles apply at the next sign-in. The last active admin cannot lose the role (409).
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /v1/users/{user_id}/roles (the `SetUserRoles` operationId).
+	SetUserRolesWithBodyWithResponse(ctx context.Context, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetUserRolesResponse, error)
+
+	// SetUserRolesWithResponse Replace the roles of an account
+	//
+	// Revokes the sessions of the account, so the new roles apply at the next sign-in. The last active admin cannot lose the role (409).
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /v1/users/{user_id}/roles (the `SetUserRoles` operationId).
+	SetUserRolesWithResponse(ctx context.Context, userId string, body SetUserRolesJSONRequestBody, reqEditors ...RequestEditorFn) (*SetUserRolesResponse, error)
+
+	// RevokeUserSessionsWithResponse Revoke every session of an account
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/users/{user_id}/sessions/revoke (the `RevokeUserSessions` operationId).
+	RevokeUserSessionsWithResponse(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*RevokeUserSessionsResponse, error)
+}
+
+// GetJWKSResponse200Headers the declared response headers of an HTTP 200 response for GetJWKS
+type GetJWKSResponse200Headers struct {
+	CacheControl *string
+}
+
+type GetJWKSResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *JWKS
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetJWKSResponse200Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetJWKSResponse) GetJSON200() *JWKS {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetJWKSResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetJWKSResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetJWKSResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetJWKSResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetJWKSResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetIssuerMetadataResponse200Headers the declared response headers of an HTTP 200 response for GetIssuerMetadata
+type GetIssuerMetadataResponse200Headers struct {
+	CacheControl *string
+}
+
+type GetIssuerMetadataResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *IssuerMetadata
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetIssuerMetadataResponse200Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetIssuerMetadataResponse) GetJSON200() *IssuerMetadata {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetIssuerMetadataResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetIssuerMetadataResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetIssuerMetadataResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetIssuerMetadataResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetIssuerMetadataResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
 }
 
 type GetHealthzResponse struct {
@@ -1092,6 +3941,90 @@ func (r GetHealthzResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetHealthzResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// RequestTokenResponse200Headers the declared response headers of an HTTP 200 response for RequestToken
+type RequestTokenResponse200Headers struct {
+	CacheControl *string
+	Pragma       *string
+}
+
+// RequestTokenResponse429Headers the declared response headers of an HTTP 429 response for RequestToken
+type RequestTokenResponse429Headers struct {
+	RetryAfter *int
+}
+
+type RequestTokenResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *TokenResponse
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *OAuthError
+	// ApplicationproblemJSON401 the response for an HTTP 401 `application/problem+json` response
+	ApplicationproblemJSON401 *OAuthError
+	// ApplicationproblemJSON429 the response for an HTTP 429 `application/problem+json` response
+	ApplicationproblemJSON429 *OAuthProblem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *RequestTokenResponse200Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *RequestTokenResponse429Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r RequestTokenResponse) GetJSON200() *TokenResponse {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r RequestTokenResponse) GetApplicationproblemJSON400() *OAuthError {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON401 returns the response for an HTTP 401 `application/problem+json` response
+func (r RequestTokenResponse) GetApplicationproblemJSON401() *OAuthError {
+	return r.ApplicationproblemJSON401
+}
+
+// GetApplicationproblemJSON429 returns the response for an HTTP 429 `application/problem+json` response
+func (r RequestTokenResponse) GetApplicationproblemJSON429() *OAuthProblem {
+	return r.ApplicationproblemJSON429
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r RequestTokenResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r RequestTokenResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RequestTokenResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RequestTokenResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RequestTokenResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -1195,6 +4128,576 @@ func (r ListAuditEventsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListAuditEventsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// LoginResponse200Headers the declared response headers of an HTTP 200 response for Login
+type LoginResponse200Headers struct {
+	CacheControl *string
+}
+
+// LoginResponse429Headers the declared response headers of an HTTP 429 response for Login
+type LoginResponse429Headers struct {
+	RetryAfter *int
+}
+
+type LoginResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LoginChallenge
+	// ApplicationproblemJSON429 the response for an HTTP 429 `application/problem+json` response
+	ApplicationproblemJSON429 *RateLimited
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *LoginResponse200Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *LoginResponse429Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r LoginResponse) GetJSON200() *LoginChallenge {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON429 returns the response for an HTTP 429 `application/problem+json` response
+func (r LoginResponse) GetApplicationproblemJSON429() *RateLimited {
+	return r.ApplicationproblemJSON429
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r LoginResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r LoginResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r LoginResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r LoginResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r LoginResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type LogoutResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r LogoutResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r LogoutResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r LogoutResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r LogoutResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r LogoutResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// VerifyMFAResponse200Headers the declared response headers of an HTTP 200 response for VerifyMFA
+type VerifyMFAResponse200Headers struct {
+	CacheControl *string
+}
+
+// VerifyMFAResponse429Headers the declared response headers of an HTTP 429 response for VerifyMFA
+type VerifyMFAResponse429Headers struct {
+	RetryAfter *int
+}
+
+type VerifyMFAResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SessionIssued
+	// ApplicationproblemJSON429 the response for an HTTP 429 `application/problem+json` response
+	ApplicationproblemJSON429 *RateLimited
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *VerifyMFAResponse200Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *VerifyMFAResponse429Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r VerifyMFAResponse) GetJSON200() *SessionIssued {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON429 returns the response for an HTTP 429 `application/problem+json` response
+func (r VerifyMFAResponse) GetApplicationproblemJSON429() *RateLimited {
+	return r.ApplicationproblemJSON429
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r VerifyMFAResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r VerifyMFAResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r VerifyMFAResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r VerifyMFAResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r VerifyMFAResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetSessionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SessionInfo
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetSessionResponse) GetJSON200() *SessionInfo {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetSessionResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetSessionResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSessionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSessionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetSessionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListOAuthClientsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *OAuthClientList
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListOAuthClientsResponse) GetJSON200() *OAuthClientList {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ListOAuthClientsResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListOAuthClientsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListOAuthClientsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListOAuthClientsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListOAuthClientsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateOAuthClientResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *OAuthClientCreated
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateOAuthClientResponse) GetJSON201() *OAuthClientCreated {
+	return r.JSON201
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r CreateOAuthClientResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateOAuthClientResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateOAuthClientResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateOAuthClientResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateOAuthClientResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetOAuthClientResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *OAuthClient
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetOAuthClientResponse) GetJSON200() *OAuthClient {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetOAuthClientResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetOAuthClientResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetOAuthClientResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetOAuthClientResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetOAuthClientResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateOAuthClientResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *OAuthClient
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateOAuthClientResponse) GetJSON200() *OAuthClient {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r UpdateOAuthClientResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateOAuthClientResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateOAuthClientResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateOAuthClientResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateOAuthClientResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListSigningKeysResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SigningKeyList
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListSigningKeysResponse) GetJSON200() *SigningKeyList {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ListSigningKeysResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListSigningKeysResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListSigningKeysResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListSigningKeysResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListSigningKeysResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type RotateSigningKeyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *KeyRotation
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *KeyRotation
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r RotateSigningKeyResponse) GetJSON200() *KeyRotation {
+	return r.JSON200
+}
+
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r RotateSigningKeyResponse) GetJSON202() *KeyRotation {
+	return r.JSON202
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r RotateSigningKeyResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r RotateSigningKeyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RotateSigningKeyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RotateSigningKeyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RotateSigningKeyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CompromiseSigningKeyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *SigningKey
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CompromiseSigningKeyResponse) GetJSON200() *SigningKey {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r CompromiseSigningKeyResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CompromiseSigningKeyResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CompromiseSigningKeyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CompromiseSigningKeyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CompromiseSigningKeyResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -1345,6 +4848,474 @@ func (r ActivatePolicyResponse) ContentType() string {
 	return ""
 }
 
+type ListUsersResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *UserList
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListUsersResponse) GetJSON200() *UserList {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ListUsersResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListUsersResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListUsersResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListUsersResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListUsersResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateUserResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *User
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateUserResponse) GetJSON201() *User {
+	return r.JSON201
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r CreateUserResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateUserResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateUserResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateUserResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateUserResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetUserResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *User
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetUserResponse) GetJSON200() *User {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetUserResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetUserResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetUserResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetUserResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetUserResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DisableUserResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *User
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r DisableUserResponse) GetJSON200() *User {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r DisableUserResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r DisableUserResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DisableUserResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DisableUserResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DisableUserResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type EnableUserResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *User
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r EnableUserResponse) GetJSON200() *User {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r EnableUserResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r EnableUserResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r EnableUserResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r EnableUserResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r EnableUserResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ResetUserMFAResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *User
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ResetUserMFAResponse) GetJSON200() *User {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ResetUserMFAResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ResetUserMFAResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ResetUserMFAResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ResetUserMFAResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ResetUserMFAResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UnlockUserMFAResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *User
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UnlockUserMFAResponse) GetJSON200() *User {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r UnlockUserMFAResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r UnlockUserMFAResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UnlockUserMFAResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UnlockUserMFAResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UnlockUserMFAResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SetUserRolesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *User
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r SetUserRolesResponse) GetJSON200() *User {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r SetUserRolesResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r SetUserRolesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SetUserRolesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetUserRolesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetUserRolesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type RevokeUserSessionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Revoked
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r RevokeUserSessionsResponse) GetJSON200() *Revoked {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r RevokeUserSessionsResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r RevokeUserSessionsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RevokeUserSessionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RevokeUserSessionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RevokeUserSessionsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetJWKSWithResponse The issuer's public keys
+//
+// Every RS256 key a verifier may meet (`use: sig`, distinguished by
+// `kid`): the active token-signing key, retired token-signing keys
+// until their retirement plus the JWKS cache TTL (24 h), and this
+// system's publication-signing key of the detached
+// `X-JWS-Signature` (M26). Cacheable for 300 s.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /.well-known/jwks.json (the `GetJWKS` operationId).
+func (c *ClientWithResponses) GetJWKSWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetJWKSResponse, error) {
+	rsp, err := c.GetJWKS(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetJWKSResponse(rsp)
+}
+
+// GetIssuerMetadataWithResponse Issuer metadata
+//
+// The issuer, its JWKS URL and token endpoint, the grant type and
+// the client authentication methods. This is an OAuth2 issuer, not
+// an OpenID provider: there is no authorisation endpoint.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /.well-known/openid-configuration (the `GetIssuerMetadata` operationId).
+func (c *ClientWithResponses) GetIssuerMetadataWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetIssuerMetadataResponse, error) {
+	rsp, err := c.GetIssuerMetadata(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetIssuerMetadataResponse(rsp)
+}
+
 // GetHealthzWithResponse Liveness
 //
 // 200 while the process runs. Says nothing about dependencies.
@@ -1358,6 +5329,68 @@ func (c *ClientWithResponses) GetHealthzWithResponse(ctx context.Context, reqEdi
 		return nil, err
 	}
 	return ParseGetHealthzResponse(rsp)
+}
+
+// RequestTokenWithBodyWithResponse Client credentials grant
+//
+// RFC 6749 §4.4 client credentials. The client authenticates with
+// `client_secret_post` (`client_id`, `client_secret`) or
+// `private_key_jwt` (RFC 7523: `client_assertion_type` =
+// `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`,
+// `client_assertion` an RS256 JWT with `iss` = `sub` = the client
+// id, `aud` = this issuer or its token endpoint, `exp` at most
+// 5 min ahead and a `jti` used once). Parameters in the query
+// string are refused. `scope` names catalogue scopes (WP-2 table
+// B), a subset of the client's. `audience`, or one RFC 8707
+// `resource`, names the target: a host or the target's base URL,
+// reduced to its host, which becomes `aud` (M18). For national
+// scopes the host must be on the client's audience list; for
+// `utm.*` and `rid.*` any host is accepted. One audience per
+// token. Errors carry RFC 6749 `error` and `error_description`
+// beside the problem members. Issuance is rate-limited per
+// client (429 with `Retry-After`). Every refusal is a
+// `token_refused` event.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /oauth/token (the `RequestToken` operationId).
+func (c *ClientWithResponses) RequestTokenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestTokenResponse, error) {
+	rsp, err := c.RequestTokenWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRequestTokenResponse(rsp)
+}
+
+// RequestTokenWithFormdataBodyWithResponse Client credentials grant
+//
+// RFC 6749 §4.4 client credentials. The client authenticates with
+// `client_secret_post` (`client_id`, `client_secret`) or
+// `private_key_jwt` (RFC 7523: `client_assertion_type` =
+// `urn:ietf:params:oauth:client-assertion-type:jwt-bearer`,
+// `client_assertion` an RS256 JWT with `iss` = `sub` = the client
+// id, `aud` = this issuer or its token endpoint, `exp` at most
+// 5 min ahead and a `jti` used once). Parameters in the query
+// string are refused. `scope` names catalogue scopes (WP-2 table
+// B), a subset of the client's. `audience`, or one RFC 8707
+// `resource`, names the target: a host or the target's base URL,
+// reduced to its host, which becomes `aud` (M18). For national
+// scopes the host must be on the client's audience list; for
+// `utm.*` and `rid.*` any host is accepted. One audience per
+// token. Errors carry RFC 6749 `error` and `error_description`
+// beside the problem members. Issuance is rate-limited per
+// client (429 with `Retry-After`). Every refusal is a
+// `token_refused` event.
+//
+// Takes a body of the `application/x-www-form-urlencoded` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /oauth/token (the `RequestToken` operationId).
+func (c *ClientWithResponses) RequestTokenWithFormdataBodyWithResponse(ctx context.Context, body RequestTokenFormdataRequestBody, reqEditors ...RequestEditorFn) (*RequestTokenResponse, error) {
+	rsp, err := c.RequestTokenWithFormdataBody(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRequestTokenResponse(rsp)
 }
 
 // GetReadyzWithResponse Readiness
@@ -1393,6 +5426,294 @@ func (c *ClientWithResponses) ListAuditEventsWithResponse(ctx context.Context, p
 		return nil, err
 	}
 	return ParseListAuditEventsResponse(rsp)
+}
+
+// LoginWithBodyWithResponse First sign-in step (password)
+//
+// Checks the password and returns a short, single-use MFA
+// challenge. An unknown user, a disabled user and a wrong password
+// get the same answer after the same argon2id work (no user
+// enumeration). An account without confirmed TOTP gets its
+// enrolment secret here, after the password. Rate-limited per
+// client address and per username (429 with `Retry-After`).
+// Every attempt is an events row (`login_password_accepted` or
+// `login_refused`).
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/auth/login (the `Login` operationId).
+func (c *ClientWithResponses) LoginWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*LoginResponse, error) {
+	rsp, err := c.LoginWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseLoginResponse(rsp)
+}
+
+// LoginWithResponse First sign-in step (password)
+//
+// Checks the password and returns a short, single-use MFA
+// challenge. An unknown user, a disabled user and a wrong password
+// get the same answer after the same argon2id work (no user
+// enumeration). An account without confirmed TOTP gets its
+// enrolment secret here, after the password. Rate-limited per
+// client address and per username (429 with `Retry-After`).
+// Every attempt is an events row (`login_password_accepted` or
+// `login_refused`).
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/auth/login (the `Login` operationId).
+func (c *ClientWithResponses) LoginWithResponse(ctx context.Context, body LoginJSONRequestBody, reqEditors ...RequestEditorFn) (*LoginResponse, error) {
+	rsp, err := c.Login(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseLoginResponse(rsp)
+}
+
+// LogoutWithResponse End the session of the caller
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/auth/logout (the `Logout` operationId).
+func (c *ClientWithResponses) LogoutWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*LogoutResponse, error) {
+	rsp, err := c.Logout(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseLogoutResponse(rsp)
+}
+
+// VerifyMFAWithBodyWithResponse Second sign-in step (TOTP or a recovery code)
+//
+// Exchanges the challenge and a TOTP code (or one recovery code)
+// for a session. A code is accepted once; a challenge allows a
+// bounded number of attempts and is used once. The first success
+// after enrolment confirms it and returns the recovery codes,
+// once. Every failure is an `mfa_refused` event; the session is a
+// `session_started` event.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/auth/mfa (the `VerifyMFA` operationId).
+func (c *ClientWithResponses) VerifyMFAWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*VerifyMFAResponse, error) {
+	rsp, err := c.VerifyMFAWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseVerifyMFAResponse(rsp)
+}
+
+// VerifyMFAWithResponse Second sign-in step (TOTP or a recovery code)
+//
+// Exchanges the challenge and a TOTP code (or one recovery code)
+// for a session. A code is accepted once; a challenge allows a
+// bounded number of attempts and is used once. The first success
+// after enrolment confirms it and returns the recovery codes,
+// once. Every failure is an `mfa_refused` event; the session is a
+// `session_started` event.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/auth/mfa (the `VerifyMFA` operationId).
+func (c *ClientWithResponses) VerifyMFAWithResponse(ctx context.Context, body VerifyMFAJSONRequestBody, reqEditors ...RequestEditorFn) (*VerifyMFAResponse, error) {
+	rsp, err := c.VerifyMFA(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseVerifyMFAResponse(rsp)
+}
+
+// GetSessionWithResponse The session of the caller
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/auth/session (the `GetSession` operationId).
+func (c *ClientWithResponses) GetSessionWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetSessionResponse, error) {
+	rsp, err := c.GetSession(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSessionResponse(rsp)
+}
+
+// ListOAuthClientsWithResponse Registered clients
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/oauth/clients (the `ListOAuthClients` operationId).
+func (c *ClientWithResponses) ListOAuthClientsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListOAuthClientsResponse, error) {
+	rsp, err := c.ListOAuthClients(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListOAuthClientsResponse(rsp)
+}
+
+// CreateOAuthClientWithBodyWithResponse Register a client
+//
+// One client per calling system (M24). Scopes must be grantable
+// to this client (in the catalogue, not reserved, not of a USSP's
+// issuer, `dp.observe` for `lab-01` only); audiences are hosts.
+// For `client_secret_post` the secret is generated here and
+// returned once; only its argon2id hash is kept. For
+// `private_key_jwt` the client's public JWKS is given (RSA keys of
+// at least 2048 bits, no private members).
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/oauth/clients (the `CreateOAuthClient` operationId).
+func (c *ClientWithResponses) CreateOAuthClientWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateOAuthClientResponse, error) {
+	rsp, err := c.CreateOAuthClientWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateOAuthClientResponse(rsp)
+}
+
+// CreateOAuthClientWithResponse Register a client
+//
+// One client per calling system (M24). Scopes must be grantable
+// to this client (in the catalogue, not reserved, not of a USSP's
+// issuer, `dp.observe` for `lab-01` only); audiences are hosts.
+// For `client_secret_post` the secret is generated here and
+// returned once; only its argon2id hash is kept. For
+// `private_key_jwt` the client's public JWKS is given (RSA keys of
+// at least 2048 bits, no private members).
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/oauth/clients (the `CreateOAuthClient` operationId).
+func (c *ClientWithResponses) CreateOAuthClientWithResponse(ctx context.Context, body CreateOAuthClientJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateOAuthClientResponse, error) {
+	rsp, err := c.CreateOAuthClient(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateOAuthClientResponse(rsp)
+}
+
+// GetOAuthClientWithResponse One client
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/oauth/clients/{client_id} (the `GetOAuthClient` operationId).
+func (c *ClientWithResponses) GetOAuthClientWithResponse(ctx context.Context, clientId string, reqEditors ...RequestEditorFn) (*GetOAuthClientResponse, error) {
+	rsp, err := c.GetOAuthClient(ctx, clientId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetOAuthClientResponse(rsp)
+}
+
+// UpdateOAuthClientWithBodyWithResponse Change a client's status, scopes, audiences or note
+//
+// A suspended or revoked client gets no new token; tokens already
+// issued expire within their TTL (at most 1 h).
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v1/oauth/clients/{client_id} (the `UpdateOAuthClient` operationId).
+func (c *ClientWithResponses) UpdateOAuthClientWithBodyWithResponse(ctx context.Context, clientId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateOAuthClientResponse, error) {
+	rsp, err := c.UpdateOAuthClientWithBody(ctx, clientId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateOAuthClientResponse(rsp)
+}
+
+// UpdateOAuthClientWithResponse Change a client's status, scopes, audiences or note
+//
+// A suspended or revoked client gets no new token; tokens already
+// issued expire within their TTL (at most 1 h).
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v1/oauth/clients/{client_id} (the `UpdateOAuthClient` operationId).
+func (c *ClientWithResponses) UpdateOAuthClientWithResponse(ctx context.Context, clientId string, body UpdateOAuthClientJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateOAuthClientResponse, error) {
+	rsp, err := c.UpdateOAuthClient(ctx, clientId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateOAuthClientResponse(rsp)
+}
+
+// ListSigningKeysWithResponse Signing keys and their state
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/oauth/keys (the `ListSigningKeys` operationId).
+func (c *ClientWithResponses) ListSigningKeysWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListSigningKeysResponse, error) {
+	rsp, err := c.ListSigningKeys(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListSigningKeysResponse(rsp)
+}
+
+// RotateSigningKeyWithResponse Activate the next token-signing key
+//
+// The next key is the first key of `SIGNING_KEY_FILES` never
+// activated. With the two-person rule (`KEY_ROTATION_TWO_PERSON`,
+// default on) the first admin's call records the request (202)
+// and a second admin's call within `KEY_ROTATION_CONFIRM_S`
+// (600 s) activates it (200); the same admin twice is refused
+// (409). The previous key is retired and stays in the JWKS for
+// `KEY_RETIRE_GRACE_S` (24 h).
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/oauth/keys/rotate (the `RotateSigningKey` operationId).
+func (c *ClientWithResponses) RotateSigningKeyWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*RotateSigningKeyResponse, error) {
+	rsp, err := c.RotateSigningKey(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRotateSigningKeyResponse(rsp)
+}
+
+// CompromiseSigningKeyWithBodyWithResponse Drop a compromised key now
+//
+// The emergency retirement: the key leaves the JWKS at once (no
+// 24 h overlap), never signs again and is never a rotation
+// candidate. An active token key is replaced by the next
+// candidate; without one this issuer stops issuing until a key is
+// added. One admin suffices; the act is a `signing_key_compromised`
+// event with the reason. Other replicas follow within
+// `KEY_REFRESH_S`; verifiers drop the key when their JWKS cache
+// refreshes.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/oauth/keys/{kid}/compromised (the `CompromiseSigningKey` operationId).
+func (c *ClientWithResponses) CompromiseSigningKeyWithBodyWithResponse(ctx context.Context, kid string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompromiseSigningKeyResponse, error) {
+	rsp, err := c.CompromiseSigningKeyWithBody(ctx, kid, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCompromiseSigningKeyResponse(rsp)
+}
+
+// CompromiseSigningKeyWithResponse Drop a compromised key now
+//
+// The emergency retirement: the key leaves the JWKS at once (no
+// 24 h overlap), never signs again and is never a rotation
+// candidate. An active token key is replaced by the next
+// candidate; without one this issuer stops issuing until a key is
+// added. One admin suffices; the act is a `signing_key_compromised`
+// event with the reason. Other replicas follow within
+// `KEY_REFRESH_S`; verifiers drop the key when their JWKS cache
+// refreshes.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/oauth/keys/{kid}/compromised (the `CompromiseSigningKey` operationId).
+func (c *ClientWithResponses) CompromiseSigningKeyWithResponse(ctx context.Context, kid string, body CompromiseSigningKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*CompromiseSigningKeyResponse, error) {
+	rsp, err := c.CompromiseSigningKey(ctx, kid, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCompromiseSigningKeyResponse(rsp)
 }
 
 // GetPolicyWithResponse The active policy
@@ -1462,6 +5783,262 @@ func (c *ClientWithResponses) ActivatePolicyWithResponse(ctx context.Context, ve
 	return ParseActivatePolicyResponse(rsp)
 }
 
+// ListUsersWithResponse Console accounts
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/users (the `ListUsers` operationId).
+func (c *ClientWithResponses) ListUsersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListUsersResponse, error) {
+	rsp, err := c.ListUsers(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListUsersResponse(rsp)
+}
+
+// CreateUserWithBodyWithResponse Create an account
+//
+// The account signs in with the password given here and enrols
+// TOTP at its first sign-in.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/users (the `CreateUser` operationId).
+func (c *ClientWithResponses) CreateUserWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateUserResponse, error) {
+	rsp, err := c.CreateUserWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateUserResponse(rsp)
+}
+
+// CreateUserWithResponse Create an account
+//
+// The account signs in with the password given here and enrols
+// TOTP at its first sign-in.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/users (the `CreateUser` operationId).
+func (c *ClientWithResponses) CreateUserWithResponse(ctx context.Context, body CreateUserJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateUserResponse, error) {
+	rsp, err := c.CreateUser(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateUserResponse(rsp)
+}
+
+// GetUserWithResponse One account
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/users/{user_id} (the `GetUser` operationId).
+func (c *ClientWithResponses) GetUserWithResponse(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*GetUserResponse, error) {
+	rsp, err := c.GetUser(ctx, userId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetUserResponse(rsp)
+}
+
+// DisableUserWithResponse Disable an account
+//
+// Revokes its sessions; it can no longer sign in. The last active admin cannot be disabled (409).
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/users/{user_id}/disable (the `DisableUser` operationId).
+func (c *ClientWithResponses) DisableUserWithResponse(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*DisableUserResponse, error) {
+	rsp, err := c.DisableUser(ctx, userId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDisableUserResponse(rsp)
+}
+
+// EnableUserWithResponse Enable a disabled account
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/users/{user_id}/enable (the `EnableUser` operationId).
+func (c *ClientWithResponses) EnableUserWithResponse(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*EnableUserResponse, error) {
+	rsp, err := c.EnableUser(ctx, userId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseEnableUserResponse(rsp)
+}
+
+// ResetUserMFAWithResponse Reset the TOTP of an account
+//
+// Deletes the TOTP secret and the recovery codes and revokes the sessions; the account enrols again at its next sign-in.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/users/{user_id}/mfa/reset (the `ResetUserMFA` operationId).
+func (c *ClientWithResponses) ResetUserMFAWithResponse(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*ResetUserMFAResponse, error) {
+	rsp, err := c.ResetUserMFA(ctx, userId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseResetUserMFAResponse(rsp)
+}
+
+// UnlockUserMFAWithResponse Clear the MFA lock of an account
+//
+// Wrong TOTP or recovery codes count against the account across
+// challenges and addresses (NIST SP 800-63B 5.2.2): from
+// `MFA_LOCKOUT_AFTER` failures the account is locked for a time
+// that doubles with each failure, and at `MFA_HARD_LOCK_AFTER`
+// (at most 100) until an admin calls this. A success clears the
+// count.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/users/{user_id}/mfa/unlock (the `UnlockUserMFA` operationId).
+func (c *ClientWithResponses) UnlockUserMFAWithResponse(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*UnlockUserMFAResponse, error) {
+	rsp, err := c.UnlockUserMFA(ctx, userId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUnlockUserMFAResponse(rsp)
+}
+
+// SetUserRolesWithBodyWithResponse Replace the roles of an account
+//
+// Revokes the sessions of the account, so the new roles apply at the next sign-in. The last active admin cannot lose the role (409).
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /v1/users/{user_id}/roles (the `SetUserRoles` operationId).
+func (c *ClientWithResponses) SetUserRolesWithBodyWithResponse(ctx context.Context, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetUserRolesResponse, error) {
+	rsp, err := c.SetUserRolesWithBody(ctx, userId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetUserRolesResponse(rsp)
+}
+
+// SetUserRolesWithResponse Replace the roles of an account
+//
+// Revokes the sessions of the account, so the new roles apply at the next sign-in. The last active admin cannot lose the role (409).
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /v1/users/{user_id}/roles (the `SetUserRoles` operationId).
+func (c *ClientWithResponses) SetUserRolesWithResponse(ctx context.Context, userId string, body SetUserRolesJSONRequestBody, reqEditors ...RequestEditorFn) (*SetUserRolesResponse, error) {
+	rsp, err := c.SetUserRoles(ctx, userId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetUserRolesResponse(rsp)
+}
+
+// RevokeUserSessionsWithResponse Revoke every session of an account
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/users/{user_id}/sessions/revoke (the `RevokeUserSessions` operationId).
+func (c *ClientWithResponses) RevokeUserSessionsWithResponse(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*RevokeUserSessionsResponse, error) {
+	rsp, err := c.RevokeUserSessions(ctx, userId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRevokeUserSessionsResponse(rsp)
+}
+
+// ParseGetJWKSResponse parses an HTTP response from a GetJWKSWithResponse call
+func ParseGetJWKSResponse(rsp *http.Response) (*GetJWKSResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetJWKSResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest JWKS
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetJWKSResponse200Headers
+		if values := rsp.Header.Values("Cache-Control"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Cache-Control", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.CacheControl = &value
+		}
+		response.Headers200 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetIssuerMetadataResponse parses an HTTP response from a GetIssuerMetadataWithResponse call
+func ParseGetIssuerMetadataResponse(rsp *http.Response) (*GetIssuerMetadataResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetIssuerMetadataResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IssuerMetadata
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetIssuerMetadataResponse200Headers
+		if values := rsp.Header.Values("Cache-Control"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Cache-Control", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.CacheControl = &value
+		}
+		response.Headers200 = &headers
+	}
+
+	return response, nil
+}
+
 // ParseGetHealthzResponse parses an HTTP response from a GetHealthzWithResponse call
 func ParseGetHealthzResponse(rsp *http.Response) (*GetHealthzResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -1490,6 +6067,90 @@ func ParseGetHealthzResponse(rsp *http.Response) (*GetHealthzResponse, error) {
 		}
 		response.ApplicationproblemJSONDefault = &dest
 
+	}
+
+	return response, nil
+}
+
+// ParseRequestTokenResponse parses an HTTP response from a RequestTokenWithResponse call
+func ParseRequestTokenResponse(rsp *http.Response) (*RequestTokenResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RequestTokenResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest TokenResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest OAuthError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest OAuthError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest OAuthProblem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers RequestTokenResponse200Headers
+		if values := rsp.Header.Values("Cache-Control"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Cache-Control", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.CacheControl = &value
+		}
+		if values := rsp.Header.Values("Pragma"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Pragma", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.Pragma = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 429:
+		var headers RequestTokenResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
 	}
 
 	return response, nil
@@ -1551,6 +6212,432 @@ func ParseListAuditEventsResponse(rsp *http.Response) (*ListAuditEventsResponse,
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest AuditEventPage
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseLoginResponse parses an HTTP response from a LoginWithResponse call
+func ParseLoginResponse(rsp *http.Response) (*LoginResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &LoginResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LoginChallenge
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers LoginResponse200Headers
+		if values := rsp.Header.Values("Cache-Control"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Cache-Control", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.CacheControl = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 429:
+		var headers LoginResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseLogoutResponse parses an HTTP response from a LogoutWithResponse call
+func ParseLogoutResponse(rsp *http.Response) (*LogoutResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &LogoutResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseVerifyMFAResponse parses an HTTP response from a VerifyMFAWithResponse call
+func ParseVerifyMFAResponse(rsp *http.Response) (*VerifyMFAResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &VerifyMFAResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SessionIssued
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers VerifyMFAResponse200Headers
+		if values := rsp.Header.Values("Cache-Control"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Cache-Control", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.CacheControl = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 429:
+		var headers VerifyMFAResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetSessionResponse parses an HTTP response from a GetSessionWithResponse call
+func ParseGetSessionResponse(rsp *http.Response) (*GetSessionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSessionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SessionInfo
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListOAuthClientsResponse parses an HTTP response from a ListOAuthClientsWithResponse call
+func ParseListOAuthClientsResponse(rsp *http.Response) (*ListOAuthClientsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListOAuthClientsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OAuthClientList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateOAuthClientResponse parses an HTTP response from a CreateOAuthClientWithResponse call
+func ParseCreateOAuthClientResponse(rsp *http.Response) (*CreateOAuthClientResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateOAuthClientResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest OAuthClientCreated
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetOAuthClientResponse parses an HTTP response from a GetOAuthClientWithResponse call
+func ParseGetOAuthClientResponse(rsp *http.Response) (*GetOAuthClientResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetOAuthClientResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OAuthClient
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateOAuthClientResponse parses an HTTP response from a UpdateOAuthClientWithResponse call
+func ParseUpdateOAuthClientResponse(rsp *http.Response) (*UpdateOAuthClientResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateOAuthClientResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OAuthClient
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListSigningKeysResponse parses an HTTP response from a ListSigningKeysWithResponse call
+func ParseListSigningKeysResponse(rsp *http.Response) (*ListSigningKeysResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListSigningKeysResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SigningKeyList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRotateSigningKeyResponse parses an HTTP response from a RotateSigningKeyWithResponse call
+func ParseRotateSigningKeyResponse(rsp *http.Response) (*RotateSigningKeyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RotateSigningKeyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest KeyRotation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest KeyRotation
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCompromiseSigningKeyResponse parses an HTTP response from a CompromiseSigningKeyWithResponse call
+func ParseCompromiseSigningKeyResponse(rsp *http.Response) (*CompromiseSigningKeyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CompromiseSigningKeyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SigningKey
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -1667,17 +6754,356 @@ func ParseActivatePolicyResponse(rsp *http.Response) (*ActivatePolicyResponse, e
 	return response, nil
 }
 
+// ParseListUsersResponse parses an HTTP response from a ListUsersWithResponse call
+func ParseListUsersResponse(rsp *http.Response) (*ListUsersResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListUsersResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest UserList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateUserResponse parses an HTTP response from a CreateUserWithResponse call
+func ParseCreateUserResponse(rsp *http.Response) (*CreateUserResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateUserResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest User
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetUserResponse parses an HTTP response from a GetUserWithResponse call
+func ParseGetUserResponse(rsp *http.Response) (*GetUserResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetUserResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest User
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDisableUserResponse parses an HTTP response from a DisableUserWithResponse call
+func ParseDisableUserResponse(rsp *http.Response) (*DisableUserResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DisableUserResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest User
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseEnableUserResponse parses an HTTP response from a EnableUserWithResponse call
+func ParseEnableUserResponse(rsp *http.Response) (*EnableUserResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &EnableUserResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest User
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseResetUserMFAResponse parses an HTTP response from a ResetUserMFAWithResponse call
+func ParseResetUserMFAResponse(rsp *http.Response) (*ResetUserMFAResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ResetUserMFAResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest User
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUnlockUserMFAResponse parses an HTTP response from a UnlockUserMFAWithResponse call
+func ParseUnlockUserMFAResponse(rsp *http.Response) (*UnlockUserMFAResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UnlockUserMFAResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest User
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSetUserRolesResponse parses an HTTP response from a SetUserRolesWithResponse call
+func ParseSetUserRolesResponse(rsp *http.Response) (*SetUserRolesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetUserRolesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest User
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRevokeUserSessionsResponse parses an HTTP response from a RevokeUserSessionsWithResponse call
+func ParseRevokeUserSessionsResponse(rsp *http.Response) (*RevokeUserSessionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RevokeUserSessionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Revoked
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// GetJWKS The issuer's public keys
+	// (GET /.well-known/jwks.json)
+	GetJWKS(w http.ResponseWriter, r *http.Request)
+	// GetIssuerMetadata Issuer metadata
+	// (GET /.well-known/openid-configuration)
+	GetIssuerMetadata(w http.ResponseWriter, r *http.Request)
 	// GetHealthz Liveness
 	// (GET /healthz)
 	GetHealthz(w http.ResponseWriter, r *http.Request)
+	// RequestToken Client credentials grant
+	// (POST /oauth/token)
+	RequestToken(w http.ResponseWriter, r *http.Request)
 	// GetReadyz Readiness
 	// (GET /readyz)
 	GetReadyz(w http.ResponseWriter, r *http.Request)
 	// ListAuditEvents Audit events, newest first
 	// (GET /v1/audit/events)
 	ListAuditEvents(w http.ResponseWriter, r *http.Request, params ListAuditEventsParams)
+	// Login First sign-in step (password)
+	// (POST /v1/auth/login)
+	Login(w http.ResponseWriter, r *http.Request)
+	// Logout End the session of the caller
+	// (POST /v1/auth/logout)
+	Logout(w http.ResponseWriter, r *http.Request)
+	// VerifyMFA Second sign-in step (TOTP or a recovery code)
+	// (POST /v1/auth/mfa)
+	VerifyMFA(w http.ResponseWriter, r *http.Request)
+	// GetSession The session of the caller
+	// (GET /v1/auth/session)
+	GetSession(w http.ResponseWriter, r *http.Request)
+	// ListOAuthClients Registered clients
+	// (GET /v1/oauth/clients)
+	ListOAuthClients(w http.ResponseWriter, r *http.Request)
+	// CreateOAuthClient Register a client
+	// (POST /v1/oauth/clients)
+	CreateOAuthClient(w http.ResponseWriter, r *http.Request)
+	// GetOAuthClient One client
+	// (GET /v1/oauth/clients/{client_id})
+	GetOAuthClient(w http.ResponseWriter, r *http.Request, clientId string)
+	// UpdateOAuthClient Change a client's status, scopes, audiences or note
+	// (PATCH /v1/oauth/clients/{client_id})
+	UpdateOAuthClient(w http.ResponseWriter, r *http.Request, clientId string)
+	// ListSigningKeys Signing keys and their state
+	// (GET /v1/oauth/keys)
+	ListSigningKeys(w http.ResponseWriter, r *http.Request)
+	// RotateSigningKey Activate the next token-signing key
+	// (POST /v1/oauth/keys/rotate)
+	RotateSigningKey(w http.ResponseWriter, r *http.Request)
+	// CompromiseSigningKey Drop a compromised key now
+	// (POST /v1/oauth/keys/{kid}/compromised)
+	CompromiseSigningKey(w http.ResponseWriter, r *http.Request, kid string)
 	// GetPolicy The active policy
 	// (GET /v1/policy)
 	GetPolicy(w http.ResponseWriter, r *http.Request)
@@ -1687,6 +7113,33 @@ type ServerInterface interface {
 	// ActivatePolicy Activate a policy version
 	// (POST /v1/policy/{version}/activate)
 	ActivatePolicy(w http.ResponseWriter, r *http.Request, version int64)
+	// ListUsers Console accounts
+	// (GET /v1/users)
+	ListUsers(w http.ResponseWriter, r *http.Request)
+	// CreateUser Create an account
+	// (POST /v1/users)
+	CreateUser(w http.ResponseWriter, r *http.Request)
+	// GetUser One account
+	// (GET /v1/users/{user_id})
+	GetUser(w http.ResponseWriter, r *http.Request, userId string)
+	// DisableUser Disable an account
+	// (POST /v1/users/{user_id}/disable)
+	DisableUser(w http.ResponseWriter, r *http.Request, userId string)
+	// EnableUser Enable a disabled account
+	// (POST /v1/users/{user_id}/enable)
+	EnableUser(w http.ResponseWriter, r *http.Request, userId string)
+	// ResetUserMFA Reset the TOTP of an account
+	// (POST /v1/users/{user_id}/mfa/reset)
+	ResetUserMFA(w http.ResponseWriter, r *http.Request, userId string)
+	// UnlockUserMFA Clear the MFA lock of an account
+	// (POST /v1/users/{user_id}/mfa/unlock)
+	UnlockUserMFA(w http.ResponseWriter, r *http.Request, userId string)
+	// SetUserRoles Replace the roles of an account
+	// (PUT /v1/users/{user_id}/roles)
+	SetUserRoles(w http.ResponseWriter, r *http.Request, userId string)
+	// RevokeUserSessions Revoke every session of an account
+	// (POST /v1/users/{user_id}/sessions/revoke)
+	RevokeUserSessions(w http.ResponseWriter, r *http.Request, userId string)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -1698,11 +7151,53 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
+// GetJWKS operation middleware
+func (siw *ServerInterfaceWrapper) GetJWKS(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetJWKS(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetIssuerMetadata operation middleware
+func (siw *ServerInterfaceWrapper) GetIssuerMetadata(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetIssuerMetadata(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetHealthz operation middleware
 func (siw *ServerInterfaceWrapper) GetHealthz(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetHealthz(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RequestToken operation middleware
+func (siw *ServerInterfaceWrapper) RequestToken(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RequestToken(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1863,6 +7358,196 @@ func (siw *ServerInterfaceWrapper) ListAuditEvents(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
+// Login operation middleware
+func (siw *ServerInterfaceWrapper) Login(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.Login(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// Logout operation middleware
+func (siw *ServerInterfaceWrapper) Logout(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.Logout(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// VerifyMFA operation middleware
+func (siw *ServerInterfaceWrapper) VerifyMFA(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VerifyMFA(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSession operation middleware
+func (siw *ServerInterfaceWrapper) GetSession(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSession(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListOAuthClients operation middleware
+func (siw *ServerInterfaceWrapper) ListOAuthClients(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListOAuthClients(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateOAuthClient operation middleware
+func (siw *ServerInterfaceWrapper) CreateOAuthClient(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateOAuthClient(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetOAuthClient operation middleware
+func (siw *ServerInterfaceWrapper) GetOAuthClient(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "client_id" -------------
+	var clientId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "client_id", r.PathValue("client_id"), &clientId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "client_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetOAuthClient(w, r, clientId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateOAuthClient operation middleware
+func (siw *ServerInterfaceWrapper) UpdateOAuthClient(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "client_id" -------------
+	var clientId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "client_id", r.PathValue("client_id"), &clientId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "client_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateOAuthClient(w, r, clientId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSigningKeys operation middleware
+func (siw *ServerInterfaceWrapper) ListSigningKeys(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSigningKeys(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RotateSigningKey operation middleware
+func (siw *ServerInterfaceWrapper) RotateSigningKey(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RotateSigningKey(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CompromiseSigningKey operation middleware
+func (siw *ServerInterfaceWrapper) CompromiseSigningKey(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "kid" -------------
+	var kid string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "kid", r.PathValue("kid"), &kid, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kid", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CompromiseSigningKey(w, r, kid)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetPolicy operation middleware
 func (siw *ServerInterfaceWrapper) GetPolicy(w http.ResponseWriter, r *http.Request) {
 
@@ -1908,6 +7593,216 @@ func (siw *ServerInterfaceWrapper) ActivatePolicy(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ActivatePolicy(w, r, version)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListUsers operation middleware
+func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListUsers(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateUser operation middleware
+func (siw *ServerInterfaceWrapper) CreateUser(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateUser(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetUser operation middleware
+func (siw *ServerInterfaceWrapper) GetUser(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "user_id" -------------
+	var userId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", r.PathValue("user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "user_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetUser(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DisableUser operation middleware
+func (siw *ServerInterfaceWrapper) DisableUser(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "user_id" -------------
+	var userId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", r.PathValue("user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "user_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DisableUser(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// EnableUser operation middleware
+func (siw *ServerInterfaceWrapper) EnableUser(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "user_id" -------------
+	var userId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", r.PathValue("user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "user_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.EnableUser(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ResetUserMFA operation middleware
+func (siw *ServerInterfaceWrapper) ResetUserMFA(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "user_id" -------------
+	var userId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", r.PathValue("user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "user_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ResetUserMFA(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UnlockUserMFA operation middleware
+func (siw *ServerInterfaceWrapper) UnlockUserMFA(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "user_id" -------------
+	var userId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", r.PathValue("user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "user_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UnlockUserMFA(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetUserRoles operation middleware
+func (siw *ServerInterfaceWrapper) SetUserRoles(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "user_id" -------------
+	var userId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", r.PathValue("user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "user_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetUserRoles(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RevokeUserSessions operation middleware
+func (siw *ServerInterfaceWrapper) RevokeUserSessions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "user_id" -------------
+	var userId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", r.PathValue("user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "user_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RevokeUserSessions(w, r, userId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2043,11 +7938,141 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/policy", wrapper.CreatePolicy)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/policy/{version}/activate", wrapper.ActivatePolicy)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/audit/events", wrapper.ListAuditEvents)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/auth/login", wrapper.Login)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/auth/mfa", wrapper.VerifyMFA)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/auth/session", wrapper.GetSession)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/auth/logout", wrapper.Logout)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/users", wrapper.ListUsers)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/users", wrapper.CreateUser)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/users/{user_id}", wrapper.GetUser)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/v1/users/{user_id}/roles", wrapper.SetUserRoles)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/users/{user_id}/disable", wrapper.DisableUser)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/users/{user_id}/enable", wrapper.EnableUser)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/users/{user_id}/mfa/reset", wrapper.ResetUserMFA)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/users/{user_id}/mfa/unlock", wrapper.UnlockUserMFA)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/users/{user_id}/sessions/revoke", wrapper.RevokeUserSessions)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/oauth/token", wrapper.RequestToken)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/.well-known/jwks.json", wrapper.GetJWKS)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/.well-known/openid-configuration", wrapper.GetIssuerMetadata)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/oauth/clients", wrapper.ListOAuthClients)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/oauth/clients", wrapper.CreateOAuthClient)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/oauth/clients/{client_id}", wrapper.GetOAuthClient)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/v1/oauth/clients/{client_id}", wrapper.UpdateOAuthClient)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/oauth/keys", wrapper.ListSigningKeys)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/oauth/keys/{kid}/compromised", wrapper.CompromiseSigningKey)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/oauth/keys/rotate", wrapper.RotateSigningKey)
 
 	return m
 }
 
+type OAuthErrorApplicationProblemPlusJSONResponse OAuthProblem
+
 type ProblemApplicationProblemPlusJSONResponse Problem
+
+type RateLimitedResponseHeaders struct {
+	RetryAfter *int
+}
+type RateLimitedApplicationProblemPlusJSONResponse struct {
+	Body Problem
+
+	Headers RateLimitedResponseHeaders
+}
+
+type GetJWKSRequestObject struct {
+}
+
+type GetJWKSResponseObject interface {
+	VisitGetJWKSResponse(w http.ResponseWriter) error
+}
+
+type GetJWKS200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetJWKS200JSONResponse struct {
+	Body    JWKS
+	Headers GetJWKS200ResponseHeaders
+}
+
+func (response GetJWKS200JSONResponse) VisitGetJWKSResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetJWKSdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetJWKSdefaultApplicationProblemPlusJSONResponse) VisitGetJWKSResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetIssuerMetadataRequestObject struct {
+}
+
+type GetIssuerMetadataResponseObject interface {
+	VisitGetIssuerMetadataResponse(w http.ResponseWriter) error
+}
+
+type GetIssuerMetadata200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetIssuerMetadata200JSONResponse struct {
+	Body    IssuerMetadata
+	Headers GetIssuerMetadata200ResponseHeaders
+}
+
+func (response GetIssuerMetadata200JSONResponse) VisitGetIssuerMetadataResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetIssuerMetadatadefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetIssuerMetadatadefaultApplicationProblemPlusJSONResponse) VisitGetIssuerMetadataResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
 
 type GetHealthzRequestObject struct {
 }
@@ -2076,6 +8101,113 @@ type GetHealthzdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response GetHealthzdefaultApplicationProblemPlusJSONResponse) VisitGetHealthzResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestTokenRequestObject struct {
+	Body *RequestTokenFormdataRequestBody
+}
+
+type RequestTokenResponseObject interface {
+	VisitRequestTokenResponse(w http.ResponseWriter) error
+}
+
+type RequestToken200ResponseHeaders struct {
+	CacheControl *string
+	Pragma       *string
+}
+
+type RequestToken200JSONResponse struct {
+	Body    TokenResponse
+	Headers RequestToken200ResponseHeaders
+}
+
+func (response RequestToken200JSONResponse) VisitRequestTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.Pragma != nil {
+		w.Header().Set("Pragma", fmt.Sprint(*response.Headers.Pragma))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestToken400ApplicationProblemPlusJSONResponse struct {
+	OAuthErrorApplicationProblemPlusJSONResponse
+}
+
+func (response RequestToken400ApplicationProblemPlusJSONResponse) VisitRequestTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestToken401ApplicationProblemPlusJSONResponse OAuthProblem
+
+func (response RequestToken401ApplicationProblemPlusJSONResponse) VisitRequestTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestToken429ResponseHeaders struct {
+	RetryAfter *int
+}
+
+type RequestToken429ApplicationProblemPlusJSONResponse struct {
+	Body    OAuthProblem
+	Headers RequestToken429ResponseHeaders
+}
+
+func (response RequestToken429ApplicationProblemPlusJSONResponse) VisitRequestTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestTokendefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response RequestTokendefaultApplicationProblemPlusJSONResponse) VisitRequestTokenResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -2167,6 +8299,498 @@ type ListAuditEventsdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response ListAuditEventsdefaultApplicationProblemPlusJSONResponse) VisitListAuditEventsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LoginRequestObject struct {
+	Body *LoginJSONRequestBody
+}
+
+type LoginResponseObject interface {
+	VisitLoginResponse(w http.ResponseWriter) error
+}
+
+type Login200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type Login200JSONResponse struct {
+	Body    LoginChallenge
+	Headers Login200ResponseHeaders
+}
+
+func (response Login200JSONResponse) VisitLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type Login429ApplicationProblemPlusJSONResponse struct {
+	RateLimitedApplicationProblemPlusJSONResponse
+}
+
+func (response Login429ApplicationProblemPlusJSONResponse) VisitLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LogindefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response LogindefaultApplicationProblemPlusJSONResponse) VisitLoginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LogoutRequestObject struct {
+}
+
+type LogoutResponseObject interface {
+	VisitLogoutResponse(w http.ResponseWriter) error
+}
+
+type Logout204Response struct {
+}
+
+func (response Logout204Response) VisitLogoutResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type LogoutdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response LogoutdefaultApplicationProblemPlusJSONResponse) VisitLogoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyMFARequestObject struct {
+	Body *VerifyMFAJSONRequestBody
+}
+
+type VerifyMFAResponseObject interface {
+	VisitVerifyMFAResponse(w http.ResponseWriter) error
+}
+
+type VerifyMFA200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type VerifyMFA200JSONResponse struct {
+	Body    SessionIssued
+	Headers VerifyMFA200ResponseHeaders
+}
+
+func (response VerifyMFA200JSONResponse) VisitVerifyMFAResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyMFA429ApplicationProblemPlusJSONResponse struct {
+	RateLimitedApplicationProblemPlusJSONResponse
+}
+
+func (response VerifyMFA429ApplicationProblemPlusJSONResponse) VisitVerifyMFAResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyMFAdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response VerifyMFAdefaultApplicationProblemPlusJSONResponse) VisitVerifyMFAResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSessionRequestObject struct {
+}
+
+type GetSessionResponseObject interface {
+	VisitGetSessionResponse(w http.ResponseWriter) error
+}
+
+type GetSession200JSONResponse SessionInfo
+
+func (response GetSession200JSONResponse) VisitGetSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSessiondefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetSessiondefaultApplicationProblemPlusJSONResponse) VisitGetSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListOAuthClientsRequestObject struct {
+}
+
+type ListOAuthClientsResponseObject interface {
+	VisitListOAuthClientsResponse(w http.ResponseWriter) error
+}
+
+type ListOAuthClients200JSONResponse OAuthClientList
+
+func (response ListOAuthClients200JSONResponse) VisitListOAuthClientsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListOAuthClientsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListOAuthClientsdefaultApplicationProblemPlusJSONResponse) VisitListOAuthClientsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOAuthClientRequestObject struct {
+	Body *CreateOAuthClientJSONRequestBody
+}
+
+type CreateOAuthClientResponseObject interface {
+	VisitCreateOAuthClientResponse(w http.ResponseWriter) error
+}
+
+type CreateOAuthClient201JSONResponse OAuthClientCreated
+
+func (response CreateOAuthClient201JSONResponse) VisitCreateOAuthClientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOAuthClientdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateOAuthClientdefaultApplicationProblemPlusJSONResponse) VisitCreateOAuthClientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOAuthClientRequestObject struct {
+	ClientId string `json:"client_id"`
+}
+
+type GetOAuthClientResponseObject interface {
+	VisitGetOAuthClientResponse(w http.ResponseWriter) error
+}
+
+type GetOAuthClient200JSONResponse OAuthClient
+
+func (response GetOAuthClient200JSONResponse) VisitGetOAuthClientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOAuthClientdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetOAuthClientdefaultApplicationProblemPlusJSONResponse) VisitGetOAuthClientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateOAuthClientRequestObject struct {
+	ClientId string `json:"client_id"`
+	Body     *UpdateOAuthClientJSONRequestBody
+}
+
+type UpdateOAuthClientResponseObject interface {
+	VisitUpdateOAuthClientResponse(w http.ResponseWriter) error
+}
+
+type UpdateOAuthClient200JSONResponse OAuthClient
+
+func (response UpdateOAuthClient200JSONResponse) VisitUpdateOAuthClientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateOAuthClientdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpdateOAuthClientdefaultApplicationProblemPlusJSONResponse) VisitUpdateOAuthClientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSigningKeysRequestObject struct {
+}
+
+type ListSigningKeysResponseObject interface {
+	VisitListSigningKeysResponse(w http.ResponseWriter) error
+}
+
+type ListSigningKeys200JSONResponse SigningKeyList
+
+func (response ListSigningKeys200JSONResponse) VisitListSigningKeysResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSigningKeysdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListSigningKeysdefaultApplicationProblemPlusJSONResponse) VisitListSigningKeysResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RotateSigningKeyRequestObject struct {
+}
+
+type RotateSigningKeyResponseObject interface {
+	VisitRotateSigningKeyResponse(w http.ResponseWriter) error
+}
+
+type RotateSigningKey200JSONResponse KeyRotation
+
+func (response RotateSigningKey200JSONResponse) VisitRotateSigningKeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RotateSigningKey202JSONResponse KeyRotation
+
+func (response RotateSigningKey202JSONResponse) VisitRotateSigningKeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RotateSigningKeydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response RotateSigningKeydefaultApplicationProblemPlusJSONResponse) VisitRotateSigningKeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompromiseSigningKeyRequestObject struct {
+	Kid  string `json:"kid"`
+	Body *CompromiseSigningKeyJSONRequestBody
+}
+
+type CompromiseSigningKeyResponseObject interface {
+	VisitCompromiseSigningKeyResponse(w http.ResponseWriter) error
+}
+
+type CompromiseSigningKey200JSONResponse SigningKey
+
+func (response CompromiseSigningKey200JSONResponse) VisitCompromiseSigningKeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompromiseSigningKeydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CompromiseSigningKeydefaultApplicationProblemPlusJSONResponse) VisitCompromiseSigningKeyResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -2294,17 +8918,410 @@ func (response ActivatePolicydefaultApplicationProblemPlusJSONResponse) VisitAct
 	return err
 }
 
+type ListUsersRequestObject struct {
+}
+
+type ListUsersResponseObject interface {
+	VisitListUsersResponse(w http.ResponseWriter) error
+}
+
+type ListUsers200JSONResponse UserList
+
+func (response ListUsers200JSONResponse) VisitListUsersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListUsersdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListUsersdefaultApplicationProblemPlusJSONResponse) VisitListUsersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateUserRequestObject struct {
+	Body *CreateUserJSONRequestBody
+}
+
+type CreateUserResponseObject interface {
+	VisitCreateUserResponse(w http.ResponseWriter) error
+}
+
+type CreateUser201JSONResponse User
+
+func (response CreateUser201JSONResponse) VisitCreateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateUserdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateUserdefaultApplicationProblemPlusJSONResponse) VisitCreateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetUserRequestObject struct {
+	UserId string `json:"user_id"`
+}
+
+type GetUserResponseObject interface {
+	VisitGetUserResponse(w http.ResponseWriter) error
+}
+
+type GetUser200JSONResponse User
+
+func (response GetUser200JSONResponse) VisitGetUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetUserdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetUserdefaultApplicationProblemPlusJSONResponse) VisitGetUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DisableUserRequestObject struct {
+	UserId string `json:"user_id"`
+}
+
+type DisableUserResponseObject interface {
+	VisitDisableUserResponse(w http.ResponseWriter) error
+}
+
+type DisableUser200JSONResponse User
+
+func (response DisableUser200JSONResponse) VisitDisableUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DisableUserdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response DisableUserdefaultApplicationProblemPlusJSONResponse) VisitDisableUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EnableUserRequestObject struct {
+	UserId string `json:"user_id"`
+}
+
+type EnableUserResponseObject interface {
+	VisitEnableUserResponse(w http.ResponseWriter) error
+}
+
+type EnableUser200JSONResponse User
+
+func (response EnableUser200JSONResponse) VisitEnableUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EnableUserdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response EnableUserdefaultApplicationProblemPlusJSONResponse) VisitEnableUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResetUserMFARequestObject struct {
+	UserId string `json:"user_id"`
+}
+
+type ResetUserMFAResponseObject interface {
+	VisitResetUserMFAResponse(w http.ResponseWriter) error
+}
+
+type ResetUserMFA200JSONResponse User
+
+func (response ResetUserMFA200JSONResponse) VisitResetUserMFAResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResetUserMFAdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ResetUserMFAdefaultApplicationProblemPlusJSONResponse) VisitResetUserMFAResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnlockUserMFARequestObject struct {
+	UserId string `json:"user_id"`
+}
+
+type UnlockUserMFAResponseObject interface {
+	VisitUnlockUserMFAResponse(w http.ResponseWriter) error
+}
+
+type UnlockUserMFA200JSONResponse User
+
+func (response UnlockUserMFA200JSONResponse) VisitUnlockUserMFAResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnlockUserMFAdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UnlockUserMFAdefaultApplicationProblemPlusJSONResponse) VisitUnlockUserMFAResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetUserRolesRequestObject struct {
+	UserId string `json:"user_id"`
+	Body   *SetUserRolesJSONRequestBody
+}
+
+type SetUserRolesResponseObject interface {
+	VisitSetUserRolesResponse(w http.ResponseWriter) error
+}
+
+type SetUserRoles200JSONResponse User
+
+func (response SetUserRoles200JSONResponse) VisitSetUserRolesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetUserRolesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response SetUserRolesdefaultApplicationProblemPlusJSONResponse) VisitSetUserRolesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeUserSessionsRequestObject struct {
+	UserId string `json:"user_id"`
+}
+
+type RevokeUserSessionsResponseObject interface {
+	VisitRevokeUserSessionsResponse(w http.ResponseWriter) error
+}
+
+type RevokeUserSessions200JSONResponse Revoked
+
+func (response RevokeUserSessions200JSONResponse) VisitRevokeUserSessionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeUserSessionsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response RevokeUserSessionsdefaultApplicationProblemPlusJSONResponse) VisitRevokeUserSessionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// GetJWKS The issuer's public keys
+	// (GET /.well-known/jwks.json)
+	GetJWKS(ctx context.Context, request GetJWKSRequestObject) (GetJWKSResponseObject, error)
+	// GetIssuerMetadata Issuer metadata
+	// (GET /.well-known/openid-configuration)
+	GetIssuerMetadata(ctx context.Context, request GetIssuerMetadataRequestObject) (GetIssuerMetadataResponseObject, error)
 	// GetHealthz Liveness
 	// (GET /healthz)
 	GetHealthz(ctx context.Context, request GetHealthzRequestObject) (GetHealthzResponseObject, error)
+	// RequestToken Client credentials grant
+	// (POST /oauth/token)
+	RequestToken(ctx context.Context, request RequestTokenRequestObject) (RequestTokenResponseObject, error)
 	// GetReadyz Readiness
 	// (GET /readyz)
 	GetReadyz(ctx context.Context, request GetReadyzRequestObject) (GetReadyzResponseObject, error)
 	// ListAuditEvents Audit events, newest first
 	// (GET /v1/audit/events)
 	ListAuditEvents(ctx context.Context, request ListAuditEventsRequestObject) (ListAuditEventsResponseObject, error)
+	// Login First sign-in step (password)
+	// (POST /v1/auth/login)
+	Login(ctx context.Context, request LoginRequestObject) (LoginResponseObject, error)
+	// Logout End the session of the caller
+	// (POST /v1/auth/logout)
+	Logout(ctx context.Context, request LogoutRequestObject) (LogoutResponseObject, error)
+	// VerifyMFA Second sign-in step (TOTP or a recovery code)
+	// (POST /v1/auth/mfa)
+	VerifyMFA(ctx context.Context, request VerifyMFARequestObject) (VerifyMFAResponseObject, error)
+	// GetSession The session of the caller
+	// (GET /v1/auth/session)
+	GetSession(ctx context.Context, request GetSessionRequestObject) (GetSessionResponseObject, error)
+	// ListOAuthClients Registered clients
+	// (GET /v1/oauth/clients)
+	ListOAuthClients(ctx context.Context, request ListOAuthClientsRequestObject) (ListOAuthClientsResponseObject, error)
+	// CreateOAuthClient Register a client
+	// (POST /v1/oauth/clients)
+	CreateOAuthClient(ctx context.Context, request CreateOAuthClientRequestObject) (CreateOAuthClientResponseObject, error)
+	// GetOAuthClient One client
+	// (GET /v1/oauth/clients/{client_id})
+	GetOAuthClient(ctx context.Context, request GetOAuthClientRequestObject) (GetOAuthClientResponseObject, error)
+	// UpdateOAuthClient Change a client's status, scopes, audiences or note
+	// (PATCH /v1/oauth/clients/{client_id})
+	UpdateOAuthClient(ctx context.Context, request UpdateOAuthClientRequestObject) (UpdateOAuthClientResponseObject, error)
+	// ListSigningKeys Signing keys and their state
+	// (GET /v1/oauth/keys)
+	ListSigningKeys(ctx context.Context, request ListSigningKeysRequestObject) (ListSigningKeysResponseObject, error)
+	// RotateSigningKey Activate the next token-signing key
+	// (POST /v1/oauth/keys/rotate)
+	RotateSigningKey(ctx context.Context, request RotateSigningKeyRequestObject) (RotateSigningKeyResponseObject, error)
+	// CompromiseSigningKey Drop a compromised key now
+	// (POST /v1/oauth/keys/{kid}/compromised)
+	CompromiseSigningKey(ctx context.Context, request CompromiseSigningKeyRequestObject) (CompromiseSigningKeyResponseObject, error)
 	// GetPolicy The active policy
 	// (GET /v1/policy)
 	GetPolicy(ctx context.Context, request GetPolicyRequestObject) (GetPolicyResponseObject, error)
@@ -2314,6 +9331,33 @@ type StrictServerInterface interface {
 	// ActivatePolicy Activate a policy version
 	// (POST /v1/policy/{version}/activate)
 	ActivatePolicy(ctx context.Context, request ActivatePolicyRequestObject) (ActivatePolicyResponseObject, error)
+	// ListUsers Console accounts
+	// (GET /v1/users)
+	ListUsers(ctx context.Context, request ListUsersRequestObject) (ListUsersResponseObject, error)
+	// CreateUser Create an account
+	// (POST /v1/users)
+	CreateUser(ctx context.Context, request CreateUserRequestObject) (CreateUserResponseObject, error)
+	// GetUser One account
+	// (GET /v1/users/{user_id})
+	GetUser(ctx context.Context, request GetUserRequestObject) (GetUserResponseObject, error)
+	// DisableUser Disable an account
+	// (POST /v1/users/{user_id}/disable)
+	DisableUser(ctx context.Context, request DisableUserRequestObject) (DisableUserResponseObject, error)
+	// EnableUser Enable a disabled account
+	// (POST /v1/users/{user_id}/enable)
+	EnableUser(ctx context.Context, request EnableUserRequestObject) (EnableUserResponseObject, error)
+	// ResetUserMFA Reset the TOTP of an account
+	// (POST /v1/users/{user_id}/mfa/reset)
+	ResetUserMFA(ctx context.Context, request ResetUserMFARequestObject) (ResetUserMFAResponseObject, error)
+	// UnlockUserMFA Clear the MFA lock of an account
+	// (POST /v1/users/{user_id}/mfa/unlock)
+	UnlockUserMFA(ctx context.Context, request UnlockUserMFARequestObject) (UnlockUserMFAResponseObject, error)
+	// SetUserRoles Replace the roles of an account
+	// (PUT /v1/users/{user_id}/roles)
+	SetUserRoles(ctx context.Context, request SetUserRolesRequestObject) (SetUserRolesResponseObject, error)
+	// RevokeUserSessions Revoke every session of an account
+	// (POST /v1/users/{user_id}/sessions/revoke)
+	RevokeUserSessions(ctx context.Context, request RevokeUserSessionsRequestObject) (RevokeUserSessionsResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -2355,6 +9399,54 @@ type strictHandler struct {
 	options     StrictHTTPServerOptions
 }
 
+// GetJWKS operation middleware
+func (sh *strictHandler) GetJWKS(w http.ResponseWriter, r *http.Request) {
+	var request GetJWKSRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetJWKS(ctx, request.(GetJWKSRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetJWKS")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetJWKSResponseObject); ok {
+		if err := validResponse.VisitGetJWKSResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetIssuerMetadata operation middleware
+func (sh *strictHandler) GetIssuerMetadata(w http.ResponseWriter, r *http.Request) {
+	var request GetIssuerMetadataRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetIssuerMetadata(ctx, request.(GetIssuerMetadataRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetIssuerMetadata")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetIssuerMetadataResponseObject); ok {
+		if err := validResponse.VisitGetIssuerMetadataResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetHealthz operation middleware
 func (sh *strictHandler) GetHealthz(w http.ResponseWriter, r *http.Request) {
 	var request GetHealthzRequestObject
@@ -2372,6 +9464,41 @@ func (sh *strictHandler) GetHealthz(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetHealthzResponseObject); ok {
 		if err := validResponse.VisitGetHealthzResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RequestToken operation middleware
+func (sh *strictHandler) RequestToken(w http.ResponseWriter, r *http.Request) {
+	var request RequestTokenRequestObject
+
+	if err := r.ParseForm(); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode formdata: %w", err))
+		return
+	}
+	var body RequestTokenFormdataRequestBody
+	if err := runtime.BindForm(&body, r.Form, nil, nil); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't bind formdata: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RequestToken(ctx, request.(RequestTokenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RequestToken")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RequestTokenResponseObject); ok {
+		if err := validResponse.VisitRequestTokenResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -2422,6 +9549,311 @@ func (sh *strictHandler) ListAuditEvents(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListAuditEventsResponseObject); ok {
 		if err := validResponse.VisitListAuditEventsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// Login operation middleware
+func (sh *strictHandler) Login(w http.ResponseWriter, r *http.Request) {
+	var request LoginRequestObject
+
+	var body LoginJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.Login(ctx, request.(LoginRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "Login")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(LoginResponseObject); ok {
+		if err := validResponse.VisitLoginResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// Logout operation middleware
+func (sh *strictHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	var request LogoutRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.Logout(ctx, request.(LogoutRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "Logout")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(LogoutResponseObject); ok {
+		if err := validResponse.VisitLogoutResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// VerifyMFA operation middleware
+func (sh *strictHandler) VerifyMFA(w http.ResponseWriter, r *http.Request) {
+	var request VerifyMFARequestObject
+
+	var body VerifyMFAJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.VerifyMFA(ctx, request.(VerifyMFARequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "VerifyMFA")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(VerifyMFAResponseObject); ok {
+		if err := validResponse.VisitVerifyMFAResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSession operation middleware
+func (sh *strictHandler) GetSession(w http.ResponseWriter, r *http.Request) {
+	var request GetSessionRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSession(ctx, request.(GetSessionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSession")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSessionResponseObject); ok {
+		if err := validResponse.VisitGetSessionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListOAuthClients operation middleware
+func (sh *strictHandler) ListOAuthClients(w http.ResponseWriter, r *http.Request) {
+	var request ListOAuthClientsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListOAuthClients(ctx, request.(ListOAuthClientsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListOAuthClients")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListOAuthClientsResponseObject); ok {
+		if err := validResponse.VisitListOAuthClientsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateOAuthClient operation middleware
+func (sh *strictHandler) CreateOAuthClient(w http.ResponseWriter, r *http.Request) {
+	var request CreateOAuthClientRequestObject
+
+	var body CreateOAuthClientJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateOAuthClient(ctx, request.(CreateOAuthClientRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateOAuthClient")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateOAuthClientResponseObject); ok {
+		if err := validResponse.VisitCreateOAuthClientResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetOAuthClient operation middleware
+func (sh *strictHandler) GetOAuthClient(w http.ResponseWriter, r *http.Request, clientId string) {
+	var request GetOAuthClientRequestObject
+
+	request.ClientId = clientId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetOAuthClient(ctx, request.(GetOAuthClientRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetOAuthClient")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetOAuthClientResponseObject); ok {
+		if err := validResponse.VisitGetOAuthClientResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateOAuthClient operation middleware
+func (sh *strictHandler) UpdateOAuthClient(w http.ResponseWriter, r *http.Request, clientId string) {
+	var request UpdateOAuthClientRequestObject
+
+	request.ClientId = clientId
+
+	var body UpdateOAuthClientJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateOAuthClient(ctx, request.(UpdateOAuthClientRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateOAuthClient")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateOAuthClientResponseObject); ok {
+		if err := validResponse.VisitUpdateOAuthClientResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSigningKeys operation middleware
+func (sh *strictHandler) ListSigningKeys(w http.ResponseWriter, r *http.Request) {
+	var request ListSigningKeysRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSigningKeys(ctx, request.(ListSigningKeysRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSigningKeys")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSigningKeysResponseObject); ok {
+		if err := validResponse.VisitListSigningKeysResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RotateSigningKey operation middleware
+func (sh *strictHandler) RotateSigningKey(w http.ResponseWriter, r *http.Request) {
+	var request RotateSigningKeyRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RotateSigningKey(ctx, request.(RotateSigningKeyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RotateSigningKey")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RotateSigningKeyResponseObject); ok {
+		if err := validResponse.VisitRotateSigningKeyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CompromiseSigningKey operation middleware
+func (sh *strictHandler) CompromiseSigningKey(w http.ResponseWriter, r *http.Request, kid string) {
+	var request CompromiseSigningKeyRequestObject
+
+	request.Kid = kid
+
+	var body CompromiseSigningKeyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CompromiseSigningKey(ctx, request.(CompromiseSigningKeyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CompromiseSigningKey")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CompromiseSigningKeyResponseObject); ok {
+		if err := validResponse.VisitCompromiseSigningKeyResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -2503,6 +9935,250 @@ func (sh *strictHandler) ActivatePolicy(w http.ResponseWriter, r *http.Request, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ActivatePolicyResponseObject); ok {
 		if err := validResponse.VisitActivatePolicyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListUsers operation middleware
+func (sh *strictHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
+	var request ListUsersRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListUsers(ctx, request.(ListUsersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListUsers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListUsersResponseObject); ok {
+		if err := validResponse.VisitListUsersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateUser operation middleware
+func (sh *strictHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
+	var request CreateUserRequestObject
+
+	var body CreateUserJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateUser(ctx, request.(CreateUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateUser")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateUserResponseObject); ok {
+		if err := validResponse.VisitCreateUserResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetUser operation middleware
+func (sh *strictHandler) GetUser(w http.ResponseWriter, r *http.Request, userId string) {
+	var request GetUserRequestObject
+
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetUser(ctx, request.(GetUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetUser")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetUserResponseObject); ok {
+		if err := validResponse.VisitGetUserResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DisableUser operation middleware
+func (sh *strictHandler) DisableUser(w http.ResponseWriter, r *http.Request, userId string) {
+	var request DisableUserRequestObject
+
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DisableUser(ctx, request.(DisableUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DisableUser")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DisableUserResponseObject); ok {
+		if err := validResponse.VisitDisableUserResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// EnableUser operation middleware
+func (sh *strictHandler) EnableUser(w http.ResponseWriter, r *http.Request, userId string) {
+	var request EnableUserRequestObject
+
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.EnableUser(ctx, request.(EnableUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "EnableUser")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(EnableUserResponseObject); ok {
+		if err := validResponse.VisitEnableUserResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ResetUserMFA operation middleware
+func (sh *strictHandler) ResetUserMFA(w http.ResponseWriter, r *http.Request, userId string) {
+	var request ResetUserMFARequestObject
+
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ResetUserMFA(ctx, request.(ResetUserMFARequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ResetUserMFA")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ResetUserMFAResponseObject); ok {
+		if err := validResponse.VisitResetUserMFAResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UnlockUserMFA operation middleware
+func (sh *strictHandler) UnlockUserMFA(w http.ResponseWriter, r *http.Request, userId string) {
+	var request UnlockUserMFARequestObject
+
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UnlockUserMFA(ctx, request.(UnlockUserMFARequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UnlockUserMFA")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UnlockUserMFAResponseObject); ok {
+		if err := validResponse.VisitUnlockUserMFAResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetUserRoles operation middleware
+func (sh *strictHandler) SetUserRoles(w http.ResponseWriter, r *http.Request, userId string) {
+	var request SetUserRolesRequestObject
+
+	request.UserId = userId
+
+	var body SetUserRolesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetUserRoles(ctx, request.(SetUserRolesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetUserRoles")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetUserRolesResponseObject); ok {
+		if err := validResponse.VisitSetUserRolesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RevokeUserSessions operation middleware
+func (sh *strictHandler) RevokeUserSessions(w http.ResponseWriter, r *http.Request, userId string) {
+	var request RevokeUserSessionsRequestObject
+
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RevokeUserSessions(ctx, request.(RevokeUserSessionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RevokeUserSessions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RevokeUserSessionsResponseObject); ok {
+		if err := validResponse.VisitRevokeUserSessionsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -55,8 +55,13 @@ func (l *RateLimiter) WithKey(fn func(*http.Request) string) *RateLimiter {
 	return l
 }
 
-// RemoteIP is the host part of r.RemoteAddr.
+// RemoteIP is the client address: the one RealIP derived from the
+// trusted proxies' X-Forwarded-For when the request passed through it,
+// otherwise the host part of r.RemoteAddr.
 func RemoteIP(r *http.Request) string {
+	if ip, ok := r.Context().Value(clientIPKey{}).(string); ok && ip != "" {
+		return ip
+	}
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		return r.RemoteAddr

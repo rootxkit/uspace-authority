@@ -75,6 +75,7 @@ func AccessLog(logger *slog.Logger) func(http.Handler) http.Handler {
 				slog.Int64("bytes_out", rw.n),
 				slog.Float64("duration_ms", float64(time.Since(start).Microseconds())/1000),
 				slog.String("remote", r.RemoteAddr),
+				slog.String("client_ip", RemoteIP(r)),
 			)
 		})
 	}
