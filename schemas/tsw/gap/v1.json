@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.uspace.ge/tsw/gap/v1.json",
+  "title": "tsw/gap/v1",
+  "description": "A hole a producer knows of, handed to tsdb-writer on the internal subject tsw.v1.writer_gaps and recorded in writer_gaps (LESSONS B-13: holes are holes). Owned by uspace-authority (WP-9); rid-ingest (WP-7) publishes one for every queued batch it sheds. Internal to this system, no 04 §2 envelope. With from_seq > 0 the Nats-Msg-Id is the record's dedupe key (a retried publish is one hole); otherwise the record's TSW sequence is (two such records are two holes).",
+  "type": "object",
+  "required": ["table", "from_seq", "to_seq", "cause", "count", "at"],
+  "properties": {
+    "table": { "description": "The table the lost rows were for.", "type": "string", "minLength": 1 },
+    "from_seq": { "description": "First sequence of the hole in stream; 0 when unknown.", "type": "integer", "minimum": 0 },
+    "to_seq": { "description": "Last sequence of the hole; not before from_seq.", "type": "integer", "minimum": 0 },
+    "cause": { "description": "Why, for example ingest_queue_full, ingest_queue_age, ingest_queue_corrupt.", "type": "string", "minLength": 1 },
+    "count": { "description": "How much was lost, in count_unit.", "type": "integer", "minimum": 0 },
+    "count_unit": { "description": "rows (the default) or messages.", "type": "string", "enum": ["rows", "messages"], "default": "rows" },
+    "at": { "description": "When the producer recorded the hole, on its clock.", "type": "string", "format": "date-time" },
+    "receiver_id": { "description": "The receiver whose observations were lost, when one.", "type": "string" },
+    "stream": { "description": "The stream whose sequences from_seq and to_seq number; INGEST when absent (rid-ingest's records).", "type": "string", "default": "INGEST" },
+    "detail": { "description": "Free text for the operator.", "type": "string", "maxLength": 500 }
+  }
+}

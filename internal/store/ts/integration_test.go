@@ -27,7 +27,7 @@ func TestIntegrationReaderRoleCannotInsertAndWriterRoleCan(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(r.Close)
-	w, err := ts.OpenWriter(ctx, store.PoolOptions{URL: u, ApplicationName: "uspace-authority-test"})
+	w, err := ts.OpenWriterPool(ctx, store.PoolOptions{URL: u, ApplicationName: "uspace-authority-test"})
 	if err != nil {
 		t.Fatal(err)
 	}

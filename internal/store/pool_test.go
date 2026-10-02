@@ -2,6 +2,7 @@ package store
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -56,6 +57,9 @@ func TestRequireVersionRefusesAnOlderSchemaAndAcceptsTheSameOrNewer(t *testing.T
 	err := RequireVersion("relational", 2, 3)
 	if err == nil || !strings.Contains(err.Error(), "version 2, this build needs 3") || !strings.Contains(err.Error(), "uspace-authority migrate") {
 		t.Fatalf("older: %v", err)
+	}
+	if !IsSchemaError(fmt.Errorf("open: %w", err)) || IsSchemaError(errors.New("connection refused")) {
+		t.Fatal("IsSchemaError")
 	}
 	if err := RequireVersion("relational", 3, 3); err != nil {
 		t.Fatalf("same: %v", err)

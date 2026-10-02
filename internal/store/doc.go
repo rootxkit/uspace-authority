@@ -25,7 +25,9 @@
 //     authority_ts_reader: SELECT only). Default privileges give every
 //     table a later timeseries migration creates the same grants; an
 //     integration test proves an INSERT as the reader fails and the same
-//     INSERT as the writer succeeds.
+//     INSERT as the writer succeeds. WP-9 adds the writer side (ts.Writer
+//     for the adapters, WriterPool.Write's staged COPY with ON CONFLICT
+//     DO NOTHING, writer_gaps), described in internal/store/ts/doc.go.
 //   - store/migrate: the embedded goose trees, Up under an advisory
 //     lock, Status, Latest, and the layout test that no file of one
 //     tree names a table of the other.

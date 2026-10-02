@@ -120,7 +120,25 @@ const (
 // says which version it found and which it wants.
 func RequireVersion(tree string, got, want int64) error {
 	if got < want {
-		return fmt.Errorf("%s schema is at version %d, this build needs %d: run `uspace-authority migrate`", tree, got, want)
+		return &SchemaError{Tree: tree, Got: got, Want: want}
 	}
 	return nil
+}
+
+// SchemaError is RequireVersion's refusal: no retry mends it, a
+// migration does (a process that starts degraded on an unreachable
+// database still stops on this).
+type SchemaError struct {
+	Tree      string
+	Got, Want int64
+}
+
+func (e *SchemaError) Error() string {
+	return fmt.Sprintf("%s schema is at version %d, this build needs %d: run `uspace-authority migrate`", e.Tree, e.Got, e.Want)
+}
+
+// IsSchemaError reports whether err is a RequireVersion refusal.
+func IsSchemaError(err error) bool {
+	var se *SchemaError
+	return errors.As(err, &se)
 }
