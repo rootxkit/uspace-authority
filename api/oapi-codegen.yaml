@@ -14,8 +14,10 @@ output-options:
   # /metrics is in the contract but served by the Prometheus handler.
   # The x-receiver operations (WP-7) verify an HMAC over the raw body,
   # which a generated handler has already decoded; internal/receivers
-  # serves them, and a test holds this list to the contract.
-  exclude-operation-ids: [getMetrics, getRIDReceiverConfig, postRIDReceiverHeartbeat, postRIDObservations, receiveCISNotification]
+  # serves them, and a test holds this list to the contract. The
+  # x-picture operations (WP-13) are served by picture-ws
+  # (internal/picture), a WebSocket upgrade among them.
+  exclude-operation-ids: [getMetrics, getRIDReceiverConfig, postRIDReceiverHeartbeat, postRIDObservations, receiveCISNotification, getPictureWS, getPictureSnapshot, getPictureSources]
 compatibility:
   # Enum constants carry their type name (AuditEventActorTypeClient, not
   # Client), so an enum value never collides with a generated type.

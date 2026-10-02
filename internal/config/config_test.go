@@ -19,6 +19,7 @@ func validAPI() map[string]string {
 		"TS_URL":               "postgres://u:pw-telemetry@db:5432/authority_ts",
 		"NATS_URL":             "nats://nats:4222",
 		"AUTHORITY_PUBLIC_URL": "https://authority.example.test",
+		"PICTURE_SESSION_URL":  "http://api:8080/v1/auth/session",
 		"SIGNING_KEY_FILES":    "/run/keys/token-1.pem",
 		"PII_KEY_FILE":         "/run/keys/pii.key",
 
@@ -337,5 +338,60 @@ func TestRegistryMTOMBandsMustAscend(t *testing.T) {
 	var ok API
 	if err := Load(&ok, env(m)); err != nil {
 		t.Fatalf("twin refused: %v", err)
+	}
+}
+
+// WP-13: picture-ws's configuration: the defaults (the allowed origin is
+// AUTHORITY_PUBLIC_URL's, the JWKS this issuer's) beside each refusal
+// naming its variable (E-01).
+func TestPictureWSConfigDefaultsAndRefusals(t *testing.T) {
+	var c PictureWS
+	if err := Load(&c, env(validAPI())); err != nil {
+		t.Fatal(err)
+	}
+	if got := c.Origins(); len(got) != 1 || got[0] != "https://authority.example.test" {
+		t.Fatalf("origins %v", got)
+	}
+	if c.JWKS() != "https://authority.example.test/.well-known/jwks.json" || c.AudienceList()[0] != "authority.example.test" {
+		t.Fatalf("jwks %s audiences %v", c.JWKS(), c.AudienceList())
+	}
+	if c.SessionRecheckS != 15 || c.ThrottleAboveTracks != 200 || c.ThrottleHz != 2 || c.StatusIntervalMS != 2000 {
+		t.Fatalf("defaults %+v", c.PictureTuning)
+	}
+	m := validAPI()
+	m["PICTURE_ALLOWED_ORIGINS"] = "https://Console.Example.test:443/, http://localhost:3000"
+	c = PictureWS{}
+	if err := Load(&c, env(m)); err != nil {
+		t.Fatal(err)
+	}
+	if got := c.Origins(); len(got) != 2 || got[0] != "https://console.example.test" || got[1] != "http://localhost:3000" {
+		t.Fatalf("normalised origins %v", got)
+	}
+	for name, change := range map[string]map[string]string{
+		"PICTURE_ALLOWED_ORIGINS": {"PICTURE_ALLOWED_ORIGINS": "https://console.example.test/app"},
+		"AUTHORITY_AUDIENCES":     {"AUTHORITY_AUDIENCES": "other.example.test"},
+		"PICTURE_ALERT_FORGET_S":  {"PICTURE_ALERT_FORGET_S": "10", "PICTURE_ALERT_SILENT_S": "10"},
+		"PICTURE_SESSION_URL":     {"PICTURE_SESSION_URL": ""},
+		"ADMIN_ADDR":              {"ADMIN_ADDR": ":8083"},
+	} {
+		m := validAPI()
+		for k, v := range change {
+			m[k] = v
+		}
+		c = PictureWS{}
+		err := Load(&c, env(m))
+		found := false
+		for _, fe := range FieldErrors(err) {
+			found = found || fe.Field == name
+		}
+		if !found {
+			t.Errorf("%s: %v", name, err)
+		}
+	}
+	if _, ok := OriginOf("ftp://x.example.test"); ok {
+		t.Fatal("an ftp origin")
+	}
+	if o, ok := OriginOf("http://[::1]:8080"); !ok || o != "http://[::1]:8080" {
+		t.Fatalf("ipv6 origin %q", o)
 	}
 }

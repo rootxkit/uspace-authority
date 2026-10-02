@@ -72,8 +72,9 @@ func TestReceiverOperationsMatchTheContract(t *testing.T) {
 		s = strings.TrimSpace(s)
 		op := strings.ToUpper(s[:1]) + s[1:]
 		// getMetrics is the Prometheus handler; the CIS delivery
-		// receiver (x-cis-delivery, WP-6) has its own contract test.
-		if s != "getMetrics" && !apiserver.Delivery[op] {
+		// receiver (x-cis-delivery, WP-6) and the picture (x-picture,
+		// WP-13) have their own contract tests.
+		if s != "getMetrics" && !apiserver.Delivery[op] && !apiserver.Picture[op] {
 			excluded = append(excluded, op)
 		}
 	}

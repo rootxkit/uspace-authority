@@ -18,7 +18,10 @@ go 1.27
 //                 WP-10; first used by the Remote ID receivers, WP-7)
 //   jsonschema/v6 the CISP's pinned JSON Schemas, checked before a
 //                 publication is signed (internal/cisp, WP-6)
+//   coder/websocket the picture's WebSocket server (internal/picture,
+//                 WP-13; pure Go, plan §13)
 require (
+	github.com/coder/websocket v1.8.15
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/lestrrat-go/jwx/v3 v3.3.0
 	github.com/nats-io/nats.go v1.54.0

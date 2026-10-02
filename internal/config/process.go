@@ -532,14 +532,166 @@ func (c *TSDBWriter) Validate() error {
 	return errors.Join(errs...)
 }
 
-// PictureWS is the console feed.
+// PictureWS is the console feed (WP-13).
 type PictureWS struct {
 	Common
 	Bus
 	HTTP
-	Addr    string `env:"PICTURE_ADDR" default:":8083" help:"public listen address of /v1/picture/* (behind Caddy)"`
-	TSURL   string `env:"TS_URL" required:"true" secret:"true" kind:"url" help:"telemetry database (projections, read only)"`
-	NATSURL string `env:"NATS_URL" required:"true" secret:"true" kind:"url" help:"NATS JetStream"`
+	Addr      string   `env:"PICTURE_ADDR" default:":8083" help:"public listen address of /v1/picture/* (behind Caddy)"`
+	TSURL     string   `env:"TS_URL" required:"true" secret:"true" kind:"url" help:"telemetry database (projections, read only)"`
+	NATSURL   string   `env:"NATS_URL" required:"true" secret:"true" kind:"url" help:"NATS JetStream"`
+	PublicURL string   `env:"AUTHORITY_PUBLIC_URL" required:"true" kind:"url" help:"this system's published base URL; its host is the audience of the sessions the picture accepts, its origin the default allowed origin"`
+	Audiences []string `env:"AUTHORITY_AUDIENCES" help:"accepted session audiences (hosts), comma-separated: own host plus a lab alias; default the host of AUTHORITY_PUBLIC_URL"`
+	IssuerURL string   `env:"ISSUER_URL" kind:"url" help:"iss of the sessions the picture accepts (this system's issuer); default AUTHORITY_PUBLIC_URL"`
+	PictureTuning
+}
+
+// PictureTuning are picture-ws's bounds and periods (WP-13). The display
+// thresholds a console renders with (stale_after_s, live_max_age_s) are
+// not here: they are the active authority_policy, followed from KV
+// policy and carried in every console/status/v1 frame (INV-03).
+type PictureTuning struct {
+	AllowedOrigins         []string `env:"PICTURE_ALLOWED_ORIGINS" help:"origins (scheme://host[:port]) a console may open the WebSocket from, comma-separated, exact match (M22); default the origin of AUTHORITY_PUBLIC_URL"`
+	SessionURL             string   `env:"PICTURE_SESSION_URL" required:"true" kind:"url" help:"api's GET /v1/auth/session on the private network (http://api:8080/v1/auth/session in compose): every session is checked there against the sessions table, so a logout or a revocation ends the stream"`
+	JWKSURL                string   `env:"PICTURE_JWKS_URL" kind:"url" help:"this issuer's JWKS (https; http only to a loopback host); default ISSUER_URL + /.well-known/jwks.json"`
+	SessionRecheckS        int      `env:"PICTURE_SESSION_RECHECK_S" default:"15" min:"1" max:"300" help:"seconds between re-checks of a connection's session against the sessions table; a revoked session is closed with 4401 within this"`
+	SessionGraceS          int      `env:"PICTURE_SESSION_GRACE_S" default:"60" min:"1" max:"3600" help:"a connection whose session cannot be re-checked (api unreachable) is kept this long after its last good check, then closed with 1013"`
+	SessionTimeoutMS       int      `env:"PICTURE_SESSION_TIMEOUT_MS" default:"2000" min:"100" max:"60000" help:"bound on one session check against api"`
+	MaxClients             int      `env:"PICTURE_MAX_CLIENTS" default:"500" min:"1" max:"100000" help:"WebSocket connections this instance serves; the next upgrade is refused with 503"`
+	SendBuffer             int      `env:"PICTURE_SEND_BUFFER" default:"1024" min:"8" max:"1000000" help:"live frames queued per connection; a frame that does not fit is dropped and counted in that connection's dropped_frames"`
+	WriteTimeoutS          int      `env:"PICTURE_WRITE_TIMEOUT_S" default:"5" min:"1" max:"60" help:"bound on one frame write; a connection that does not take a frame within it is closed"`
+	StatusIntervalMS       int      `env:"PICTURE_STATUS_INTERVAL_MS" default:"2000" min:"200" max:"10000" help:"interval of console/status/v1 frames and of the source and alert checks (M29: 2 s)"`
+	MaxCells               int      `env:"PICTURE_MAX_CELLS" default:"2000" min:"1" max:"100000" help:"c5 cells one viewport may cover with its one-cell margin; a larger viewport is refused and the connection keeps its previous one (E-10)"`
+	MaxTracks              int      `env:"PICTURE_MAX_TRACKS" default:"50000" min:"1" max:"10000000" help:"tracks the cache holds; past it the one updated longest ago is evicted and counted (E-10)"`
+	MaxManned              int      `env:"PICTURE_MAX_MANNED" default:"10000" min:"1" max:"10000000" help:"manned aircraft the cache holds; past it the one updated longest ago is evicted and counted"`
+	MaxAlerts              int      `env:"PICTURE_MAX_ALERTS" default:"10000" min:"1" max:"1000000" help:"active violations held for replay to a connecting console (C-08); past it the one heard longest ago is evicted and counted"`
+	ThrottleAboveTracks    int      `env:"PICTURE_THROTTLE_ABOVE_TRACKS" default:"200" min:"1" max:"1000000" help:"a viewport holding more tracks than this is throttled per track (05 §3: 200)"`
+	ThrottleHz             float64  `env:"PICTURE_THROTTLE_HZ" default:"2" min:"0.1" max:"100" help:"frames per track per second to a throttled viewport (05 §3: 2 Hz)"`
+	AlertSilentS           int      `env:"PICTURE_ALERT_SILENT_S" default:"5" min:"2" max:"3600" help:"an active violation detect has not republished for this long is shown unconfirmed (detect republishes every second, C-08)"`
+	AlertForgetS           int      `env:"PICTURE_ALERT_FORGET_S" default:"120" min:"10" max:"86400" help:"an active violation neither republished nor cleared for this long leaves the picture, counted and logged; a later republish brings it back"`
+	AlertReplayS           int      `env:"PICTURE_ALERT_REPLAY_S" default:"10" min:"2" max:"3600" help:"seconds of ALRT read back at start, so active violations are replayed at once (C-08)"`
+	AlertReplayMax         int      `env:"PICTURE_ALERT_REPLAY_MAX" default:"100000" min:"1" max:"10000000" help:"ALRT messages one read-back takes at most (at start, and after the bus comes back from the instant it was lost); past it the rest is counted and logged"`
+	ProjectionRefreshS     int      `env:"PICTURE_PROJECTION_REFRESH_S" default:"5" min:"1" max:"3600" help:"seconds between reads of the projection ages and versions (database clock)"`
+	TSMaxConns             int      `env:"TS_MAX_CONNS" default:"2" min:"1" max:"100" help:"connections of the read-only projection pool"`
+	PolicyRereadS          int      `env:"PICTURE_POLICY_REREAD_S" default:"60" min:"1" max:"3600" help:"period of the KV policy re-read besides its watch and ctl.policy (G-08)"`
+	SubscribeMaxBytes      int      `env:"PICTURE_SUBSCRIBE_MAX_BYTES" default:"4096" min:"256" max:"65536" help:"largest frame a console may send (console/subscribe/v1); a larger one closes the connection with 1009"`
+	SubscribeMinIntervalMS int      `env:"PICTURE_SUBSCRIBE_MIN_INTERVAL_MS" default:"100" min:"0" max:"10000" help:"subscriptions of one connection are taken at most this often; faster ones wait"`
+	SourceStatusStaleS     int      `env:"SOURCE_STATUS_STALE_S" default:"10" min:"1" max:"3600" help:"an adapter whose last src.v1 status is older is silent: its sources are shown stale"`
+	SourceStatusMax        int      `env:"SOURCE_STATUS_MAX" default:"10000" min:"1" max:"1000000" help:"sources whose last status the picture keeps; past it the one heard longest ago is dropped and counted (E-10)"`
+}
+
+// Validate checks what the tags cannot.
+func (c *PictureWS) Validate() error {
+	var errs []error
+	if c.Addr == c.AdminAddr && !strings.HasSuffix(c.Addr, ":0") {
+		errs = append(errs, &core.FieldError{Field: "ADMIN_ADDR", Reason: "must differ from PICTURE_ADDR"})
+	}
+	if own := c.OwnHost(); own != "" && len(c.Audiences) > 0 && !slices.Contains(c.Audiences, own) {
+		errs = append(errs, core.Fieldf("AUTHORITY_AUDIENCES", "must contain this system's own host %q (the host of AUTHORITY_PUBLIC_URL)", own))
+	}
+	for _, a := range c.Audiences {
+		if strings.ContainsAny(a, "/:@ ") || a != strings.ToLower(a) {
+			errs = append(errs, core.Fieldf("AUTHORITY_AUDIENCES", "%q is not a lower-case host name", a))
+		}
+	}
+	for _, p := range c.TrustedProxies {
+		if _, err := netip.ParsePrefix(p); err != nil {
+			if _, err := netip.ParseAddr(p); err != nil {
+				errs = append(errs, core.Fieldf("AUTHORITY_TRUSTED_PROXIES", "%q is neither a CIDR nor an address", p))
+			}
+		}
+	}
+	for _, o := range c.AllowedOrigins {
+		u, err := url.Parse(strings.TrimSpace(o))
+		if _, ok := OriginOf(o); !ok || err != nil || (u.Path != "" && u.Path != "/") {
+			errs = append(errs, core.Fieldf("PICTURE_ALLOWED_ORIGINS", "%q is not an origin (scheme://host[:port])", o))
+		}
+	}
+	if u, err := url.Parse(c.Issuer()); err == nil && (u.RawQuery != "" || u.Fragment != "") {
+		errs = append(errs, core.Fieldf("ISSUER_URL", "must have no query or fragment"))
+	}
+	if c.AlertForgetS <= c.AlertSilentS {
+		errs = append(errs, core.Fieldf("PICTURE_ALERT_FORGET_S", "must exceed PICTURE_ALERT_SILENT_S"))
+	}
+	return errors.Join(errs...)
+}
+
+// OwnHost is the host of AUTHORITY_PUBLIC_URL, lower-case and without a
+// port: the aud of this system's sessions (M18, M20).
+func (c *PictureWS) OwnHost() string {
+	u, err := url.Parse(c.PublicURL)
+	if err != nil {
+		return ""
+	}
+	return strings.ToLower(u.Hostname())
+}
+
+// AudienceList is AUTHORITY_AUDIENCES, or the own host alone when unset.
+func (c *PictureWS) AudienceList() []string {
+	if len(c.Audiences) > 0 {
+		return slices.Clone(c.Audiences)
+	}
+	return []string{c.OwnHost()}
+}
+
+// Issuer is ISSUER_URL, or AUTHORITY_PUBLIC_URL when unset, without a
+// trailing slash.
+func (c *PictureWS) Issuer() string {
+	iss := c.IssuerURL
+	if iss == "" {
+		iss = c.PublicURL
+	}
+	return strings.TrimSuffix(iss, "/")
+}
+
+// JWKS is PICTURE_JWKS_URL, or the issuer's /.well-known/jwks.json.
+func (c *PictureWS) JWKS() string {
+	if c.JWKSURL != "" {
+		return c.JWKSURL
+	}
+	return c.Issuer() + "/.well-known/jwks.json"
+}
+
+// Origins is PICTURE_ALLOWED_ORIGINS normalised, or the origin of
+// AUTHORITY_PUBLIC_URL when unset.
+func (c *PictureWS) Origins() []string {
+	raw := c.AllowedOrigins
+	if len(raw) == 0 {
+		raw = []string{c.PublicURL}
+	}
+	var out []string
+	for _, o := range raw {
+		if n, ok := OriginOf(o); ok && !slices.Contains(out, n) {
+			out = append(out, n)
+		}
+	}
+	return out
+}
+
+// OriginOf is the origin of the URL raw as a browser writes it in the
+// Origin header: lower-case scheme and host, the port only when it is
+// not the scheme's default; the path is ignored. ok is false for
+// anything that is not http(s) with a host.
+func OriginOf(raw string) (string, bool) {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || u.Host == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
+		return "", false
+	}
+	scheme := strings.ToLower(u.Scheme)
+	if scheme != "http" && scheme != "https" {
+		return "", false
+	}
+	host, port := strings.ToLower(u.Hostname()), u.Port()
+	if (scheme == "http" && port == "80") || (scheme == "https" && port == "443") {
+		port = ""
+	}
+	if strings.Contains(host, ":") {
+		host = "[" + host + "]"
+	}
+	if port != "" {
+		host += ":" + port
+	}
+	return scheme + "://" + host, true
 }
 
 // String redacts secrets.

@@ -138,6 +138,13 @@ var Receiver = map[string]bool{
 // other.
 var Delivery = map[string]bool{"ReceiveCISNotification": true}
 
+// Picture lists the operations of the picture (`x-picture: true` in the
+// contract, WP-13): picture-ws serves them and checks the session itself
+// (internal/picture: the shared verifier, then api's sessions table), so
+// they are excluded from the generated server and never reach
+// Authorize. A test holds the lists to each other.
+var Picture = map[string]bool{"GetPictureWS": true, "GetPictureSnapshot": true, "GetPictureSources": true}
+
 // PIIRoles are the only roles that may read personal data: an operation
 // whose response carries it names no other role (CLAUDE.md rule 6; a
 // test holds every personal-data operation to it). viewer never reads

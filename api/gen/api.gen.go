@@ -336,6 +336,75 @@ func (e OperatorType) Valid() bool {
 	}
 }
 
+// Defines values for PictureSourceStateDisabledBy.
+const (
+	PictureSourceStateDisabledByDefaultDeny PictureSourceStateDisabledBy = "default_deny"
+	PictureSourceStateDisabledByInstance    PictureSourceStateDisabledBy = "instance"
+	PictureSourceStateDisabledByLessThannil PictureSourceStateDisabledBy = "<nil>"
+	PictureSourceStateDisabledByType        PictureSourceStateDisabledBy = "type"
+)
+
+// Valid indicates whether the value is a known member of the PictureSourceStateDisabledBy enum.
+func (e PictureSourceStateDisabledBy) Valid() bool {
+	switch e {
+	case PictureSourceStateDisabledByDefaultDeny:
+		return true
+	case PictureSourceStateDisabledByInstance:
+		return true
+	case PictureSourceStateDisabledByLessThannil:
+		return true
+	case PictureSourceStateDisabledByType:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PictureSourceStateState.
+const (
+	PictureSourceStateStateDisabled PictureSourceStateState = "disabled"
+	PictureSourceStateStateDown     PictureSourceStateState = "down"
+	PictureSourceStateStateLive     PictureSourceStateState = "live"
+	PictureSourceStateStateStale    PictureSourceStateState = "stale"
+	PictureSourceStateStateUnknown  PictureSourceStateState = "unknown"
+)
+
+// Valid indicates whether the value is a known member of the PictureSourceStateState enum.
+func (e PictureSourceStateState) Valid() bool {
+	switch e {
+	case PictureSourceStateStateDisabled:
+		return true
+	case PictureSourceStateStateDown:
+		return true
+	case PictureSourceStateStateLive:
+		return true
+	case PictureSourceStateStateStale:
+		return true
+	case PictureSourceStateStateUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PictureSourcesNats.
+const (
+	PictureSourcesNatsConnected   PictureSourcesNats = "connected"
+	PictureSourcesNatsUnavailable PictureSourcesNats = "unavailable"
+)
+
+// Valid indicates whether the value is a known member of the PictureSourcesNats enum.
+func (e PictureSourcesNats) Valid() bool {
+	switch e {
+	case PictureSourcesNatsConnected:
+		return true
+	case PictureSourcesNatsUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PolicyHeightLimitInUspace.
 const (
 	PolicyHeightLimitInUspaceEvaluate           PolicyHeightLimitInUspace = "evaluate"
@@ -1707,6 +1776,57 @@ type OperatorValidity struct {
 	Status             RegistryValidityStatus `json:"status"`
 	ValidUntil         *time.Time             `json:"valid_until,omitempty"`
 }
+
+// PictureFrame A frame of the common console frame (uspace-lab
+// schemas/common/envelope/v1 with the body named by `schema`).
+type PictureFrame struct {
+	Backlog    bool                   `json:"backlog"`
+	Body       map[string]interface{} `json:"body"`
+	CapturedAt string                 `json:"captured_at"`
+	MsgId      string                 `json:"msg_id"`
+	Producer   string                 `json:"producer"`
+	RxTs       string                 `json:"rx_ts"`
+	Schema     string                 `json:"schema"`
+	TimeSource string                 `json:"time_source"`
+	Ts         *string                `json:"ts,omitempty"`
+}
+
+// PictureSourceState The body of source/status/v1 (uspace-lab schemas/common) with lagging and lag_s.
+type PictureSourceState struct {
+	AgeS           *float32                      `json:"age_s"`
+	Counters       map[string]int                `json:"counters"`
+	DisabledBy     *PictureSourceStateDisabledBy `json:"disabled_by"`
+	DisabledByWho  *string                       `json:"disabled_by_who,omitempty"`
+	LagS           *float32                      `json:"lag_s,omitempty"`
+	Lagging        *bool                         `json:"lagging,omitempty"`
+	Since          time.Time                     `json:"since"`
+	Source         string                        `json:"source"`
+	SourceInstance *string                       `json:"source_instance"`
+	State          PictureSourceStateState       `json:"state"`
+}
+
+// PictureSourceStateDisabledBy defines model for PictureSourceState.DisabledBy.
+type PictureSourceStateDisabledBy string
+
+// PictureSourceStateState defines model for PictureSourceState.State.
+type PictureSourceStateState string
+
+// PictureSources defines model for PictureSources.
+type PictureSources struct {
+	CisAgeS    *float32           `json:"cis_age_s,omitempty"`
+	CisVersion *string            `json:"cis_version,omitempty"`
+	Nats       PictureSourcesNats `json:"nats"`
+	NatsSince  *time.Time         `json:"nats_since,omitempty"`
+
+	// ProjectionAgeS Age of the registry projection (database clock).
+	ProjectionAgeS *float32             `json:"projection_age_s,omitempty"`
+	ServerTs       time.Time            `json:"server_ts"`
+	Sources        []PictureSourceState `json:"sources"`
+	ZonesVersion   *string              `json:"zones_version,omitempty"`
+}
+
+// PictureSourcesNats defines model for PictureSources.Nats.
+type PictureSourcesNats string
 
 // PilotCompetency defines model for PilotCompetency.
 type PilotCompetency struct {

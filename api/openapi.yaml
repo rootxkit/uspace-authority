@@ -99,6 +99,13 @@ tags:
       A7, 2019/947 Art. 18(k)): raised and cleared by detect, persisted
       with their evidence excerpt, and reviewed by inspectors.
 
+  - name: picture
+    description: |
+      The console picture (WP-13, served by picture-ws, not api): the
+      WebSocket of the common console frame (M29) and two reads of the
+      same state. A session of the console or the police realm is
+      required, checked against the sessions table through api.
+
 paths:
   # WP-0: health paths, served by every process on its admin port.
   /healthz:
@@ -2727,6 +2734,109 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  # WP-13: the picture, served by picture-ws (x-picture: Caddy routes
+  # /v1/picture/* there; the operations are excluded from api's
+  # generated server and served by internal/picture, and a test holds
+  # the list to apiserver.Picture). Every frame is the common console
+  # frame of uspace-lab schemas/common (M29) with this system's extras
+  # (schemas/picture/); docs/runbooks/picture.md is the contract.
+  /v1/picture/ws:
+    get:
+      operationId: getPictureWS
+      tags: [picture]
+      summary: The live picture over a WebSocket (picture-ws)
+      description: |
+        A WebSocket upgrade, same-origin: the `Origin` header must be
+        exactly one of `PICTURE_ALLOWED_ORIGINS` (else 403 `origin`,
+        never upgraded) and the browser sends the `uspace_session`
+        cookie (M22; no ticket, nothing in the query string). The token
+        is verified by uspace-core's verifier and must be a session of
+        the console or police realm whose sessions row is live (api's
+        `GET /v1/auth/session`); otherwise the connection is closed
+        with 4401 (sign in again), and with 1013 when the check cannot
+        be made. A live connection is re-checked every
+        `PICTURE_SESSION_RECHECK_S`: a logout or a revocation closes it
+        with 4401. Frames: `console/status/v1` and `console/snapshot/v1`
+        on connect and after every `console/subscribe/v1 {bbox,
+        layers[]}`, then `track/telemetry/v1` (with `age_s` and
+        `source_state`), `track/manned/v1`, `violation/v1` and
+        `source/status/v1`, and `console/status/v1` every 2 s. Refusals
+        before the upgrade: 426 `upgrade_required`, 403 `origin`, 503
+        `picture_full` with Retry-After.
+      security:
+        - sessionCookie: []
+      x-picture: true
+      x-audit: none
+      responses:
+        "101":
+          description: Switching protocols; the console frame follows.
+        "403":
+          $ref: "#/components/responses/Problem"
+        "426":
+          $ref: "#/components/responses/Problem"
+        "503":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/picture/snapshot:
+    get:
+      operationId: getPictureSnapshot
+      tags: [picture]
+      summary: The picture inside a box (picture-ws)
+      description: |
+        The `console/snapshot/v1` frame a WebSocket console receives, for
+        the box itself (`bbox` = `west,south,east,north`, WGS84 degrees;
+        west above east crosses the antimeridian) and every layer unless
+        `layers` names some. The session is the bearer the BFF forwards
+        or the `uspace_session` cookie; an `Origin`, when sent, must be
+        allowed. 400 `validation` names `bbox` (including a box of more
+        than `PICTURE_MAX_CELLS` cells) or `layers`; 401
+        `unauthenticated`; 503 `session_unavailable`.
+      security:
+        - sessionCookie: []
+      x-picture: true
+      x-audit: none
+      parameters:
+        - {name: bbox, in: query, required: true, schema: {type: string, maxLength: 128}}
+        - {name: layers, in: query, schema: {type: string, maxLength: 64}}
+      responses:
+        "200":
+          description: The snapshot frame.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PictureFrame"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "503":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/picture/sources:
+    get:
+      operationId: getPictureSources
+      tags: [picture]
+      summary: Every source with its state, the projection ages and the CIS age (picture-ws)
+      security:
+        - sessionCookie: []
+      x-picture: true
+      x-audit: none
+      responses:
+        "200":
+          description: The sources.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PictureSources"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "503":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+
 components:
   securitySchemes:
     sessionCookie:
@@ -4206,6 +4316,54 @@ components:
         last_error: {type: [string, "null"]}
 
     # WP-12: violations.
+    PictureFrame:
+      type: object
+      description: |
+        A frame of the common console frame (uspace-lab
+        schemas/common/envelope/v1 with the body named by `schema`).
+      required: [schema, msg_id, producer, rx_ts, captured_at, time_source, backlog, body]
+      properties:
+        schema: {type: string}
+        msg_id: {type: string}
+        producer: {type: string}
+        ts: {type: [string, "null"]}
+        rx_ts: {type: string}
+        captured_at: {type: string}
+        time_source: {type: string}
+        backlog: {type: boolean}
+        body: {type: object, additionalProperties: true}
+    PictureSourceState:
+      type: object
+      description: The body of source/status/v1 (uspace-lab schemas/common) with lagging and lag_s.
+      required: [source, source_instance, state, since, age_s, disabled_by, counters]
+      properties:
+        source: {type: string}
+        source_instance: {type: [string, "null"]}
+        state: {type: string, enum: [live, stale, disabled, down, unknown]}
+        since: {type: string, format: date-time}
+        age_s: {type: [number, "null"]}
+        disabled_by: {type: [string, "null"], enum: [type, instance, default_deny, null]}
+        disabled_by_who: {type: [string, "null"]}
+        counters:
+          type: object
+          additionalProperties: {type: integer, minimum: 0}
+        lagging: {type: boolean}
+        lag_s: {type: [number, "null"]}
+    PictureSources:
+      type: object
+      required: [server_ts, sources, nats]
+      properties:
+        server_ts: {type: string, format: date-time}
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/PictureSourceState"
+        projection_age_s: {type: [number, "null"], description: Age of the registry projection (database clock).}
+        zones_version: {type: [string, "null"]}
+        cis_version: {type: [string, "null"]}
+        cis_age_s: {type: [number, "null"]}
+        nats: {type: string, enum: [connected, unavailable]}
+        nats_since: {type: [string, "null"], format: date-time}
     ViolationKind:
       type: string
       enum: [height_120m, zone_incursion, unregistered, no_authorisation, identification_mismatch, rid_absent]
