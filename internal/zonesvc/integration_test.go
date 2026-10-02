@@ -271,6 +271,10 @@ func TestIntegrationExportAroundAChangeAndAnnotated(t *testing.T) {
 		now.Add(-48*time.Hour).Format(time.RFC3339), now.Add(48*time.Hour).Format(time.RFC3339))
 	publishAt(t, it, feature(zoneOpts{identifier: "NOT001", limited: notNow}), from, to, false)
 	publishAt(t, it, feature(zoneOpts{identifier: "UNK001", limited: daylight}), from, to, false)
+	// Assemble wires ground.Daylight, which resolves SR and SS at the
+	// test zone on any date; a source that cannot resolve them gives the
+	// unknown value (daylight_test.go covers the resolved half).
+	it.svc.Daylight = ed318.FixedDaylight{}
 	out, err := it.svc.Export(ctx, ExportInput{AppliesAt: &now}, admin)
 	if err != nil {
 		t.Fatal(err)
