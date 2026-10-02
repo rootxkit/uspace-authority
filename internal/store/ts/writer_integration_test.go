@@ -3,7 +3,9 @@ package ts_test
 import (
 	"context"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"slices"
 	"testing"
@@ -194,9 +196,6 @@ func TestIntegrationCompressionJobRunsOnABackdatedChunk(t *testing.T) {
 	ctx := context.Background()
 	old := time.Now().UTC().Add(-10 * 24 * time.Hour)
 	recent := time.Now().UTC()
-	if _, err := w.Write(ctx, ts.Part{Table: ts.RIDObservations, Rows: [][]any{ridRow(1, old), ridRow(2, recent)}}); err != nil {
-		t.Fatal(err)
-	}
 	var interval string
 	if err := db.QueryRow(`SELECT time_interval::text FROM timescaledb_information.dimensions WHERE hypertable_name = 'rid_observations'`).Scan(&interval); err != nil || interval != "1 day" {
 		t.Fatalf("chunk interval %q %v", interval, err)
@@ -213,6 +212,31 @@ func TestIntegrationCompressionJobRunsOnABackdatedChunk(t *testing.T) {
 	var retention int
 	if err := db.QueryRow(`SELECT count(*) FROM timescaledb_information.jobs WHERE hypertable_name = 'rid_observations' AND proc_name = 'policy_retention'`).Scan(&retention); err != nil || retention != 0 {
 		t.Fatalf("retention policies %d %v", retention, err)
+	}
+	// TimescaleDB runs a new policy once at the scheduler's first pass,
+	// about half a second after the scratch database's scheduler starts:
+	// during this test, not during the migrations. A scheduled run beside
+	// the CALL below makes one of the two fail with "chunk is already
+	// compressed". Wait for that first run to finish before the
+	// backdated row exists, so the CALL below is the only run that can
+	// compress it; the next scheduled run is 12 hours away.
+	firstRun := time.Now().Add(30 * time.Second)
+	for {
+		var runs int
+		var status string
+		if err := db.QueryRow(`SELECT total_runs, job_status || '/' || coalesce(last_run_status, '') FROM timescaledb_information.job_stats WHERE job_id = $1`, job).Scan(&runs, &status); err != nil && !errors.Is(err, sql.ErrNoRows) {
+			t.Fatal(err)
+		}
+		if runs >= 1 && status == "Scheduled/Success" {
+			break
+		}
+		if time.Now().After(firstRun) {
+			t.Fatalf("the scheduler's first run of job %d: %d runs, %q", job, runs, status)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if _, err := w.Write(ctx, ts.Part{Table: ts.RIDObservations, Rows: [][]any{ridRow(1, old), ridRow(2, recent)}}); err != nil {
+		t.Fatal(err)
 	}
 	compressed := func() (int, int) {
 		var yes, no int
