@@ -21,6 +21,8 @@ func validAPI() map[string]string {
 		"AUTHORITY_PUBLIC_URL": "https://authority.example.test",
 		"SIGNING_KEY_FILES":    "/run/keys/token-1.pem",
 		"PII_KEY_FILE":         "/run/keys/pii.key",
+
+		"REGISTRY_HASH_KEY_FILE": "/run/keys/registry-hash.key",
 	}
 }
 

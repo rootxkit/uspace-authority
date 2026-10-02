@@ -49,6 +49,11 @@ tags:
     description: Console sign-in, TOTP and sessions (WP-2).
   - name: users
     description: Console accounts (admin).
+  - name: registry
+    description: |
+      The registry of UAS operators, UAS and remote pilots (WP-3,
+      2019/947 Art. 14). Records carry no personal data; personal data
+      has its own purpose-logged operations.
 
 paths:
   # WP-0: health paths, served by every process on its admin port.
@@ -830,6 +835,482 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  # WP-3: the registry of operators, UAS and remote pilots (2019/947
+  # Art. 14).
+  # Registry records carry no personal data: an operator's or a pilot's
+  # personal data is served only by the `personal-data` operations, to
+  # the registrar and inspector roles, with a `purpose`, each read an
+  # events row (`registry_pii_viewed`). A viewer, a USSP and the public
+  # never reach them (CLAUDE.md rule 6).
+  /v1/registry/operators:
+    get:
+      operationId: listRegistryOperators
+      tags: [registry]
+      summary: UAS operators, in id order
+      description: |
+        `number` looks an operator up by registration number, compared
+        on its public part with ASCII letters upper-cased
+        (uspace-core `regnum.CompareKey`, G-04). No personal data.
+      security:
+        - sessionCookie: []
+      x-roles: [registrar, inspector, viewer]
+      x-audit: none
+      parameters:
+        - {name: number, in: query, schema: {type: string, maxLength: 64}}
+        - {name: status, in: query, schema: {$ref: "#/components/schemas/RegistryStatus"}}
+        - {name: after, in: query, description: The next_after of the previous page., schema: {type: string, maxLength: 32}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 500, default: 100}}
+      responses:
+        "200":
+          description: One page of operators.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryOperatorList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createRegistryOperator
+      tags: [registry]
+      summary: Register a UAS operator
+      description: |
+        The 2019/947 Art. 14(2) field set. The registration number is
+        validated by uspace-core `regnum` against the active policy's
+        `registration_number_pattern`; a number with a hyphen is refused
+        (only the public part is registered). The secret part, when the
+        authority issues one, is stored as a keyed hash only. Personal
+        data is sealed and never echoed. 409 when the number is
+        registered already.
+      security:
+        - sessionCookie: []
+      x-roles: [registrar]
+      x-audit: {event_type: operator_registered, entity_type: operator, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistryOperatorInput"
+      responses:
+        "201":
+          description: The registered operator.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryOperator"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/registry/operators/{operator_id}:
+    parameters:
+      - {name: operator_id, in: path, required: true, schema: {type: string, maxLength: 32}}
+    get:
+      operationId: getRegistryOperator
+      tags: [registry]
+      summary: One UAS operator, without personal data
+      security:
+        - sessionCookie: []
+      x-roles: [registrar, inspector, viewer]
+      x-audit: none
+      responses:
+        "200":
+          description: The operator.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryOperator"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: updateRegistryOperator
+      tags: [registry]
+      summary: Change an operator's details
+      description: |
+        Contact and personal details, authorisations and the end of
+        validity. The type, the registration number and the status are
+        not changed here (a correction is a revocation and a new
+        registration; the status has its own operation).
+      security:
+        - sessionCookie: []
+      x-roles: [registrar]
+      x-audit: {event_type: operator_updated, entity_type: operator, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistryOperatorPatch"
+      responses:
+        "200":
+          description: The operator after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryOperator"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/registry/operators/{operator_id}/status:
+    parameters:
+      - {name: operator_id, in: path, required: true, schema: {type: string, maxLength: 32}}
+    post:
+      operationId: setRegistryOperatorStatus
+      tags: [registry]
+      summary: Suspend, reinstate or revoke an operator
+      description: |
+        The allowed transitions: active to suspended or revoked,
+        suspended to active or revoked, expired to active (a renewal,
+        once `valid_until` is in the future) or revoked; revoked is
+        final; expired is set by the expiry job only. A suspension or a
+        revocation needs a reason. Each change is an events row and an
+        entry of the F8 change feed.
+      security:
+        - sessionCookie: []
+      x-roles: [registrar]
+      x-audit: {event_type: registry_status_changed, entity_type: operator, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistryStatusInput"
+      responses:
+        "200":
+          description: The operator after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryOperator"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/registry/operators/{operator_id}/personal-data:
+    parameters:
+      - {name: operator_id, in: path, required: true, schema: {type: string, maxLength: 32}}
+    get:
+      operationId: getRegistryOperatorPersonalData
+      tags: [registry]
+      summary: An operator's personal data (purpose required, audited)
+      description: |
+        Refused without `purpose`. Every read is a `registry_pii_viewed`
+        event with the purpose, written before the data is returned.
+      security:
+        - sessionCookie: []
+      x-roles: [registrar, inspector]
+      x-audit: {event_type: registry_pii_viewed, entity_type: operator, purpose: required}
+      parameters:
+        - {name: purpose, in: query, required: true, schema: {type: string, minLength: 1, maxLength: 200}}
+      responses:
+        "200":
+          description: The personal data.
+          headers:
+            Cache-Control:
+              schema: {type: string, enum: [no-store]}
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryOperatorPersonalData"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/registry/uas:
+    get:
+      operationId: listRegistryUAS
+      tags: [registry]
+      summary: UAS, in id order
+      description: |
+        `serial` looks an aircraft up by serial: the ASCII-folded key
+        (uspace-core `serial.FoldKey`, G-05, G-12), which the registry
+        keeps unique.
+      security:
+        - sessionCookie: []
+      x-roles: [registrar, inspector, viewer]
+      x-audit: none
+      parameters:
+        - {name: serial, in: query, schema: {type: string, maxLength: 64}}
+        - {name: operator_id, in: query, schema: {type: string, maxLength: 32}}
+        - {name: status, in: query, schema: {$ref: "#/components/schemas/RegistryStatus"}}
+        - {name: after, in: query, schema: {type: string, maxLength: 32}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 500, default: 100}}
+      responses:
+        "200":
+          description: One page of aircraft.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryUASList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createRegistryUAS
+      tags: [registry]
+      summary: Register a UAS
+      description: |
+        The serial is kept as given, trimmed (G-05), and validated for
+        its class by uspace-core `serial.ValidateForClass` (C1, C2, C3,
+        C5 and C6 need an ANSI/CTA-2063-A serial, G-06). 409 when the
+        serial is registered already, or when another aircraft's serial
+        differs from it only by case (a lookup of either would be
+        ambiguous).
+      security:
+        - sessionCookie: []
+      x-roles: [registrar]
+      x-audit: {event_type: uas_registered, entity_type: uas, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistryUASInput"
+      responses:
+        "201":
+          description: The registered aircraft.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryUAS"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/registry/uas/{uas_id}:
+    parameters:
+      - {name: uas_id, in: path, required: true, schema: {type: string, maxLength: 32}}
+    get:
+      operationId: getRegistryUAS
+      tags: [registry]
+      summary: One UAS
+      security:
+        - sessionCookie: []
+      x-roles: [registrar, inspector, viewer]
+      x-audit: none
+      responses:
+        "200":
+          description: The aircraft.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryUAS"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: updateRegistryUAS
+      tags: [registry]
+      summary: Change an aircraft's details
+      description: The serial and the operator are not changed here; a class change re-validates the serial.
+      security:
+        - sessionCookie: []
+      x-roles: [registrar]
+      x-audit: {event_type: uas_updated, entity_type: uas, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistryUASPatch"
+      responses:
+        "200":
+          description: The aircraft after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryUAS"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/registry/uas/{uas_id}/status:
+    parameters:
+      - {name: uas_id, in: path, required: true, schema: {type: string, maxLength: 32}}
+    post:
+      operationId: setRegistryUASStatus
+      tags: [registry]
+      summary: Suspend, reinstate or revoke a UAS
+      description: The transitions of setRegistryOperatorStatus.
+      security:
+        - sessionCookie: []
+      x-roles: [registrar]
+      x-audit: {event_type: registry_status_changed, entity_type: uas, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistryStatusInput"
+      responses:
+        "200":
+          description: The aircraft after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryUAS"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/registry/pilots:
+    get:
+      operationId: listRegistryPilots
+      tags: [registry]
+      summary: Remote pilots, in id order
+      security:
+        - sessionCookie: []
+      x-roles: [registrar, inspector, viewer]
+      x-audit: none
+      parameters:
+        - {name: operator_id, in: query, schema: {type: string, maxLength: 32}}
+        - {name: status, in: query, schema: {$ref: "#/components/schemas/RegistryStatus"}}
+        - {name: after, in: query, schema: {type: string, maxLength: 32}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 500, default: 100}}
+      responses:
+        "200":
+          description: One page of pilots.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryPilotList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createRegistryPilot
+      tags: [registry]
+      summary: Register a remote pilot
+      description: |
+        The national id is stored as a keyed hash and its last four
+        characters (spec 06 §5), the name sealed. 409 when the person is
+        registered already.
+      security:
+        - sessionCookie: []
+      x-roles: [registrar]
+      x-audit: {event_type: pilot_registered, entity_type: pilot, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistryPilotInput"
+      responses:
+        "201":
+          description: The registered pilot.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryPilot"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/registry/pilots/{pilot_id}:
+    parameters:
+      - {name: pilot_id, in: path, required: true, schema: {type: string, maxLength: 32}}
+    get:
+      operationId: getRegistryPilot
+      tags: [registry]
+      summary: One remote pilot, without personal data
+      security:
+        - sessionCookie: []
+      x-roles: [registrar, inspector, viewer]
+      x-audit: none
+      responses:
+        "200":
+          description: The pilot.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryPilot"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: updateRegistryPilot
+      tags: [registry]
+      summary: Change a pilot's name or operator
+      security:
+        - sessionCookie: []
+      x-roles: [registrar]
+      x-audit: {event_type: pilot_updated, entity_type: pilot, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistryPilotPatch"
+      responses:
+        "200":
+          description: The pilot after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryPilot"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/registry/pilots/{pilot_id}/status:
+    parameters:
+      - {name: pilot_id, in: path, required: true, schema: {type: string, maxLength: 32}}
+    post:
+      operationId: setRegistryPilotStatus
+      tags: [registry]
+      summary: Suspend, reinstate or revoke a remote pilot
+      description: The transitions of setRegistryOperatorStatus.
+      security:
+        - sessionCookie: []
+      x-roles: [registrar]
+      x-audit: {event_type: registry_status_changed, entity_type: pilot, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistryStatusInput"
+      responses:
+        "200":
+          description: The pilot after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryPilot"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/registry/pilots/{pilot_id}/personal-data:
+    parameters:
+      - {name: pilot_id, in: path, required: true, schema: {type: string, maxLength: 32}}
+    get:
+      operationId: getRegistryPilotPersonalData
+      tags: [registry]
+      summary: A pilot's personal data (purpose required, audited)
+      security:
+        - sessionCookie: []
+      x-roles: [registrar, inspector]
+      x-audit: {event_type: registry_pii_viewed, entity_type: pilot, purpose: required}
+      parameters:
+        - {name: purpose, in: query, required: true, schema: {type: string, minLength: 1, maxLength: 200}}
+      responses:
+        "200":
+          description: The personal data.
+          headers:
+            Cache-Control:
+              schema: {type: string, enum: [no-store]}
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryPilotPersonalData"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/registry/pilots/{pilot_id}/competencies:
+    parameters:
+      - {name: pilot_id, in: path, required: true, schema: {type: string, maxLength: 32}}
+    post:
+      operationId: recordPilotCompetency
+      tags: [registry]
+      summary: Record or renew a pilot's competency
+      description: One row per competency; recording it again replaces its certificate and end of validity.
+      security:
+        - sessionCookie: []
+      x-roles: [registrar]
+      x-audit: {event_type: pilot_competency_recorded, entity_type: pilot, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PilotCompetencyInput"
+      responses:
+        "200":
+          description: The pilot with its competencies.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryPilot"
+        default:
+          $ref: "#/components/responses/Problem"
+
 components:
   securitySchemes:
     sessionCookie:
@@ -1011,6 +1492,15 @@ components:
         height_limit_in_uspace:
           type: string
           enum: [evaluate, skip_when_authorised]
+        registration_number_pattern:
+          type: string
+          minLength: 1
+          maxLength: 256
+          description: |
+            The operator registration-number format the registry
+            validates against (uspace-core regnum, G-07; the Georgian
+            format is open, spec Q5). Default the EU shape
+            `^[A-Z]{3}[A-Za-z0-9]{8,16}$`.
         note:
           type: string
           maxLength: 1000
@@ -1018,7 +1508,7 @@ components:
       allOf:
         - $ref: "#/components/schemas/PolicyInput"
         - type: object
-          required: [version, active, created_at, created_by, note]
+          required: [version, active, created_at, created_by, note, registration_number_pattern]
           properties:
             version:
               type: integer
@@ -1391,3 +1881,237 @@ components:
       required: [revoked]
       properties:
         revoked: {type: integer}
+    # WP-3: the registry. Records (RegistryOperator, RegistryUAS,
+    # RegistryPilot) carry no personal data;
+    # internal/registry's contract test fails if a personal property
+    # name appears in them, and checks that the personal-data schemas
+    # do carry them (E-01).
+    RegistryStatus:
+      type: string
+      enum: [active, suspended, revoked, expired]
+    RegistryStatusInput:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [active, suspended, revoked]
+          description: expired is set by the expiry job only.
+        reason:
+          type: string
+          maxLength: 500
+          description: Required for suspended and revoked.
+    RegistrySource:
+      type: string
+      enum: [portal, uas_gov_ge_import, manual]
+    OperatorType:
+      type: string
+      enum: [natural, legal]
+    RegistryOperatorInput:
+      type: object
+      description: |
+        The 2019/947 Art. 14(2) field set. A natural person gives
+        full_name and date_of_birth; a legal person legal_name and
+        legal_identification_number.
+      required: [operator_type, registration_number, postal_address, contact_email, contact_phone, valid_until]
+      properties:
+        operator_type: {$ref: "#/components/schemas/OperatorType"}
+        registration_number: {type: string, maxLength: 64, description: "The public part only, under the policy's registration_number_pattern."}
+        secret_part: {type: string, minLength: 3, maxLength: 3, description: "The three secret characters the authority issued; stored as a keyed hash, never returned."}
+        full_name: {type: string, maxLength: 200}
+        legal_name: {type: string, maxLength: 200}
+        date_of_birth: {type: string, format: date}
+        legal_identification_number: {type: string, maxLength: 64}
+        postal_address: {type: string, maxLength: 500}
+        contact_email: {type: string, maxLength: 254}
+        contact_phone: {type: string, maxLength: 32}
+        insurance_policy_number: {type: string, maxLength: 64}
+        competency_confirmation: {type: boolean, description: "The Art. 14(2)(e) statement of a legal person."}
+        authorisations:
+          type: array
+          maxItems: 100
+          description: Operational authorisations, LUCs and declarations with their confirmations (Art. 14(2)(f)).
+          items: {type: object, additionalProperties: true}
+        valid_from: {type: string, format: date-time, description: Default now.}
+        valid_until: {type: string, format: date-time}
+        source: {$ref: "#/components/schemas/RegistrySource"}
+    RegistryOperatorPatch:
+      type: object
+      properties:
+        full_name: {type: string, maxLength: 200}
+        legal_name: {type: string, maxLength: 200}
+        date_of_birth: {type: string, format: date}
+        legal_identification_number: {type: string, maxLength: 64}
+        postal_address: {type: string, maxLength: 500}
+        contact_email: {type: string, maxLength: 254}
+        contact_phone: {type: string, maxLength: 32}
+        insurance_policy_number: {type: string, maxLength: 64}
+        competency_confirmation: {type: boolean}
+        authorisations:
+          type: array
+          maxItems: 100
+          items: {type: object, additionalProperties: true}
+        valid_until: {type: string, format: date-time}
+    RegistryOperator:
+      type: object
+      description: An operator without personal data.
+      required: [id, operator_type, registration_number, has_secret_part, competency_confirmation, authorisations, status, status_reason, valid_from, valid_until, source, registry_version, created_at, created_by, updated_at, updated_by]
+      properties:
+        id: {type: string}
+        operator_type: {$ref: "#/components/schemas/OperatorType"}
+        registration_number: {type: string, description: The public part as registered.}
+        has_secret_part: {type: boolean}
+        competency_confirmation: {type: boolean}
+        authorisations:
+          type: array
+          items: {type: object, additionalProperties: true}
+        status: {$ref: "#/components/schemas/RegistryStatus"}
+        status_reason: {type: string}
+        valid_from: {type: string, format: date-time}
+        valid_until: {type: string, format: date-time}
+        source: {$ref: "#/components/schemas/RegistrySource"}
+        registry_version: {type: integer, format: int64}
+        created_at: {type: string, format: date-time}
+        created_by: {type: string}
+        updated_at: {type: string, format: date-time}
+        updated_by: {type: string}
+    RegistryOperatorList:
+      type: object
+      required: [operators]
+      properties:
+        operators:
+          type: array
+          items: {$ref: "#/components/schemas/RegistryOperator"}
+        next_after: {type: string, description: Pass as after for the next page; absent on the last page.}
+    RegistryOperatorPersonalData:
+      type: object
+      required: [operator_id, postal_address, contact_email, contact_phone]
+      properties:
+        operator_id: {type: string}
+        full_name: {type: string}
+        legal_name: {type: string}
+        date_of_birth: {type: string, format: date}
+        legal_identification_number: {type: string}
+        postal_address: {type: string}
+        contact_email: {type: string}
+        contact_phone: {type: string}
+        insurance_policy_number: {type: string}
+    ClassLabel:
+      type: string
+      enum: [C0, C1, C2, C3, C4, C5, C6]
+    RIDCapability:
+      type: string
+      enum: [direct, network, both, none]
+    RegistryUASInput:
+      type: object
+      required: [operator_id, serial, rid_capability]
+      properties:
+        operator_id: {type: string, maxLength: 32}
+        serial: {type: string, maxLength: 64, description: "Kept as given, trimmed; ANSI/CTA-2063-A for C1, C2, C3, C5, C6."}
+        registration_mark: {type: string, maxLength: 32}
+        manufacturer: {type: string, maxLength: 100}
+        model: {type: string, maxLength: 100}
+        owner_ref: {type: string, maxLength: 64, description: "Certified UA: the registry person record of the owner (Art. 14(3)(d))."}
+        class_label: {$ref: "#/components/schemas/ClassLabel"}
+        mtom_g: {type: integer, minimum: 1, maximum: 10000000}
+        rid_capability: {$ref: "#/components/schemas/RIDCapability"}
+    RegistryUASPatch:
+      type: object
+      properties:
+        registration_mark: {type: string, maxLength: 32}
+        manufacturer: {type: string, maxLength: 100}
+        model: {type: string, maxLength: 100}
+        owner_ref: {type: string, maxLength: 64}
+        class_label: {$ref: "#/components/schemas/ClassLabel"}
+        mtom_g: {type: integer, minimum: 1, maximum: 10000000}
+        rid_capability: {$ref: "#/components/schemas/RIDCapability"}
+    RegistryUAS:
+      type: object
+      required: [id, operator_id, serial, manufacturer_code, manufacturer, model, rid_capability, status, status_reason, registered_at, registry_version, created_by, updated_at, updated_by]
+      properties:
+        id: {type: string}
+        operator_id: {type: string}
+        serial: {type: string}
+        manufacturer_code: {type: string}
+        registration_mark: {type: string}
+        manufacturer: {type: string}
+        model: {type: string}
+        owner_ref: {type: string}
+        class_label: {$ref: "#/components/schemas/ClassLabel"}
+        mtom_g: {type: integer}
+        rid_capability: {$ref: "#/components/schemas/RIDCapability"}
+        status: {$ref: "#/components/schemas/RegistryStatus"}
+        status_reason: {type: string}
+        registered_at: {type: string, format: date-time}
+        registry_version: {type: integer, format: int64}
+        created_by: {type: string}
+        updated_at: {type: string, format: date-time}
+        updated_by: {type: string}
+    RegistryUASList:
+      type: object
+      required: [uas]
+      properties:
+        uas:
+          type: array
+          items: {$ref: "#/components/schemas/RegistryUAS"}
+        next_after: {type: string}
+    RegistryPilotInput:
+      type: object
+      required: [person_ref, name]
+      properties:
+        person_ref: {type: string, minLength: 4, maxLength: 64, description: "The national id; stored as a keyed hash and its last four characters."}
+        name: {type: string, maxLength: 200}
+        operator_id: {type: string, maxLength: 32}
+    RegistryPilotPatch:
+      type: object
+      properties:
+        name: {type: string, maxLength: 200}
+        operator_id: {type: string, maxLength: 32, description: An empty string detaches the pilot from its operator.}
+    PilotCompetencyInput:
+      type: object
+      required: [competency, certificate_ref, valid_until]
+      properties:
+        competency: {type: string, maxLength: 41, description: "A1_A3, A2, STS_01, STS_02 or national_<code>."}
+        certificate_ref: {type: string, maxLength: 64}
+        valid_until: {type: string, format: date-time}
+    PilotCompetency:
+      type: object
+      required: [competency, certificate_ref, valid_until, recorded_at, recorded_by]
+      properties:
+        competency: {type: string}
+        certificate_ref: {type: string}
+        valid_until: {type: string, format: date-time}
+        recorded_at: {type: string, format: date-time}
+        recorded_by: {type: string}
+    RegistryPilot:
+      type: object
+      description: A remote pilot without personal data.
+      required: [id, status, status_reason, competencies, registry_version, created_at, created_by, updated_at, updated_by]
+      properties:
+        id: {type: string}
+        operator_id: {type: string}
+        status: {$ref: "#/components/schemas/RegistryStatus"}
+        status_reason: {type: string}
+        competencies:
+          type: array
+          items: {$ref: "#/components/schemas/PilotCompetency"}
+        registry_version: {type: integer, format: int64}
+        created_at: {type: string, format: date-time}
+        created_by: {type: string}
+        updated_at: {type: string, format: date-time}
+        updated_by: {type: string}
+    RegistryPilotList:
+      type: object
+      required: [pilots]
+      properties:
+        pilots:
+          type: array
+          items: {$ref: "#/components/schemas/RegistryPilot"}
+        next_after: {type: string}
+    RegistryPilotPersonalData:
+      type: object
+      required: [pilot_id, name, person_ref_last4]
+      properties:
+        pilot_id: {type: string}
+        name: {type: string}
+        person_ref_last4: {type: string}

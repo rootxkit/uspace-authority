@@ -20,6 +20,7 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/passhash"
 	"github.com/rootxkit/uspace-authority/internal/policy"
 	"github.com/rootxkit/uspace-authority/internal/proc"
+	"github.com/rootxkit/uspace-authority/internal/registry"
 	"github.com/rootxkit/uspace-authority/internal/store"
 	"github.com/rootxkit/uspace-authority/internal/store/pg"
 	"github.com/rootxkit/uspace-authority/internal/tokens"
@@ -127,6 +128,20 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 		wg.Go(func() { tok.Manager.Run(ctx, time.Duration(cfg.KeyRefreshS)*time.Second) })
 		wg.Go(func() { az.Run(ctx, time.Duration(cfg.SessionSweepS)*time.Second) })
 
+		reg, err := registry.Assemble(registry.Setup{
+			DB: db, Audit: auditWriter, PIIKeyID: cfg.PIIKeyID, PIIKeyFile: cfg.PIIKeyFile, HashKeyFile: cfg.RegistryHashKeyFile,
+			Logger: rt.Logger,
+			// The registration-number format of the policy api follows (G-07).
+			Pattern: func() (string, bool) {
+				p, ok := follower.Current()
+				return p.RegistrationNumberPattern, ok
+			},
+		})
+		if err != nil {
+			return err
+		}
+		rt.AddCounters("registry", reg.Counters)
+
 		mux := http.NewServeMux()
 		apiserver.Mount(mux, apiserver.Server{
 			PolicyHandler:     policy.Handler{Service: svc},
@@ -135,6 +150,7 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 			OAuthAdminHandler: tok.Handler,
 			AuthHandler:       az.Handler,
 			UsersHandler:      az.Handler,
+			RegistryHandler:   reg.Handler,
 		}, apiserver.Options{
 			Logger:      rt.Logger,
 			Middlewares: []apiserver.Middleware{tok.Handler.FormGuard(), apiserver.Authorize(identify, apiserver.DefaultRules())},

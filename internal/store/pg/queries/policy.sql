@@ -17,14 +17,14 @@ INSERT INTO authority_policy (
     spoof_distance_m, identity_ttl_s, max_gap_s, identify_within_s,
     broadcast_tolerance_s, max_latency_s, live_max_age_s, clear_after_s,
     stale_after_s, dp_view_diagonal_km, dp_poll_hz, cis_stale_bound_s,
-    height_limit_in_uspace, note, created_at, created_by
+    height_limit_in_uspace, registration_number_pattern, note, created_at, created_by
 ) VALUES (
     sqlc.arg(version), sqlc.arg(height_limit_agl_m), sqlc.arg(pressure_uncertainty_m),
     sqlc.arg(zone_conditional_severity), sqlc.arg(mismatch_severity), sqlc.arg(identification_severity),
     sqlc.arg(spoof_distance_m), sqlc.arg(identity_ttl_s), sqlc.arg(max_gap_s), sqlc.arg(identify_within_s),
     sqlc.arg(broadcast_tolerance_s), sqlc.arg(max_latency_s), sqlc.arg(live_max_age_s), sqlc.arg(clear_after_s),
     sqlc.arg(stale_after_s), sqlc.arg(dp_view_diagonal_km), sqlc.arg(dp_poll_hz), sqlc.arg(cis_stale_bound_s),
-    sqlc.arg(height_limit_in_uspace), sqlc.arg(note), sqlc.arg(created_at), sqlc.arg(created_by)
+    sqlc.arg(height_limit_in_uspace), sqlc.arg(registration_number_pattern), sqlc.arg(note), sqlc.arg(created_at), sqlc.arg(created_by)
 )
 RETURNING *;
 

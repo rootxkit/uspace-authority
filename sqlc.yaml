@@ -20,6 +20,9 @@ sql:
         sql_package: pgx/v5
         emit_pointers_for_null_types: true
         emit_empty_slices: true
+        # sqlc singularises the table uas to "Ua".
+        rename:
+          ua: UAS
         overrides:
           - db_type: timestamp
             go_type: time.Time

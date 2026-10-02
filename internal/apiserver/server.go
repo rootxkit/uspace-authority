@@ -71,6 +71,29 @@ type UsersHandler interface {
 	UnlockUserMFA(ctx context.Context, request gen.UnlockUserMFARequestObject) (gen.UnlockUserMFAResponseObject, error)
 }
 
+// RegistryHandler serves /v1/registry/* (api, WP-3): the registrar's
+// operations and the personal-data reads.
+type RegistryHandler interface {
+	ListRegistryOperators(ctx context.Context, request gen.ListRegistryOperatorsRequestObject) (gen.ListRegistryOperatorsResponseObject, error)
+	CreateRegistryOperator(ctx context.Context, request gen.CreateRegistryOperatorRequestObject) (gen.CreateRegistryOperatorResponseObject, error)
+	GetRegistryOperator(ctx context.Context, request gen.GetRegistryOperatorRequestObject) (gen.GetRegistryOperatorResponseObject, error)
+	UpdateRegistryOperator(ctx context.Context, request gen.UpdateRegistryOperatorRequestObject) (gen.UpdateRegistryOperatorResponseObject, error)
+	GetRegistryOperatorPersonalData(ctx context.Context, request gen.GetRegistryOperatorPersonalDataRequestObject) (gen.GetRegistryOperatorPersonalDataResponseObject, error)
+	SetRegistryOperatorStatus(ctx context.Context, request gen.SetRegistryOperatorStatusRequestObject) (gen.SetRegistryOperatorStatusResponseObject, error)
+	ListRegistryPilots(ctx context.Context, request gen.ListRegistryPilotsRequestObject) (gen.ListRegistryPilotsResponseObject, error)
+	CreateRegistryPilot(ctx context.Context, request gen.CreateRegistryPilotRequestObject) (gen.CreateRegistryPilotResponseObject, error)
+	GetRegistryPilot(ctx context.Context, request gen.GetRegistryPilotRequestObject) (gen.GetRegistryPilotResponseObject, error)
+	UpdateRegistryPilot(ctx context.Context, request gen.UpdateRegistryPilotRequestObject) (gen.UpdateRegistryPilotResponseObject, error)
+	RecordPilotCompetency(ctx context.Context, request gen.RecordPilotCompetencyRequestObject) (gen.RecordPilotCompetencyResponseObject, error)
+	GetRegistryPilotPersonalData(ctx context.Context, request gen.GetRegistryPilotPersonalDataRequestObject) (gen.GetRegistryPilotPersonalDataResponseObject, error)
+	SetRegistryPilotStatus(ctx context.Context, request gen.SetRegistryPilotStatusRequestObject) (gen.SetRegistryPilotStatusResponseObject, error)
+	ListRegistryUAS(ctx context.Context, request gen.ListRegistryUASRequestObject) (gen.ListRegistryUASResponseObject, error)
+	CreateRegistryUAS(ctx context.Context, request gen.CreateRegistryUASRequestObject) (gen.CreateRegistryUASResponseObject, error)
+	GetRegistryUAS(ctx context.Context, request gen.GetRegistryUASRequestObject) (gen.GetRegistryUASResponseObject, error)
+	UpdateRegistryUAS(ctx context.Context, request gen.UpdateRegistryUASRequestObject) (gen.UpdateRegistryUASResponseObject, error)
+	SetRegistryUASStatus(ctx context.Context, request gen.SetRegistryUASStatusRequestObject) (gen.SetRegistryUASStatusResponseObject, error)
+}
+
 // Server implements gen.StrictServerInterface by delegating to one
 // handler per group. A group left nil must not be mounted.
 type Server struct {
@@ -81,6 +104,7 @@ type Server struct {
 	OAuthAdminHandler
 	AuthHandler
 	UsersHandler
+	RegistryHandler
 }
 
 var _ gen.StrictServerInterface = Server{}

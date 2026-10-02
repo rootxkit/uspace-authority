@@ -55,6 +55,12 @@ type API struct {
 	Argon2
 	Auth
 	Peers
+	Registry
+}
+
+// Registry is the registry of api (WP-3).
+type Registry struct {
+	RegistryHashKeyFile string `env:"REGISTRY_HASH_KEY_FILE" required:"true" help:"key (one line of base64, openssl rand -base64 32) of the keyed hashes of a registration number's secret part and a pilot's national id (spec 06 §5); outside the repository, never rotated without re-registering"`
 }
 
 // Auth is console sign-in and sessions of api (WP-2).

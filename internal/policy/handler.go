@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/rootxkit/uspace-core/core"
+	"github.com/rootxkit/uspace-core/regnum"
 
 	"github.com/rootxkit/uspace-authority/api/gen"
 	"github.com/rootxkit/uspace-authority/internal/apiserver"
@@ -57,6 +58,11 @@ func (h Handler) CreatePolicy(ctx context.Context, req gen.CreatePolicyRequestOb
 		DPPollHz:                b.DpPollHz,
 		CISStaleBoundS:          b.CisStaleBoundS,
 		HeightLimitInUspace:     string(b.HeightLimitInUspace),
+		// The EU shape unless the version names another (G-07).
+		RegistrationNumberPattern: regnum.DefaultPattern,
+	}
+	if b.RegistrationNumberPattern != nil {
+		t.RegistrationNumberPattern = *b.RegistrationNumberPattern
 	}
 	note := ""
 	if b.Note != nil {
@@ -107,6 +113,8 @@ func toAPI(p Policy) gen.Policy {
 		DpPollHz:                p.DPPollHz,
 		CisStaleBoundS:          p.CISStaleBoundS,
 		HeightLimitInUspace:     gen.PolicyHeightLimitInUspace(p.HeightLimitInUspace),
+
+		RegistrationNumberPattern: p.RegistrationNumberPattern,
 	}
 	if p.ActivatedAt != nil {
 		at := p.ActivatedAt.UTC()

@@ -55,7 +55,32 @@ var Roles = map[string][]string{
 	"ResetUserMFA":         {RoleAdmin},
 	"RevokeUserSessions":   {RoleAdmin},
 	"UnlockUserMFA":        {RoleAdmin},
+
+	"ListRegistryOperators":           {RoleRegistrar, RoleInspector, RoleViewer},
+	"CreateRegistryOperator":          {RoleRegistrar},
+	"GetRegistryOperator":             {RoleRegistrar, RoleInspector, RoleViewer},
+	"UpdateRegistryOperator":          {RoleRegistrar},
+	"SetRegistryOperatorStatus":       {RoleRegistrar},
+	"GetRegistryOperatorPersonalData": {RoleRegistrar, RoleInspector},
+	"ListRegistryUAS":                 {RoleRegistrar, RoleInspector, RoleViewer},
+	"CreateRegistryUAS":               {RoleRegistrar},
+	"GetRegistryUAS":                  {RoleRegistrar, RoleInspector, RoleViewer},
+	"UpdateRegistryUAS":               {RoleRegistrar},
+	"SetRegistryUASStatus":            {RoleRegistrar},
+	"ListRegistryPilots":              {RoleRegistrar, RoleInspector, RoleViewer},
+	"CreateRegistryPilot":             {RoleRegistrar},
+	"GetRegistryPilot":                {RoleRegistrar, RoleInspector, RoleViewer},
+	"UpdateRegistryPilot":             {RoleRegistrar},
+	"SetRegistryPilotStatus":          {RoleRegistrar},
+	"GetRegistryPilotPersonalData":    {RoleRegistrar, RoleInspector},
+	"RecordPilotCompetency":           {RoleRegistrar},
 }
+
+// PIIRoles are the only roles that may read personal data: an operation
+// whose response carries it names no other role (CLAUDE.md rule 6; a
+// test holds every personal-data operation to it). viewer never reads
+// personal data.
+var PIIRoles = []string{RoleRegistrar, RoleInspector}
 
 // Public lists the operations with `security: []` in the contract: no
 // identity is resolved for them (a client authenticates in the body of
@@ -83,6 +108,7 @@ type Rules struct {
 	Roles      map[string][]string
 	// Scopes names the scope a machine operation requires: an ecosystem
 	// token (not a session) granting it is admitted (06 §3). No
+	// operation of WP-2 has one; WP-3 adds the first. No
 	// operation of WP-2 has one; WP-3 adds the first.
 	Scopes map[string]string
 	// Realms names the realm an operation requires; an operation with

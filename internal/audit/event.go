@@ -109,6 +109,22 @@ const (
 	EventUserMFAUnlocked       = "user_mfa_unlocked"
 )
 
+// Event types of WP-3's registry (internal/registry): every
+// registration, change, status transition, personal-data read and F8
+// lookup.
+const (
+	EventOperatorRegistered      = "operator_registered"
+	EventOperatorUpdated         = "operator_updated"
+	EventUASRegistered           = "uas_registered"
+	EventUASUpdated              = "uas_updated"
+	EventPilotRegistered         = "pilot_registered"
+	EventPilotUpdated            = "pilot_updated"
+	EventPilotCompetencyRecorded = "pilot_competency_recorded"
+	EventRegistryStatusChanged   = "registry_status_changed"
+	EventRegistryPIIViewed       = "registry_pii_viewed"
+	EventRegistryValidated       = "registry_validated"
+)
+
 // DefaultCatalogue is the catalogue of this build.
 func DefaultCatalogue() Catalogue {
 	return Catalogue{
@@ -142,6 +158,17 @@ func DefaultCatalogue() Catalogue {
 		EventUserBootstrapRefused:  {},
 		EventMFALocked:             {},
 		EventUserMFAUnlocked:       {},
+
+		EventOperatorRegistered:      {},
+		EventOperatorUpdated:         {},
+		EventUASRegistered:           {},
+		EventUASUpdated:              {},
+		EventPilotRegistered:         {},
+		EventPilotUpdated:            {},
+		EventPilotCompetencyRecorded: {},
+		EventRegistryStatusChanged:   {},
+		EventRegistryPIIViewed:       {PIIView: true},
+		EventRegistryValidated:       {},
 	}
 }
 

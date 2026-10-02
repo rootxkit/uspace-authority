@@ -56,16 +56,17 @@ func (s *syncBuffer) find(t *testing.T, msg string) map[string]any {
 
 func apiEnv(extra map[string]string) config.LookupFunc {
 	m := map[string]string{
-		"PG_URL":               "postgres://u:pw@db:5432/rel",
-		"TS_URL":               "postgres://u:pw@db:5432/ts",
-		"NATS_URL":             "nats://nats:4222",
-		"AUTHORITY_PUBLIC_URL": "https://authority.example.test",
-		"ADMIN_ADDR":           "127.0.0.1:0",
-		"API_ADDR":             "127.0.0.1:0",
-		"STATUS_INTERVAL_S":    "1",
-		"SHUTDOWN_TIMEOUT_S":   "2",
-		"SIGNING_KEY_FILES":    "/run/keys/token-1.pem",
-		"PII_KEY_FILE":         "/run/keys/pii.key",
+		"PG_URL":                 "postgres://u:pw@db:5432/rel",
+		"TS_URL":                 "postgres://u:pw@db:5432/ts",
+		"NATS_URL":               "nats://nats:4222",
+		"AUTHORITY_PUBLIC_URL":   "https://authority.example.test",
+		"ADMIN_ADDR":             "127.0.0.1:0",
+		"API_ADDR":               "127.0.0.1:0",
+		"STATUS_INTERVAL_S":      "1",
+		"SHUTDOWN_TIMEOUT_S":     "2",
+		"SIGNING_KEY_FILES":      "/run/keys/token-1.pem",
+		"PII_KEY_FILE":           "/run/keys/pii.key",
+		"REGISTRY_HASH_KEY_FILE": "/run/keys/registry-hash.key",
 	}
 	for k, v := range extra {
 		m[k] = v
