@@ -12,6 +12,7 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rootxkit/uspace-core/core"
 
+	"github.com/rootxkit/uspace-authority/internal/dpviews"
 	"github.com/rootxkit/uspace-authority/internal/logging"
 )
 
@@ -152,6 +153,9 @@ func NewTopology(l Limits) Topology {
 			bucket(BucketRegistryVersion, "registry projection version", VersionValueBytes),
 			bucket(BucketZonesVersion, "zones projection version", VersionValueBytes),
 			bucket(l.RIDReceiverKeysBucket, "Remote ID receiver key set: receiver id -> bearer hash, HMAC secret, status", RIDReceiverKeyValueBytes),
+			// WP-14: the Display Provider's areas (internal/dpviews).
+			dpviews.OversightBucketConfig(""),
+			dpviews.ConsoleBucketConfig(""),
 		},
 	}
 }
