@@ -198,6 +198,21 @@ func TestWorkerSurvivesCorruptMessagesAndAFailingDecoder(t *testing.T) {
 	if corrupt.termed != 1 || noMeta.termed != 1 || w.Counters.Get(CounterQueueCorrupt) != 2 || len(store.gaps) != 2 {
 		t.Fatalf("corrupt: %v", w.Counters.Snapshot())
 	}
+	// A count that cannot be read is 1, never 0: the gap never claims
+	// nothing was lost.
+	for i, g := range store.gaps {
+		if g.Cause != CauseQueueCorrupt || g.Count != 1 {
+			t.Fatalf("corrupt gap %d: %+v", i, g)
+		}
+	}
+	// A message whose rows can be read but which is not a batch carries
+	// their real count.
+	rowsOnly := &fakeMsg{data: []byte(`{"rows":[{},{},{}]}`), meta: &jetstream.MsgMetadata{Sequence: jetstream.SequencePair{Stream: 6}}}
+	w.Handle(context.Background(), rowsOnly)
+	if g := store.gaps[len(store.gaps)-1]; rowsOnly.termed != 1 || g.Count != 3 || g.FromSeq != 6 {
+		t.Fatalf("rows without a batch id: %+v", g)
+	}
+	store.gaps = nil
 	m := queued(t, "rx-1:a", 1, 4, 0, now)
 	w.Handle(context.Background(), m)
 	if m.acked != 1 || w.Counters.Get(CounterSinkFailed) != 1 {
@@ -206,7 +221,7 @@ func TestWorkerSurvivesCorruptMessagesAndAFailingDecoder(t *testing.T) {
 	w.Sink = &countingSink{panic: true}
 	p := queued(t, "rx-1:b", 1, 5, 0, now)
 	w.Handle(context.Background(), p)
-	if p.acked != 1 || w.Counters.Get(CounterSinkPanicked) != 1 || len(store.rows) != 2 {
+	if p.acked != 1 || w.Counters.Get(CounterSinkPanicked) != 1 || len(store.rows) != 2 || len(store.gaps) != 0 {
 		t.Fatalf("panicking sink: %v", w.Counters.Snapshot())
 	}
 }

@@ -193,6 +193,19 @@ func (w *Worker) shed(ctx context.Context, msg QueueMsg, meta *jetstream.MsgMeta
 	w.forget(b.ID)
 }
 
+// corruptCount is how many observations an unreadable queue message
+// held: the length of its rows when that much can be read, 1 otherwise,
+// so a gap never claims nothing was lost.
+func corruptCount(data []byte) int {
+	var partial struct {
+		Rows []json.RawMessage `json:"rows"`
+	}
+	if err := json.Unmarshal(data, &partial); err == nil && len(partial.Rows) > 0 {
+		return len(partial.Rows)
+	}
+	return 1
+}
+
 func (w *Worker) forget(id string) {
 	w.mu.Lock()
 	delete(w.sunk, id)
@@ -239,7 +252,7 @@ func (w *Worker) Handle(ctx context.Context, msg QueueMsg) {
 	meta, err := msg.Metadata()
 	if err != nil {
 		w.Counters.Inc(CounterQueueCorrupt)
-		w.settleWithGap(ctx, msg, Gap{Table: RowsTable, Cause: CauseQueueCorrupt, At: w.now().UTC()})
+		w.settleWithGap(ctx, msg, Gap{Table: RowsTable, Cause: CauseQueueCorrupt, Count: corruptCount(msg.Data()), At: w.now().UTC()})
 		return
 	}
 	w.mu.Lock()
@@ -249,7 +262,7 @@ func (w *Worker) Handle(ctx context.Context, msg QueueMsg) {
 	if err := json.Unmarshal(msg.Data(), &b); err != nil || b.ID == "" {
 		w.Counters.Inc(CounterQueueCorrupt)
 		w.settleWithGap(ctx, msg, Gap{Table: RowsTable, FromSeq: meta.Sequence.Stream, ToSeq: meta.Sequence.Stream,
-			Cause: CauseQueueCorrupt, At: w.now().UTC()})
+			Cause: CauseQueueCorrupt, Count: corruptCount(msg.Data()), At: w.now().UTC()})
 		return
 	}
 	switch {
