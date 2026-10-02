@@ -154,3 +154,21 @@ Unreleased; the format follows Keep a Changelog.
   `?applies_at=` (M17); `ProjectionReader` building the `zones.Index`;
   the ed318 round trip and zones applicability vectors through storage;
   daylight schedules resolved through `ground.Daylight` (WP-11).
+- WP-6: the CISP client (`internal/cisp`, relational `00014_cisp`,
+  timeseries `00010_restrictions_projection`, `GET /v1/publications`,
+  `POST /v1/cis/notifications`): publications of zones, U-space
+  airspaces and the USSP list held to the CISP's checks and its pinned
+  `cis/uspace_requirements/v1` and `cis/ussp_list/v1` before they are
+  signed (a detached JWS with the publication key through core's
+  helpers) and queued, one pending snapshot per dataset; an ordered
+  sender with `If-Match`, conflict detection that never overwrites,
+  backoff capped at 5 min for 24 h, every state change an event; the
+  publisher heartbeat every 15 s; the subscriber (registration, webhook
+  receiver with compact JWS from the CISP or the ANSP, `aud`, single-use
+  `jti`, the `pull_url` guard, M16 reasons; the mandatory 60 s HEAD
+  reconciliation, deltas, `ed318.Parse` on receipt, the publisher's
+  signature verified on every pulled version, `cis_cache`, `cis_age_s`
+  and `cis_stale`); `proj_restrictions` announced on `cis.v1.*`; the
+  pinned `api/clients/cisp.yaml` and `cisp-schemas/` with `SOURCE` and a
+  CI diff; a fake CISP in `internal/ltest/fakecisp`; the
+  cisp-publication runbook.
