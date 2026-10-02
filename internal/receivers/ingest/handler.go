@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/rootxkit/uspace-core/core"
-	"github.com/rootxkit/uspace-core/geodesy/cell"
 
 	"github.com/rootxkit/uspace-authority/api/gen"
+	"github.com/rootxkit/uspace-authority/internal/cell"
 	"github.com/rootxkit/uspace-authority/internal/httpx"
 	"github.com/rootxkit/uspace-authority/internal/logging"
 	"github.com/rootxkit/uspace-authority/internal/receivers"

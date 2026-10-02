@@ -17,6 +17,8 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/audit"
 	"github.com/rootxkit/uspace-authority/internal/authz"
 	"github.com/rootxkit/uspace-authority/internal/bus"
+	"github.com/rootxkit/uspace-authority/internal/cell"
+	"github.com/rootxkit/uspace-authority/internal/cell/assign"
 	"github.com/rootxkit/uspace-authority/internal/config"
 	"github.com/rootxkit/uspace-authority/internal/passhash"
 	"github.com/rootxkit/uspace-authority/internal/policy"
@@ -196,6 +198,9 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 			rx.Service.RunReprojection(ctx, time.Duration(cfg.RIDKeysetReprojectS)*time.Second, rt.Limiter)
 		})
 
+		cells := assign.New(db, auditWriter, cell.StoreOf(bp), rt.Logger)
+		rt.AddCounters("cells", cells.Counters)
+
 		mux := http.NewServeMux()
 		apiserver.Mount(mux, apiserver.Server{
 			PolicyHandler:       policy.Handler{Service: svc},
@@ -206,6 +211,7 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 			UsersHandler:        az.Handler,
 			RegistryHandler:     reg.Handler,
 			RIDReceiversHandler: rx.Handler,
+			CellsHandler:        assign.Handler{Service: cells},
 		}, apiserver.Options{
 			Logger:      rt.Logger,
 			Middlewares: []apiserver.Middleware{tok.Handler.FormGuard(), apiserver.Authorize(identify, apiserver.DefaultRules())},

@@ -12,6 +12,7 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 
 	"github.com/rootxkit/uspace-authority/internal/bus"
+	"github.com/rootxkit/uspace-authority/internal/cell"
 	"github.com/rootxkit/uspace-authority/internal/ridpipe"
 )
 
@@ -30,8 +31,16 @@ const (
 	RowsTable = "rid_observations"
 )
 
-// QueueSubject is the work-queue subject of a batch from cell3.
-func QueueSubject(cell3 string) string { return "ingest.v1." + cell3 }
+// QueueSubject is the work-queue subject of a batch from the cell3 named
+// cell3 (c3:<lat_idx>:<lon_idx>): ingest.v1.<token>, the token of
+// internal/cell (c3_<lat_idx>_<lon_idx>).
+func QueueSubject(cell3 string) (string, error) {
+	c, err := cell.Parse(cell3)
+	if err != nil {
+		return "", err
+	}
+	return bus.Subjects.Ingest(cell.Token(c))
+}
 
 // Errors of Enqueue.
 var (
@@ -111,7 +120,11 @@ func (q *JetQueue) Enqueue(ctx context.Context, b *ridpipe.Batch) error {
 	if err != nil {
 		return err
 	}
-	msg := nats.NewMsg(QueueSubject(b.Cell3))
+	subject, err := QueueSubject(b.Cell3)
+	if err != nil {
+		return err
+	}
+	msg := nats.NewMsg(subject)
 	msg.Data = data
 	msg.Header.Set(jetstream.MsgIDHeader, b.ID)
 	ctx, cancel := context.WithTimeout(ctx, q.Config.PublishTimeout)

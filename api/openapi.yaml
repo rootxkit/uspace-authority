@@ -73,6 +73,8 @@ tags:
     description: Signed observation batches from receivers, served by rid-ingest (WP-7).
   - name: rid-frames
     description: Raw Remote ID frames as stored, purpose-logged (WP-7, LESSONS R-15).
+  - name: cells
+    description: The partition cells' ownership map (WP-10, spec 05 §3); cells never cross an external interface.
 
 paths:
   # WP-0: health paths, served by every process on its admin port.
@@ -1826,6 +1828,65 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  # WP-10: the cell3 -> detect worker ownership map.
+  /v1/cells:
+    get:
+      operationId: getCellOwnership
+      tags: [cells]
+      summary: The cell3 -> detect worker ownership map
+      description: |
+        Read from KV bucket `cells`, where detect workers read it. A
+        worker judges the cells the map gives it and refuses to start
+        with none unless `CELLS=all` (05 §3). 404 when no map has been
+        written yet.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: none
+      responses:
+        "200":
+          description: The map.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CellOwnership"
+        "503":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      operationId: putCellOwnership
+      tags: [cells]
+      summary: Replace the ownership map (an operator's rebalance)
+      description: |
+        Writes the whole map with the next version into KV bucket
+        `cells`, inside the transaction of its `events` row: when the
+        bucket cannot take it the change is refused with 503
+        `cell_store_unavailable` and nothing is recorded. A map past the
+        bucket's value bound is refused with 400 naming the bound.
+        Workers take a new map at their next start.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: cell_ownership_changed, entity_type: cells, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CellOwnershipInput"
+      responses:
+        "200":
+          description: The map as stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CellOwnership"
+        "503":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+
 components:
   securitySchemes:
     sessionCookie:
@@ -2923,3 +2984,24 @@ components:
           type: array
           items: {$ref: "#/components/schemas/RIDFrame"}
         truncated: {type: boolean, description: The window holds more frames than were returned.}
+    CellOwnership:
+      type: object
+      required: [version, assignments, updated_by, updated_at]
+      properties:
+        version: {type: integer, format: int64, minimum: 1, description: Rises by one with every change.}
+        assignments:
+          type: object
+          description: cell3 name (`c3:<lat_idx>:<lon_idx>`, uspace-core geodesy/cell) -> detect worker id.
+          additionalProperties: {type: string}
+        updated_by: {type: string}
+        updated_at: {type: string, format: date-time}
+    CellOwnershipInput:
+      type: object
+      required: [assignments, reason]
+      properties:
+        assignments:
+          type: object
+          description: cell3 name -> detect worker id (`^[a-z0-9][a-z0-9_-]{0,62}$`); the whole map, replacing the stored one.
+          maxProperties: 64800
+          additionalProperties: {type: string, maxLength: 63}
+        reason: {type: string, minLength: 1, maxLength: 500}

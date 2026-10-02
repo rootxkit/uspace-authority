@@ -720,6 +720,24 @@ type AuditEventPage struct {
 	NextBeforeId *int64 `json:"next_before_id,omitempty"`
 }
 
+// CellOwnership defines model for CellOwnership.
+type CellOwnership struct {
+	// Assignments cell3 name (`c3:<lat_idx>:<lon_idx>`, uspace-core geodesy/cell) -> detect worker id.
+	Assignments map[string]string `json:"assignments"`
+	UpdatedAt   time.Time         `json:"updated_at"`
+	UpdatedBy   string            `json:"updated_by"`
+
+	// Version Rises by one with every change.
+	Version int64 `json:"version"`
+}
+
+// CellOwnershipInput defines model for CellOwnershipInput.
+type CellOwnershipInput struct {
+	// Assignments cell3 name -> detect worker id (`^[a-z0-9][a-z0-9_-]{0,62}$`); the whole map, replacing the stored one.
+	Assignments map[string]string `json:"assignments"`
+	Reason      string            `json:"reason"`
+}
+
 // Check defines model for Check.
 type Check struct {
 	Error *string `json:"error,omitempty"`
@@ -1918,6 +1936,9 @@ type LoginJSONRequestBody = LoginRequest
 // VerifyMFAJSONRequestBody defines body for VerifyMFA for application/json ContentType.
 type VerifyMFAJSONRequestBody = MFARequest
 
+// PutCellOwnershipJSONRequestBody defines body for PutCellOwnership for application/json ContentType.
+type PutCellOwnershipJSONRequestBody = CellOwnershipInput
+
 // CreateOAuthClientJSONRequestBody defines body for CreateOAuthClient for application/json ContentType.
 type CreateOAuthClientJSONRequestBody = OAuthClientInput
 
@@ -2220,6 +2241,44 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /v1/auth/session (the `GetSession` operationId).
 	GetSession(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetCellOwnership The cell3 -> detect worker ownership map
+	//
+	// Read from KV bucket `cells`, where detect workers read it. A
+	// worker judges the cells the map gives it and refuses to start
+	// with none unless `CELLS=all` (05 §3). 404 when no map has been
+	// written yet.
+	//
+	// Corresponds with GET /v1/cells (the `GetCellOwnership` operationId).
+	GetCellOwnership(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutCellOwnershipWithBody Replace the ownership map (an operator's rebalance)
+	//
+	// Writes the whole map with the next version into KV bucket
+	// `cells`, inside the transaction of its `events` row: when the
+	// bucket cannot take it the change is refused with 503
+	// `cell_store_unavailable` and nothing is recorded. A map past the
+	// bucket's value bound is refused with 400 naming the bound.
+	// Workers take a new map at their next start.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /v1/cells (the `PutCellOwnership` operationId).
+	PutCellOwnershipWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutCellOwnership Replace the ownership map (an operator's rebalance)
+	//
+	// Writes the whole map with the next version into KV bucket
+	// `cells`, inside the transaction of its `events` row: when the
+	// bucket cannot take it the change is refused with 503
+	// `cell_store_unavailable` and nothing is recorded. A map past the
+	// bucket's value bound is refused with 400 naming the bound.
+	// Workers take a new map at their next start.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /v1/cells (the `PutCellOwnership` operationId).
+	PutCellOwnership(ctx context.Context, body PutCellOwnershipJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListOAuthClients Registered clients
 	//
@@ -3190,6 +3249,74 @@ func (c *Client) VerifyMFA(ctx context.Context, body VerifyMFAJSONRequestBody, r
 // Corresponds with GET /v1/auth/session (the `GetSession` operationId).
 func (c *Client) GetSession(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetSessionRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetCellOwnership The cell3 -> detect worker ownership map
+//
+// Read from KV bucket `cells`, where detect workers read it. A
+// worker judges the cells the map gives it and refuses to start
+// with none unless `CELLS=all` (05 §3). 404 when no map has been
+// written yet.
+//
+// Corresponds with GET /v1/cells (the `GetCellOwnership` operationId).
+func (c *Client) GetCellOwnership(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetCellOwnershipRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutCellOwnershipWithBody Replace the ownership map (an operator's rebalance)
+//
+// Writes the whole map with the next version into KV bucket
+// `cells`, inside the transaction of its `events` row: when the
+// bucket cannot take it the change is refused with 503
+// `cell_store_unavailable` and nothing is recorded. A map past the
+// bucket's value bound is refused with 400 naming the bound.
+// Workers take a new map at their next start.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /v1/cells (the `PutCellOwnership` operationId).
+func (c *Client) PutCellOwnershipWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutCellOwnershipRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PutCellOwnership Replace the ownership map (an operator's rebalance)
+//
+// Writes the whole map with the next version into KV bucket
+// `cells`, inside the transaction of its `events` row: when the
+// bucket cannot take it the change is refused with 503
+// `cell_store_unavailable` and nothing is recorded. A map past the
+// bucket's value bound is refused with 400 naming the bound.
+// Workers take a new map at their next start.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /v1/cells (the `PutCellOwnership` operationId).
+func (c *Client) PutCellOwnership(ctx context.Context, body PutCellOwnershipJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutCellOwnershipRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5010,6 +5137,73 @@ func NewGetSessionRequest(server string) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewGetCellOwnershipRequest constructs an http.Request for the GetCellOwnership method
+func NewGetCellOwnershipRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/cells")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPutCellOwnershipRequest calls the generic PutCellOwnership builder with application/json body
+func NewPutCellOwnershipRequest(server string, body PutCellOwnershipJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPutCellOwnershipRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPutCellOwnershipRequestWithBody constructs an http.Request for the PutCellOwnership method, with any body, and a specified content type
+func NewPutCellOwnershipRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/cells")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -7580,6 +7774,46 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /v1/auth/session (the `GetSession` operationId).
 	GetSessionWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetSessionResponse, error)
 
+	// GetCellOwnershipWithResponse The cell3 -> detect worker ownership map
+	//
+	// Read from KV bucket `cells`, where detect workers read it. A
+	// worker judges the cells the map gives it and refuses to start
+	// with none unless `CELLS=all` (05 §3). 404 when no map has been
+	// written yet.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/cells (the `GetCellOwnership` operationId).
+	GetCellOwnershipWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetCellOwnershipResponse, error)
+
+	// PutCellOwnershipWithBodyWithResponse Replace the ownership map (an operator's rebalance)
+	//
+	// Writes the whole map with the next version into KV bucket
+	// `cells`, inside the transaction of its `events` row: when the
+	// bucket cannot take it the change is refused with 503
+	// `cell_store_unavailable` and nothing is recorded. A map past the
+	// bucket's value bound is refused with 400 naming the bound.
+	// Workers take a new map at their next start.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /v1/cells (the `PutCellOwnership` operationId).
+	PutCellOwnershipWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutCellOwnershipResponse, error)
+
+	// PutCellOwnershipWithResponse Replace the ownership map (an operator's rebalance)
+	//
+	// Writes the whole map with the next version into KV bucket
+	// `cells`, inside the transaction of its `events` row: when the
+	// bucket cannot take it the change is refused with 503
+	// `cell_store_unavailable` and nothing is recorded. A map past the
+	// bucket's value bound is refused with 400 naming the bound.
+	// Workers take a new map at their next start.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /v1/cells (the `PutCellOwnership` operationId).
+	PutCellOwnershipWithResponse(ctx context.Context, body PutCellOwnershipJSONRequestBody, reqEditors ...RequestEditorFn) (*PutCellOwnershipResponse, error)
+
 	// ListOAuthClientsWithResponse Registered clients
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -8885,6 +9119,116 @@ func (r GetSessionResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetSessionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetCellOwnershipResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CellOwnership
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetCellOwnershipResponse) GetJSON200() *CellOwnership {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r GetCellOwnershipResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetCellOwnershipResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetCellOwnershipResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetCellOwnershipResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetCellOwnershipResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetCellOwnershipResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PutCellOwnershipResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CellOwnership
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PutCellOwnershipResponse) GetJSON200() *CellOwnership {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r PutCellOwnershipResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r PutCellOwnershipResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r PutCellOwnershipResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PutCellOwnershipResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PutCellOwnershipResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PutCellOwnershipResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -11613,6 +11957,64 @@ func (c *ClientWithResponses) GetSessionWithResponse(ctx context.Context, reqEdi
 	return ParseGetSessionResponse(rsp)
 }
 
+// GetCellOwnershipWithResponse The cell3 -> detect worker ownership map
+//
+// Read from KV bucket `cells`, where detect workers read it. A
+// worker judges the cells the map gives it and refuses to start
+// with none unless `CELLS=all` (05 §3). 404 when no map has been
+// written yet.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/cells (the `GetCellOwnership` operationId).
+func (c *ClientWithResponses) GetCellOwnershipWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetCellOwnershipResponse, error) {
+	rsp, err := c.GetCellOwnership(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetCellOwnershipResponse(rsp)
+}
+
+// PutCellOwnershipWithBodyWithResponse Replace the ownership map (an operator's rebalance)
+//
+// Writes the whole map with the next version into KV bucket
+// `cells`, inside the transaction of its `events` row: when the
+// bucket cannot take it the change is refused with 503
+// `cell_store_unavailable` and nothing is recorded. A map past the
+// bucket's value bound is refused with 400 naming the bound.
+// Workers take a new map at their next start.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /v1/cells (the `PutCellOwnership` operationId).
+func (c *ClientWithResponses) PutCellOwnershipWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutCellOwnershipResponse, error) {
+	rsp, err := c.PutCellOwnershipWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutCellOwnershipResponse(rsp)
+}
+
+// PutCellOwnershipWithResponse Replace the ownership map (an operator's rebalance)
+//
+// Writes the whole map with the next version into KV bucket
+// `cells`, inside the transaction of its `events` row: when the
+// bucket cannot take it the change is refused with 503
+// `cell_store_unavailable` and nothing is recorded. A map past the
+// bucket's value bound is refused with 400 naming the bound.
+// Workers take a new map at their next start.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /v1/cells (the `PutCellOwnership` operationId).
+func (c *ClientWithResponses) PutCellOwnershipWithResponse(ctx context.Context, body PutCellOwnershipJSONRequestBody, reqEditors ...RequestEditorFn) (*PutCellOwnershipResponse, error) {
+	rsp, err := c.PutCellOwnership(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutCellOwnershipResponse(rsp)
+}
+
 // ListOAuthClientsWithResponse Registered clients
 //
 // Returns a wrapper object for the known response body format(s).
@@ -13228,6 +13630,86 @@ func ParseGetSessionResponse(rsp *http.Response) (*GetSessionResponse, error) {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetCellOwnershipResponse parses an HTTP response from a GetCellOwnershipWithResponse call
+func ParseGetCellOwnershipResponse(rsp *http.Response) (*GetCellOwnershipResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetCellOwnershipResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CellOwnership
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePutCellOwnershipResponse parses an HTTP response from a PutCellOwnershipWithResponse call
+func ParsePutCellOwnershipResponse(rsp *http.Response) (*PutCellOwnershipResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PutCellOwnershipResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CellOwnership
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Problem
@@ -15041,6 +15523,12 @@ type ServerInterface interface {
 	// GetSession The session of the caller
 	// (GET /v1/auth/session)
 	GetSession(w http.ResponseWriter, r *http.Request)
+	// GetCellOwnership The cell3 -> detect worker ownership map
+	// (GET /v1/cells)
+	GetCellOwnership(w http.ResponseWriter, r *http.Request)
+	// PutCellOwnership Replace the ownership map (an operator's rebalance)
+	// (PUT /v1/cells)
+	PutCellOwnership(w http.ResponseWriter, r *http.Request)
 	// ListOAuthClients Registered clients
 	// (GET /v1/oauth/clients)
 	ListOAuthClients(w http.ResponseWriter, r *http.Request)
@@ -15453,6 +15941,34 @@ func (siw *ServerInterfaceWrapper) GetSession(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetSession(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCellOwnership operation middleware
+func (siw *ServerInterfaceWrapper) GetCellOwnership(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCellOwnership(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutCellOwnership operation middleware
+func (siw *ServerInterfaceWrapper) PutCellOwnership(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutCellOwnership(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -17172,6 +17688,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/rid/receivers/{receiver_id}/keys/rotate", wrapper.RotateRIDReceiverKeys)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/rid/frames", wrapper.ListRIDFrames)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/rid/frames/{frame_id}", wrapper.GetRIDFrame)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/cells", wrapper.GetCellOwnership)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/v1/cells", wrapper.PutCellOwnership)
 
 	return m
 }
@@ -17716,6 +18234,115 @@ type GetSessiondefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response GetSessiondefaultApplicationProblemPlusJSONResponse) VisitGetSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCellOwnershipRequestObject struct {
+}
+
+type GetCellOwnershipResponseObject interface {
+	VisitGetCellOwnershipResponse(w http.ResponseWriter) error
+}
+
+type GetCellOwnership200JSONResponse CellOwnership
+
+func (response GetCellOwnership200JSONResponse) VisitGetCellOwnershipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCellOwnership503ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetCellOwnership503ApplicationProblemPlusJSONResponse) VisitGetCellOwnershipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCellOwnershipdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetCellOwnershipdefaultApplicationProblemPlusJSONResponse) VisitGetCellOwnershipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutCellOwnershipRequestObject struct {
+	Body *PutCellOwnershipJSONRequestBody
+}
+
+type PutCellOwnershipResponseObject interface {
+	VisitPutCellOwnershipResponse(w http.ResponseWriter) error
+}
+
+type PutCellOwnership200JSONResponse CellOwnership
+
+func (response PutCellOwnership200JSONResponse) VisitPutCellOwnershipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutCellOwnership503ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PutCellOwnership503ApplicationProblemPlusJSONResponse) VisitPutCellOwnershipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutCellOwnershipdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response PutCellOwnershipdefaultApplicationProblemPlusJSONResponse) VisitPutCellOwnershipResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -19917,6 +20544,12 @@ type StrictServerInterface interface {
 	// GetSession The session of the caller
 	// (GET /v1/auth/session)
 	GetSession(ctx context.Context, request GetSessionRequestObject) (GetSessionResponseObject, error)
+	// GetCellOwnership The cell3 -> detect worker ownership map
+	// (GET /v1/cells)
+	GetCellOwnership(ctx context.Context, request GetCellOwnershipRequestObject) (GetCellOwnershipResponseObject, error)
+	// PutCellOwnership Replace the ownership map (an operator's rebalance)
+	// (PUT /v1/cells)
+	PutCellOwnership(ctx context.Context, request PutCellOwnershipRequestObject) (PutCellOwnershipResponseObject, error)
 	// ListOAuthClients Registered clients
 	// (GET /v1/oauth/clients)
 	ListOAuthClients(ctx context.Context, request ListOAuthClientsRequestObject) (ListOAuthClientsResponseObject, error)
@@ -20365,6 +20998,61 @@ func (sh *strictHandler) GetSession(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetSessionResponseObject); ok {
 		if err := validResponse.VisitGetSessionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCellOwnership operation middleware
+func (sh *strictHandler) GetCellOwnership(w http.ResponseWriter, r *http.Request) {
+	var request GetCellOwnershipRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCellOwnership(ctx, request.(GetCellOwnershipRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCellOwnership")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCellOwnershipResponseObject); ok {
+		if err := validResponse.VisitGetCellOwnershipResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutCellOwnership operation middleware
+func (sh *strictHandler) PutCellOwnership(w http.ResponseWriter, r *http.Request) {
+	var request PutCellOwnershipRequestObject
+
+	var body PutCellOwnershipJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutCellOwnership(ctx, request.(PutCellOwnershipRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutCellOwnership")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutCellOwnershipResponseObject); ok {
+		if err := validResponse.VisitPutCellOwnershipResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

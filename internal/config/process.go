@@ -286,6 +286,8 @@ type Detect struct {
 	TSURL     string `env:"TS_URL" required:"true" secret:"true" kind:"url" help:"telemetry database (projections, read only)"`
 	NATSURL   string `env:"NATS_URL" required:"true" secret:"true" kind:"url" help:"NATS JetStream"`
 	GroundDir string `env:"GROUND_DIR" help:"directory of terrain tiles and the geoid grid; required once WP-11 lands"`
+	WorkerID  string `env:"DETECT_WORKER_ID" default:"detect-1" help:"this worker's id in the cell ownership map (KV cells, PUT /v1/cells)"`
+	Cells     string `env:"CELLS" enum:"all" help:"all: judge every cell whatever the ownership map says (the demo); empty: the cells the map gives DETECT_WORKER_ID, and refuse to start with none"`
 }
 
 // String redacts secrets.

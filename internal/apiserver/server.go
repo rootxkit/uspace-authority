@@ -113,6 +113,12 @@ type RIDReceiversHandler interface {
 	GetRIDFrame(ctx context.Context, request gen.GetRIDFrameRequestObject) (gen.GetRIDFrameResponseObject, error)
 }
 
+// CellsHandler serves /v1/cells (api, WP-10): the cell ownership map.
+type CellsHandler interface {
+	GetCellOwnership(ctx context.Context, request gen.GetCellOwnershipRequestObject) (gen.GetCellOwnershipResponseObject, error)
+	PutCellOwnership(ctx context.Context, request gen.PutCellOwnershipRequestObject) (gen.PutCellOwnershipResponseObject, error)
+}
+
 // Server implements gen.StrictServerInterface by delegating to one
 // handler per group. A group left nil must not be mounted.
 type Server struct {
@@ -125,6 +131,7 @@ type Server struct {
 	UsersHandler
 	RegistryHandler
 	RIDReceiversHandler
+	CellsHandler
 }
 
 var _ gen.StrictServerInterface = Server{}

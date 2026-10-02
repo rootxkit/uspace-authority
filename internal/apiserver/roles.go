@@ -84,6 +84,9 @@ var Roles = map[string][]string{
 	"RotateRIDReceiverKeys": {RoleAdmin},
 	"ListRIDFrames":         {RoleIncidentOfficer, RoleInspector},
 	"GetRIDFrame":           {RoleIncidentOfficer, RoleInspector},
+
+	"GetCellOwnership": {RoleAdmin},
+	"PutCellOwnership": {RoleAdmin},
 }
 
 // Receiver lists the operations a Remote ID receiver calls (`x-receiver:

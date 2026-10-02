@@ -1,13 +1,18 @@
 // Command detect is the per-cell violation detector. It is started as `uspace-authority detect`;
-// --help lists the configuration variables.
+// --help lists the configuration variables. Until WP-12 it claims its
+// cells from the ownership map (or CELLS=all) and waits.
 package main
 
 import (
 	"context"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/rootxkit/uspace-authority/internal/bus"
+	"github.com/rootxkit/uspace-authority/internal/cell"
 	"github.com/rootxkit/uspace-authority/internal/config"
 	"github.com/rootxkit/uspace-authority/internal/proc"
 )
@@ -20,5 +25,26 @@ func main() {
 }
 
 func spec(cfg *config.Detect) proc.Spec {
-	return proc.Spec{Name: "detect", Config: cfg, Run: proc.Idle("WP-12")}
+	return proc.Spec{Name: "detect", Config: cfg, Run: func(ctx context.Context, rt *proc.Runtime) error {
+		bp, err := bus.OpenProcess(ctx, cfg.NATSURL, cfg.Bus, "detect", "", rt.Logger)
+		if err != nil {
+			return err
+		}
+		defer bp.Close()
+		rt.AddStatus(bus.StatusAttrs(bp.NC))
+		// The cells this worker judges (05 §3): the ownership map's, or
+		// every cell with CELLS=all; none is a refusal to start.
+		claim, err := cell.LoadClaim(ctx, cell.StoreOf(bp), cfg.WorkerID, cfg.Cells == "all",
+			cfg.NATSStartAttempts, time.Duration(cfg.NATSStartBackoffMS)*time.Millisecond)
+		if err != nil {
+			return err
+		}
+		cells := make([]string, 0, len(claim.Cells))
+		for _, c := range claim.Cells {
+			cells = append(cells, c.String())
+		}
+		rt.Logger.Info("cells claimed", slog.String("worker_id", cfg.WorkerID), slog.Bool("all", claim.All),
+			slog.Any("cells", cells), slog.Uint64("ownership_version", claim.Version))
+		return proc.Idle("WP-12")(ctx, rt)
+	}}
 }
