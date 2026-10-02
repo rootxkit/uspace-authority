@@ -35,10 +35,12 @@
 //     never 0 m for an unknown ground (D-04).
 //
 // A new zone set or policy rebuilds the monitor (core's Monitor takes both
-// at construction) and observes each aircraft's last live sample again:
-// a violation the new monitor raises again is carried on under its
-// violation_id; one it does not is cleared reconfigured (neither resolved
-// nor left open).
+// at construction) and observes each aircraft's last live sample again,
+// at the wall time it was first observed, then ticks the new monitor to
+// now: a violation the new monitor raises again is carried on under its
+// violation_id; one whose aircraft has gone stale, or whose last sample
+// the excerpt store evicted, is cleared stale; any other it does not
+// raise is cleared reconfigured (neither resolved nor left open).
 //
 // # Mapping (ToTrack, plan D5)
 //

@@ -262,10 +262,13 @@ func (w *Worker) Observe(m *track.Message) bool {
 		// History is recorded by tsdb-writer and never alerted (T-04); it
 		// is neither evidence of a live condition nor re-observed.
 		w.excerpts.Add(tr.ID, tr.CapturedAtS, violation.SampleOf(m))
-		w.excerpts.SetLast(tr.ID, tr)
+	}
+	wallS := w.wallS()
+	if !m.Backlog {
+		w.excerpts.SetLast(tr.ID, tr, wallS)
 	}
 	w.Counters.Inc(CounterTrackObserved)
-	w.handle(w.mon.Observe(tr, w.wallS()))
+	w.handle(w.mon.Observe(tr, wallS))
 	return true
 }
 
@@ -307,10 +310,16 @@ func (w *Worker) SwitchSources(ctx context.Context) {
 // maybeRebuild builds a new monitor when the zone set or the policy
 // changed (INV-03, Z-12): uspace-core's Monitor takes its zones and
 // thresholds at construction. The source-control state is applied, and
-// every aircraft's last live sample is observed again, so that a
-// condition still true carries its violation on (same violation_id,
-// updated) and one the new configuration does not raise again is
-// cleared as reconfigured, never left open and never called resolved.
+// every aircraft's last live sample is observed again at the wall time
+// it was first observed (never now: a quiet aircraft's sample would be
+// refused as late and its violation taken for reconfigured), then the
+// new monitor is ticked to now, so that a condition still true carries
+// its violation on (same violation_id, updated), an aircraft gone quiet
+// past stale_after_s is cleared stale, and one the new configuration
+// does not raise again is cleared as reconfigured, never left open and
+// never called resolved. An open violation whose aircraft the excerpt
+// store no longer holds (evicted) has nothing to be judged again on: it
+// is cleared stale.
 func (w *Worker) maybeRebuild() {
 	zs := w.in.Zones()
 	p, have := w.in.Policy()
@@ -354,31 +363,44 @@ func (w *Worker) maybeRebuild() {
 		slog.Int64("policy_version", version), slog.Int("open_violations", len(w.open)))
 	clear(w.uspace)
 	last := w.excerpts.Last()
-	slices.SortFunc(last, func(a, b alerting.Track) int {
+	slices.SortFunc(last, func(a, b Observed) int {
 		switch {
-		case a.CapturedAtS < b.CapturedAtS:
-			return -1
-		case a.CapturedAtS > b.CapturedAtS:
-			return 1
+		case a.WallS != b.WallS:
+			return cmpFloat(a.WallS, b.WallS)
+		case a.Track.CapturedAtS != b.Track.CapturedAtS:
+			return cmpFloat(a.Track.CapturedAtS, b.Track.CapturedAtS)
 		}
-		return strings.Compare(a.ID, b.ID)
+		return strings.Compare(a.Track.ID, b.Track.ID)
 	})
 	w.rebuilding = map[string]bool{}
 	for i := range last {
-		w.handle(w.mon.Observe(last[i], wallS))
+		w.handle(w.mon.Observe(last[i].Track, min(last[i].WallS, wallS)))
 	}
+	w.handle(w.mon.Tick(wallS))
 	carried := w.rebuilding
 	w.rebuilding = nil
 	keys := slices.Sorted(maps.Keys(w.open))
 	for _, key := range keys {
+		ov := w.open[key]
 		if carried[key] {
 			continue
 		}
-		ov := w.open[key]
+		if _, held := w.excerpts.LastOf(ov.body.TrackRef); !held {
+			w.closeViolation(ov, string(alerting.ClearStale), wallS, ov.body.Detail, nil)
+			delete(w.open, key)
+			continue
+		}
 		w.closeViolation(ov, violation.ClearReasonReconfigured, wallS, ov.body.Detail, nil)
 		delete(w.open, key)
 		w.Counters.Inc(CounterClearedReconfigured)
 	}
+}
+
+func cmpFloat(a, b float64) int {
+	if a < b {
+		return -1
+	}
+	return 1
 }
 
 // fold adds what the monitor counted since the last fold to

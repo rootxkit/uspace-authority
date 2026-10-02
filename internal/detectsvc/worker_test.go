@@ -446,3 +446,60 @@ func TestRepublishDuringABusOutageNeverStallsTheTick(t *testing.T) {
 		t.Fatalf("republished %d of %d after the outage", len(seen), n)
 	}
 }
+
+// INV-03, T-05, T-10: a rebuild re-observes each aircraft's last sample
+// at the wall time it was first observed, never at the rebuild's. An
+// aircraft quiet for longer than live_max_age_s but not yet stale keeps
+// its violation (carried, then cleared stale when its time comes, not
+// reconfigured); one whose last sample the store no longer holds
+// (evicted) is closed stale, since nothing says the new configuration
+// would not raise it. An aircraft heard recently is carried as before.
+func TestRebuildReobservesAtPlacedTimeAndClosesQuietAircraftStale(t *testing.T) {
+	t.Run("quiet", func(t *testing.T) {
+		r := newRig(t, nil)
+		r.in.setPolicy(1, nil)
+		keep := zoneOf(t, zoneSpec{id: "KEEP", lat: zLat, lon: zLon, upper: 1500}.feature())
+		r.in.setZones(keep...)
+		r.at(0, sample{id: "A", lat: zLat, lon: zLon, altAMSL: f64(500)}, sample{id: "B", lat: zLat, lon: zLon, altAMSL: f64(500)})
+		raised := transitions(r.pub.take(), false)
+		if len(raised) != 2 {
+			t.Fatalf("raised %s", describe(raised))
+		}
+		r.at(11, sample{id: "B", lat: zLat, lon: zLon, altAMSL: f64(500)})
+		other := zoneOf(t, zoneSpec{id: "OTHER", lat: outLat + 1, lon: zLon, upper: 1500}.feature())
+		r.in.setZones(append(keep, other...)...)
+		r.tick(12)
+		if got := transitions(r.pub.take(), false); len(got) != 0 {
+			t.Fatalf("rebuild closed what still holds: %s", describe(got))
+		}
+		if n := r.w.Counters.Get(CounterClearedReconfigured); n != 0 {
+			t.Fatalf("cleared reconfigured %d", n)
+		}
+		r.tick(16)
+		got := transitions(r.pub.take(), false)
+		if len(got) != 1 || got[0].Body.TrackRef != "A" || *got[0].Body.ClearReason != string(alerting.ClearStale) {
+			t.Fatalf("A not cleared stale: %s", describe(got))
+		}
+	})
+	t.Run("evicted", func(t *testing.T) {
+		r := newRig(t, func(s *Settings) { s.MaxAircraft = 2 })
+		r.in.setPolicy(1, nil)
+		keep := zoneOf(t, zoneSpec{id: "KEEP", lat: zLat, lon: zLon, upper: 1500}.feature())
+		r.in.setZones(keep...)
+		r.at(0, sample{id: "A", lat: zLat, lon: zLon, altAMSL: f64(500)})
+		r.at(1, sample{id: "C", lat: outLat, lon: zLon, altAMSL: f64(500)}, sample{id: "D", lat: outLat, lon: zLon, altAMSL: f64(500)})
+		if r.w.Counters.Get(CounterExcerptAircraftEvicted) == 0 {
+			t.Fatal(r.w.Counters.Snapshot())
+		}
+		r.pub.take()
+		r.in.setPolicy(2, nil)
+		r.tick(2)
+		got := transitions(r.pub.take(), false)
+		if len(got) != 1 || got[0].Body.TrackRef != "A" || *got[0].Body.ClearReason != string(alerting.ClearStale) {
+			t.Fatalf("evicted A not cleared stale: %s", describe(got))
+		}
+		if n := r.w.Counters.Get(CounterClearedReconfigured); n != 0 {
+			t.Fatalf("cleared reconfigured %d", n)
+		}
+	})
+}

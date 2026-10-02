@@ -27,8 +27,16 @@ type held struct {
 type aircraftLog struct {
 	id      string
 	samples []held
-	last    *alerting.Track
+	last    *Observed
 	elem    *list.Element
+}
+
+// Observed is a sample as the monitor was given it: the track and the
+// monitor's wall time then. A rebuilt monitor is given it again at that
+// same wall time, so its lateness and staleness are judged as they were.
+type Observed struct {
+	Track alerting.Track
+	WallS float64
 }
 
 // Excerpts keeps the recent samples of every aircraft heard, so that a
@@ -92,22 +100,31 @@ func (e *Excerpts) Add(id string, atS float64, s violation.Sample) {
 	}
 }
 
-// SetLast records the last sample of id the monitor admitted for
-// judgement.
-func (e *Excerpts) SetLast(id string, tr alerting.Track) {
+// SetLast records the last sample of id handed to the monitor, observed
+// at the monitor's wall time wallS.
+func (e *Excerpts) SetLast(id string, tr alerting.Track, wallS float64) {
 	l := e.entry(id)
-	l.last = &tr
+	l.last = &Observed{Track: tr, WallS: wallS}
 }
 
-// Last is every aircraft's last admitted sample, in no order.
-func (e *Excerpts) Last() []alerting.Track {
-	out := make([]alerting.Track, 0, len(e.byID))
+// Last is every aircraft's last observed sample, in no order.
+func (e *Excerpts) Last() []Observed {
+	out := make([]Observed, 0, len(e.byID))
 	for _, l := range e.byID {
 		if l.last != nil {
 			out = append(out, *l.last)
 		}
 	}
 	return out
+}
+
+// LastOf is the last observed sample of id, if the store still holds it.
+func (e *Excerpts) LastOf(id string) (Observed, bool) {
+	l, ok := e.byID[id]
+	if !ok || l.last == nil {
+		return Observed{}, false
+	}
+	return *l.last, true
 }
 
 // Window returns the samples of id placed in (fromS, toS], oldest first.
