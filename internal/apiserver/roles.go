@@ -113,6 +113,10 @@ var Roles = map[string][]string{
 	"PublishUSpaceAirspaces":  {RoleAdmin},
 
 	"ListPublications": {RoleAdmin, RoleInspector, RoleViewer},
+
+	"ListViolations":  {RoleInspector},
+	"GetViolation":    {RoleInspector},
+	"ReviewViolation": {RoleInspector},
 }
 
 // Receiver lists the operations a Remote ID receiver calls (`x-receiver:
