@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"net/http"
+	"os"
 	"slices"
 	"strings"
 	"sync"
@@ -434,4 +435,35 @@ func hmacSHA256(key, msg []byte) []byte {
 	m := hmac.New(sha256.New, key)
 	m.Write(msg)
 	return m.Sum(nil)
+}
+
+// Suspension is not revocation (runbook): after the client is suspended
+// no new token is issued, while a token issued before still verifies
+// until its exp, and not after.
+func TestSuspensionStopsIssuanceNotIssuedTokens(t *testing.T) {
+	f := newFixture(t, fixtureOpts{})
+	secret := f.register(t, "cisp-01", []string{"cis.read"}, []string{cispHost})
+	before, oerr := f.token(secretReq("cisp-01", secret, "cis.read", cispHost))
+	if oerr != nil {
+		t.Fatal(oerr)
+	}
+	st := StatusSuspended
+	if _, err := f.parts.Registry.Update(context.Background(), "cisp-01", ClientPatch{Status: &st}, admin); err != nil {
+		t.Fatal(err)
+	}
+	if _, oerr := f.token(secretReq("cisp-01", secret, "cis.read", cispHost)); oerr == nil {
+		t.Fatal("a suspended client got a new token")
+	}
+	f.clock.Advance(59 * time.Minute)
+	if _, err := f.verifier(t, cispHost).Verify(context.Background(), before.AccessToken); err != nil {
+		t.Fatalf("the token issued before the suspension, within its hour: %v", err)
+	}
+	f.clock.Advance(2 * time.Minute)
+	if _, err := f.verifier(t, cispHost).Verify(context.Background(), before.AccessToken); err == nil {
+		t.Fatal("verified past its exp")
+	}
+	raw, err := os.ReadFile("../../docs/runbooks/token-service.md")
+	if err != nil || !strings.Contains(string(raw), "## Suspension is not revocation") {
+		t.Fatal("the runbook does not say that suspension is not revocation")
+	}
 }

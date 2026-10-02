@@ -186,6 +186,27 @@ Then remove the file, generate a new key, and review the
    moment (`invalid_client`); tokens already issued run to their `exp`,
    at most 1 h, because verifiers are stateless.
 
+## Suspension is not revocation
+
+Suspending or revoking a client (`PATCH /v1/oauth/clients/{client_id}`)
+stops **new** tokens at once. It does not revoke the tokens the client
+already holds: verifiers in every system are stateless (core/auth checks
+the signature, `exp` and the claims, never this registry), so an issued
+token stays valid until its `exp`, at most `TOKEN_TTL_S` (1 h). When
+that hour matters, as for a stolen client secret:
+
+1. suspend the client (no new tokens);
+2. if the client's tokens must die before their `exp`, ask the target
+   systems to refuse its `sub` meanwhile, or, when this issuer's key
+   itself may be exposed, use the emergency retirement above, which
+   invalidates every token of the key;
+3. read the client's `token_issued` events for the `jti` and `aud` of
+   the tokens still alive.
+
+Console sessions are different: they are checked against the
+`sessions` table on every request, so logout, a disable or an admin
+revocation ends them at once.
+
 ## Refusals and audit
 
 Every issuance is a `token_issued` event (`jti`, `kid`, `aud`, scopes,
