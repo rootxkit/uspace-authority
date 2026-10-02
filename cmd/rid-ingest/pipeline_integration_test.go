@@ -8,6 +8,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -27,11 +28,10 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/tswriter"
 )
 
-// constGeoid stands in for WP-11's grid: one undulation everywhere (the
+// constantGeoidFile is internal/ground's generated grid with N = 15.9 m
+// everywhere, read through GEOID_FILE as in production (WP-11; the
 // subtraction is uspace-core's).
-type constGeoid struct{ n float64 }
-
-func (g constGeoid) UndulationM(core.LatLon) (float64, error) { return g.n, nil }
+var constantGeoidFile = filepath.Join("..", "..", "internal", "ground", "testdata", "geoid-constant.pgm")
 
 // startWriter runs tsdb-writer (WP-9) in this test against tsURL.
 func startWriter(t *testing.T, tsURL string) {
@@ -135,7 +135,8 @@ func TestIntegrationThreeAircraftBecomeTracksAndRows(t *testing.T) {
 	startWriter(t, tsURL)
 	trk := collect(t, h.nc, "trk.v1.>")
 	idents := collect(t, h.nc, "ident.v1.>")
-	h.start(map[string]string{"TS_URL": tsURL}, ingest.Options{Geoid: constGeoid{15.9}})
+	h.start(map[string]string{"TS_URL": tsURL, "GEOID_FILE": constantGeoidFile}, ingest.Options{})
+	h.stdout.waitFor(t, "ground datasets", func(m map[string]any) bool { return m["geoid"] == "loaded" })
 	h.stdout.waitFor(t, "registry projection loaded: Remote ID tracks are identified against it", nil)
 
 	const txA, txB, txC = "AA:BB:CC:08:00:01", "AA:BB:CC:08:00:02", "AA:BB:CC:08:00:03"

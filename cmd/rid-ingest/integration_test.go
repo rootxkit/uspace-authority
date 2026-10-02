@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -331,6 +332,23 @@ func TestIntegrationNoKeysListensOnLoopbackOnly(t *testing.T) {
 	h.stdout.waitFor(t, "status", func(m map[string]any) bool {
 		geo, _ := m["geoid"].(string)
 		return m["projection_loaded"] == false && strings.Contains(geo, "not judged vertically")
+	})
+}
+
+// E-02, R-07: a GEOID_FILE that cannot be read is said at start with its
+// reason and on every status line, and the process runs without AMSL
+// altitudes rather than with guessed ones (the twin of the geoid read in
+// TestIntegrationThreeAircraftBecomeTracksAndRows).
+func TestIntegrationUnreadableGeoidIsSaid(t *testing.T) {
+	h := newHarness(t)
+	h.start(map[string]string{"GEOID_FILE": filepath.Join(t.TempDir(), "absent.pgm")}, ingest.Options{})
+	h.stdout.waitFor(t, "ground datasets", func(m map[string]any) bool { return m["geoid"] == "unavailable" })
+	h.stdout.waitFor(t, "geoid unavailable: no AMSL altitude from a geodetic (HAE) one: such aircraft are not judged vertically, and WGS84 zone limits are not judged",
+		func(m map[string]any) bool { r, _ := m["reason"].(string); return strings.Contains(r, "GEOID_FILE") })
+	h.stdout.waitFor(t, "status", func(m map[string]any) bool {
+		g, _ := m["geoid_grid"].(string)
+		geo, _ := m["geoid"].(string)
+		return strings.HasPrefix(g, "unavailable: GEOID_FILE") && strings.Contains(geo, "not judged vertically")
 	})
 }
 
