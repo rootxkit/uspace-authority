@@ -82,6 +82,15 @@ var Roles = map[string][]string{
 // personal data.
 var PIIRoles = []string{RoleRegistrar, RoleInspector}
 
+// Scopes maps every machine operation to the ecosystem scope it
+// requires (WP-2 table B), mirroring x-scope in api/openapi.yaml; a
+// test compares the two. A console session is never admitted to one.
+var Scopes = map[string]string{
+	"ValidateRegistry":      "registry.validate",
+	"ValidateRegistryBatch": "registry.validate",
+	"ListRegistryChanges":   "registry.validate",
+}
+
 // Public lists the operations with `security: []` in the contract: no
 // identity is resolved for them (a client authenticates in the body of
 // /oauth/token; a person signs in through /v1/auth/login). A test
@@ -108,7 +117,6 @@ type Rules struct {
 	Roles      map[string][]string
 	// Scopes names the scope a machine operation requires: an ecosystem
 	// token (not a session) granting it is admitted (06 §3). No
-	// operation of WP-2 has one; WP-3 adds the first. No
 	// operation of WP-2 has one; WP-3 adds the first.
 	Scopes map[string]string
 	// Realms names the realm an operation requires; an operation with
@@ -118,7 +126,7 @@ type Rules struct {
 
 // DefaultRules are the contract's rules.
 func DefaultRules() Rules {
-	return Rules{Public: Public, AnySession: AnySession, Roles: Roles}
+	return Rules{Public: Public, AnySession: AnySession, Roles: Roles, Scopes: Scopes}
 }
 
 // Identity is who makes a request: the actor of its events rows.
@@ -190,9 +198,10 @@ func RequireRole(identify IdentifyFunc, roles map[string][]string) Middleware {
 
 // Authorize applies rules to every operation: a public operation runs
 // without an identity; any other needs identify to resolve one (401
-// unauthenticated otherwise) and must be a console session (a machine
-// token is 403 here: no machine operation exists yet, and WP-3 adds a
-// scope rule beside these); an any-session operation then runs; a role
+// unauthenticated otherwise); a scope operation admits only an
+// ecosystem token granting its scope (a session is 403); every other
+// operation needs a console session (a machine token is 403); an
+// any-session operation then runs; a role
 // operation needs a session of the operation's realm (console by
 // default) holding one of its roles (403 forbidden otherwise). An
 // operation that no rule names is refused (403, fail closed).

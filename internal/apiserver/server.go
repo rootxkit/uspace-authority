@@ -72,8 +72,9 @@ type UsersHandler interface {
 }
 
 // RegistryHandler serves /v1/registry/* (api, WP-3): the registrar's
-// operations and the personal-data reads.
+// operations, the personal-data reads and the F8 lookups.
 type RegistryHandler interface {
+	ListRegistryChanges(ctx context.Context, request gen.ListRegistryChangesRequestObject) (gen.ListRegistryChangesResponseObject, error)
 	ListRegistryOperators(ctx context.Context, request gen.ListRegistryOperatorsRequestObject) (gen.ListRegistryOperatorsResponseObject, error)
 	CreateRegistryOperator(ctx context.Context, request gen.CreateRegistryOperatorRequestObject) (gen.CreateRegistryOperatorResponseObject, error)
 	GetRegistryOperator(ctx context.Context, request gen.GetRegistryOperatorRequestObject) (gen.GetRegistryOperatorResponseObject, error)
@@ -92,6 +93,8 @@ type RegistryHandler interface {
 	GetRegistryUAS(ctx context.Context, request gen.GetRegistryUASRequestObject) (gen.GetRegistryUASResponseObject, error)
 	UpdateRegistryUAS(ctx context.Context, request gen.UpdateRegistryUASRequestObject) (gen.UpdateRegistryUASResponseObject, error)
 	SetRegistryUASStatus(ctx context.Context, request gen.SetRegistryUASStatusRequestObject) (gen.SetRegistryUASStatusResponseObject, error)
+	ValidateRegistry(ctx context.Context, request gen.ValidateRegistryRequestObject) (gen.ValidateRegistryResponseObject, error)
+	ValidateRegistryBatch(ctx context.Context, request gen.ValidateRegistryBatchRequestObject) (gen.ValidateRegistryBatchResponseObject, error)
 }
 
 // Server implements gen.StrictServerInterface by delegating to one

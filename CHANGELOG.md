@@ -35,3 +35,18 @@ Unreleased; the format follows Keep a Changelog.
   the core/auth verifier wiring (own keys, CISP, ANSP and lab issuers);
   `tokens.Client` for outbound calls; the token-service and
   session-contract runbooks.
+- WP-3: the registry (`internal/registry`, migrations
+  `00009_registry` and `00003_registry_projection`): operators with the
+  Art. 14(2) field set, UAS and remote pilots with competencies;
+  registration numbers and serials through core `regnum` and `serial`
+  only, the number's format from the new policy column
+  `registration_number_pattern`; personal columns sealed with the PII
+  key, the secret part and national id as keyed hashes
+  (`REGISTRY_HASH_KEY_FILE`); one status graph with an expiry job;
+  every change an event and an F8 change-feed entry; the projection
+  `proj_registry_operators` / `proj_registry_uas` written as
+  `authority_ts_projector` with the change (rolled back with it), and
+  repaired at startup and every 300 s under an advisory lock;
+  `ProjectionReader` for the resolvers; `/v1/registry/*` for registrars
+  with purpose-logged personal-data reads; F8 `validate` (status only,
+  batch of 100) and `changes` behind scope `registry.validate`.

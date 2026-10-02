@@ -324,6 +324,45 @@ func (e Realm) Valid() bool {
 	}
 }
 
+// Defines values for RegistryChangeEntityType.
+const (
+	RegistryChangeEntityTypeOperator RegistryChangeEntityType = "operator"
+	RegistryChangeEntityTypePilot    RegistryChangeEntityType = "pilot"
+	RegistryChangeEntityTypeUas      RegistryChangeEntityType = "uas"
+)
+
+// Valid indicates whether the value is a known member of the RegistryChangeEntityType enum.
+func (e RegistryChangeEntityType) Valid() bool {
+	switch e {
+	case RegistryChangeEntityTypeOperator:
+		return true
+	case RegistryChangeEntityTypePilot:
+		return true
+	case RegistryChangeEntityTypeUas:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RegistryPurpose.
+const (
+	RegistryPurposeAuthorisation  RegistryPurpose = "authorisation"
+	RegistryPurposeIdentification RegistryPurpose = "identification"
+)
+
+// Valid indicates whether the value is a known member of the RegistryPurpose enum.
+func (e RegistryPurpose) Valid() bool {
+	switch e {
+	case RegistryPurposeAuthorisation:
+		return true
+	case RegistryPurposeIdentification:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RegistrySource.
 const (
 	RegistrySourceManual         RegistrySource = "manual"
@@ -384,6 +423,30 @@ func (e RegistryStatusInputStatus) Valid() bool {
 	case RegistryStatusInputStatusRevoked:
 		return true
 	case RegistryStatusInputStatusSuspended:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RegistryValidityStatus.
+const (
+	RegistryValidityStatusRevoked   RegistryValidityStatus = "revoked"
+	RegistryValidityStatusSuspended RegistryValidityStatus = "suspended"
+	RegistryValidityStatusUnknown   RegistryValidityStatus = "unknown"
+	RegistryValidityStatusValid     RegistryValidityStatus = "valid"
+)
+
+// Valid indicates whether the value is a known member of the RegistryValidityStatus enum.
+func (e RegistryValidityStatus) Valid() bool {
+	switch e {
+	case RegistryValidityStatusRevoked:
+		return true
+	case RegistryValidityStatusSuspended:
+		return true
+	case RegistryValidityStatusUnknown:
+		return true
+	case RegistryValidityStatusValid:
 		return true
 	default:
 		return false
@@ -573,6 +636,12 @@ type Check struct {
 // ClassLabel defines model for ClassLabel.
 type ClassLabel string
 
+// CompetencyValidity defines model for CompetencyValidity.
+type CompetencyValidity struct {
+	Competency string    `json:"competency"`
+	ValidUntil time.Time `json:"valid_until"`
+}
+
 // FieldProblem defines model for FieldProblem.
 type FieldProblem struct {
 	// Field JSON path or parameter name, as core.FieldError writes it.
@@ -743,6 +812,14 @@ type OAuthProblemError string
 // OperatorType defines model for OperatorType.
 type OperatorType string
 
+// OperatorValidity defines model for OperatorValidity.
+type OperatorValidity struct {
+	// RegistrationNumber As asked.
+	RegistrationNumber string                 `json:"registration_number"`
+	Status             RegistryValidityStatus `json:"status"`
+	ValidUntil         *time.Time             `json:"valid_until,omitempty"`
+}
+
 // PilotCompetency defines model for PilotCompetency.
 type PilotCompetency struct {
 	CertificateRef string    `json:"certificate_ref"`
@@ -759,6 +836,15 @@ type PilotCompetencyInput struct {
 	// Competency A1_A3, A2, STS_01, STS_02 or national_<code>.
 	Competency string    `json:"competency"`
 	ValidUntil time.Time `json:"valid_until"`
+}
+
+// PilotValidity defines model for PilotValidity.
+type PilotValidity struct {
+	Competencies []CompetencyValidity `json:"competencies"`
+
+	// Pilot As asked.
+	Pilot  string                 `json:"pilot"`
+	Status RegistryValidityStatus `json:"status"`
 }
 
 // Policy defines model for Policy.
@@ -922,6 +1008,29 @@ type ReadinessStatus string
 // Realm defines model for Realm.
 type Realm string
 
+// RegistryChange defines model for RegistryChange.
+type RegistryChange struct {
+	At         time.Time                `json:"at"`
+	EntityId   string                   `json:"entity_id"`
+	EntityType RegistryChangeEntityType `json:"entity_type"`
+
+	// PublicKey The registration number, the serial or the pilot id.
+	PublicKey string         `json:"public_key"`
+	Seq       int64          `json:"seq"`
+	Status    RegistryStatus `json:"status"`
+}
+
+// RegistryChangeEntityType defines model for RegistryChange.EntityType.
+type RegistryChangeEntityType string
+
+// RegistryChangePage defines model for RegistryChangePage.
+type RegistryChangePage struct {
+	Changes []RegistryChange `json:"changes"`
+
+	// NextSince Pass as since for the next page.
+	NextSince int64 `json:"next_since"`
+}
+
 // RegistryOperator An operator without personal data.
 type RegistryOperator struct {
 	Authorisations         []map[string]interface{} `json:"authorisations"`
@@ -1054,6 +1163,9 @@ type RegistryPilotPersonalData struct {
 	PilotId        string `json:"pilot_id"`
 }
 
+// RegistryPurpose defines model for RegistryPurpose.
+type RegistryPurpose string
+
 // RegistrySource defines model for RegistrySource.
 type RegistrySource string
 
@@ -1127,6 +1239,33 @@ type RegistryUASPatch struct {
 	RegistrationMark *string        `json:"registration_mark,omitempty"`
 	RidCapability    *RIDCapability `json:"rid_capability,omitempty"`
 }
+
+// RegistryValidateBatch defines model for RegistryValidateBatch.
+type RegistryValidateBatch struct {
+	Items []RegistryValidateItem `json:"items"`
+}
+
+// RegistryValidateItem At least one key.
+type RegistryValidateItem struct {
+	Operator *string `json:"operator,omitempty"`
+	Pilot    *string `json:"pilot,omitempty"`
+	Serial   *string `json:"serial,omitempty"`
+}
+
+// RegistryValidity One answer per key asked; status only.
+type RegistryValidity struct {
+	Operator *OperatorValidity `json:"operator,omitempty"`
+	Pilot    *PilotValidity    `json:"pilot,omitempty"`
+	Uas      *UASValidity      `json:"uas,omitempty"`
+}
+
+// RegistryValidityList defines model for RegistryValidityList.
+type RegistryValidityList struct {
+	Results []RegistryValidity `json:"results"`
+}
+
+// RegistryValidityStatus defines model for RegistryValidityStatus.
+type RegistryValidityStatus string
 
 // Revoked defines model for Revoked.
 type Revoked struct {
@@ -1233,6 +1372,18 @@ type TokenResponse struct {
 // TokenResponseTokenType defines model for TokenResponse.TokenType.
 type TokenResponseTokenType string
 
+// UASValidity defines model for UASValidity.
+type UASValidity struct {
+	ClassLabel *ClassLabel `json:"class_label,omitempty"`
+
+	// MtomBand The MTOM band of REGISTRY_MTOM_BANDS_G: under_<g>g, or from_<g>g above the last bound.
+	MtomBand *string `json:"mtom_band,omitempty"`
+
+	// Serial As asked.
+	Serial string                 `json:"serial"`
+	Status RegistryValidityStatus `json:"status"`
+}
+
 // User defines model for User.
 type User struct {
 	CreatedAt   time.Time `json:"created_at"`
@@ -1312,6 +1463,13 @@ type CompromiseSigningKeyJSONBody struct {
 	Reason string `json:"reason"`
 }
 
+// ListRegistryChangesParams defines parameters for ListRegistryChanges.
+type ListRegistryChangesParams struct {
+	Since       *int64  `form:"since,omitempty" json:"since,omitempty"`
+	Limit       *int    `form:"limit,omitempty" json:"limit,omitempty"`
+	IfNoneMatch *string `json:"If-None-Match,omitempty"`
+}
+
 // ListRegistryOperatorsParams defines parameters for ListRegistryOperators.
 type ListRegistryOperatorsParams struct {
 	Number *string         `form:"number,omitempty" json:"number,omitempty"`
@@ -1347,6 +1505,19 @@ type ListRegistryUASParams struct {
 	Status     *RegistryStatus `form:"status,omitempty" json:"status,omitempty"`
 	After      *string         `form:"after,omitempty" json:"after,omitempty"`
 	Limit      *int            `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ValidateRegistryParams defines parameters for ValidateRegistry.
+type ValidateRegistryParams struct {
+	Purpose  RegistryPurpose `form:"purpose" json:"purpose"`
+	Operator *string         `form:"operator,omitempty" json:"operator,omitempty"`
+	Serial   *string         `form:"serial,omitempty" json:"serial,omitempty"`
+	Pilot    *string         `form:"pilot,omitempty" json:"pilot,omitempty"`
+}
+
+// ValidateRegistryBatchParams defines parameters for ValidateRegistryBatch.
+type ValidateRegistryBatchParams struct {
+	Purpose RegistryPurpose `form:"purpose" json:"purpose"`
 }
 
 // RequestTokenFormdataRequestBody defines body for RequestToken for application/x-www-form-urlencoded ContentType.
@@ -1399,6 +1570,9 @@ type UpdateRegistryUASJSONRequestBody = RegistryUASPatch
 
 // SetRegistryUASStatusJSONRequestBody defines body for SetRegistryUASStatus for application/json ContentType.
 type SetRegistryUASStatusJSONRequestBody = RegistryStatusInput
+
+// ValidateRegistryBatchJSONRequestBody defines body for ValidateRegistryBatch for application/json ContentType.
+type ValidateRegistryBatchJSONRequestBody = RegistryValidateBatch
 
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
 type CreateUserJSONRequestBody = UserInput
@@ -1795,6 +1969,16 @@ type ClientInterface interface {
 	// Corresponds with POST /v1/policy/{version}/activate (the `ActivatePolicy` operationId).
 	ActivatePolicy(ctx context.Context, version int64, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListRegistryChanges The status change feed (F8), ids and statuses only
+	//
+	// Changes after `since` in sequence order, for cache
+	// invalidation. `next_since` is the last sequence of the page;
+	// an `ETag` names the page, and `If-None-Match` with it answers
+	// 304 while nothing newer exists.
+	//
+	// Corresponds with GET /v1/registry/changes (the `ListRegistryChanges` operationId).
+	ListRegistryChanges(ctx context.Context, params *ListRegistryChangesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListRegistryOperators UAS operators, in id order
 	//
 	// `number` looks an operator up by registration number, compared
@@ -2063,6 +2247,40 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /v1/registry/uas/{uas_id}/status (the `SetRegistryUASStatus` operationId).
 	SetRegistryUASStatus(ctx context.Context, uasId string, body SetRegistryUASStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ValidateRegistry Validity of an operator, a UAS and a pilot (F8)
+	//
+	// Status only, per entity: `valid`, `suspended`, `revoked` or
+	// `unknown`, the end of validity, the class label and MTOM band of
+	// a UAS and the competency set of a pilot. No name, address, phone
+	// or e-mail: the response schema has no such property, and a test
+	// fails if one appears. An expired registration answers `revoked`
+	// with its `valid_until` in the past. `operator` is compared on its
+	// public part (an EU secret suffix is removed, G-04); `serial`
+	// exactly, else on its ASCII fold when one aircraft has it (G-05);
+	// `pilot` is the remote pilot's registry id. Every call is an
+	// events row with the client and the purpose.
+	//
+	// Corresponds with GET /v1/registry/validate (the `ValidateRegistry` operationId).
+	ValidateRegistry(ctx context.Context, params *ValidateRegistryParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ValidateRegistryBatchWithBody Validity of up to 100 entities (F8)
+	//
+	// The GET's answer for each item, in order; one events row for the batch.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/registry/validate (the `ValidateRegistryBatch` operationId).
+	ValidateRegistryBatchWithBody(ctx context.Context, params *ValidateRegistryBatchParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ValidateRegistryBatch Validity of up to 100 entities (F8)
+	//
+	// The GET's answer for each item, in order; one events row for the batch.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/registry/validate (the `ValidateRegistryBatch` operationId).
+	ValidateRegistryBatch(ctx context.Context, params *ValidateRegistryBatchParams, body ValidateRegistryBatchJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListUsers Console accounts
 	//
@@ -2734,6 +2952,26 @@ func (c *Client) ActivatePolicy(ctx context.Context, version int64, reqEditors .
 	return c.Client.Do(req)
 }
 
+// ListRegistryChanges The status change feed (F8), ids and statuses only
+//
+// Changes after `since` in sequence order, for cache
+// invalidation. `next_since` is the last sequence of the page;
+// an `ETag` names the page, and `If-None-Match` with it answers
+// 304 while nothing newer exists.
+//
+// Corresponds with GET /v1/registry/changes (the `ListRegistryChanges` operationId).
+func (c *Client) ListRegistryChanges(ctx context.Context, params *ListRegistryChangesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRegistryChangesRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListRegistryOperators UAS operators, in id order
 //
 // `number` looks an operator up by registration number, compared
@@ -3273,6 +3511,70 @@ func (c *Client) SetRegistryUASStatusWithBody(ctx context.Context, uasId string,
 // Corresponds with POST /v1/registry/uas/{uas_id}/status (the `SetRegistryUASStatus` operationId).
 func (c *Client) SetRegistryUASStatus(ctx context.Context, uasId string, body SetRegistryUASStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSetRegistryUASStatusRequest(c.Server, uasId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ValidateRegistry Validity of an operator, a UAS and a pilot (F8)
+//
+// Status only, per entity: `valid`, `suspended`, `revoked` or
+// `unknown`, the end of validity, the class label and MTOM band of
+// a UAS and the competency set of a pilot. No name, address, phone
+// or e-mail: the response schema has no such property, and a test
+// fails if one appears. An expired registration answers `revoked`
+// with its `valid_until` in the past. `operator` is compared on its
+// public part (an EU secret suffix is removed, G-04); `serial`
+// exactly, else on its ASCII fold when one aircraft has it (G-05);
+// `pilot` is the remote pilot's registry id. Every call is an
+// events row with the client and the purpose.
+//
+// Corresponds with GET /v1/registry/validate (the `ValidateRegistry` operationId).
+func (c *Client) ValidateRegistry(ctx context.Context, params *ValidateRegistryParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewValidateRegistryRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ValidateRegistryBatchWithBody Validity of up to 100 entities (F8)
+//
+// The GET's answer for each item, in order; one events row for the batch.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/registry/validate (the `ValidateRegistryBatch` operationId).
+func (c *Client) ValidateRegistryBatchWithBody(ctx context.Context, params *ValidateRegistryBatchParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewValidateRegistryBatchRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ValidateRegistryBatch Validity of up to 100 entities (F8)
+//
+// The GET's answer for each item, in order; one events row for the batch.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/registry/validate (the `ValidateRegistryBatch` operationId).
+func (c *Client) ValidateRegistryBatch(ctx context.Context, params *ValidateRegistryBatchParams, body ValidateRegistryBatchJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewValidateRegistryBatchRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -4259,6 +4561,87 @@ func NewActivatePolicyRequest(server string, version int64) (*http.Request, erro
 	return req, nil
 }
 
+// NewListRegistryChangesRequest constructs an http.Request for the ListRegistryChanges method
+func NewListRegistryChangesRequest(server string, params *ListRegistryChangesParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/registry/changes")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Since != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "since", *params.Since, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.IfNoneMatch != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "If-None-Match", *params.IfNoneMatch, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("If-None-Match", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
 // NewListRegistryOperatorsRequest constructs an http.Request for the ListRegistryOperators method
 func NewListRegistryOperatorsRequest(server string, params *ListRegistryOperatorsParams) (*http.Request, error) {
 	var err error
@@ -5206,6 +5589,155 @@ func NewSetRegistryUASStatusRequestWithBody(server string, uasId string, content
 	return req, nil
 }
 
+// NewValidateRegistryRequest constructs an http.Request for the ValidateRegistry method
+func NewValidateRegistryRequest(server string, params *ValidateRegistryParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/registry/validate")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "purpose", params.Purpose, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if params.Operator != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "operator", *params.Operator, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Serial != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "serial", *params.Serial, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Pilot != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "pilot", *params.Pilot, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewValidateRegistryBatchRequest calls the generic ValidateRegistryBatch builder with application/json body
+func NewValidateRegistryBatchRequest(server string, params *ValidateRegistryBatchParams, body ValidateRegistryBatchJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewValidateRegistryBatchRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewValidateRegistryBatchRequestWithBody constructs an http.Request for the ValidateRegistryBatch method, with any body, and a specified content type
+func NewValidateRegistryBatchRequestWithBody(server string, params *ValidateRegistryBatchParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/registry/validate")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "purpose", params.Purpose, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListUsersRequest constructs an http.Request for the ListUsers method
 func NewListUsersRequest(server string) (*http.Request, error) {
 	var err error
@@ -5909,6 +6441,18 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /v1/policy/{version}/activate (the `ActivatePolicy` operationId).
 	ActivatePolicyWithResponse(ctx context.Context, version int64, reqEditors ...RequestEditorFn) (*ActivatePolicyResponse, error)
 
+	// ListRegistryChangesWithResponse The status change feed (F8), ids and statuses only
+	//
+	// Changes after `since` in sequence order, for cache
+	// invalidation. `next_since` is the last sequence of the page;
+	// an `ETag` names the page, and `If-None-Match` with it answers
+	// 304 while nothing newer exists.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/registry/changes (the `ListRegistryChanges` operationId).
+	ListRegistryChangesWithResponse(ctx context.Context, params *ListRegistryChangesParams, reqEditors ...RequestEditorFn) (*ListRegistryChangesResponse, error)
+
 	// ListRegistryOperatorsWithResponse UAS operators, in id order
 	//
 	// `number` looks an operator up by registration number, compared
@@ -6193,6 +6737,42 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with POST /v1/registry/uas/{uas_id}/status (the `SetRegistryUASStatus` operationId).
 	SetRegistryUASStatusWithResponse(ctx context.Context, uasId string, body SetRegistryUASStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*SetRegistryUASStatusResponse, error)
+
+	// ValidateRegistryWithResponse Validity of an operator, a UAS and a pilot (F8)
+	//
+	// Status only, per entity: `valid`, `suspended`, `revoked` or
+	// `unknown`, the end of validity, the class label and MTOM band of
+	// a UAS and the competency set of a pilot. No name, address, phone
+	// or e-mail: the response schema has no such property, and a test
+	// fails if one appears. An expired registration answers `revoked`
+	// with its `valid_until` in the past. `operator` is compared on its
+	// public part (an EU secret suffix is removed, G-04); `serial`
+	// exactly, else on its ASCII fold when one aircraft has it (G-05);
+	// `pilot` is the remote pilot's registry id. Every call is an
+	// events row with the client and the purpose.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/registry/validate (the `ValidateRegistry` operationId).
+	ValidateRegistryWithResponse(ctx context.Context, params *ValidateRegistryParams, reqEditors ...RequestEditorFn) (*ValidateRegistryResponse, error)
+
+	// ValidateRegistryBatchWithBodyWithResponse Validity of up to 100 entities (F8)
+	//
+	// The GET's answer for each item, in order; one events row for the batch.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/registry/validate (the `ValidateRegistryBatch` operationId).
+	ValidateRegistryBatchWithBodyWithResponse(ctx context.Context, params *ValidateRegistryBatchParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ValidateRegistryBatchResponse, error)
+
+	// ValidateRegistryBatchWithResponse Validity of up to 100 entities (F8)
+	//
+	// The GET's answer for each item, in order; one events row for the batch.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/registry/validate (the `ValidateRegistryBatch` operationId).
+	ValidateRegistryBatchWithResponse(ctx context.Context, params *ValidateRegistryBatchParams, body ValidateRegistryBatchJSONRequestBody, reqEditors ...RequestEditorFn) (*ValidateRegistryBatchResponse, error)
 
 	// ListUsersWithResponse Console accounts
 	//
@@ -7352,6 +7932,68 @@ func (r ActivatePolicyResponse) ContentType() string {
 	return ""
 }
 
+// ListRegistryChangesResponse200Headers the declared response headers of an HTTP 200 response for ListRegistryChanges
+type ListRegistryChangesResponse200Headers struct {
+	ETag *string
+}
+
+// ListRegistryChangesResponse304Headers the declared response headers of an HTTP 304 response for ListRegistryChanges
+type ListRegistryChangesResponse304Headers struct {
+	ETag *string
+}
+
+type ListRegistryChangesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RegistryChangePage
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *ListRegistryChangesResponse200Headers
+	// Headers304 the parsed response headers for an HTTP 304 response
+	Headers304 *ListRegistryChangesResponse304Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListRegistryChangesResponse) GetJSON200() *RegistryChangePage {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ListRegistryChangesResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListRegistryChangesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListRegistryChangesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListRegistryChangesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListRegistryChangesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListRegistryOperatorsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -8259,6 +8901,102 @@ func (r SetRegistryUASStatusResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r SetRegistryUASStatusResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ValidateRegistryResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RegistryValidity
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ValidateRegistryResponse) GetJSON200() *RegistryValidity {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ValidateRegistryResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ValidateRegistryResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ValidateRegistryResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ValidateRegistryResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ValidateRegistryResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ValidateRegistryBatchResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RegistryValidityList
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ValidateRegistryBatchResponse) GetJSON200() *RegistryValidityList {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ValidateRegistryBatchResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ValidateRegistryBatchResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ValidateRegistryBatchResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ValidateRegistryBatchResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ValidateRegistryBatchResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -9200,6 +9938,24 @@ func (c *ClientWithResponses) ActivatePolicyWithResponse(ctx context.Context, ve
 	return ParseActivatePolicyResponse(rsp)
 }
 
+// ListRegistryChangesWithResponse The status change feed (F8), ids and statuses only
+//
+// Changes after `since` in sequence order, for cache
+// invalidation. `next_since` is the last sequence of the page;
+// an `ETag` names the page, and `If-None-Match` with it answers
+// 304 while nothing newer exists.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/registry/changes (the `ListRegistryChanges` operationId).
+func (c *ClientWithResponses) ListRegistryChangesWithResponse(ctx context.Context, params *ListRegistryChangesParams, reqEditors ...RequestEditorFn) (*ListRegistryChangesResponse, error) {
+	rsp, err := c.ListRegistryChanges(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListRegistryChangesResponse(rsp)
+}
+
 // ListRegistryOperatorsWithResponse UAS operators, in id order
 //
 // `number` looks an operator up by registration number, compared
@@ -9651,6 +10407,60 @@ func (c *ClientWithResponses) SetRegistryUASStatusWithResponse(ctx context.Conte
 		return nil, err
 	}
 	return ParseSetRegistryUASStatusResponse(rsp)
+}
+
+// ValidateRegistryWithResponse Validity of an operator, a UAS and a pilot (F8)
+//
+// Status only, per entity: `valid`, `suspended`, `revoked` or
+// `unknown`, the end of validity, the class label and MTOM band of
+// a UAS and the competency set of a pilot. No name, address, phone
+// or e-mail: the response schema has no such property, and a test
+// fails if one appears. An expired registration answers `revoked`
+// with its `valid_until` in the past. `operator` is compared on its
+// public part (an EU secret suffix is removed, G-04); `serial`
+// exactly, else on its ASCII fold when one aircraft has it (G-05);
+// `pilot` is the remote pilot's registry id. Every call is an
+// events row with the client and the purpose.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/registry/validate (the `ValidateRegistry` operationId).
+func (c *ClientWithResponses) ValidateRegistryWithResponse(ctx context.Context, params *ValidateRegistryParams, reqEditors ...RequestEditorFn) (*ValidateRegistryResponse, error) {
+	rsp, err := c.ValidateRegistry(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseValidateRegistryResponse(rsp)
+}
+
+// ValidateRegistryBatchWithBodyWithResponse Validity of up to 100 entities (F8)
+//
+// The GET's answer for each item, in order; one events row for the batch.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/registry/validate (the `ValidateRegistryBatch` operationId).
+func (c *ClientWithResponses) ValidateRegistryBatchWithBodyWithResponse(ctx context.Context, params *ValidateRegistryBatchParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ValidateRegistryBatchResponse, error) {
+	rsp, err := c.ValidateRegistryBatchWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseValidateRegistryBatchResponse(rsp)
+}
+
+// ValidateRegistryBatchWithResponse Validity of up to 100 entities (F8)
+//
+// The GET's answer for each item, in order; one events row for the batch.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/registry/validate (the `ValidateRegistryBatch` operationId).
+func (c *ClientWithResponses) ValidateRegistryBatchWithResponse(ctx context.Context, params *ValidateRegistryBatchParams, body ValidateRegistryBatchJSONRequestBody, reqEditors ...RequestEditorFn) (*ValidateRegistryBatchResponse, error) {
+	rsp, err := c.ValidateRegistryBatch(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseValidateRegistryBatchResponse(rsp)
 }
 
 // ListUsersWithResponse Console accounts
@@ -10624,6 +11434,65 @@ func ParseActivatePolicyResponse(rsp *http.Response) (*ActivatePolicyResponse, e
 	return response, nil
 }
 
+// ParseListRegistryChangesResponse parses an HTTP response from a ListRegistryChangesWithResponse call
+func ParseListRegistryChangesResponse(rsp *http.Response) (*ListRegistryChangesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListRegistryChangesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RegistryChangePage
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case rsp.StatusCode == 304:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers ListRegistryChangesResponse200Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 304:
+		var headers ListRegistryChangesResponse304Headers
+		if values := rsp.Header.Values("ETag"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "ETag", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.ETag = &value
+		}
+		response.Headers304 = &headers
+	}
+
+	return response, nil
+}
+
 // ParseListRegistryOperatorsResponse parses an HTTP response from a ListRegistryOperatorsWithResponse call
 func ParseListRegistryOperatorsResponse(rsp *http.Response) (*ListRegistryOperatorsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -11279,6 +12148,72 @@ func ParseSetRegistryUASStatusResponse(rsp *http.Response) (*SetRegistryUASStatu
 	return response, nil
 }
 
+// ParseValidateRegistryResponse parses an HTTP response from a ValidateRegistryWithResponse call
+func ParseValidateRegistryResponse(rsp *http.Response) (*ValidateRegistryResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ValidateRegistryResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RegistryValidity
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseValidateRegistryBatchResponse parses an HTTP response from a ValidateRegistryBatchWithResponse call
+func ParseValidateRegistryBatchResponse(rsp *http.Response) (*ValidateRegistryBatchResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ValidateRegistryBatchResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RegistryValidityList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListUsersResponse parses an HTTP response from a ListUsersWithResponse call
 func ParseListUsersResponse(rsp *http.Response) (*ListUsersResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -11638,6 +12573,9 @@ type ServerInterface interface {
 	// ActivatePolicy Activate a policy version
 	// (POST /v1/policy/{version}/activate)
 	ActivatePolicy(w http.ResponseWriter, r *http.Request, version int64)
+	// ListRegistryChanges The status change feed (F8), ids and statuses only
+	// (GET /v1/registry/changes)
+	ListRegistryChanges(w http.ResponseWriter, r *http.Request, params ListRegistryChangesParams)
 	// ListRegistryOperators UAS operators, in id order
 	// (GET /v1/registry/operators)
 	ListRegistryOperators(w http.ResponseWriter, r *http.Request, params ListRegistryOperatorsParams)
@@ -11692,6 +12630,12 @@ type ServerInterface interface {
 	// SetRegistryUASStatus Suspend, reinstate or revoke a UAS
 	// (POST /v1/registry/uas/{uas_id}/status)
 	SetRegistryUASStatus(w http.ResponseWriter, r *http.Request, uasId string)
+	// ValidateRegistry Validity of an operator, a UAS and a pilot (F8)
+	// (GET /v1/registry/validate)
+	ValidateRegistry(w http.ResponseWriter, r *http.Request, params ValidateRegistryParams)
+	// ValidateRegistryBatch Validity of up to 100 entities (F8)
+	// (POST /v1/registry/validate)
+	ValidateRegistryBatch(w http.ResponseWriter, r *http.Request, params ValidateRegistryBatchParams)
 	// ListUsers Console accounts
 	// (GET /v1/users)
 	ListUsers(w http.ResponseWriter, r *http.Request)
@@ -12172,6 +13116,73 @@ func (siw *ServerInterfaceWrapper) ActivatePolicy(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ActivatePolicy(w, r, version)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListRegistryChanges operation middleware
+func (siw *ServerInterfaceWrapper) ListRegistryChanges(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListRegistryChangesParams
+
+	// ------------- Optional query parameter "since" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "since", r.URL.Query(), &params.Since, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "since"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "since", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-None-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-None-Match")]; found {
+		var IfNoneMatch string
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-None-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-None-Match", valueList[0], &IfNoneMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-None-Match", Err: err})
+			return
+		}
+
+		params.IfNoneMatch = &IfNoneMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRegistryChanges(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -12796,6 +13807,111 @@ func (siw *ServerInterfaceWrapper) SetRegistryUASStatus(w http.ResponseWriter, r
 	handler.ServeHTTP(w, r)
 }
 
+// ValidateRegistry operation middleware
+func (siw *ServerInterfaceWrapper) ValidateRegistry(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ValidateRegistryParams
+
+	// ------------- Required query parameter "purpose" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "purpose", r.URL.Query(), &params.Purpose, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "purpose"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "purpose", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "operator" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "operator", r.URL.Query(), &params.Operator, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "operator"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "operator", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "serial" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "serial", r.URL.Query(), &params.Serial, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "serial"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "serial", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "pilot" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "pilot", r.URL.Query(), &params.Pilot, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "pilot"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pilot", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ValidateRegistry(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ValidateRegistryBatch operation middleware
+func (siw *ServerInterfaceWrapper) ValidateRegistryBatch(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ValidateRegistryBatchParams
+
+	// ------------- Required query parameter "purpose" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "purpose", r.URL.Query(), &params.Purpose, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "purpose"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "purpose", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ValidateRegistryBatch(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListUsers operation middleware
 func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Request) {
 
@@ -13173,6 +14289,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/registry/pilots/{pilot_id}/status", wrapper.SetRegistryPilotStatus)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/registry/pilots/{pilot_id}/personal-data", wrapper.GetRegistryPilotPersonalData)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/registry/pilots/{pilot_id}/competencies", wrapper.RecordPilotCompetency)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/registry/validate", wrapper.ValidateRegistry)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/registry/validate", wrapper.ValidateRegistryBatch)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/registry/changes", wrapper.ListRegistryChanges)
 
 	return m
 }
@@ -14130,6 +15249,71 @@ func (response ActivatePolicydefaultApplicationProblemPlusJSONResponse) VisitAct
 	return err
 }
 
+type ListRegistryChangesRequestObject struct {
+	Params ListRegistryChangesParams
+}
+
+type ListRegistryChangesResponseObject interface {
+	VisitListRegistryChangesResponse(w http.ResponseWriter) error
+}
+
+type ListRegistryChanges200ResponseHeaders struct {
+	ETag *string
+}
+
+type ListRegistryChanges200JSONResponse struct {
+	Body    RegistryChangePage
+	Headers ListRegistryChanges200ResponseHeaders
+}
+
+func (response ListRegistryChanges200JSONResponse) VisitListRegistryChangesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRegistryChanges304ResponseHeaders struct {
+	ETag *string
+}
+
+type ListRegistryChanges304Response struct {
+	Headers ListRegistryChanges304ResponseHeaders
+}
+
+func (response ListRegistryChanges304Response) VisitListRegistryChangesResponse(w http.ResponseWriter) error {
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(304)
+	return nil
+}
+
+type ListRegistryChangesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListRegistryChangesdefaultApplicationProblemPlusJSONResponse) VisitListRegistryChangesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListRegistryOperatorsRequestObject struct {
 	Params ListRegistryOperatorsParams
 }
@@ -14941,6 +16125,85 @@ func (response SetRegistryUASStatusdefaultApplicationProblemPlusJSONResponse) Vi
 	return err
 }
 
+type ValidateRegistryRequestObject struct {
+	Params ValidateRegistryParams
+}
+
+type ValidateRegistryResponseObject interface {
+	VisitValidateRegistryResponse(w http.ResponseWriter) error
+}
+
+type ValidateRegistry200JSONResponse RegistryValidity
+
+func (response ValidateRegistry200JSONResponse) VisitValidateRegistryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ValidateRegistrydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ValidateRegistrydefaultApplicationProblemPlusJSONResponse) VisitValidateRegistryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ValidateRegistryBatchRequestObject struct {
+	Params ValidateRegistryBatchParams
+	Body   *ValidateRegistryBatchJSONRequestBody
+}
+
+type ValidateRegistryBatchResponseObject interface {
+	VisitValidateRegistryBatchResponse(w http.ResponseWriter) error
+}
+
+type ValidateRegistryBatch200JSONResponse RegistryValidityList
+
+func (response ValidateRegistryBatch200JSONResponse) VisitValidateRegistryBatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ValidateRegistryBatchdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ValidateRegistryBatchdefaultApplicationProblemPlusJSONResponse) VisitValidateRegistryBatchResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListUsersRequestObject struct {
 }
 
@@ -15354,6 +16617,9 @@ type StrictServerInterface interface {
 	// ActivatePolicy Activate a policy version
 	// (POST /v1/policy/{version}/activate)
 	ActivatePolicy(ctx context.Context, request ActivatePolicyRequestObject) (ActivatePolicyResponseObject, error)
+	// ListRegistryChanges The status change feed (F8), ids and statuses only
+	// (GET /v1/registry/changes)
+	ListRegistryChanges(ctx context.Context, request ListRegistryChangesRequestObject) (ListRegistryChangesResponseObject, error)
 	// ListRegistryOperators UAS operators, in id order
 	// (GET /v1/registry/operators)
 	ListRegistryOperators(ctx context.Context, request ListRegistryOperatorsRequestObject) (ListRegistryOperatorsResponseObject, error)
@@ -15408,6 +16674,12 @@ type StrictServerInterface interface {
 	// SetRegistryUASStatus Suspend, reinstate or revoke a UAS
 	// (POST /v1/registry/uas/{uas_id}/status)
 	SetRegistryUASStatus(ctx context.Context, request SetRegistryUASStatusRequestObject) (SetRegistryUASStatusResponseObject, error)
+	// ValidateRegistry Validity of an operator, a UAS and a pilot (F8)
+	// (GET /v1/registry/validate)
+	ValidateRegistry(ctx context.Context, request ValidateRegistryRequestObject) (ValidateRegistryResponseObject, error)
+	// ValidateRegistryBatch Validity of up to 100 entities (F8)
+	// (POST /v1/registry/validate)
+	ValidateRegistryBatch(ctx context.Context, request ValidateRegistryBatchRequestObject) (ValidateRegistryBatchResponseObject, error)
 	// ListUsers Console accounts
 	// (GET /v1/users)
 	ListUsers(ctx context.Context, request ListUsersRequestObject) (ListUsersResponseObject, error)
@@ -16019,6 +17291,32 @@ func (sh *strictHandler) ActivatePolicy(w http.ResponseWriter, r *http.Request, 
 	}
 }
 
+// ListRegistryChanges operation middleware
+func (sh *strictHandler) ListRegistryChanges(w http.ResponseWriter, r *http.Request, params ListRegistryChangesParams) {
+	var request ListRegistryChangesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListRegistryChanges(ctx, request.(ListRegistryChangesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListRegistryChanges")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListRegistryChangesResponseObject); ok {
+		if err := validResponse.VisitListRegistryChangesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListRegistryOperators operation middleware
 func (sh *strictHandler) ListRegistryOperators(w http.ResponseWriter, r *http.Request, params ListRegistryOperatorsParams) {
 	var request ListRegistryOperatorsRequestObject
@@ -16546,6 +17844,65 @@ func (sh *strictHandler) SetRegistryUASStatus(w http.ResponseWriter, r *http.Req
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SetRegistryUASStatusResponseObject); ok {
 		if err := validResponse.VisitSetRegistryUASStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ValidateRegistry operation middleware
+func (sh *strictHandler) ValidateRegistry(w http.ResponseWriter, r *http.Request, params ValidateRegistryParams) {
+	var request ValidateRegistryRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ValidateRegistry(ctx, request.(ValidateRegistryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ValidateRegistry")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ValidateRegistryResponseObject); ok {
+		if err := validResponse.VisitValidateRegistryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ValidateRegistryBatch operation middleware
+func (sh *strictHandler) ValidateRegistryBatch(w http.ResponseWriter, r *http.Request, params ValidateRegistryBatchParams) {
+	var request ValidateRegistryBatchRequestObject
+
+	request.Params = params
+
+	var body ValidateRegistryBatchJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ValidateRegistryBatch(ctx, request.(ValidateRegistryBatchRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ValidateRegistryBatch")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ValidateRegistryBatchResponseObject); ok {
+		if err := validResponse.VisitValidateRegistryBatchResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

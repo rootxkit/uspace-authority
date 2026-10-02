@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"maps"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -299,5 +300,48 @@ func TestAuthorizeRules(t *testing.T) {
 		if called && ri.UserAgent != "probe" {
 			t.Errorf("%s: request info %+v", c.name, ri)
 		}
+	}
+}
+
+// xScopes reads x-scope of every operation from api/openapi.yaml.
+func xScopes(t *testing.T) map[string]string {
+	t.Helper()
+	raw, err := os.ReadFile("../../api/openapi.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	opRe := regexp.MustCompile(`^\s+operationId:\s*(\w+)`)
+	scopeRe := regexp.MustCompile(`^\s+x-scope:\s*(\S+)`)
+	out := map[string]string{}
+	op := ""
+	for line := range strings.SplitSeq(string(raw), "\n") {
+		if m := opRe.FindStringSubmatch(line); m != nil {
+			op = strings.ToUpper(m[1][:1]) + m[1][1:]
+			continue
+		}
+		if m := scopeRe.FindStringSubmatch(line); m != nil && op != "" {
+			out[op] = strings.TrimSpace(m[1])
+		}
+	}
+	return out
+}
+
+// WP-3: the machine operations and their scopes match the contract, and
+// no operation is both a machine and a role (or public) operation.
+func TestScopesMatchTheContract(t *testing.T) {
+	spec := xScopes(t)
+	if len(spec) == 0 {
+		t.Fatal("no x-scope found in api/openapi.yaml")
+	}
+	if !maps.Equal(spec, Scopes) {
+		t.Errorf("contract %v, code %v", spec, Scopes)
+	}
+	for op := range Scopes {
+		if _, ok := Roles[op]; ok || Public[op] || AnySession[op] {
+			t.Errorf("%s is a scope operation and also has another rule", op)
+		}
+	}
+	if DefaultRules().Scopes["ValidateRegistry"] != "registry.validate" {
+		t.Error("DefaultRules does not carry the scopes")
 	}
 }

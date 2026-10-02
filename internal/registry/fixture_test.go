@@ -33,6 +33,7 @@ const (
 var (
 	t0        = time.Date(2026, 10, 2, 9, 0, 0, 0, time.UTC)
 	registrar = audit.Actor{Type: audit.ActorUser, ID: "registrar-1", Realm: audit.RealmConsole}
+	ussp      = audit.Actor{Type: audit.ActorClient, ID: "ussp-TEST-01"}
 )
 
 type fixture struct {
@@ -65,8 +66,8 @@ func newFixture(t *testing.T) *fixture {
 	f.svc = &Service{
 		Store: f.store, Projection: f.proj, Sealer: sealer, Hasher: hasher,
 		Pattern:  func() (string, bool) { return regnum.DefaultPattern, true },
-		Counters: &core.Counters{},
-		Now:      func() time.Time { return f.now },
+		Counters: &core.Counters{}, MTOMBandsG: []int{250, 900, 4000, 25000},
+		Now: func() time.Time { return f.now },
 	}
 	return f
 }

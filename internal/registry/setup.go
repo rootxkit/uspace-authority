@@ -27,6 +27,7 @@ type Setup struct {
 	TSMaxConns       int
 	StatementTimeout time.Duration
 	Pattern          PatternSource
+	MTOMBandsG       []int
 	Publisher        Publisher
 	Logger           *slog.Logger
 }
@@ -64,7 +65,7 @@ func Assemble(ctx context.Context, s Setup) (*Parts, error) {
 	}
 	svc := &Service{
 		Store: PG{DB: s.DB, Audit: s.Audit}, Projection: TSProjection{P: projector}, Sealer: sealer, Hasher: hasher,
-		Pattern: s.Pattern, Publisher: pub, Counters: counters, Logger: s.Logger,
+		Pattern: s.Pattern, Publisher: pub, Counters: counters, Logger: s.Logger, MTOMBandsG: s.MTOMBandsG,
 	}
 	return &Parts{Service: svc, Handler: Handler{Service: svc}, Counters: counters, Projector: projector}, nil
 }

@@ -25,6 +25,11 @@ info:
       `purpose: required` means the request is refused without a
       `purpose` (every PII read, CLAUDE.md rule 6).
 
+    An operation for machines carries `x-scope: <scope>` instead of
+    `x-roles`: it admits an ecosystem token granting that scope and
+    never a console session (WP-2 table B). An operation with neither
+    `x-roles`, `x-scope` nor `x-session` is refused (fail closed).
+
     Work packages add their path groups below under a `# WP-k` comment
     and regenerate `api/gen/` with `scripts/generate.sh`.
 servers:
@@ -54,6 +59,8 @@ tags:
       The registry of UAS operators, UAS and remote pilots (WP-3,
       2019/947 Art. 14). Records carry no personal data; personal data
       has its own purpose-logged operations.
+  - name: registry-f8
+    description: Status-only validity lookups and the change feed for USSPs (F8, scope registry.validate).
 
 paths:
   # WP-0: health paths, served by every process on its admin port.
@@ -836,7 +843,7 @@ paths:
           $ref: "#/components/responses/Problem"
 
   # WP-3: the registry of operators, UAS and remote pilots (2019/947
-  # Art. 14).
+  # Art. 14), its F8 validity lookups and change feed for USSPs.
   # Registry records carry no personal data: an operator's or a pilot's
   # personal data is served only by the `personal-data` operations, to
   # the registrar and inspector roles, with a `purpose`, each read an
@@ -1321,6 +1328,101 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RegistryPilot"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/registry/validate:
+    get:
+      operationId: validateRegistry
+      tags: [registry-f8]
+      summary: Validity of an operator, a UAS and a pilot (F8)
+      description: |
+        Status only, per entity: `valid`, `suspended`, `revoked` or
+        `unknown`, the end of validity, the class label and MTOM band of
+        a UAS and the competency set of a pilot. No name, address, phone
+        or e-mail: the response schema has no such property, and a test
+        fails if one appears. An expired registration answers `revoked`
+        with its `valid_until` in the past. `operator` is compared on its
+        public part (an EU secret suffix is removed, G-04); `serial`
+        exactly, else on its ASCII fold when one aircraft has it (G-05);
+        `pilot` is the remote pilot's registry id. Every call is an
+        events row with the client and the purpose.
+      security:
+        - ecosystemToken: []
+      x-scope: registry.validate
+      x-audit: {event_type: registry_validated, entity_type: registry, purpose: required}
+      parameters:
+        - {name: purpose, in: query, required: true, schema: {$ref: "#/components/schemas/RegistryPurpose"}}
+        - {name: operator, in: query, schema: {type: string, maxLength: 64}}
+        - {name: serial, in: query, schema: {type: string, maxLength: 64}}
+        - {name: pilot, in: query, schema: {type: string, maxLength: 32}}
+      responses:
+        "200":
+          description: The answer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryValidity"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: validateRegistryBatch
+      tags: [registry-f8]
+      summary: Validity of up to 100 entities (F8)
+      description: The GET's answer for each item, in order; one events row for the batch.
+      security:
+        - ecosystemToken: []
+      x-scope: registry.validate
+      x-audit: {event_type: registry_validated, entity_type: registry, purpose: required}
+      parameters:
+        - {name: purpose, in: query, required: true, schema: {$ref: "#/components/schemas/RegistryPurpose"}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistryValidateBatch"
+      responses:
+        "200":
+          description: The answers, in the order of the items.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryValidityList"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/registry/changes:
+    get:
+      operationId: listRegistryChanges
+      tags: [registry-f8]
+      summary: The status change feed (F8), ids and statuses only
+      description: |
+        Changes after `since` in sequence order, for cache
+        invalidation. `next_since` is the last sequence of the page;
+        an `ETag` names the page, and `If-None-Match` with it answers
+        304 while nothing newer exists.
+      security:
+        - ecosystemToken: []
+      x-scope: registry.validate
+      x-audit: none
+      parameters:
+        - {name: since, in: query, schema: {type: integer, format: int64, minimum: 0, default: 0}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 1000, default: 500}}
+        - {name: If-None-Match, in: header, schema: {type: string, maxLength: 128}}
+      responses:
+        "200":
+          description: One page of changes.
+          headers:
+            ETag:
+              schema: {type: string}
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryChangePage"
+        "304":
+          description: Nothing changed since the page the ETag names.
+          headers:
+            ETag:
+              schema: {type: string}
         default:
           $ref: "#/components/responses/Problem"
 
@@ -1895,7 +1997,7 @@ components:
       properties:
         revoked: {type: integer}
     # WP-3: the registry. Records (RegistryOperator, RegistryUAS,
-    # RegistryPilot) carry no personal data;
+    # RegistryPilot) and every F8 schema carry no personal data;
     # internal/registry's contract test fails if a personal property
     # name appears in them, and checks that the personal-data schemas
     # do carry them (E-01).
@@ -2128,3 +2230,87 @@ components:
         pilot_id: {type: string}
         name: {type: string}
         person_ref_last4: {type: string}
+    RegistryPurpose:
+      type: string
+      enum: [authorisation, identification]
+    RegistryValidityStatus:
+      type: string
+      enum: [valid, suspended, revoked, unknown]
+    RegistryValidateItem:
+      type: object
+      description: At least one key.
+      properties:
+        operator: {type: string, maxLength: 64}
+        serial: {type: string, maxLength: 64}
+        pilot: {type: string, maxLength: 32}
+    RegistryValidateBatch:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items: {$ref: "#/components/schemas/RegistryValidateItem"}
+    OperatorValidity:
+      type: object
+      required: [registration_number, status]
+      properties:
+        registration_number: {type: string, description: As asked.}
+        status: {$ref: "#/components/schemas/RegistryValidityStatus"}
+        valid_until: {type: string, format: date-time}
+    UASValidity:
+      type: object
+      required: [serial, status]
+      properties:
+        serial: {type: string, description: As asked.}
+        status: {$ref: "#/components/schemas/RegistryValidityStatus"}
+        class_label: {$ref: "#/components/schemas/ClassLabel"}
+        mtom_band: {type: string, description: "The MTOM band of REGISTRY_MTOM_BANDS_G: under_<g>g, or from_<g>g above the last bound."}
+    CompetencyValidity:
+      type: object
+      required: [competency, valid_until]
+      properties:
+        competency: {type: string}
+        valid_until: {type: string, format: date-time}
+    PilotValidity:
+      type: object
+      required: [pilot, status, competencies]
+      properties:
+        pilot: {type: string, description: As asked.}
+        status: {$ref: "#/components/schemas/RegistryValidityStatus"}
+        competencies:
+          type: array
+          items: {$ref: "#/components/schemas/CompetencyValidity"}
+    RegistryValidity:
+      type: object
+      description: One answer per key asked; status only.
+      properties:
+        operator: {$ref: "#/components/schemas/OperatorValidity"}
+        uas: {$ref: "#/components/schemas/UASValidity"}
+        pilot: {$ref: "#/components/schemas/PilotValidity"}
+    RegistryValidityList:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items: {$ref: "#/components/schemas/RegistryValidity"}
+    RegistryChange:
+      type: object
+      required: [seq, entity_type, entity_id, public_key, status, at]
+      properties:
+        seq: {type: integer, format: int64}
+        entity_type: {type: string, enum: [operator, uas, pilot]}
+        entity_id: {type: string}
+        public_key: {type: string, description: "The registration number, the serial or the pilot id."}
+        status: {$ref: "#/components/schemas/RegistryStatus"}
+        at: {type: string, format: date-time}
+    RegistryChangePage:
+      type: object
+      required: [changes, next_since]
+      properties:
+        changes:
+          type: array
+          items: {$ref: "#/components/schemas/RegistryChange"}
+        next_since: {type: integer, format: int64, description: Pass as since for the next page.}

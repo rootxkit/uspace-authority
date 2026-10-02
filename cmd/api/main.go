@@ -128,10 +128,14 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 		wg.Go(func() { tok.Manager.Run(ctx, time.Duration(cfg.KeyRefreshS)*time.Second) })
 		wg.Go(func() { az.Run(ctx, time.Duration(cfg.SessionSweepS)*time.Second) })
 
+		bands, err := cfg.MTOMBounds()
+		if err != nil {
+			return err
+		}
 		reg, err := registry.Assemble(ctx, registry.Setup{
 			DB: db, Audit: auditWriter, PIIKeyID: cfg.PIIKeyID, PIIKeyFile: cfg.PIIKeyFile, HashKeyFile: cfg.RegistryHashKeyFile,
 			TSURL: cfg.TSURL, TSRole: cfg.TSProjectorRole, TSMaxConns: cfg.TSMaxConns,
-			StatementTimeout: time.Duration(cfg.PGStatementTimeoutS) * time.Second, Logger: rt.Logger,
+			StatementTimeout: time.Duration(cfg.PGStatementTimeoutS) * time.Second, MTOMBandsG: bands, Logger: rt.Logger,
 			// The registration-number format of the policy api follows (G-07).
 			Pattern: func() (string, bool) {
 				p, ok := follower.Current()

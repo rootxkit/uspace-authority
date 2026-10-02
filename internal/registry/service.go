@@ -34,6 +34,8 @@ const (
 	CounterExpiryFailed          = "registry_expiry_failed"           // an expiry run failed
 	CounterRefused               = "registry_change_refused"          // a registration or change refused (validation, conflict, transition)
 	CounterPolicyUnavailable     = "registry_policy_unavailable"      // a registration refused because no active policy was known
+	CounterValidated             = "registry_validated"               // F8 entities answered
+	CounterValidatedUnknown      = "registry_validated_unknown"       // F8 entities answered unknown
 )
 
 // Advisory locks. LockProjection is taken by every change that writes
@@ -90,6 +92,9 @@ type Service struct {
 	Publisher  Publisher
 	Counters   *core.Counters
 	Logger     *slog.Logger
+	// MTOMBandsG are the upper bounds, in grams and ascending, of the
+	// MTOM bands F8 answers (REGISTRY_MTOM_BANDS_G).
+	MTOMBandsG []int
 	// Now is the clock; nil is time.Now.
 	Now func() time.Time
 

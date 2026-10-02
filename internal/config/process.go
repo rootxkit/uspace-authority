@@ -5,6 +5,7 @@ import (
 	"net/netip"
 	"net/url"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/rootxkit/uspace-core/core"
@@ -60,11 +61,25 @@ type API struct {
 
 // Registry is the registry of api (WP-3).
 type Registry struct {
-	RegistryHashKeyFile string `env:"REGISTRY_HASH_KEY_FILE" required:"true" help:"key (one line of base64, openssl rand -base64 32) of the keyed hashes of a registration number's secret part and a pilot's national id (spec 06 §5); outside the repository, never rotated without re-registering"`
-	TSProjectorRole     string `env:"TS_PROJECTOR_ROLE" default:"authority_ts_projector" help:"role SET on api's telemetry connections that write the registry projection (migration 00003_registry_projection)"`
-	TSMaxConns          int    `env:"TS_MAX_CONNS" default:"4" min:"1" max:"100" help:"maximum connections of api's telemetry pool"`
-	ReprojectS          int    `env:"REGISTRY_REPROJECT_S" default:"300" min:"10" max:"3600" help:"seconds between full re-projections of the registry into the telemetry database (G-08: 300)"`
-	ExpiryS             int    `env:"REGISTRY_EXPIRY_S" default:"300" min:"10" max:"86400" help:"seconds between runs of the job that marks registrations past valid_until expired"`
+	RegistryHashKeyFile string   `env:"REGISTRY_HASH_KEY_FILE" required:"true" help:"key (one line of base64, openssl rand -base64 32) of the keyed hashes of a registration number's secret part and a pilot's national id (spec 06 §5); outside the repository, never rotated without re-registering"`
+	TSProjectorRole     string   `env:"TS_PROJECTOR_ROLE" default:"authority_ts_projector" help:"role SET on api's telemetry connections that write the registry projection (migration 00003_registry_projection)"`
+	TSMaxConns          int      `env:"TS_MAX_CONNS" default:"4" min:"1" max:"100" help:"maximum connections of api's telemetry pool"`
+	ReprojectS          int      `env:"REGISTRY_REPROJECT_S" default:"300" min:"10" max:"3600" help:"seconds between full re-projections of the registry into the telemetry database (G-08: 300)"`
+	ExpiryS             int      `env:"REGISTRY_EXPIRY_S" default:"300" min:"10" max:"86400" help:"seconds between runs of the job that marks registrations past valid_until expired"`
+	MTOMBandsG          []string `env:"REGISTRY_MTOM_BANDS_G" default:"250,900,4000,25000" help:"ascending upper bounds in grams of the MTOM bands F8 answers (under_<g>g, from_<last>g); the defaults are the 2019/945 class limits"`
+}
+
+// MTOMBounds parses REGISTRY_MTOM_BANDS_G.
+func (r *Registry) MTOMBounds() ([]int, error) {
+	out := make([]int, 0, len(r.MTOMBandsG))
+	for _, v := range r.MTOMBandsG {
+		n, err := strconv.Atoi(v)
+		if err != nil || n <= 0 || (len(out) > 0 && n <= out[len(out)-1]) {
+			return nil, core.Fieldf("REGISTRY_MTOM_BANDS_G", "must be ascending positive whole grams, comma-separated")
+		}
+		out = append(out, n)
+	}
+	return out, nil
 }
 
 // Auth is console sign-in and sessions of api (WP-2).
@@ -274,6 +289,9 @@ func (c *API) Validate() error {
 	}
 	if c.MFALockoutMaxS < c.MFALockoutBaseS {
 		errs = append(errs, core.Fieldf("MFA_LOCKOUT_MAX_S", "must not be shorter than MFA_LOCKOUT_BASE_S"))
+	}
+	if _, err := c.MTOMBounds(); err != nil {
+		errs = append(errs, err)
 	}
 	if (c.BootstrapAdmin == "") != (c.BootstrapPassword == "") {
 		errs = append(errs, core.Fieldf("BOOTSTRAP_ADMIN_USERNAME", "set it together with BOOTSTRAP_ADMIN_PASSWORD_FILE, or neither"))

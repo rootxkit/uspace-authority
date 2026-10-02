@@ -122,7 +122,7 @@ func operations(spec string) []contractOp {
 // CLAUDE.md rule 6 on the contract, fail closed: an operation whose
 // success response carries a personal property is open only to the
 // registry's PII roles, never public, never a machine scope, never
-// viewer. The check runs over every
+// viewer. The F8 responses carry none. The check runs over every
 // operation of the file, so a later response that grows a name field is
 // caught wherever it is.
 func TestPersonalDataReachesNoPublicViewerOrMachineResponse(t *testing.T) {
@@ -157,8 +157,8 @@ func TestPersonalDataReachesNoPublicViewerOrMachineResponse(t *testing.T) {
 			t.Errorf("%s: no personal property found; the check is blind", op)
 		}
 	}
-	// The records, by name, carry none.
-	for _, s := range []string{"RegistryOperator", "RegistryUAS", "RegistryPilot"} {
+	// The F8 responses, by name, carry none.
+	for _, s := range []string{"RegistryValidity", "RegistryValidityList", "RegistryChangePage", "RegistryOperator", "RegistryUAS", "RegistryPilot"} {
 		if found := piiIn(spec, s, map[string]bool{}); len(found) != 0 {
 			t.Errorf("%s carries %v", s, found)
 		}
@@ -173,8 +173,8 @@ func TestContractCheckFindsAPlantedName(t *testing.T) {
 	if got := piiIn(spec, "Clean", map[string]bool{}); len(got) != 1 || got[0] != "Leaky.contact_email" {
 		t.Fatalf("got %v", got)
 	}
-	ops := operations("paths:\n  /x:\n    get:\n      operationId: getX\n      x-roles: [viewer]\n      responses:\n        \"200\":\n          content:\n            application/json:\n              schema:\n                $ref: \"#/components/schemas/Clean\"\n        default:\n          $ref: \"#/components/schemas/Problem\"\n")
-	if len(ops) != 1 || ops[0].roles[0] != "viewer" || !slices.Equal(ops[0].responses, []string{"Clean"}) {
+	ops := operations("paths:\n  /x:\n    get:\n      operationId: getX\n      x-scope: registry.validate\n      responses:\n        \"200\":\n          content:\n            application/json:\n              schema:\n                $ref: \"#/components/schemas/Clean\"\n        default:\n          $ref: \"#/components/schemas/Problem\"\n")
+	if len(ops) != 1 || ops[0].scope != "registry.validate" || !slices.Equal(ops[0].responses, []string{"Clean"}) {
 		t.Fatalf("ops %+v", ops)
 	}
 }

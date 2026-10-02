@@ -3,6 +3,7 @@ package registry
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -513,4 +514,107 @@ func (h Handler) RecordPilotCompetency(ctx context.Context, req gen.RecordPilotC
 		return nil, err
 	}
 	return gen.RecordPilotCompetency200JSONResponse(pilotOut(&p)), nil
+}
+
+func validityOut(v *Validity) gen.RegistryValidity {
+	var out gen.RegistryValidity
+	if o := v.Operator; o != nil {
+		ov := gen.OperatorValidity{RegistrationNumber: o.Number, Status: gen.RegistryValidityStatus(o.Status)}
+		if o.ValidUntil != nil {
+			t := o.ValidUntil.UTC()
+			ov.ValidUntil = &t
+		}
+		out.Operator = &ov
+	}
+	if u := v.UAS; u != nil {
+		uv := gen.UASValidity{Serial: u.Serial, Status: gen.RegistryValidityStatus(u.Status), MtomBand: optional(u.MTOMBand)}
+		if u.ClassLabel != "" {
+			c := gen.ClassLabel(u.ClassLabel)
+			uv.ClassLabel = &c
+		}
+		out.Uas = &uv
+	}
+	if p := v.Pilot; p != nil {
+		pv := gen.PilotValidity{Pilot: p.Pilot, Status: gen.RegistryValidityStatus(p.Status), Competencies: make([]gen.CompetencyValidity, 0, len(p.Competencies))}
+		for _, c := range p.Competencies {
+			pv.Competencies = append(pv.Competencies, gen.CompetencyValidity{Competency: c.Competency, ValidUntil: c.ValidUntil.UTC()})
+		}
+		out.Pilot = &pv
+	}
+	return out
+}
+
+// ValidateRegistry answers one F8 lookup.
+func (h Handler) ValidateRegistry(ctx context.Context, req gen.ValidateRegistryRequestObject) (gen.ValidateRegistryResponseObject, error) {
+	actor, err := audit.ActorOf(ctx)
+	if err != nil {
+		return nil, err
+	}
+	p := req.Params
+	res, err := h.Service.Validate(ctx, []Query{{Operator: deref(p.Operator), Serial: deref(p.Serial), Pilot: deref(p.Pilot)}}, string(p.Purpose), actor)
+	if err != nil {
+		return nil, err
+	}
+	return gen.ValidateRegistry200JSONResponse(validityOut(&res[0])), nil
+}
+
+// ValidateRegistryBatch answers up to MaxBatch F8 lookups.
+func (h Handler) ValidateRegistryBatch(ctx context.Context, req gen.ValidateRegistryBatchRequestObject) (gen.ValidateRegistryBatchResponseObject, error) {
+	actor, err := audit.ActorOf(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if req.Body == nil {
+		return nil, bodyRequired()
+	}
+	qs := make([]Query, 0, min(len(req.Body.Items), MaxBatch+1))
+	for i, it := range req.Body.Items {
+		if i > MaxBatch {
+			break // refused by Validate as over the bound; the rest is never read
+		}
+		qs = append(qs, Query{Operator: deref(it.Operator), Serial: deref(it.Serial), Pilot: deref(it.Pilot)})
+	}
+	res, err := h.Service.Validate(ctx, qs, string(req.Params.Purpose), actor)
+	if err != nil {
+		return nil, err
+	}
+	out := gen.RegistryValidityList{Results: make([]gen.RegistryValidity, 0, len(res))}
+	for i := range res {
+		out.Results = append(out.Results, validityOut(&res[i]))
+	}
+	return gen.ValidateRegistryBatch200JSONResponse(out), nil
+}
+
+// changesETag names one page of the change feed.
+func changesETag(since, next int64, n int) string {
+	return fmt.Sprintf(`"rsc-%d-%d-%d"`, since, next, n)
+}
+
+// ListRegistryChanges answers one page of the change feed; an
+// If-None-Match naming the same page answers 304.
+func (h Handler) ListRegistryChanges(ctx context.Context, req gen.ListRegistryChangesRequestObject) (gen.ListRegistryChangesResponseObject, error) {
+	var since int64
+	if req.Params.Since != nil {
+		since = *req.Params.Since
+	}
+	limit := MaxChangesPage / 2
+	if req.Params.Limit != nil {
+		limit = *req.Params.Limit
+	}
+	rows, next, err := h.Service.Changes(ctx, since, limit)
+	if err != nil {
+		return nil, err
+	}
+	etag := changesETag(since, next, len(rows))
+	if req.Params.IfNoneMatch != nil && *req.Params.IfNoneMatch == etag {
+		return gen.ListRegistryChanges304Response{Headers: gen.ListRegistryChanges304ResponseHeaders{ETag: &etag}}, nil
+	}
+	out := gen.RegistryChangePage{Changes: make([]gen.RegistryChange, 0, len(rows)), NextSince: next}
+	for _, c := range rows {
+		out.Changes = append(out.Changes, gen.RegistryChange{
+			Seq: c.Seq, EntityType: gen.RegistryChangeEntityType(c.EntityType), EntityId: c.EntityID,
+			PublicKey: c.PublicKey, Status: gen.RegistryStatus(c.Status), At: c.At.UTC(),
+		})
+	}
+	return gen.ListRegistryChanges200JSONResponse{Body: out, Headers: gen.ListRegistryChanges200ResponseHeaders{ETag: &etag}}, nil
 }
