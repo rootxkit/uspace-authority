@@ -13,7 +13,7 @@ trap 'rm -rf "$scratch"' EXIT
 OUT_DIR="$scratch" "$root/scripts/generate.sh" >/dev/null
 
 # The generated trees are the ones generate.sh writes.
-dirs=(api/gen internal/store/pg/gen internal/store/ts/gen)
+dirs=(api/gen internal/cisp/cispclient internal/store/pg/gen internal/store/ts/gen)
 status=0
 for d in "${dirs[@]}"; do
   if [ ! -d "$root/$d" ]; then

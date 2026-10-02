@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Regenerates every committed generated file from its source:
 #   api/openapi.yaml -> api/gen/api.gen.go (oapi-codegen, api/oapi-codegen.yaml)
+#   api/clients/cisp.yaml -> internal/cisp/cispclient/client.gen.go
+#                       (oapi-codegen, api/clients/oapi-codegen.cisp.yaml; WP-6)
 #   sqlc.yaml        -> internal/store/pg/gen, internal/store/ts/gen/{writer,reader}
 #                       (sqlc, from the migration trees and the query files)
 # openapi-typescript (web/src/api/) is added here by WP-21.
@@ -24,6 +26,13 @@ mkdir -p "$out/api/gen"
   -o "$out/api/gen/api.gen.go" \
   api/openapi.yaml
 echo "generated: api/gen/api.gen.go (oapi-codegen ${OAPI_CODEGEN_VERSION})"
+
+mkdir -p "$out/internal/cisp/cispclient"
+"$GO" run "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@${OAPI_CODEGEN_VERSION}" \
+  -config api/clients/oapi-codegen.cisp.yaml \
+  -o "$out/internal/cisp/cispclient/client.gen.go" \
+  api/clients/cisp.yaml
+echo "generated: internal/cisp/cispclient/client.gen.go (oapi-codegen ${OAPI_CODEGEN_VERSION})"
 
 # sqlc resolves every path in sqlc.yaml against the file's directory, so
 # a scratch run copies the inputs beside a copy of the file.
