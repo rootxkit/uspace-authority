@@ -42,7 +42,7 @@ type RidObservation struct {
 	FrameID         string
 	ReceiverID      string
 	Transmitter     string
-	RxTs            *time.Time
+	ReceiverTs      *time.Time
 	MsgType         *int16
 	Payload         []byte
 	PayloadSha256   []byte

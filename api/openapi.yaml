@@ -2904,7 +2904,7 @@ components:
       properties:
         frame_id: {type: string}
         ingest_ts: {type: string, format: date-time}
-        rx_ts: {type: string, format: date-time}
+        receiver_ts: {type: string, format: date-time, description: "The receiver's clock (rid_observations.receiver_ts; rx_ts in the batch). Not comparable with another clock."}
         receiver_id: {type: string}
         transmitter: {type: string}
         msg_type: {type: integer}

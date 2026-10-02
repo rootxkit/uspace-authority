@@ -56,7 +56,7 @@ func TestAcceptedBatchIsQueuedThenAcknowledged(t *testing.T) {
 	}
 	row := b.Rows[0]
 	if row.Transmitter != "AA:BB:CC:00:00:01" || *row.MsgType != 1 || len(row.Payload) != 25 || len(row.PayloadSHA256) != 32 ||
-		row.RxTS == nil || !row.IngestTS.Equal(f.now) || *row.RSSIDBM != -70.5 || *row.ReceiverAltHAEM != 520 || row.Nonce != "n-1" {
+		row.ReceiverTS == nil || !row.IngestTS.Equal(f.now) || *row.RSSIDBM != -70.5 || *row.ReceiverAltHAEM != 520 || row.Nonce != "n-1" {
 		t.Fatalf("row %+v", row)
 	}
 	if *b.Rows[1].MsgType != 0 || b.Rows[0].FrameID == b.Rows[1].FrameID {

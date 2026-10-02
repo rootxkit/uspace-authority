@@ -12,12 +12,19 @@ import (
 // names of migrations/timeseries/00004_rid_observations.sql; bytea
 // columns travel as base64 (encoding/json's []byte). WP-8 adds the
 // decoded columns.
+//
+// The times are LESSONS T-01's three: ReceiverTS is the source's own
+// clock (`ts`; the receiver's, sent as rx_ts on the F9 wire), IngestTS is
+// when this system received it (`rx_ts`), and captured_at, WP-8's, is
+// where the row is placed on this system's clock. WP-8 places a batch by
+// T-02/T-11: captured_at = IngestTS - (newest ReceiverTS in the batch -
+// ReceiverTS), and a row without ReceiverTS at IngestTS (T-12).
 type Row struct {
 	IngestTS        time.Time  `json:"ingest_ts"`
 	FrameID         string     `json:"frame_id"`
 	ReceiverID      string     `json:"receiver_id"`
 	Transmitter     string     `json:"transmitter"`
-	RxTS            *time.Time `json:"rx_ts"`
+	ReceiverTS      *time.Time `json:"receiver_ts"`
 	MsgType         *int       `json:"msg_type"`
 	Payload         []byte     `json:"payload"`
 	PayloadSHA256   []byte     `json:"payload_sha256"`

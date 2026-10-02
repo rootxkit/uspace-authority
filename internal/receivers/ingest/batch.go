@@ -222,7 +222,7 @@ func Rows(b *Batch, ingestTS time.Time) []ridpipe.Row {
 		sum := sha256.Sum256(o.Payload)
 		id, _ := FrameID(b.ReceiverID, o.Transmitter, o.RxTS, sum, b.Nonce, i)
 		r := ridpipe.Row{
-			IngestTS: ingestTS, FrameID: id, ReceiverID: b.ReceiverID, Transmitter: o.Transmitter, RxTS: o.RxTS,
+			IngestTS: ingestTS, FrameID: id, ReceiverID: b.ReceiverID, Transmitter: o.Transmitter, ReceiverTS: o.RxTS,
 			Payload: o.Payload, PayloadSHA256: sum[:], RSSIDBM: o.RSSIDBM, Backlog: b.Backlog,
 			SentAtMS: b.SentAtMS, Nonce: b.Nonce,
 		}

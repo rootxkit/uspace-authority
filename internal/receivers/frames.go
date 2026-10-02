@@ -22,7 +22,7 @@ type Frame struct {
 	FrameID          string
 	ReceiverID       string
 	Transmitter      string
-	RxTS             *time.Time
+	ReceiverTS       *time.Time
 	MsgType          *int
 	Payload          []byte
 	PayloadSHA256    []byte
@@ -60,7 +60,7 @@ const SlugWindowTooLarge = "window_too_large"
 func frameFrom(o *reader.RidObservation) Frame {
 	f := Frame{
 		IngestTS: o.IngestTs.UTC(), FrameID: o.FrameID, ReceiverID: o.ReceiverID, Transmitter: o.Transmitter,
-		RxTS: o.RxTs, Payload: o.Payload, PayloadSHA256: o.PayloadSha256, Backlog: o.Backlog,
+		ReceiverTS: o.ReceiverTs, Payload: o.Payload, PayloadSHA256: o.PayloadSha256, Backlog: o.Backlog,
 		SentAtMS: o.SentAtMs, Nonce: o.Nonce,
 	}
 	if o.MsgType != nil {

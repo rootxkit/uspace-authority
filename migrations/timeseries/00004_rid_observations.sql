@@ -5,7 +5,19 @@
 -- the readers SELECT; no role may UPDATE or DELETE).
 --
 -- The columns here are the raw side rid-ingest fills: who heard what,
--- when, on which clock.
+-- when, on which clock. The times map onto LESSONS T-01's three:
+--
+--   T-01 `ts` (the source's own clock)   -> receiver_ts (the receiver's
+--                                           clock; F9's wire field rx_ts)
+--   T-01 `rx_ts` (when we received it)   -> ingest_ts (rid-ingest's clock)
+--   T-01 `captured_at` (placed, our clock) -> WP-8's column, not here
+--
+-- WP-8 places each row on the ingest's clock by T-02/T-11: within one
+-- batch,
+--     captured_at = ingest_ts - (newest receiver_ts in the batch - receiver_ts)
+-- so the receiver's clock error cancels and the rows keep their true
+-- spacing; a row without receiver_ts is placed at ingest_ts (T-12). The
+-- receiver's clock is never compared with another clock directly.
 --
 --   ingest_ts       rid-ingest's clock when it accepted the batch (T-01).
 --                   The hypertable's time column: always present and
@@ -14,11 +26,11 @@
 --                   timeplace.PlaceBroadcast) and so cannot be the
 --                   partition key of a row that exists before it is
 --                   placed; recorded as a deviation in the WP-7 PR.
---   rx_ts           the receiver's clock; null when it sent none (T-12:
+--   receiver_ts     the receiver's clock; null when it sent none (T-12:
 --                   such a row is placed at arrival by WP-8, not dropped).
 --   frame_id        hex of the first 16 bytes of SHA-256 over the dedupe
---                   key (receiver, transmitter, rx_ts, payload hash); for
---                   a row without rx_ts the batch nonce and position are
+--                   key (receiver, transmitter, receiver_ts, payload hash);
+--                   for a row without it the batch nonce and position are
 --                   in the key instead, so repeats are never merged.
 --   payload         the ODID message or pack exactly as received (bytea).
 --   payload_sha256  SHA-256 of payload (the dedupe key, B-05).
@@ -38,7 +50,7 @@ CREATE TABLE rid_observations (
     frame_id           text             NOT NULL CHECK (frame_id ~ '^[0-9a-f]{32}$'),
     receiver_id        text             NOT NULL,
     transmitter        text             NOT NULL,
-    rx_ts              timestamptz,
+    receiver_ts        timestamptz,
     msg_type           smallint         CHECK (msg_type BETWEEN 0 AND 15),
     payload            bytea            NOT NULL,
     payload_sha256     bytea            NOT NULL CHECK (length(payload_sha256) = 32),

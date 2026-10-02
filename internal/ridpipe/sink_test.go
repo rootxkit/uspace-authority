@@ -32,7 +32,7 @@ func TestRowJSONNamesAreTheColumns(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, col := range []string{"ingest_ts", "frame_id", "receiver_id", "transmitter", "rx_ts", "msg_type", "payload",
+	for _, col := range []string{"ingest_ts", "frame_id", "receiver_id", "transmitter", "receiver_ts", "msg_type", "payload",
 		"payload_sha256", "rssi_dbm", "backlog", "receiver_lat_deg", "receiver_lon_deg", "receiver_alt_hae_m", "sent_at_ms", "nonce"} {
 		if !strings.Contains(string(raw), `"`+col+`":`) {
 			t.Errorf("column %s missing from %s", col, raw)

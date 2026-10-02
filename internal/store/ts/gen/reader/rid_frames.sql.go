@@ -11,7 +11,7 @@ import (
 )
 
 const rIDFrameByID = `-- name: RIDFrameByID :many
-SELECT ingest_ts, frame_id, receiver_id, transmitter, rx_ts, msg_type, payload, payload_sha256, rssi_dbm,
+SELECT ingest_ts, frame_id, receiver_id, transmitter, receiver_ts, msg_type, payload, payload_sha256, rssi_dbm,
     backlog, receiver_lat_deg, receiver_lon_deg, receiver_alt_hae_m, sent_at_ms, nonce
 FROM rid_observations
 WHERE frame_id = $1
@@ -35,7 +35,7 @@ func (q *Queries) RIDFrameByID(ctx context.Context, frameID string) ([]RidObserv
 			&i.FrameID,
 			&i.ReceiverID,
 			&i.Transmitter,
-			&i.RxTs,
+			&i.ReceiverTs,
 			&i.MsgType,
 			&i.Payload,
 			&i.PayloadSha256,
@@ -58,7 +58,7 @@ func (q *Queries) RIDFrameByID(ctx context.Context, frameID string) ([]RidObserv
 }
 
 const rIDFrames = `-- name: RIDFrames :many
-SELECT ingest_ts, frame_id, receiver_id, transmitter, rx_ts, msg_type, payload, payload_sha256, rssi_dbm,
+SELECT ingest_ts, frame_id, receiver_id, transmitter, receiver_ts, msg_type, payload, payload_sha256, rssi_dbm,
     backlog, receiver_lat_deg, receiver_lon_deg, receiver_alt_hae_m, sent_at_ms, nonce
 FROM rid_observations
 WHERE ingest_ts >= $1 AND ingest_ts < $2
@@ -100,7 +100,7 @@ func (q *Queries) RIDFrames(ctx context.Context, arg RIDFramesParams) ([]RidObse
 			&i.FrameID,
 			&i.ReceiverID,
 			&i.Transmitter,
-			&i.RxTs,
+			&i.ReceiverTs,
 			&i.MsgType,
 			&i.Payload,
 			&i.PayloadSha256,

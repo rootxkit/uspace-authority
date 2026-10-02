@@ -215,7 +215,7 @@ func (h Handler) RotateRIDReceiverKeys(ctx context.Context, req gen.RotateRIDRec
 
 func frameOut(f *Frame) gen.RIDFrame {
 	out := gen.RIDFrame{
-		FrameId: f.FrameID, IngestTs: f.IngestTS, RxTs: f.RxTS, ReceiverId: f.ReceiverID, Transmitter: f.Transmitter,
+		FrameId: f.FrameID, IngestTs: f.IngestTS, ReceiverTs: f.ReceiverTS, ReceiverId: f.ReceiverID, Transmitter: f.Transmitter,
 		MsgType: f.MsgType, PayloadHex: hex.EncodeToString(f.Payload), PayloadSha256Hex: hex.EncodeToString(f.PayloadSHA256),
 		RssiDbm: f.RSSIDBM, Backlog: f.Backlog, SentAtMs: f.SentAtMS, Nonce: f.Nonce,
 	}

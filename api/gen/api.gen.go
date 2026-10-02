@@ -1099,10 +1099,12 @@ type RIDFrame struct {
 	PayloadSha256Hex string       `json:"payload_sha256_hex"`
 	ReceiverId       string       `json:"receiver_id"`
 	ReceiverPosition *RIDPosition `json:"receiver_position,omitempty"`
-	RssiDbm          *float64     `json:"rssi_dbm,omitempty"`
-	RxTs             *time.Time   `json:"rx_ts,omitempty"`
-	SentAtMs         int64        `json:"sent_at_ms"`
-	Transmitter      string       `json:"transmitter"`
+
+	// ReceiverTs The receiver's clock (rid_observations.receiver_ts; rx_ts in the batch). Not comparable with another clock.
+	ReceiverTs  *time.Time `json:"receiver_ts,omitempty"`
+	RssiDbm     *float64   `json:"rssi_dbm,omitempty"`
+	SentAtMs    int64      `json:"sent_at_ms"`
+	Transmitter string     `json:"transmitter"`
 }
 
 // RIDFramePage defines model for RIDFramePage.
