@@ -112,8 +112,11 @@ FROM writer_gaps ORDER BY at DESC LIMIT 50;
   the migration (`uspace-authority migrate`) and report the `detail` to
   the owning work package.
 - `rejected_unrecorded` above zero: a rejected message's own gap record
-  was refused too. Those rows are lost and only counted; the log line
-  has the stream sequence. Report it.
+  was refused too, also without its detail (a record refused for its
+  detail is written without it first). Those rows are lost and only
+  counted; the status line carries `rejected_unrecorded` and is at
+  error level from then on, and the log line has the stream sequence.
+  Report it.
 
 - `stream_purge`: someone purged `TSW` (`nats stream purge TSW`) or
   deleted messages from it. Never purge `TSW`: every message in it is a

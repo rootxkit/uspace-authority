@@ -170,15 +170,17 @@ type Pipeline struct {
 	Limiter  *logging.Limiter
 	Now      func() time.Time
 
-	mu       sync.Mutex
-	queue    []*item
-	rows     int
-	lastSeq  uint64
-	spilling bool
-	failing  bool
-	failedAt time.Time
-	wake     chan struct{}
-	once     sync.Once
+	mu      sync.Mutex
+	queue   []*item
+	rows    int
+	lastSeq uint64
+	// unrecorded counts the holes whose gap record was refused (Snapshot).
+	unrecorded uint64
+	spilling   bool
+	failing    bool
+	failedAt   time.Time
+	wake       chan struct{}
+	once       sync.Once
 	// lastPurgeCheck and caughtUp belong to the pull loop (idle, take).
 	// caughtUp: the last idle check found nothing of this table
 	// undelivered, and the loop has been fetching ever since, so none of
@@ -225,13 +227,17 @@ type Snapshot struct {
 	QueueMessages int     `json:"queue_messages"`
 	QueueAgeS     float64 `json:"queue_age_s"`
 	LastSeq       uint64  `json:"last_seq"`
+	// RejectedUnrecorded counts the rejected messages whose gap record
+	// was refused too: holes with no record (audit B-S9).
+	RejectedUnrecorded uint64 `json:"rejected_unrecorded,omitempty"`
 }
 
 // Snapshot reports the pipeline now.
 func (p *Pipeline) Snapshot() Snapshot {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	s := Snapshot{Table: p.Table.Name, State: p.stateLocked(), QueueRows: p.rows, QueueMessages: len(p.queue), LastSeq: p.lastSeq}
+	s := Snapshot{Table: p.Table.Name, State: p.stateLocked(), QueueRows: p.rows, QueueMessages: len(p.queue), LastSeq: p.lastSeq,
+		RejectedUnrecorded: p.unrecorded}
 	if len(p.queue) > 0 {
 		s.QueueAgeS = p.now().Sub(p.queue[0].queued).Seconds()
 	}
@@ -843,10 +849,22 @@ func (p *Pipeline) reject(ctx context.Context, it *item, cause error) {
 		At: p.now().UTC(), Detail: truncate(cause.Error()),
 	}}
 	w, err := p.store(ctx, []*item{it})
+	if err != nil && ts.IsDataError(err) && it.gaps[0].Detail != "" {
+		// The record refused for what it says: the minimal record (no
+		// detail) still records the hole (audit B-S9).
+		p.Logger.Error("a rejected message's gap record was refused; writing it without its detail",
+			slog.String("table", p.Table.Name), slog.Uint64("stream_seq", it.seq), slog.String("error", err.Error()))
+		it.gaps[0].Detail = ""
+		w, err = p.store(ctx, []*item{it})
+	}
 	if err != nil {
-		// Even the record is refused: counted and logged at error level,
+		// Even the minimal record is refused: counted, logged at error
+		// level and kept on the status line at error level (StatusLevel),
 		// the message acknowledged so it does not block the table.
 		p.Counters.Inc(CounterRejectedUnrecorded)
+		p.mu.Lock()
+		p.unrecorded++
+		p.mu.Unlock()
 		p.Logger.Error("a rejected message's gap record was refused too; counted as rejected_unrecorded",
 			slog.String("table", p.Table.Name), slog.Uint64("stream_seq", it.seq), slog.String("error", err.Error()))
 		it.gaps = nil
