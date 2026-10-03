@@ -4,11 +4,16 @@ import (
 	"context"
 	"time"
 
+	"github.com/rootxkit/uspace-core/core"
+
 	"github.com/rootxkit/uspace-authority/api/gen"
 )
 
 // DefaultListLimit is GET /v1/publications' default page.
 const DefaultListLimit = 100
+
+// MaxListLimit is the contract's maximum page (api/openapi.yaml).
+const MaxListLimit = 500
 
 // Handler serves GET /v1/publications (apiserver.CISPHandler).
 type Handler struct {
@@ -29,6 +34,11 @@ func (h Handler) ListPublications(ctx context.Context, req gen.ListPublicationsR
 		f.State = string(*req.Params.State)
 	}
 	if req.Params.Limit != nil {
+		// No request validator is wired: the contract's bounds are held
+		// here (audit A-N1).
+		if n := *req.Params.Limit; n < 1 || n > MaxListLimit {
+			return nil, core.Fieldf("limit", "must be between 1 and %d", MaxListLimit)
+		}
 		f.Limit = *req.Params.Limit
 	}
 	rows, err := h.Store.List(ctx, f)
