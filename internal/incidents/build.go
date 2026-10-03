@@ -374,7 +374,14 @@ func (st *build) incident() error {
 	}
 	notes := make([]map[string]any, 0, len(v.Notes))
 	for _, n := range v.Notes {
-		notes = append(notes, map[string]any{"id": n.ID, "author": n.Author, "body": n.Body, "created_at": stamp(n.CreatedAt)})
+		note := map[string]any{"id": n.ID, "author": n.Author, "body": n.Body, "created_at": stamp(n.CreatedAt)}
+		if st.in.Kind != KindLegal {
+			// A note is free text an officer typed, names included: an
+			// oversight pack keeps it by hash (audit B-N2).
+			note["body"], note["body_sha256"] = nil, ContentHash([]byte(n.Body))
+			note["body_withheld"] = "free text that may name people; carried in a legal pack"
+		}
+		notes = append(notes, note)
 	}
 	doc := map[string]any{
 		"incident_id": inc.IncidentID, "kind": inc.Kind, "occurred_at": stamp(inc.OccurredAt), "opened_from": inc.OpenedFrom,

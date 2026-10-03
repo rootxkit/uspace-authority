@@ -657,3 +657,39 @@ func TestRecordsAreReadInParallelWithinTheirDeadline(t *testing.T) {
 		}
 	}
 }
+
+// Audit B-N2, E-01: notes are free text officers type, names included:
+// an oversight pack, which states it holds no personal data, carries
+// each note without its body (kept by hash); a legal pack carries the
+// body.
+func TestNoteBodiesHeldToTheLegalPack(t *testing.T) {
+	src, tel := richSources()
+	b := builder(src, tel)
+	b.Personal = personal()
+	in := buildIn(KindOversight)
+	in.Incident.Notes[0].Body = "called " + piiName
+	_, files, _ := mustBuild(t, b, in)
+	for name, data := range files {
+		if bytes.Contains(data, []byte(piiName)) {
+			t.Fatalf("a note's body is in the oversight pack's %s", name)
+		}
+	}
+	var doc struct {
+		Notes []map[string]any `json:"notes"`
+	}
+	if err := json.Unmarshal(files["incident.json"], &doc); err != nil {
+		t.Fatal(err)
+	}
+	if len(doc.Notes) != 1 || doc.Notes[0]["body"] != nil || doc.Notes[0]["body_sha256"] == nil || doc.Notes[0]["author"] != "inspector-1" {
+		t.Fatalf("oversight notes %v", doc.Notes)
+	}
+	lin := buildIn(KindLegal)
+	lin.Incident.Notes[0].Body = "called " + piiName
+	_, lfiles, _ := mustBuild(t, b, lin)
+	if err := json.Unmarshal(lfiles["incident.json"], &doc); err != nil {
+		t.Fatal(err)
+	}
+	if doc.Notes[0]["body"] != "called "+piiName {
+		t.Fatalf("legal notes %v", doc.Notes)
+	}
+}
