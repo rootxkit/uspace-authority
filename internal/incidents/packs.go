@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"slices"
@@ -30,6 +31,7 @@ const (
 	CounterPackDownloaded     = "evidence_packs_downloaded"
 	CounterPackVerified       = "evidence_packs_verified"
 	CounterPackTampered       = "evidence_packs_tampered"       // a stored archive that does not match its hash
+	CounterPackUnreadable     = "evidence_packs_unreadable"     // a stored archive that cannot be read (storage, key): not evidence of tampering
 	CounterSectionUnavailable = "evidence_sections_unavailable" // a section of a built pack unavailable
 )
 
@@ -361,31 +363,50 @@ func (p *Packs) Get(ctx context.Context, incidentID, packID string) (gen.Evidenc
 }
 
 // read reads the stored archive and opens it when sealed at rest.
-func (p *Packs) read(row *gen.EvidencePack) ([]byte, error) {
+// read returns the stored archive. unreadable says the bytes could not
+// be had at all (the storage failed, the object is above the read
+// bound, the PII key is not configured or is another one): that is an
+// outage, not evidence about the archive. A sealed archive that does
+// not open under its own key is a modified one (unreadable false).
+func (p *Packs) read(row *gen.EvidencePack) (data []byte, unreadable bool, err error) {
 	// A sealed archive is the plaintext plus the nonce and the tag.
-	data, err := p.Storage.Get(row.StorageRef, p.MaxBytes+64)
+	data, err = p.Storage.Get(row.StorageRef, p.MaxBytes+64)
 	if err != nil {
-		return nil, err
+		return nil, true, err
 	}
 	if row.SealedKeyID == nil {
-		return data, nil
+		return data, false, nil
 	}
 	if p.Sealer == nil {
-		return nil, errors.New("the archive is sealed at rest and the PII key is not configured")
+		return nil, true, errors.New("the archive is sealed at rest and the PII key is not configured")
 	}
-	return p.Sealer.Open(*row.SealedKeyID, data, packAAD(row.PackID))
+	if *row.SealedKeyID != p.Sealer.KeyID() {
+		return nil, true, fmt.Errorf("the archive is sealed under key %q, the configured PII key is %q", *row.SealedKeyID, p.Sealer.KeyID())
+	}
+	data, err = p.Sealer.Open(*row.SealedKeyID, data, packAAD(row.PackID))
+	return data, false, err
 }
 
 // Verification is what a check of a stored pack found.
 type Verification struct {
-	PackID          string
-	ContentHash     string
-	RecomputedHash  *string
-	HashMatches     bool
-	Problem         *string
+	PackID         string
+	ContentHash    string
+	RecomputedHash *string
+	HashMatches    bool
+	Problem        *string
+	// Unreadable is true when the stored archive could not be read at
+	// all: whether it matches is unknown, and it is not tampering
+	// (audit B-S2).
+	Unreadable      bool
 	Signature       string
 	SignatureDetail *string
 	VerifiedAt      time.Time
+}
+
+// tampered reports whether v is evidence of a modification: a hash that
+// differs (over bytes that were read), or a seal that does not verify.
+func (v *Verification) tampered() bool {
+	return (!v.Unreadable && !v.HashMatches) || v.Signature == SigInvalid
 }
 
 // Signature verdicts.
@@ -402,10 +423,13 @@ func strPtr(s string) *string { return &s }
 // statement's signature; data is the archive when the hash matches.
 func (p *Packs) check(ctx context.Context, row *gen.EvidencePack) (Verification, []byte) {
 	v := Verification{PackID: row.PackID, ContentHash: row.ContentHash, Signature: SigUnsigned}
-	data, err := p.read(row)
+	data, unreadable, err := p.read(row)
 	switch {
+	case unreadable:
+		v.Unreadable = true
+		v.Problem = strPtr("the stored archive cannot be read: " + reason(err))
 	case err != nil:
-		v.Problem = strPtr("the stored archive cannot be read or opened (a modified sealed archive does not open): " + reason(err))
+		v.Problem = strPtr("the stored sealed archive does not open under its key: it was modified after sealing: " + reason(err))
 	default:
 		h := ContentHash(data)
 		v.RecomputedHash = &h
@@ -452,10 +476,14 @@ func (p *Packs) recordVerification(ctx context.Context, actor audit.Actor, row *
 			return err
 		}
 		v.VerifiedAt = at.UTC()
+		var matches any = v.HashMatches
+		if v.Unreadable {
+			matches = nil // unknown: nothing was read to compare
+		}
 		_, err = p.Service.Audit.Record(ctx, q, audit.Event{Actor: actor, EntityType: EntityType, EntityID: row.IncidentID,
 			EventType: audit.EventEvidencePackVerified, Payload: map[string]any{
 				"pack_id": row.PackID, "via": via, "content_hash": row.ContentHash, "recomputed_hash": v.RecomputedHash,
-				"hash_matches": v.HashMatches, "signature": v.Signature, "problem": v.Problem,
+				"hash_matches": matches, "unreadable": v.Unreadable, "signature": v.Signature, "problem": v.Problem,
 			}})
 		return err
 	})
@@ -473,13 +501,29 @@ func (p *Packs) Verify(ctx context.Context, actor audit.Actor, incidentID, packI
 	}
 	v, _ := p.check(ctx, &row)
 	p.inc(CounterPackVerified)
-	if !v.HashMatches || v.Signature == SigInvalid {
-		p.inc(CounterPackTampered)
-	}
+	p.countCheck(&v)
 	if err := p.recordVerification(ctx, actor, &row, &v, "verify"); err != nil {
 		return Verification{}, err
 	}
+	if v.Unreadable && !v.tampered() {
+		return v, unreadableProblem(&v)
+	}
 	return v, nil
+}
+
+// countCheck counts a check that found tampering or could not read.
+func (p *Packs) countCheck(v *Verification) {
+	switch {
+	case v.tampered():
+		p.inc(CounterPackTampered)
+	case v.Unreadable:
+		p.inc(CounterPackUnreadable)
+	}
+}
+
+func unreadableProblem(v *Verification) error {
+	return httpx.Refuse(http.StatusServiceUnavailable, SlugStorageUnavailable,
+		"the stored pack cannot be read; whether it matches its seal is unknown: "+deref(v.Problem))
 }
 
 // Download reads a stored pack for purpose: the hash (and a signature
@@ -503,9 +547,12 @@ func (p *Packs) Download(ctx context.Context, actor audit.Actor, piiRole bool, i
 	}
 	v, data := p.check(ctx, &row)
 	if data == nil {
-		p.inc(CounterPackTampered)
+		p.countCheck(&v)
 		if err := p.recordVerification(ctx, actor, &row, &v, "download"); err != nil {
 			return nil, row, err
+		}
+		if !v.tampered() {
+			return nil, row, unreadableProblem(&v)
 		}
 		return nil, row, httpx.Refuse(http.StatusConflict, SlugTampered,
 			"the stored pack does not match its seal and is not served: "+deref(v.Problem)+deref(v.SignatureDetail))

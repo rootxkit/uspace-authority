@@ -130,7 +130,11 @@ a frame of a Message Pack without a decoded position is not counted as
   sealed archive that does not open) is refused with 409
   `evidence_tampered` and recorded (`evidence_pack_verified`,
   `hash_matches: false`); `GET .../verify` answers what it found and
-  records it. The verdicts on the signature: `verified`, `invalid` (the
+  records it. An archive that cannot be read at all (the storage lost
+  it or is unmounted, an object above `INCIDENTS_PACK_MAX_BYTES`, the
+  PII key missing or another one) is not tampering: verify and download
+  answer 503 `evidence_storage_unavailable`, count
+  `evidence_packs_unreadable` and record `hash_matches: null`. The verdicts on the signature: `verified`, `invalid` (the
   row or archive changed), `unsigned`, `unverifiable` (signed with a
   publication key this system no longer holds: verify against the JWKS
   published at the time).
@@ -201,7 +205,8 @@ Counters (`/metrics`, status line `incidents`): `incidents_opened`,
 `evidence_packs_unsigned`, `evidence_packs_orphaned` (an archive stored
 whose row did not commit: the file is an orphan, logged with its
 reference), `evidence_packs_downloaded`, `evidence_packs_verified`,
-`evidence_packs_tampered`, `evidence_sections_unavailable`.
+`evidence_packs_tampered`, `evidence_packs_unreadable`,
+`evidence_sections_unavailable`.
 
 ## Known gaps
 

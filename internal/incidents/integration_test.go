@@ -705,3 +705,47 @@ func TestIntegrationNanosecondWindowVerifies(t *testing.T) {
 		t.Fatalf("a genuine pack is not served: %v", err)
 	}
 }
+
+// Audit B-S2, E-01: a stored archive that cannot be read (the storage
+// lost it, or it is unmounted) is not tampering: verify and download
+// answer 503 evidence_storage_unavailable, count it unreadable (not
+// tampered) and audit hash_matches as unknown (null). A modified
+// archive is still tampering (TestIntegrationEscalatedViolationToAVerifiedPack).
+func TestIntegrationUnreadableArchiveIsNotTampering(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	zoneID, _ := f.violations()
+	f.telemetry()
+	if _, err := f.vio.Review(ctx, inspector, zoneID, violations.DecisionEscalated, sp("note")); err != nil {
+		t.Fatal(err)
+	}
+	rows, _ := f.inc.List(ctx, listByViolation(zoneID))
+	incID := rows[0].IncidentID
+	row, err := f.packs.Create(ctx, inspector, false, incID, f.request(KindOversight))
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(f.dir, filepath.FromSlash(strings.TrimPrefix(row.StorageRef, refPrefix)))
+	if err := os.Chmod(path, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+	_, err = f.packs.Verify(ctx, inspector, incID, row.PackID)
+	if p := httpx.ProblemFromError(err); err == nil || p.Status != http.StatusServiceUnavailable || p.Slug() != SlugStorageUnavailable {
+		t.Fatalf("verify of an unreadable archive: %v", err)
+	}
+	_, payload := f.lastEvent(incID, audit.EventEvidencePackVerified)
+	if v, ok := payload["hash_matches"]; !ok || v != nil {
+		t.Fatalf("verified event %v", payload)
+	}
+	_, _, err = f.packs.Download(ctx, inspector, false, incID, row.PackID, "review")
+	if p := httpx.ProblemFromError(err); err == nil || p.Status != http.StatusServiceUnavailable || p.Slug() != SlugStorageUnavailable {
+		t.Fatalf("download of an unreadable archive: %v", err)
+	}
+	snap := f.packs.Counters.Snapshot()
+	if snap[CounterPackTampered] != 0 || snap[CounterPackUnreadable] != 2 {
+		t.Fatalf("counters %v", snap)
+	}
+}
