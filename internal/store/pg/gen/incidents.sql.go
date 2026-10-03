@@ -589,23 +589,38 @@ func (q *Queries) PackPolicies(ctx context.Context, versions []int64) ([]PackPol
 	return items, nil
 }
 
-const packUSSPList = `-- name: PackUSSPList :one
-SELECT payload, version, fetched_at FROM cis_cache WHERE dataset = 'ussp_list'
+const packUSSPBaseURLs = `-- name: PackUSSPBaseURLs :many
+SELECT code, client_id, base_url FROM certificates WHERE holder = 'ussp' ORDER BY code LIMIT $1
 `
 
-type PackUSSPListRow struct {
-	Payload   []byte
-	Version   int64
-	FetchedAt time.Time
+type PackUSSPBaseURLsRow struct {
+	Code     string
+	ClientID string
+	BaseUrl  string
 }
 
-// The USSP list as the CIS last served it (WP-6): where a USSP's
-// national API (its base_url) is.
-func (q *Queries) PackUSSPList(ctx context.Context) (PackUSSPListRow, error) {
-	row := q.db.QueryRow(ctx, packUSSPList)
-	var i PackUSSPListRow
-	err := row.Scan(&i.Payload, &i.Version, &i.FetchedAt)
-	return i, err
+// Where each USSP's national API is (02 F7: the base URL of its
+// certificate, WP-16), whatever the certificate's status now: a record
+// of a past flight is still the USSP's. A USSP is named by its code or
+// by its client id (the owner of its ISAs).
+func (q *Queries) PackUSSPBaseURLs(ctx context.Context, maxRows int32) ([]PackUSSPBaseURLsRow, error) {
+	rows, err := q.db.Query(ctx, packUSSPBaseURLs, maxRows)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PackUSSPBaseURLsRow{}
+	for rows.Next() {
+		var i PackUSSPBaseURLsRow
+		if err := rows.Scan(&i.Code, &i.ClientID, &i.BaseUrl); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const packViolations = `-- name: PackViolations :many

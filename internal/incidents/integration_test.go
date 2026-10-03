@@ -248,12 +248,19 @@ func (f *fixture) telemetry() {
 		'{"operator_location":{"lat":41.49,"lng":44.59}}')`, f.ts(2), itUSSP, itTrack)
 }
 
-// usspList records the CIS USSP list naming the USSP at baseURL.
-func (f *fixture) usspList(baseURL string) {
-	f.exec(f.pg, `INSERT INTO cis_cache (dataset, version, etag, fetched_at, checked_at, feature_count, payload)
-		VALUES ('ussp_list', 1, '"1"', now(), now(), 1, $1)
-		ON CONFLICT (dataset) DO UPDATE SET payload = excluded.payload`,
-		`{"schema":"cis/ussp_list/v1","issued":"2026-10-01T00:00:00Z","ussps":[{"ussp_id":"`+itUSSP+`","base_url":"`+baseURL+`"}]}`)
+// usspCertificate records the USSP's certificate (WP-16) with its base
+// URL at baseURL: where its service records are fetched from.
+func (f *fixture) usspCertificate(baseURL string) {
+	f.exec(f.pg, `INSERT INTO oauth_clients (client_id, system, scopes, auth_method, secret_hash, created_at, created_by, updated_at, updated_by)
+		VALUES ('ussp-'||$1||'-01', 'ussp', '{registry.validate}', 'client_secret_post', 'x', now(), 'test', now(), 'test')
+		ON CONFLICT (client_id) DO NOTHING`, itUSSP)
+	f.exec(f.pg, `INSERT INTO certificates (id, holder, holder_name, code, client_id, base_url, services, terms_url, issued_at, valid_until,
+		status_changed_at, status_changed_by, lapse_unused_after_months, lapse_ceased_after_months, row_version,
+		created_at, created_by, updated_at, updated_by)
+		VALUES (md5($1), 'ussp', 'Test USSP', $1, 'ussp-'||$1||'-01', $2, '{network_identification}', 'https://ussp.example.test/terms',
+		now() - interval '1 day', now() + interval '1 year', now(), 'test', 6, 12, nextval('certificates_version_seq'),
+		now(), 'test', now(), 'test')
+		ON CONFLICT (code) DO UPDATE SET base_url = excluded.base_url`, itUSSP, baseURL)
 }
 
 func (f *fixture) request(kind string) PackRequest {
@@ -289,7 +296,7 @@ func TestIntegrationEscalatedViolationToAVerifiedPack(t *testing.T) {
 		http.Error(w, "down", http.StatusServiceUnavailable)
 	}))
 	t.Cleanup(usspDown.Close)
-	f.usspList(usspDown.URL)
+	f.usspCertificate(usspDown.URL)
 
 	// Broadcast-only evidence is escalated with a note; the incident is
 	// opened in the same transaction.
@@ -481,7 +488,7 @@ func TestIntegrationLegalPackIsSealedAndRoleGated(t *testing.T) {
 		_, _ = w.Write([]byte(`{"flight_id":"FLIGHT-INT-1","authorisation":"TEST-AUTH-1"}`))
 	}))
 	t.Cleanup(up.Close)
-	f.usspList(up.URL)
+	f.usspCertificate(up.URL)
 	zoneID, _ := f.violations()
 	f.telemetry()
 	if _, err := f.vio.Review(ctx, inspector, zoneID, violations.DecisionEscalated, sp("note")); err != nil {

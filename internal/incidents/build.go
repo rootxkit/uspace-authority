@@ -59,7 +59,7 @@ type Sources interface {
 	PackPolicies(ctx context.Context, versions []int64) ([]gen.PackPoliciesRow, error)
 	PackActivePolicy(ctx context.Context) (gen.PackActivePolicyRow, error)
 	PackEvents(ctx context.Context, arg gen.PackEventsParams) ([]gen.Event, error)
-	PackUSSPList(ctx context.Context) (gen.PackUSSPListRow, error)
+	PackUSSPBaseURLs(ctx context.Context, maxRows int32) ([]gen.PackUSSPBaseURLsRow, error)
 }
 
 // Telemetry are the telemetry reads of a pack (reader.Queries, the

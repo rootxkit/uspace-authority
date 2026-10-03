@@ -294,7 +294,7 @@ func TestUSSPRecords(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 	src, tel := richSources()
-	src.usspList = []byte(`{"ussps":[{"ussp_id":"USSPA","base_url":"` + srv.URL + `"}]}`)
+	src.usspBases = []gen.PackUSSPBaseURLsRow{{Code: "USSPA", ClientID: "ussp-USSPA-01", BaseUrl: srv.URL}}
 	b := builder(src, tel)
 	b.Records = &Records{Tokens: fakeTokens{}, MaxBytes: 1 << 20}
 
@@ -313,7 +313,7 @@ func TestUSSPRecords(t *testing.T) {
 	unavailable := func(mutate func(b *Builder, src *fakeSources, tel *fakeTelemetry), want string) {
 		t.Helper()
 		src, tel := richSources()
-		src.usspList = []byte(`{"ussps":[{"ussp_id":"USSPA","base_url":"` + srv.URL + `"}]}`)
+		src.usspBases = []gen.PackUSSPBaseURLsRow{{Code: "USSPA", ClientID: "ussp-USSPA-01", BaseUrl: srv.URL}}
 		b := builder(src, tel)
 		b.Records = &Records{Tokens: fakeTokens{}, MaxBytes: 1 << 20}
 		mutate(b, src, tel)
@@ -327,8 +327,8 @@ func TestUSSPRecords(t *testing.T) {
 	unavailable(func(b *Builder, _ *fakeSources, _ *fakeTelemetry) {
 		b.Records.Tokens = fakeTokens{err: errors.New("issuer down")}
 	}, "issuer down")
-	unavailable(func(_ *Builder, src *fakeSources, _ *fakeTelemetry) { src.usspList = []byte(`{"ussps":[]}`) }, "not in the CIS USSP list")
-	unavailable(func(_ *Builder, src *fakeSources, _ *fakeTelemetry) { src.usspListErr = errors.New("cis down") }, "cis down")
+	unavailable(func(_ *Builder, src *fakeSources, _ *fakeTelemetry) { src.usspBases = nil }, "holds no certificate in the register")
+	unavailable(func(_ *Builder, src *fakeSources, _ *fakeTelemetry) { src.usspBasesErr = errors.New("register down") }, "register down")
 	unavailable(func(_ *Builder, _ *fakeSources, tel *fakeTelemetry) { tel.ussp[0].FlightID = "DOWN" }, "answered 503")
 	unavailable(func(b *Builder, _ *fakeSources, _ *fakeTelemetry) { b.MaxRecords = 0 }, "past the bound")
 	// No USSP flight at all: none, said so.
@@ -362,13 +362,6 @@ func TestRecordParsers(t *testing.T) {
 	if _, err := ParseRecord([]byte(`{"a":"`+strings.Repeat("x", 200)+`"}`), 100); err == nil {
 		t.Error("a record past the bound accepted")
 	}
-	m, err := ParseUSSPList([]byte(`{"ussps":[{"ussp_id":"A","base_url":"https://a"},{"ussp_id":"A","base_url":"https://b"},{"ussp_id":"","base_url":"https://c"}]}`))
-	if err != nil || len(m) != 1 || m["A"] != "https://a" {
-		t.Fatalf("%v %v", m, err)
-	}
-	if _, err := ParseUSSPList([]byte(`not json`)); err == nil {
-		t.Error("garbage accepted")
-	}
 }
 
 func FuzzParseRecord(f *testing.F) {
@@ -378,20 +371,6 @@ func FuzzParseRecord(f *testing.F) {
 		out, err := ParseRecord(b, 1<<16)
 		if err == nil && (!json.Valid(out) || out[0] != '{') {
 			t.Fatalf("accepted %q as %q", b, out)
-		}
-	})
-}
-
-func FuzzParseUSSPList(f *testing.F) {
-	f.Add([]byte(`{"ussps":[{"ussp_id":"A","base_url":"https://a"}]}`))
-	f.Fuzz(func(t *testing.T, b []byte) {
-		m, err := ParseUSSPList(b)
-		if err == nil {
-			for k, v := range m {
-				if k == "" || v == "" {
-					t.Fatalf("empty member %q %q", k, v)
-				}
-			}
 		}
 	})
 }

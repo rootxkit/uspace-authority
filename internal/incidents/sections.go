@@ -12,7 +12,6 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/rootxkit/uspace-authority/internal/store"
 	"github.com/rootxkit/uspace-authority/internal/store/pg/gen"
 	"github.com/rootxkit/uspace-authority/internal/store/ts/gen/reader"
 )
@@ -558,15 +557,13 @@ func (st *build) records() error {
 	if st.b.Records == nil {
 		listWhy = ErrNoRecordsClient.Error()
 	} else {
-		row, err := st.b.Sources.PackUSSPList(st.ctx)
-		switch {
-		case store.IsNoRows(err):
-			listWhy = "the CIS USSP list was never received (no base_url known)"
-		case err != nil:
-			listWhy = "the CIS USSP list cannot be read: " + reason(err)
-		default:
-			if bases, err = ParseUSSPList(row.Payload); err != nil {
-				listWhy = "the CIS USSP list does not parse: " + reason(err)
+		rows, err := st.b.Sources.PackUSSPBaseURLs(st.ctx, MaxCertificates)
+		if err != nil {
+			listWhy = "the certificate register cannot be read: " + reason(err)
+		} else {
+			bases = make(map[string]string, 2*len(rows))
+			for _, r := range rows {
+				bases[r.Code], bases[r.ClientID] = r.BaseUrl, r.BaseUrl
 			}
 		}
 	}
@@ -581,7 +578,7 @@ func (st *build) records() error {
 		case i >= st.b.MaxRecords:
 			rs.Reason = fmt.Sprintf("past the bound of %d records per pack: build a narrower pack", st.b.MaxRecords)
 		case !known:
-			rs.Reason = "the USSP is not in the CIS USSP list"
+			rs.Reason = "the USSP holds no certificate in the register (no base_url known)"
 		default:
 			body, err := st.b.Records.Fetch(st.ctx, base, r.flight)
 			if err != nil {
