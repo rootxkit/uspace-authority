@@ -40,6 +40,7 @@ jobs:
       pull-requests: read
     outputs:
       go: ${{ steps.filter.outputs.go }}
+      web: ${{ steps.filter.outputs.web }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -63,6 +64,17 @@ jobs:
               - 'Dockerfile'
               - 'internal/**/testdata/**'
               - 'deploy/fetch-ground.sh'
+              - '.github/workflows/ci.yml'
+            # web/ (WP-21) and what it reads from the rest of the
+            # repository: the API it generates types from, the frame
+            # schemas it generates the extras from, and the lab's
+            # console/* examples its tests and smoke run serve.
+            web:
+              - 'web/**'
+              - 'api/openapi.yaml'
+              - 'schemas/picture/**'
+              - 'schemas/violation/**'
+              - 'internal/picture/testdata/lab/**'
               - '.github/workflows/ci.yml'
 
   build-vet-lint:
@@ -264,6 +276,118 @@ jobs:
           path: integration.log
           if-no-files-found: ignore
 
+  # web/ (WP-21): the console on uspace-ui. Lint (the kit's rules and the
+  # restricted imports), types, the generated API and frame types, unit
+  # tests, the build and its bundle check, the Playwright smoke against a
+  # stub api and a stub picture-ws, and the image build.
+  web:
+    name: web (lint, types, generated types, tests, build, smoke, image)
+    needs: changes
+    if: needs.changes.outputs.web == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: web
+    env:
+      # Plain output, so the counts copied to the step summary can be read.
+      NO_COLOR: "1"
+      FORCE_COLOR: "0"
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          package_json_file: web/package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - name: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
+      - name: generated API types are current (uspace-ui-gen-api)
+        run: pnpm check:api
+      - name: generated frame types are current (json-schema-to-typescript)
+        run: pnpm check:schemas
+      # E-01: the check fails on a stale file, so a pass above means something.
+      - name: a stale generated file fails the check
+        run: |
+          echo '// stale' >> src/picture/generated/status.d.ts
+          if pnpm check:schemas > "$RUNNER_TEMP/schemas.log" 2>&1; then
+            cat "$RUNNER_TEMP/schemas.log"; echo "a stale file passed"; exit 1
+          fi
+          grep 'out of date' "$RUNNER_TEMP/schemas.log"
+          git checkout -- src/picture/generated/status.d.ts
+      - name: pnpm lint (the kit's config, the restricted imports, the project rules)
+        run: pnpm lint
+      # The backstop of the lint rule: no forbidden package in the
+      # manifest, and no import of one anywhere in app/ or src/. The grep
+      # is shown to find the lint fixture that imports one.
+      - name: no geometry, JWT, database or bus package in web/
+        run: |
+          set -o pipefail
+          forbidden='^(@turf/.*|turf|h3|h3-js|proj4|jose|jsonwebtoken|pg|postgres|nats|nats\.ws|@nats-io/.*)$'
+          if node -e 'const p=require("./package.json");console.log(Object.keys({...p.dependencies,...p.devDependencies}).join("\n"))' | grep -E "$forbidden"; then
+            echo "a forbidden package is a dependency of web/"; exit 1
+          fi
+          pattern="from ['\"](@turf/[^'\"]*|turf|h3|h3-js|proj4|jose|pg|nats)['\"]"
+          if grep -rnE "$pattern" app src; then echo "a forbidden import in web/"; exit 1; fi
+          for f in eslint-rules/fixtures/src/geometry.ts eslint-rules/fixtures/src/jwt.ts; do
+            grep -qE "$pattern" "$f" || { echo "the grep does not find the import in $f"; exit 1; }
+          done
+          echo "no forbidden package or import (and the grep finds the fixtures)"
+      - name: pnpm typecheck
+        run: pnpm typecheck
+      - name: pnpm test (vitest)
+        run: |
+          set -o pipefail
+          pnpm test 2>&1 | tee vitest.log
+          { echo '### web: vitest'; echo '```'; grep -E '^ +(Test Files|Tests) ' vitest.log || echo 'counts not found in vitest.log'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: web/.next/cache
+          key: next-${{ hashFiles('web/pnpm-lock.yaml') }}-${{ hashFiles('web/app/**', 'web/src/**', 'web/*.ts', 'web/*.mjs') }}
+          restore-keys: next-${{ hashFiles('web/pnpm-lock.yaml') }}-
+      - name: pnpm build
+        run: pnpm build
+      - name: the server bundle names no database, NATS or key variable
+        run: |
+          set -o pipefail
+          pnpm check:bundle | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Playwright version
+        id: playwright
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      - name: Chromium and its system libraries
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Playwright smoke (next start behind test/mock-origin.mjs)
+        run: |
+          set -o pipefail
+          pnpm e2e 2>&1 | tee playwright.log
+          { echo '### web: Playwright'; echo '```'; grep -E '^ +[0-9]+ (passed|failed|skipped|flaky)' playwright.log || echo 'counts not found in playwright.log'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          if grep -qE '^ +[0-9]+ (skipped|flaky)' playwright.log; then echo "playwright: a test skipped or was flaky"; exit 1; fi
+          if ! grep -qE '^ +[1-9][0-9]* passed' playwright.log; then echo "playwright: zero tests passed"; exit 1; fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            web/test-results
+            web/playwright.log
+          if-no-files-found: ignore
+      # The image is built here on every change (never on the server); it
+      # is pushed and signed by the image job on main and tags.
+      - name: web image (Next.js standalone, web/Dockerfile)
+        run: docker build -t uspace-authority-web:ci .
+
   govulncheck:
     name: govulncheck
     needs: changes
@@ -315,7 +439,7 @@ jobs:
   image:
     name: image
     if: github.event_name == 'push'
-    needs: [build-vet-lint, test-race, vectors, contract, integration, gitleaks]
+    needs: [build-vet-lint, test-race, vectors, contract, integration, gitleaks, web]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -335,6 +459,14 @@ jobs:
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
         with:
           images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=sha,prefix=sha-
+            type=ref,event=tag
+      # The console image's tags (WP-21), also before the login.
+      - id: meta-web
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
+        with:
+          images: ghcr.io/${{ github.repository }}-web
           tags: |
             type=sha,prefix=sha-
             type=ref,event=tag
@@ -359,3 +491,19 @@ jobs:
         env:
           DIGEST: ${{ steps.build.outputs.digest }}
         run: cosign sign --yes "ghcr.io/${{ github.repository }}@${DIGEST}"
+      # The console image (WP-21), from web/Dockerfile, beside the Go one.
+      - id: build-web
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: web
+          push: true
+          tags: ${{ steps.meta-web.outputs.tags }}
+          labels: ${{ steps.meta-web.outputs.labels }}
+          sbom: true
+          provenance: true
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+      - name: sign the web image
+        env:
+          DIGEST: ${{ steps.build-web.outputs.digest }}
+        run: cosign sign --yes "ghcr.io/${{ github.repository }}-web@${DIGEST}"
