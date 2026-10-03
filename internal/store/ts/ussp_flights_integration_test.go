@@ -55,6 +55,14 @@ func TestIntegrationUSSPFlightsDisposalAndTheTwentyFourHourCheck(t *testing.T) {
 	if err := db.QueryRow(`SELECT time_interval::text FROM timescaledb_information.dimensions WHERE hypertable_name = 'ussp_flights'`).Scan(&chunk); err != nil || chunk != "01:00:00" {
 		t.Fatalf("chunk interval %q %v", chunk, err)
 	}
+	// The policy's first run is due at once (alter_job leaves next_start
+	// at -infinity), and the scheduler TimescaleDB starts for the new
+	// database runs it a few hundred milliseconds after the migration:
+	// had it run after the backdated row below was written, it would
+	// have dropped that chunk and the check would rightly say clean
+	// (main de50806). The policy is paused, any run in progress waited
+	// for, and run by hand once the check has said violated.
+	job := storetest.PauseRetention(t, db, "ussp_flights")
 
 	w := openWriter(t, u)
 	now := time.Now().UTC().Truncate(time.Microsecond)
@@ -84,5 +92,20 @@ func TestIntegrationUSSPFlightsDisposalAndTheTwentyFourHourCheck(t *testing.T) {
 	}
 	if !strings.Contains(logs.String(), `"level":"ERROR","msg":"retention violated`) {
 		t.Fatalf("not said loudly:\n%s", logs.String())
+	}
+	// The policy disposes of the backdated row, and the check says clean
+	// again; the row inside the period stays.
+	if _, err := db.Exec(`CALL run_job($1)`, job); err != nil {
+		t.Fatal(err)
+	}
+	var left int
+	if err := db.QueryRow(`SELECT count(*) FROM ussp_flights WHERE flight_id = 'fl-old'`).Scan(&left); err != nil || left != 0 {
+		t.Fatalf("after the policy ran: %d backdated rows %v", left, err)
+	}
+	if err := db.QueryRow(`SELECT count(*) FROM ussp_flights WHERE flight_id = 'fl-1'`).Scan(&left); err != nil || left != 1 {
+		t.Fatalf("after the policy ran: %d current rows %v", left, err)
+	}
+	if got := r.Check(ctx); got["ussp_flights"] != tswriter.RetentionClean || cnt.Snapshot()[tswriter.CounterRetentionViolations] != 1 {
+		t.Fatalf("after the policy ran: %v %v", got, cnt.Snapshot())
 	}
 }
