@@ -204,9 +204,10 @@ Counters (`/metrics`, status line `incidents`): `incidents_opened`,
 `incidents_backfilled`, `incidents_backfill_failed`,
 `incidents_bound_refused`, `evidence_packs_built`,
 `evidence_packs_refused`, `evidence_packs_busy`,
-`evidence_packs_unsigned`, `evidence_packs_orphaned` (an archive stored
-whose row did not commit: the file is an orphan, logged with its
-reference), `evidence_packs_downloaded`, `evidence_packs_verified`,
+`evidence_packs_unsigned`, `evidence_packs_orphan_removed` (an archive
+stored whose row did not commit, removed again), `evidence_packs_orphaned`
+(such an archive that could not be removed: the file is an orphan,
+logged with its reference; remove it by hand), `evidence_packs_downloaded`, `evidence_packs_verified`,
 `evidence_packs_tampered`, `evidence_packs_unreadable`,
 `evidence_sections_unavailable`.
 

@@ -168,6 +168,16 @@ func (m *memStorage) Put(incidentID, packID string, data []byte) (string, error)
 	return ref, nil
 }
 
+func (m *memStorage) Discard(ref string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if _, ok := m.objs[ref]; !ok {
+		return errors.New("no such object")
+	}
+	delete(m.objs, ref)
+	return nil
+}
+
 func (m *memStorage) Get(ref string, maxBytes int64) ([]byte, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

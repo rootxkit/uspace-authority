@@ -24,11 +24,12 @@ import (
 // Counters of the evidence packs (E-09).
 const (
 	CounterPackBuilt          = "evidence_packs_built"
-	CounterPackRefused        = "evidence_packs_refused"   // a build refused (window, size, role, storage, busy)
-	CounterPackBusy           = "evidence_packs_busy"      // a build refused past the concurrency bound (E-10)
-	CounterPackReadBusy       = "evidence_pack_reads_busy" // a download or verification refused past its bound (E-10)
-	CounterPackUnsigned       = "evidence_packs_unsigned"  // built without a publication key
-	CounterPackOrphaned       = "evidence_packs_orphaned"  // stored but not recorded (the transaction failed)
+	CounterPackRefused        = "evidence_packs_refused"        // a build refused (window, size, role, storage, busy)
+	CounterPackBusy           = "evidence_packs_busy"           // a build refused past the concurrency bound (E-10)
+	CounterPackReadBusy       = "evidence_pack_reads_busy"      // a download or verification refused past its bound (E-10)
+	CounterPackUnsigned       = "evidence_packs_unsigned"       // built without a publication key
+	CounterPackOrphaned       = "evidence_packs_orphaned"       // stored but not recorded (the transaction failed), and not removed
+	CounterPackOrphanRemoved  = "evidence_packs_orphan_removed" // stored, not recorded, and removed again
 	CounterPackDownloaded     = "evidence_packs_downloaded"
 	CounterPackVerified       = "evidence_packs_verified"
 	CounterPackTampered       = "evidence_packs_tampered"       // a stored archive that does not match its hash
@@ -301,9 +302,18 @@ func (p *Packs) Create(ctx context.Context, actor audit.Actor, piiRole bool, inc
 		return err
 	})
 	if err != nil {
-		p.inc(CounterPackOrphaned)
-		logger(p.Logger).Error("evidence pack stored but not recorded; the stored file is an orphan",
-			slog.String("pack_id", packID), slog.String("storage_ref", row.StorageRef), slog.String("error", err.Error()))
+		// The row did not commit: the archive it would have named is
+		// removed (a legal one holds sealed personal data; audit B-N1).
+		if derr := p.Storage.Discard(row.StorageRef); derr != nil {
+			p.inc(CounterPackOrphaned)
+			logger(p.Logger).Error("evidence pack stored but not recorded, and not removed; the stored file is an orphan",
+				slog.String("pack_id", packID), slog.String("storage_ref", row.StorageRef), slog.String("error", err.Error()),
+				slog.String("remove_error", derr.Error()))
+		} else {
+			p.inc(CounterPackOrphanRemoved)
+			logger(p.Logger).Error("evidence pack stored but not recorded; its archive was removed",
+				slog.String("pack_id", packID), slog.String("error", err.Error()))
+		}
 		return gen.EvidencePack{}, err
 	}
 	p.inc(CounterPackBuilt)

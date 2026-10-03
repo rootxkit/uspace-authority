@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -825,5 +826,44 @@ func TestIntegrationPackReadsAreBounded(t *testing.T) {
 	}
 	if _, _, err := f.packs.Download(ctx, inspector, false, incID, row.PackID, "review"); err != nil {
 		t.Fatalf("download with a slot free: %v", err)
+	}
+}
+
+// Audit B-N1, E-01: an archive stored for a pack whose row does not
+// commit is removed again (a legal one holds sealed personal data), and
+// the build says so; a pack that commits keeps its archive.
+func TestIntegrationUncommittedPackLeavesNoArchive(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	zoneID, _ := f.violations()
+	f.telemetry()
+	if _, err := f.vio.Review(ctx, inspector, zoneID, violations.DecisionEscalated, sp("note")); err != nil {
+		t.Fatal(err)
+	}
+	rows, _ := f.inc.List(ctx, listByViolation(zoneID))
+	incID := rows[0].IncidentID
+	kept, err := f.packs.Create(ctx, inspector, false, incID, f.request(KindOversight))
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.exec(f.pg, `CREATE FUNCTION test_refuse_pack() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'refused by the test'; END $$`)
+	f.exec(f.pg, `CREATE TRIGGER test_refuse_pack BEFORE INSERT ON evidence_packs FOR EACH ROW EXECUTE FUNCTION test_refuse_pack()`)
+	if _, err := f.packs.Create(ctx, inspector, false, incID, f.request(KindOversight)); err == nil {
+		t.Fatal("a pack whose row was refused was built")
+	}
+	var files []string
+	if err := filepath.WalkDir(f.dir, func(p string, d fs.DirEntry, err error) error {
+		if err == nil && !d.IsDir() {
+			files = append(files, p)
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if len(files) != 1 || !strings.HasSuffix(filepath.ToSlash(files[0]), strings.TrimPrefix(kept.StorageRef, refPrefix)) {
+		t.Fatalf("archives on disk %v, the kept one %s", files, kept.StorageRef)
+	}
+	if s := f.packs.Counters.Snapshot(); s[CounterPackOrphanRemoved] != 1 || s[CounterPackOrphaned] != 0 {
+		t.Fatalf("counters %v", s)
 	}
 }

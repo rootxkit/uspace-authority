@@ -19,6 +19,9 @@ type Storage interface {
 	// Get reads the object of ref, at most maxBytes (a larger one is an
 	// error, never a truncated read).
 	Get(ref string, maxBytes int64) ([]byte, error)
+	// Discard removes the object of ref that Put stored for a pack whose
+	// row then did not commit (never a recorded pack's).
+	Discard(ref string) error
 }
 
 // ErrNoStorage is the state without EVIDENCE_DIR: packs are refused.
@@ -87,15 +90,42 @@ func (d Dir) Put(incidentID, packID string, data []byte) (string, error) {
 	return refPrefix + rel, nil
 }
 
-// Get implements Storage.
-func (d Dir) Get(ref string, maxBytes int64) ([]byte, error) {
+// path is the file of ref, refused unless ref is a reference of this
+// store.
+func (d Dir) path(ref string) (string, error) {
 	rel, found := strings.CutPrefix(ref, refPrefix)
 	parts := strings.Split(rel, "/")
 	if !found || len(parts) != 2 || !idPattern.MatchString(parts[0]) || !strings.HasSuffix(parts[1], ".zip") ||
 		!idPattern.MatchString(strings.TrimSuffix(parts[1], ".zip")) {
-		return nil, fmt.Errorf("evidence storage: %q is not a reference of this store", ref)
+		return "", fmt.Errorf("evidence storage: %q is not a reference of this store", ref)
 	}
-	f, err := os.Open(filepath.Join(d.Root, parts[0], parts[1]))
+	return filepath.Join(d.Root, parts[0], parts[1]), nil
+}
+
+// Discard implements Storage.
+func (d Dir) Discard(ref string) error {
+	p, err := d.path(ref)
+	if err != nil {
+		return err
+	}
+	// The file is 0400; a read-only file cannot be removed on every
+	// platform.
+	if err := os.Chmod(p, 0o600); err != nil {
+		return fmt.Errorf("evidence storage: %w", err)
+	}
+	if err := os.Remove(p); err != nil {
+		return fmt.Errorf("evidence storage: %w", err)
+	}
+	return nil
+}
+
+// Get implements Storage.
+func (d Dir) Get(ref string, maxBytes int64) ([]byte, error) {
+	p, err := d.path(ref)
+	if err != nil {
+		return nil, err
+	}
+	f, err := os.Open(p)
 	if err != nil {
 		return nil, fmt.Errorf("evidence storage: %w", err)
 	}
