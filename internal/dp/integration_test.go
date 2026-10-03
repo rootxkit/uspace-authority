@@ -22,6 +22,7 @@ import (
 
 	"github.com/rootxkit/uspace-authority/internal/bus"
 	"github.com/rootxkit/uspace-authority/internal/bus/bustest"
+	"github.com/rootxkit/uspace-authority/internal/certkv"
 	"github.com/rootxkit/uspace-authority/internal/config"
 	"github.com/rootxkit/uspace-authority/internal/dp"
 	"github.com/rootxkit/uspace-authority/internal/dpviews"
@@ -112,12 +113,15 @@ type dpStack struct {
 	iss       *issuer
 	addr      string
 	srcBucket string
-	engine    *dp.Engine
-	tracks    *tracks
-	statuses  sync.Map // uss id -> dp.StatusBody
-	logs      *syncBuf
-	exit      chan int
-	cancel    context.CancelFunc
+	// certBucket holds the certified USSPs as api publishes them
+	// (WP-16): ussp-LAB-01 is certified, ussp-two-01 is not.
+	certBucket string
+	engine     *dp.Engine
+	tracks     *tracks
+	statuses   sync.Map // uss id -> dp.StatusBody
+	logs       *syncBuf
+	exit       chan int
+	cancel     context.CancelFunc
 }
 
 func startDP(t *testing.T, mutate func(map[string]string)) *dpStack {
@@ -130,7 +134,7 @@ func startDP(t *testing.T, mutate func(map[string]string)) *dpStack {
 		t.Fatal(err)
 	}
 	s := &dpStack{t: t, nc: nc, js: js, dss: fakedss.NewDSS(), sp: fakedss.NewSP(), sp2: fakedss.NewSP(), iss: newIssuer(t),
-		addr: freeAddr(t), srcBucket: bustest.Name("src"), tracks: &tracks{}, logs: &syncBuf{}, exit: make(chan int, 1), cancel: cancel}
+		addr: freeAddr(t), srcBucket: bustest.Name("src"), certBucket: bustest.Name("certs"), tracks: &tracks{}, logs: &syncBuf{}, exit: make(chan int, 1), cancel: cancel}
 	t.Cleanup(func() { s.dss.Close(); s.sp.Close(); s.sp2.Close() })
 	sub, err := nc.Subscribe(bus.SubjectTrkAll, s.tracks.add)
 	if err != nil {
@@ -154,7 +158,7 @@ func startDP(t *testing.T, mutate func(map[string]string)) *dpStack {
 		"ISSUER_URL": issuerURL, "DP_ADDR": s.addr, "ADMIN_ADDR": "127.0.0.1:0", "DSS_BASE_URL": s.dss.URL(),
 		"SOURCE_CONTROL_BUCKET": s.srcBucket, "SOURCE_CONTROL_REREAD_S": "1", "DP_OVERSIGHT_BUCKET": oversight,
 		"DP_VIEWS_BUCKET": bustest.Name("dpv"), "DP_VIEWS_REREAD_S": "1", "DP_DISCOVERY_REREAD_S": "1",
-		"DP_STATUS_INTERVAL_MS": "200", "DP_UNAVAILABLE_AFTER_S": "2", "DP_CERTIFIED_USSPS": "ussp-lab-01",
+		"DP_STATUS_INTERVAL_MS": "200", "DP_UNAVAILABLE_AFTER_S": "2", "CERTIFICATES_BUCKET": s.certBucket, "DP_CERTIFICATES_REREAD_S": "1",
 		"NATS_START_ATTEMPTS": "1", "SHUTDOWN_TIMEOUT_S": "5", "DP_PROJECTION_REFRESH_S": "1",
 	}
 	if mutate != nil {
@@ -169,6 +173,7 @@ func startDP(t *testing.T, mutate func(map[string]string)) *dpStack {
 		BBox: dpviews.BBox{box.MinLon, box.MinLat, box.MaxLon, box.MaxLat}}}}, 3); err != nil || !ok {
 		t.Fatalf("oversight %v %v", ok, err)
 	}
+	s.putCertified(t, 1, "ussp-LAB-01")
 	host, _, _ := net.SplitHostPort(s.addr)
 	opts := dp.Options{Tokens: s.iss, Verifier: s.iss.verifier(t, host), Engine: func(e *dp.Engine) { s.engine = e }}
 	cfg := &config.DPPoller{}
@@ -181,6 +186,25 @@ func startDP(t *testing.T, mutate func(map[string]string)) *dpStack {
 	t.Cleanup(s.stop)
 	eventually(t, "the engine", 10*time.Second, func() bool { return s.engine != nil })
 	return s
+}
+
+// putCertified publishes the certified USSPs as api does.
+func (s *dpStack) putCertified(t *testing.T, version int64, clients ...string) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	kv, err := bus.OpenBucket(ctx, s.js, certkv.BucketConfig(s.certBucket))
+	if err != nil {
+		t.Fatal(err)
+	}
+	reg := certkv.Register{Version: version, USSPs: []certkv.USSP{}}
+	for _, c := range clients {
+		code := strings.TrimSuffix(strings.TrimPrefix(c, "ussp-"), "-01")
+		reg.USSPs = append(reg.USSPs, certkv.USSP{ClientID: c, Code: code, BaseURL: "https://" + strings.ToLower(code) + ".example.test", Status: "operating"})
+	}
+	if ok, err := certkv.Put(ctx, kv, reg, 3); err != nil || !ok {
+		t.Fatalf("certified %v %v", ok, err)
+	}
 }
 
 func (s *dpStack) stop() {
@@ -246,10 +270,10 @@ func TestIntegrationDisplayProviderDiscoversPollsAndPublishes(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	now := time.Now()
-	s.dss.PutISA("isa-1", "ussp-lab-01", s.sp.URL(), box, now.Add(-time.Minute), now.Add(time.Hour))
+	s.dss.PutISA("isa-1", "ussp-LAB-01", s.sp.URL(), box, now.Add(-time.Minute), now.Add(time.Hour))
 	moving(ctx, s.sp, "fl-1", "TESTA0000000001", lat, lon)
 
-	eventually(t, "flights published as trust provider", 15*time.Second, func() bool { return len(s.tracks.bySource("ussp-lab-01")) >= 3 })
+	eventually(t, "flights published as trust provider", 15*time.Second, func() bool { return len(s.tracks.bySource("ussp-LAB-01")) >= 3 })
 	subs := s.dss.Subscriptions()
 	if len(subs) != 1 {
 		t.Fatalf("subscriptions %v", subs)
@@ -271,7 +295,7 @@ func TestIntegrationDisplayProviderDiscoversPollsAndPublishes(t *testing.T) {
 	want := rid.AircraftID(odid.IDTypeSerial, "TESTA0000000001")
 	var last map[string]any
 	eventually(t, "the flight with its serial's track id", 10*time.Second, func() bool {
-		ms := s.tracks.bySource("ussp-lab-01")
+		ms := s.tracks.bySource("ussp-LAB-01")
 		last = ms[len(ms)-1]
 		return last["body"].(map[string]any)["track_id"] == want
 	})
@@ -299,30 +323,46 @@ func TestIntegrationDisplayProviderDiscoversPollsAndPublishes(t *testing.T) {
 			return false
 		}
 		m, err := st.GetLastMsgForSubject(ctx, "tsw.v1.ussp_flights")
-		return err == nil && strings.Contains(string(m.Data), `"ussp_id":"ussp-lab-01"`) && strings.Contains(string(m.Data), `"provider_unknown":false`)
+		return err == nil && strings.Contains(string(m.Data), `"ussp_id":"ussp-LAB-01"`) && strings.Contains(string(m.Data), `"provider_unknown":false`)
 	})
 
 	// A notification from the Service Provider: applied; another
 	// host's aud: refused.
-	subscribers := s.dss.PutISA("isa-2", "ussp-lab-01", s.sp.URL(), box, now.Add(-time.Minute), now.Add(2*time.Hour))
+	subscribers := s.dss.PutISA("isa-2", "ussp-LAB-01", s.sp.URL(), box, now.Add(-time.Minute), now.Add(2*time.Hour))
 	area, _ := s.dss.ISA("isa-2")
 	ext := dp.Volume(box, now, now.Add(2*time.Hour))
 	host, _, _ := net.SplitHostPort(s.addr)
 	refused, err := fakedss.Notify(ctx, subscribers, "isa-2", &area, &ext, func(string) string {
-		return s.iss.issue("ussp-lab-01", "other.example.test", string(f3411.ScopeServiceProvider))
+		return s.iss.issue("ussp-LAB-01", "other.example.test", string(f3411.ScopeServiceProvider))
 	})
 	if err != nil || refused["http://"+s.addr] != 401 {
 		t.Fatalf("another host's aud: %v %v", refused, err)
 	}
 	ok, err := fakedss.Notify(ctx, subscribers, "isa-2", &area, &ext, func(string) string {
-		return s.iss.issue("ussp-lab-01", host, string(f3411.ScopeServiceProvider))
+		return s.iss.issue("ussp-LAB-01", host, string(f3411.ScopeServiceProvider))
 	})
 	if err != nil || ok["http://"+s.addr] != 204 {
 		t.Fatalf("own aud: %v %v", ok, err)
 	}
 	eventually(t, "the status says live", 5*time.Second, func() bool {
-		st, ok := s.status("ussp-lab-01")
+		st, ok := s.status("ussp-LAB-01")
 		return ok && st.State == dp.StateLive && st.ISAs == 2 && st.Tiles == 1 && !st.ProviderUnknown && st.DSS == dp.DSSOK
+	})
+
+	// WP-16, E-01: the certificate suspended (the register republished
+	// without it) makes the provider provider_unknown, still polled and
+	// shown; reinstated, it is known again.
+	before := len(s.tracks.bySource("ussp-LAB-01"))
+	s.putCertified(t, 2)
+	eventually(t, "provider_unknown after the suspension", 10*time.Second, func() bool {
+		st, ok := s.status("ussp-LAB-01")
+		return ok && st.ProviderUnknown && st.State == dp.StateLive
+	})
+	eventually(t, "still polled and shown", 10*time.Second, func() bool { return len(s.tracks.bySource("ussp-LAB-01")) > before })
+	s.putCertified(t, 3, "ussp-LAB-01")
+	eventually(t, "known after the reinstatement", 10*time.Second, func() bool {
+		st, ok := s.status("ussp-LAB-01")
+		return ok && !st.ProviderUnknown
 	})
 }
 
@@ -426,11 +466,11 @@ func TestIntegrationSC16ProviderSwitchedOffStopsBeingPolled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	now := time.Now()
-	s.dss.PutISA("isa-1", "ussp-lab-01", s.sp.URL(), box, now.Add(-time.Minute), now.Add(time.Hour))
+	s.dss.PutISA("isa-1", "ussp-LAB-01", s.sp.URL(), box, now.Add(-time.Minute), now.Add(time.Hour))
 	moving(ctx, s.sp, "fl-1", "TESTA0000000001", lat, lon)
 	eventually(t, "polled", 15*time.Second, func() bool { n, _ := s.sp.Counts(); return n >= 3 })
 
-	s.switchSource(t, 1, "ussp-lab-01", false)
+	s.switchSource(t, 1, "ussp-LAB-01", false)
 	var stopped int
 	eventually(t, "polling stopped", 3*time.Second, func() bool {
 		a, _ := s.sp.Counts()
@@ -444,12 +484,12 @@ func TestIntegrationSC16ProviderSwitchedOffStopsBeingPolled(t *testing.T) {
 		t.Fatalf("polled %d more times while disabled", n-stopped)
 	}
 	eventually(t, "status disabled by whom", 3*time.Second, func() bool {
-		st, ok := s.status("ussp-lab-01")
+		st, ok := s.status("ussp-LAB-01")
 		return ok && st.State == dp.StateDisabled && st.DisabledByWho != nil && *st.DisabledByWho == "admin@example.test"
 	})
 
 	switched := time.Now()
-	s.switchSource(t, 2, "ussp-lab-01", true)
+	s.switchSource(t, 2, "ussp-LAB-01", true)
 	eventually(t, "polling resumed", 3*time.Second, func() bool { n, _ := s.sp.Counts(); return n > stopped })
 	if took := time.Since(switched); took > 2*time.Second {
 		// Within 1 s of the follower taking the switch; the KV watch
@@ -468,12 +508,12 @@ func TestIntegrationLimitsAndFailures(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	now := time.Now()
-	s.dss.PutISA("isa-1", "ussp-lab-01", s.sp.URL(), box, now.Add(-time.Minute), now.Add(time.Hour))
+	s.dss.PutISA("isa-1", "ussp-LAB-01", s.sp.URL(), box, now.Add(-time.Minute), now.Add(time.Hour))
 	s.dss.PutISA("isa-9", "ussp-two-01", s.sp2.URL(), box, now.Add(-time.Minute), now.Add(time.Hour))
 	moving(ctx, s.sp, "fl-1", "TESTA0000000001", lat, lon)
 	moving(ctx, s.sp2, "fl-2", "TESTA0000000002", lat+0.001, lon)
 	eventually(t, "both providers published", 15*time.Second, func() bool {
-		return len(s.tracks.bySource("ussp-lab-01")) > 0 && len(s.tracks.bySource("ussp-two-01")) > 0
+		return len(s.tracks.bySource("ussp-LAB-01")) > 0 && len(s.tracks.bySource("ussp-two-01")) > 0
 	})
 	if st, ok := s.status("ussp-two-01"); ok && !st.ProviderUnknown {
 		t.Fatal("an uncertified provider is not shown provider_unknown")
@@ -481,7 +521,7 @@ func TestIntegrationLimitsAndFailures(t *testing.T) {
 
 	// 413: the tile is split and its quarters are polled.
 	s.sp.SetStatus(413)
-	eventually(t, "split after 413", 5*time.Second, func() bool { p := s.provider("ussp-lab-01"); return p != nil && p.IsSplit(dp.Tile{Box: box}.Key()) })
+	eventually(t, "split after 413", 5*time.Second, func() bool { p := s.provider("ussp-LAB-01"); return p != nil && p.IsSplit(dp.Tile{Box: box}.Key()) })
 	s.sp.SetStatus(0)
 	quarter := dp.ViewParam(dp.Tile{Box: box}.Split4()[0].Box)
 	eventually(t, "a quarter polled", 5*time.Second, func() bool {
@@ -495,18 +535,18 @@ func TestIntegrationLimitsAndFailures(t *testing.T) {
 
 	// Slow: past the F3411 p99 the provider is slow.
 	s.sp.SetDelay(3200 * time.Millisecond)
-	eventually(t, "slow", 15*time.Second, func() bool { st, ok := s.status("ussp-lab-01"); return ok && st.Slow && st.P99S > 3 })
+	eventually(t, "slow", 15*time.Second, func() bool { st, ok := s.status("ussp-LAB-01"); return ok && st.Slow && st.P99S > 3 })
 	s.sp.SetDelay(0)
 
 	// Down: unavailable since T, never removed; the other provider goes on.
 	s.sp.SetDown(true)
 	eventually(t, "unavailable since", 15*time.Second, func() bool {
-		st, ok := s.status("ussp-lab-01")
+		st, ok := s.status("ussp-LAB-01")
 		return ok && st.State == dp.StateDown && st.UnavailableSince != nil
 	})
 	before := len(s.tracks.bySource("ussp-two-01"))
 	eventually(t, "the other provider still published", 5*time.Second, func() bool { return len(s.tracks.bySource("ussp-two-01")) > before })
-	if s.provider("ussp-lab-01") == nil {
+	if s.provider("ussp-LAB-01") == nil {
 		t.Fatal("the unavailable provider was removed")
 	}
 	s.sp.SetDown(false)
