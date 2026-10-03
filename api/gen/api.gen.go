@@ -192,6 +192,48 @@ func (e DPProviderState) Valid() bool {
 	}
 }
 
+// Defines values for EvidencePackKind.
+const (
+	EvidencePackKindLegal     EvidencePackKind = "legal"
+	EvidencePackKindOversight EvidencePackKind = "oversight"
+)
+
+// Valid indicates whether the value is a known member of the EvidencePackKind enum.
+func (e EvidencePackKind) Valid() bool {
+	switch e {
+	case EvidencePackKindLegal:
+		return true
+	case EvidencePackKindOversight:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EvidencePackVerificationSignature.
+const (
+	EvidencePackVerificationSignatureInvalid      EvidencePackVerificationSignature = "invalid"
+	EvidencePackVerificationSignatureUnsigned     EvidencePackVerificationSignature = "unsigned"
+	EvidencePackVerificationSignatureUnverifiable EvidencePackVerificationSignature = "unverifiable"
+	EvidencePackVerificationSignatureVerified     EvidencePackVerificationSignature = "verified"
+)
+
+// Valid indicates whether the value is a known member of the EvidencePackVerificationSignature enum.
+func (e EvidencePackVerificationSignature) Valid() bool {
+	switch e {
+	case EvidencePackVerificationSignatureInvalid:
+		return true
+	case EvidencePackVerificationSignatureUnsigned:
+		return true
+	case EvidencePackVerificationSignatureUnverifiable:
+		return true
+	case EvidencePackVerificationSignatureVerified:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for GovGeKindRuleLowerReference.
 const (
 	GovGeKindRuleLowerReferenceAGL   GovGeKindRuleLowerReference = "AGL"
@@ -285,6 +327,102 @@ const (
 func (e HealthStatus) Valid() bool {
 	switch e {
 	case HealthStatusOk:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IncidentKind.
+const (
+	IncidentKindAirprox            IncidentKind = "airprox"
+	IncidentKindEmergency          IncidentKind = "emergency"
+	IncidentKindLostLink           IncidentKind = "lost_link"
+	IncidentKindNonconformance     IncidentKind = "nonconformance"
+	IncidentKindOther              IncidentKind = "other"
+	IncidentKindViolationEscalated IncidentKind = "violation_escalated"
+)
+
+// Valid indicates whether the value is a known member of the IncidentKind enum.
+func (e IncidentKind) Valid() bool {
+	switch e {
+	case IncidentKindAirprox:
+		return true
+	case IncidentKindEmergency:
+		return true
+	case IncidentKindLostLink:
+		return true
+	case IncidentKindNonconformance:
+		return true
+	case IncidentKindOther:
+		return true
+	case IncidentKindViolationEscalated:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IncidentOpenedFrom.
+const (
+	IncidentOpenedFromAnspNotice     IncidentOpenedFrom = "ansp_notice"
+	IncidentOpenedFromOwnObservation IncidentOpenedFrom = "own_observation"
+	IncidentOpenedFromUsspNotice     IncidentOpenedFrom = "ussp_notice"
+	IncidentOpenedFromViolation      IncidentOpenedFrom = "violation"
+)
+
+// Valid indicates whether the value is a known member of the IncidentOpenedFrom enum.
+func (e IncidentOpenedFrom) Valid() bool {
+	switch e {
+	case IncidentOpenedFromAnspNotice:
+		return true
+	case IncidentOpenedFromOwnObservation:
+		return true
+	case IncidentOpenedFromUsspNotice:
+		return true
+	case IncidentOpenedFromViolation:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IncidentSeverity.
+const (
+	IncidentSeverityCritical IncidentSeverity = "critical"
+	IncidentSeverityInfo     IncidentSeverity = "info"
+	IncidentSeverityWarning  IncidentSeverity = "warning"
+)
+
+// Valid indicates whether the value is a known member of the IncidentSeverity enum.
+func (e IncidentSeverity) Valid() bool {
+	switch e {
+	case IncidentSeverityCritical:
+		return true
+	case IncidentSeverityInfo:
+		return true
+	case IncidentSeverityWarning:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IncidentStatus.
+const (
+	IncidentStatusAssigned IncidentStatus = "assigned"
+	IncidentStatusClosed   IncidentStatus = "closed"
+	IncidentStatusOpen     IncidentStatus = "open"
+)
+
+// Valid indicates whether the value is a known member of the IncidentStatus enum.
+func (e IncidentStatus) Valid() bool {
+	switch e {
+	case IncidentStatusAssigned:
+		return true
+	case IncidentStatusClosed:
+		return true
+	case IncidentStatusOpen:
 		return true
 	default:
 		return false
@@ -1723,6 +1861,85 @@ type ED318Collection = json.RawMessage
 // ED318Feature One ED-318 UASZone feature (GeoJSON Feature), validated by uspace-core ed318.Parse; kept as given.
 type ED318Feature = json.RawMessage
 
+// EvidencePack defines model for EvidencePack.
+type EvidencePack struct {
+	CaseRef *string `json:"case_ref,omitempty"`
+
+	// ContentHash sha256:<64 hex> of the archive.
+	ContentHash string           `json:"content_hash"`
+	CreatedAt   time.Time        `json:"created_at"`
+	CreatedBy   string           `json:"created_by"`
+	From        time.Time        `json:"from"`
+	IncidentId  string           `json:"incident_id"`
+	Kind        EvidencePackKind `json:"kind"`
+
+	// Manifest What the archive holds, section by section, with what was observed, what was inferred and what was unavailable and why (docs/runbooks/incidents.md). No personal data.
+	Manifest map[string]interface{} `json:"manifest"`
+	PackId   string                 `json:"pack_id"`
+	Purpose  string                 `json:"purpose"`
+
+	// SealStatement What the signature covers (pack_id, incident_id, kind, window, content_hash, created_at).
+	SealStatement map[string]interface{} `json:"seal_statement"`
+
+	// Signature Detached JWS (RFC 7797, b64 false) of the publication key over the seal statement's canonical bytes (seal_statement serialised as stored).
+	Signature    *string   `json:"signature,omitempty"`
+	SignatureKid *string   `json:"signature_kid,omitempty"`
+	SizeBytes    int64     `json:"size_bytes"`
+	To           time.Time `json:"to"`
+}
+
+// EvidencePackInput defines model for EvidencePackInput.
+type EvidencePackInput struct {
+	// CaseRef Required for a legal pack.
+	CaseRef *string `json:"case_ref,omitempty"`
+
+	// From Inclusive start of the window.
+	From    time.Time        `json:"from"`
+	Kind    EvidencePackKind `json:"kind"`
+	Purpose string           `json:"purpose"`
+
+	// To Exclusive end of the window.
+	To time.Time `json:"to"`
+}
+
+// EvidencePackKind defines model for EvidencePackKind.
+type EvidencePackKind string
+
+// EvidencePackSummary defines model for EvidencePackSummary.
+type EvidencePackSummary struct {
+	// ContentHash sha256:<64 hex> of the archive.
+	ContentHash  string           `json:"content_hash"`
+	CreatedAt    time.Time        `json:"created_at"`
+	CreatedBy    string           `json:"created_by"`
+	From         time.Time        `json:"from"`
+	Kind         EvidencePackKind `json:"kind"`
+	PackId       string           `json:"pack_id"`
+	SignatureKid *string          `json:"signature_kid,omitempty"`
+	SizeBytes    int64            `json:"size_bytes"`
+	To           time.Time        `json:"to"`
+}
+
+// EvidencePackVerification defines model for EvidencePackVerification.
+type EvidencePackVerification struct {
+	ContentHash string `json:"content_hash"`
+	HashMatches bool   `json:"hash_matches"`
+	PackId      string `json:"pack_id"`
+
+	// Problem What was wrong
+	Problem *string `json:"problem,omitempty"`
+
+	// RecomputedHash Null when the stored archive could not be read or opened.
+	RecomputedHash *string `json:"recomputed_hash,omitempty"`
+
+	// Signature unverifiable when the signing key is not held by this system any more.
+	Signature       EvidencePackVerificationSignature `json:"signature"`
+	SignatureDetail *string                           `json:"signature_detail,omitempty"`
+	VerifiedAt      time.Time                         `json:"verified_at"`
+}
+
+// EvidencePackVerificationSignature unverifiable when the signing key is not held by this system any more.
+type EvidencePackVerificationSignature string
+
 // FieldProblem defines model for FieldProblem.
 type FieldProblem struct {
 	// Field JSON path or parameter name, as core.FieldError writes it.
@@ -1788,6 +2005,133 @@ type Health struct {
 
 // HealthStatus defines model for Health.Status.
 type HealthStatus string
+
+// Incident defines model for Incident.
+type Incident struct {
+	Aircraft          []IncidentAircraft    `json:"aircraft"`
+	Assignee          *string               `json:"assignee,omitempty"`
+	ClosedAt          *time.Time            `json:"closed_at,omitempty"`
+	CreatedAt         time.Time             `json:"created_at"`
+	EvidencePacks     []EvidencePackSummary `json:"evidence_packs"`
+	IncidentId        string                `json:"incident_id"`
+	IntentRefs        []string              `json:"intent_refs"`
+	Kind              IncidentKind          `json:"kind"`
+	Narrative         string                `json:"narrative"`
+	Notes             []IncidentNote        `json:"notes"`
+	NoticeRef         *string               `json:"notice_ref,omitempty"`
+	OccurredAt        time.Time             `json:"occurred_at"`
+	OpenedBy          string                `json:"opened_by"`
+	OpenedFrom        IncidentOpenedFrom    `json:"opened_from"`
+	Severity          IncidentSeverity      `json:"severity"`
+	SourceViolationId *string               `json:"source_violation_id,omitempty"`
+	Status            IncidentStatus        `json:"status"`
+	UpdatedAt         time.Time             `json:"updated_at"`
+}
+
+// IncidentAircraft defines model for IncidentAircraft.
+type IncidentAircraft struct {
+	AddedAt time.Time `json:"added_at"`
+	AddedBy string    `json:"added_by"`
+	Id      int64     `json:"id"`
+
+	// Identification The identification of the aircraft as it was judged at the time (uspace-core identify), as recorded.
+	Identification IncidentIdentification `json:"identification"`
+
+	// OperatorReg The registration number's public part.
+	OperatorReg   *string  `json:"operator_reg,omitempty"`
+	RegistryUasId *string  `json:"registry_uas_id,omitempty"`
+	Serial        *string  `json:"serial,omitempty"`
+	TrackIds      []string `json:"track_ids"`
+}
+
+// IncidentAircraftInput At least one of serial, operator_reg and track_ids.
+type IncidentAircraftInput struct {
+	// Identification The identification of the aircraft as it was judged at the time (uspace-core identify), as recorded.
+	Identification *IncidentIdentification `json:"identification,omitempty"`
+
+	// OperatorReg The public part is stored; a secret part is dropped.
+	OperatorReg *string   `json:"operator_reg,omitempty"`
+	Serial      *string   `json:"serial,omitempty"`
+	TrackIds    *[]string `json:"track_ids,omitempty"`
+}
+
+// IncidentIdentification The identification of the aircraft as it was judged at the time (uspace-core identify), as recorded.
+type IncidentIdentification struct {
+	Basis         *string `json:"basis,omitempty"`
+	EvidenceTrust *string `json:"evidence_trust,omitempty"`
+	Reason        *string `json:"reason,omitempty"`
+	Status        *string `json:"status,omitempty"`
+}
+
+// IncidentInput defines model for IncidentInput.
+type IncidentInput struct {
+	Aircraft   *[]IncidentAircraftInput `json:"aircraft,omitempty"`
+	IntentRefs *[]string                `json:"intent_refs,omitempty"`
+	Kind       IncidentKind             `json:"kind"`
+	Narrative  *string                  `json:"narrative,omitempty"`
+
+	// NoticeRef The ANSP's or USSP's reference of the notice.
+	NoticeRef  *string            `json:"notice_ref,omitempty"`
+	OccurredAt time.Time          `json:"occurred_at"`
+	OpenedFrom IncidentOpenedFrom `json:"opened_from"`
+	Severity   IncidentSeverity   `json:"severity"`
+}
+
+// IncidentKind defines model for IncidentKind.
+type IncidentKind string
+
+// IncidentNote defines model for IncidentNote.
+type IncidentNote struct {
+	Author    string    `json:"author"`
+	Body      string    `json:"body"`
+	CreatedAt time.Time `json:"created_at"`
+	Id        int64     `json:"id"`
+}
+
+// IncidentOpenedFrom defines model for IncidentOpenedFrom.
+type IncidentOpenedFrom string
+
+// IncidentPage defines model for IncidentPage.
+type IncidentPage struct {
+	Incidents []IncidentSummary `json:"incidents"`
+
+	// NextCursor Pass as cursor for the next page; absent on the last page.
+	NextCursor *string `json:"next_cursor,omitempty"`
+}
+
+// IncidentPatch defines model for IncidentPatch.
+type IncidentPatch struct {
+	AddAircraft *[]IncidentAircraftInput `json:"add_aircraft,omitempty"`
+
+	// Assignee The account the case is assigned to.
+	Assignee   *string           `json:"assignee,omitempty"`
+	IntentRefs *[]string         `json:"intent_refs,omitempty"`
+	Narrative  *string           `json:"narrative,omitempty"`
+	Note       *string           `json:"note,omitempty"`
+	Severity   *IncidentSeverity `json:"severity,omitempty"`
+	Status     *IncidentStatus   `json:"status,omitempty"`
+}
+
+// IncidentSeverity defines model for IncidentSeverity.
+type IncidentSeverity string
+
+// IncidentStatus defines model for IncidentStatus.
+type IncidentStatus string
+
+// IncidentSummary defines model for IncidentSummary.
+type IncidentSummary struct {
+	Assignee          *string            `json:"assignee,omitempty"`
+	ClosedAt          *time.Time         `json:"closed_at,omitempty"`
+	CreatedAt         time.Time          `json:"created_at"`
+	IncidentId        string             `json:"incident_id"`
+	Kind              IncidentKind       `json:"kind"`
+	OccurredAt        time.Time          `json:"occurred_at"`
+	OpenedFrom        IncidentOpenedFrom `json:"opened_from"`
+	Severity          IncidentSeverity   `json:"severity"`
+	SourceViolationId *string            `json:"source_violation_id,omitempty"`
+	Status            IncidentStatus     `json:"status"`
+	UpdatedAt         time.Time          `json:"updated_at"`
+}
 
 // IssuerMetadata defines model for IssuerMetadata.
 type IssuerMetadata struct {
@@ -3389,6 +3733,22 @@ type GetSessionParams struct {
 	Activity *bool `form:"activity,omitempty" json:"activity,omitempty"`
 }
 
+// ListIncidentsParams defines parameters for ListIncidents.
+type ListIncidentsParams struct {
+	Status *IncidentStatus `form:"status,omitempty" json:"status,omitempty"`
+	Kind   *IncidentKind   `form:"kind,omitempty" json:"kind,omitempty"`
+
+	// ViolationId The incident opened from this violation.
+	ViolationId *string `form:"violation_id,omitempty" json:"violation_id,omitempty"`
+	Cursor      *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit       *int    `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// DownloadEvidencePackParams defines parameters for DownloadEvidencePack.
+type DownloadEvidencePackParams struct {
+	Purpose string `form:"purpose" json:"purpose"`
+}
+
 // CompromiseSigningKeyJSONBody defines parameters for CompromiseSigningKey.
 type CompromiseSigningKeyJSONBody struct {
 	Reason string `json:"reason"`
@@ -3577,6 +3937,15 @@ type SetDPProviderAvailabilityJSONRequestBody = DPAvailabilityInput
 
 // CreateDPViewJSONRequestBody defines body for CreateDPView for application/json ContentType.
 type CreateDPViewJSONRequestBody = DPViewInput
+
+// CreateIncidentJSONRequestBody defines body for CreateIncident for application/json ContentType.
+type CreateIncidentJSONRequestBody = IncidentInput
+
+// UpdateIncidentJSONRequestBody defines body for UpdateIncident for application/json ContentType.
+type UpdateIncidentJSONRequestBody = IncidentPatch
+
+// CreateEvidencePackJSONRequestBody defines body for CreateEvidencePack for application/json ContentType.
+type CreateEvidencePackJSONRequestBody = EvidencePackInput
 
 // CreateOAuthClientJSONRequestBody defines body for CreateOAuthClient for application/json ContentType.
 type CreateOAuthClientJSONRequestBody = OAuthClientInput
@@ -4201,6 +4570,184 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /v1/dp/views (the `CreateDPView` operationId).
 	CreateDPView(ctx context.Context, body CreateDPViewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListIncidents Incidents, newest first
+	//
+	// Corresponds with GET /v1/incidents (the `ListIncidents` operationId).
+	ListIncidents(ctx context.Context, params *ListIncidentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateIncidentWithBody Open an incident from the authority's own observation or a notice
+	//
+	// `opened_from` is `own_observation`, `ansp_notice` or
+	// `ussp_notice` (the last two with `notice_ref`); an incident is
+	// opened from a violation only by escalating it (`POST
+	// /v1/violations/{violation_id}/review`), never here (400 naming
+	// `opened_from`). Never from an occurrence report (376/2014 Art.
+	// 15-16). An aircraft's `operator_reg` is stored as its public part
+	// only: a secret part sent is dropped, never stored (spec 06 §5).
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/incidents (the `CreateIncident` operationId).
+	CreateIncidentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateIncident Open an incident from the authority's own observation or a notice
+	//
+	// `opened_from` is `own_observation`, `ansp_notice` or
+	// `ussp_notice` (the last two with `notice_ref`); an incident is
+	// opened from a violation only by escalating it (`POST
+	// /v1/violations/{violation_id}/review`), never here (400 naming
+	// `opened_from`). Never from an occurrence report (376/2014 Art.
+	// 15-16). An aircraft's `operator_reg` is stored as its public part
+	// only: a secret part sent is dropped, never stored (spec 06 §5).
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/incidents (the `CreateIncident` operationId).
+	CreateIncident(ctx context.Context, body CreateIncidentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetIncident One incident with its aircraft, notes and evidence packs
+	//
+	// Corresponds with GET /v1/incidents/{incident_id} (the `GetIncident` operationId).
+	GetIncident(ctx context.Context, incidentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateIncidentWithBody Change an incident, assign or close it, add an aircraft or a note
+	//
+	// Every member is optional; what is present is applied in one
+	// transaction with one `incident_updated` events row naming each
+	// change (from, to). `status` moves open -> assigned (an
+	// `assignee` is required) -> closed, open -> closed, and a closed
+	// incident is reopened (closed -> open or assigned), so a case is
+	// never shut without a way back. Notes are append-only: `note`
+	// adds one (at most 500 per incident). `add_aircraft` adds
+	// aircraft (at most 32 per incident, E-10).
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /v1/incidents/{incident_id} (the `UpdateIncident` operationId).
+	UpdateIncidentWithBody(ctx context.Context, incidentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateIncident Change an incident, assign or close it, add an aircraft or a note
+	//
+	// Every member is optional; what is present is applied in one
+	// transaction with one `incident_updated` events row naming each
+	// change (from, to). `status` moves open -> assigned (an
+	// `assignee` is required) -> closed, open -> closed, and a closed
+	// incident is reopened (closed -> open or assigned), so a case is
+	// never shut without a way back. Notes are append-only: `note`
+	// adds one (at most 500 per incident). `add_aircraft` adds
+	// aircraft (at most 32 per incident, E-10).
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /v1/incidents/{incident_id} (the `UpdateIncident` operationId).
+	UpdateIncident(ctx context.Context, incidentId string, body UpdateIncidentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateEvidencePackWithBody Build, seal and store an evidence pack for a window
+	//
+	// Assembles the manifest and the archive of the incident's evidence
+	// in [from, to): track excerpts cut into segments at every silence
+	// longer than the active policy's `max_gap_s`, every recorded
+	// writer gap and every sample without a position, each hole
+	// labelled with its cause or `no recorded cause` (B-13; nothing is
+	// interpolated); the raw Remote ID frames; the Display Provider's
+	// rows while still held (24 h); the zone versions named and in
+	// force; the policy versions; the violations; the events lines;
+	// the ground dataset and spacing of every AGL number (D-05); the
+	// USSP's service record of each USSP flight fetched on demand (02
+	// F7, scope `ussp.records`). A source that cannot be read is in
+	// the manifest as `unavailable` with the reason, never silently
+	// missing. A window longer than `INCIDENTS_PACK_MAX_WINDOW_S` is
+	// refused (400 `window_too_large`) and a section holding more than
+	// `INCIDENTS_PACK_MAX_ROWS` rows is refused (413
+	// `pack_too_large`), never thinned. The archive is deterministic
+	// (sorted entries, fixed timestamps); `content_hash` is its
+	// SHA-256, recorded here and in the `evidence_pack_built` events
+	// row with the purpose; the seal statement (pack id, incident,
+	// kind, window, hash, time) is signed as a detached JWS by the
+	// publication key when one is configured. `oversight` packs carry
+	// no personal data (registration public part and serial only;
+	// frame payloads that may carry the remote pilot position are
+	// withheld and kept by hash); `legal` packs need `case_ref` and a
+	// personal-data role (403 otherwise), resolve the operators'
+	// personal data from the registry (each read audited with the
+	// purpose) and are sealed at rest. 503
+	// `evidence_storage_unavailable` without `EVIDENCE_DIR`; 503
+	// `pack_busy` past `INCIDENTS_PACK_CONCURRENCY` builds at once.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/incidents/{incident_id}/evidence-packs (the `CreateEvidencePack` operationId).
+	CreateEvidencePackWithBody(ctx context.Context, incidentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateEvidencePack Build, seal and store an evidence pack for a window
+	//
+	// Assembles the manifest and the archive of the incident's evidence
+	// in [from, to): track excerpts cut into segments at every silence
+	// longer than the active policy's `max_gap_s`, every recorded
+	// writer gap and every sample without a position, each hole
+	// labelled with its cause or `no recorded cause` (B-13; nothing is
+	// interpolated); the raw Remote ID frames; the Display Provider's
+	// rows while still held (24 h); the zone versions named and in
+	// force; the policy versions; the violations; the events lines;
+	// the ground dataset and spacing of every AGL number (D-05); the
+	// USSP's service record of each USSP flight fetched on demand (02
+	// F7, scope `ussp.records`). A source that cannot be read is in
+	// the manifest as `unavailable` with the reason, never silently
+	// missing. A window longer than `INCIDENTS_PACK_MAX_WINDOW_S` is
+	// refused (400 `window_too_large`) and a section holding more than
+	// `INCIDENTS_PACK_MAX_ROWS` rows is refused (413
+	// `pack_too_large`), never thinned. The archive is deterministic
+	// (sorted entries, fixed timestamps); `content_hash` is its
+	// SHA-256, recorded here and in the `evidence_pack_built` events
+	// row with the purpose; the seal statement (pack id, incident,
+	// kind, window, hash, time) is signed as a detached JWS by the
+	// publication key when one is configured. `oversight` packs carry
+	// no personal data (registration public part and serial only;
+	// frame payloads that may carry the remote pilot position are
+	// withheld and kept by hash); `legal` packs need `case_ref` and a
+	// personal-data role (403 otherwise), resolve the operators'
+	// personal data from the registry (each read audited with the
+	// purpose) and are sealed at rest. 503
+	// `evidence_storage_unavailable` without `EVIDENCE_DIR`; 503
+	// `pack_busy` past `INCIDENTS_PACK_CONCURRENCY` builds at once.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/incidents/{incident_id}/evidence-packs (the `CreateEvidencePack` operationId).
+	CreateEvidencePack(ctx context.Context, incidentId string, body CreateEvidencePackJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetEvidencePack One evidence pack's manifest, hash and signature
+	//
+	// The manifest holds no personal data, whatever the kind.
+	//
+	// Corresponds with GET /v1/incidents/{incident_id}/evidence-packs/{pack_id} (the `GetEvidencePack` operationId).
+	GetEvidencePack(ctx context.Context, incidentId string, packId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DownloadEvidencePack The sealed archive (purpose required, audited)
+	//
+	// The stored archive is read, opened when sealed at rest, and its
+	// SHA-256 compared with `content_hash` before a byte is served: a
+	// mismatch is refused (409 `evidence_tampered`, with an
+	// `evidence_pack_verified` events row recording the failure).
+	// Every download is an `evidence_pack_downloaded` events row with
+	// the purpose, committed before the body is sent. A legal pack is
+	// served only to a personal-data role (403).
+	//
+	// Corresponds with GET /v1/incidents/{incident_id}/evidence-packs/{pack_id}/download (the `DownloadEvidencePack` operationId).
+	DownloadEvidencePack(ctx context.Context, incidentId string, packId string, params *DownloadEvidencePackParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// VerifyEvidencePack Recompute the stored archive's hash and check the signature
+	//
+	// Reads the stored archive, recomputes its SHA-256 and compares it
+	// with `content_hash`, and verifies the seal statement's signature
+	// against the publication key this system holds. The answer says
+	// what was found, a mismatch included (200 with `hash_matches:
+	// false` and the problem); every verification is an
+	// `evidence_pack_verified` events row.
+	//
+	// Corresponds with GET /v1/incidents/{incident_id}/evidence-packs/{pack_id}/verify (the `VerifyEvidencePack` operationId).
+	VerifyEvidencePack(ctx context.Context, incidentId string, packId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListOAuthClients Registered clients
 	//
@@ -5079,8 +5626,9 @@ type ClientInterface interface {
 	// `violation_reviewed`). Evidence that is broadcast only
 	// (`evidence_trust: broadcast`) is never escalated without a
 	// note (spec 06 §2 T1; 400 naming `note`). Escalation requests an
-	// incident (`incident_requested`; WP-17 opens it). The review and
-	// the request are `events` rows in the same transaction.
+	// incident (`incident_requested`) and opens it (`incident_opened`,
+	// `GET /v1/incidents?violation_id=`). The review, the request and
+	// the incident are written in the same transaction.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -5094,8 +5642,9 @@ type ClientInterface interface {
 	// `violation_reviewed`). Evidence that is broadcast only
 	// (`evidence_trust: broadcast`) is never escalated without a
 	// note (spec 06 §2 T1; 400 naming `note`). Escalation requests an
-	// incident (`incident_requested`; WP-17 opens it). The review and
-	// the request are `events` rows in the same transaction.
+	// incident (`incident_requested`) and opens it (`incident_opened`,
+	// `GET /v1/incidents?violation_id=`). The review, the request and
+	// the incident are written in the same transaction.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -5804,6 +6353,294 @@ func (c *Client) CreateDPViewWithBody(ctx context.Context, contentType string, b
 // Corresponds with POST /v1/dp/views (the `CreateDPView` operationId).
 func (c *Client) CreateDPView(ctx context.Context, body CreateDPViewJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateDPViewRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListIncidents Incidents, newest first
+//
+// Corresponds with GET /v1/incidents (the `ListIncidents` operationId).
+func (c *Client) ListIncidents(ctx context.Context, params *ListIncidentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListIncidentsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateIncidentWithBody Open an incident from the authority's own observation or a notice
+//
+// `opened_from` is `own_observation`, `ansp_notice` or
+// `ussp_notice` (the last two with `notice_ref`); an incident is
+// opened from a violation only by escalating it (`POST
+// /v1/violations/{violation_id}/review`), never here (400 naming
+// `opened_from`). Never from an occurrence report (376/2014 Art.
+// 15-16). An aircraft's `operator_reg` is stored as its public part
+// only: a secret part sent is dropped, never stored (spec 06 §5).
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/incidents (the `CreateIncident` operationId).
+func (c *Client) CreateIncidentWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateIncidentRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateIncident Open an incident from the authority's own observation or a notice
+//
+// `opened_from` is `own_observation`, `ansp_notice` or
+// `ussp_notice` (the last two with `notice_ref`); an incident is
+// opened from a violation only by escalating it (`POST
+// /v1/violations/{violation_id}/review`), never here (400 naming
+// `opened_from`). Never from an occurrence report (376/2014 Art.
+// 15-16). An aircraft's `operator_reg` is stored as its public part
+// only: a secret part sent is dropped, never stored (spec 06 §5).
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/incidents (the `CreateIncident` operationId).
+func (c *Client) CreateIncident(ctx context.Context, body CreateIncidentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateIncidentRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetIncident One incident with its aircraft, notes and evidence packs
+//
+// Corresponds with GET /v1/incidents/{incident_id} (the `GetIncident` operationId).
+func (c *Client) GetIncident(ctx context.Context, incidentId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetIncidentRequest(c.Server, incidentId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateIncidentWithBody Change an incident, assign or close it, add an aircraft or a note
+//
+// Every member is optional; what is present is applied in one
+// transaction with one `incident_updated` events row naming each
+// change (from, to). `status` moves open -> assigned (an
+// `assignee` is required) -> closed, open -> closed, and a closed
+// incident is reopened (closed -> open or assigned), so a case is
+// never shut without a way back. Notes are append-only: `note`
+// adds one (at most 500 per incident). `add_aircraft` adds
+// aircraft (at most 32 per incident, E-10).
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /v1/incidents/{incident_id} (the `UpdateIncident` operationId).
+func (c *Client) UpdateIncidentWithBody(ctx context.Context, incidentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateIncidentRequestWithBody(c.Server, incidentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateIncident Change an incident, assign or close it, add an aircraft or a note
+//
+// Every member is optional; what is present is applied in one
+// transaction with one `incident_updated` events row naming each
+// change (from, to). `status` moves open -> assigned (an
+// `assignee` is required) -> closed, open -> closed, and a closed
+// incident is reopened (closed -> open or assigned), so a case is
+// never shut without a way back. Notes are append-only: `note`
+// adds one (at most 500 per incident). `add_aircraft` adds
+// aircraft (at most 32 per incident, E-10).
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /v1/incidents/{incident_id} (the `UpdateIncident` operationId).
+func (c *Client) UpdateIncident(ctx context.Context, incidentId string, body UpdateIncidentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateIncidentRequest(c.Server, incidentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateEvidencePackWithBody Build, seal and store an evidence pack for a window
+//
+// Assembles the manifest and the archive of the incident's evidence
+// in [from, to): track excerpts cut into segments at every silence
+// longer than the active policy's `max_gap_s`, every recorded
+// writer gap and every sample without a position, each hole
+// labelled with its cause or `no recorded cause` (B-13; nothing is
+// interpolated); the raw Remote ID frames; the Display Provider's
+// rows while still held (24 h); the zone versions named and in
+// force; the policy versions; the violations; the events lines;
+// the ground dataset and spacing of every AGL number (D-05); the
+// USSP's service record of each USSP flight fetched on demand (02
+// F7, scope `ussp.records`). A source that cannot be read is in
+// the manifest as `unavailable` with the reason, never silently
+// missing. A window longer than `INCIDENTS_PACK_MAX_WINDOW_S` is
+// refused (400 `window_too_large`) and a section holding more than
+// `INCIDENTS_PACK_MAX_ROWS` rows is refused (413
+// `pack_too_large`), never thinned. The archive is deterministic
+// (sorted entries, fixed timestamps); `content_hash` is its
+// SHA-256, recorded here and in the `evidence_pack_built` events
+// row with the purpose; the seal statement (pack id, incident,
+// kind, window, hash, time) is signed as a detached JWS by the
+// publication key when one is configured. `oversight` packs carry
+// no personal data (registration public part and serial only;
+// frame payloads that may carry the remote pilot position are
+// withheld and kept by hash); `legal` packs need `case_ref` and a
+// personal-data role (403 otherwise), resolve the operators'
+// personal data from the registry (each read audited with the
+// purpose) and are sealed at rest. 503
+// `evidence_storage_unavailable` without `EVIDENCE_DIR`; 503
+// `pack_busy` past `INCIDENTS_PACK_CONCURRENCY` builds at once.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/incidents/{incident_id}/evidence-packs (the `CreateEvidencePack` operationId).
+func (c *Client) CreateEvidencePackWithBody(ctx context.Context, incidentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateEvidencePackRequestWithBody(c.Server, incidentId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateEvidencePack Build, seal and store an evidence pack for a window
+//
+// Assembles the manifest and the archive of the incident's evidence
+// in [from, to): track excerpts cut into segments at every silence
+// longer than the active policy's `max_gap_s`, every recorded
+// writer gap and every sample without a position, each hole
+// labelled with its cause or `no recorded cause` (B-13; nothing is
+// interpolated); the raw Remote ID frames; the Display Provider's
+// rows while still held (24 h); the zone versions named and in
+// force; the policy versions; the violations; the events lines;
+// the ground dataset and spacing of every AGL number (D-05); the
+// USSP's service record of each USSP flight fetched on demand (02
+// F7, scope `ussp.records`). A source that cannot be read is in
+// the manifest as `unavailable` with the reason, never silently
+// missing. A window longer than `INCIDENTS_PACK_MAX_WINDOW_S` is
+// refused (400 `window_too_large`) and a section holding more than
+// `INCIDENTS_PACK_MAX_ROWS` rows is refused (413
+// `pack_too_large`), never thinned. The archive is deterministic
+// (sorted entries, fixed timestamps); `content_hash` is its
+// SHA-256, recorded here and in the `evidence_pack_built` events
+// row with the purpose; the seal statement (pack id, incident,
+// kind, window, hash, time) is signed as a detached JWS by the
+// publication key when one is configured. `oversight` packs carry
+// no personal data (registration public part and serial only;
+// frame payloads that may carry the remote pilot position are
+// withheld and kept by hash); `legal` packs need `case_ref` and a
+// personal-data role (403 otherwise), resolve the operators'
+// personal data from the registry (each read audited with the
+// purpose) and are sealed at rest. 503
+// `evidence_storage_unavailable` without `EVIDENCE_DIR`; 503
+// `pack_busy` past `INCIDENTS_PACK_CONCURRENCY` builds at once.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/incidents/{incident_id}/evidence-packs (the `CreateEvidencePack` operationId).
+func (c *Client) CreateEvidencePack(ctx context.Context, incidentId string, body CreateEvidencePackJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateEvidencePackRequest(c.Server, incidentId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetEvidencePack One evidence pack's manifest, hash and signature
+//
+// The manifest holds no personal data, whatever the kind.
+//
+// Corresponds with GET /v1/incidents/{incident_id}/evidence-packs/{pack_id} (the `GetEvidencePack` operationId).
+func (c *Client) GetEvidencePack(ctx context.Context, incidentId string, packId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetEvidencePackRequest(c.Server, incidentId, packId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DownloadEvidencePack The sealed archive (purpose required, audited)
+//
+// The stored archive is read, opened when sealed at rest, and its
+// SHA-256 compared with `content_hash` before a byte is served: a
+// mismatch is refused (409 `evidence_tampered`, with an
+// `evidence_pack_verified` events row recording the failure).
+// Every download is an `evidence_pack_downloaded` events row with
+// the purpose, committed before the body is sent. A legal pack is
+// served only to a personal-data role (403).
+//
+// Corresponds with GET /v1/incidents/{incident_id}/evidence-packs/{pack_id}/download (the `DownloadEvidencePack` operationId).
+func (c *Client) DownloadEvidencePack(ctx context.Context, incidentId string, packId string, params *DownloadEvidencePackParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDownloadEvidencePackRequest(c.Server, incidentId, packId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// VerifyEvidencePack Recompute the stored archive's hash and check the signature
+//
+// Reads the stored archive, recomputes its SHA-256 and compares it
+// with `content_hash`, and verifies the seal statement's signature
+// against the publication key this system holds. The answer says
+// what was found, a mismatch included (200 with `hash_matches:
+// false` and the problem); every verification is an
+// `evidence_pack_verified` events row.
+//
+// Corresponds with GET /v1/incidents/{incident_id}/evidence-packs/{pack_id}/verify (the `VerifyEvidencePack` operationId).
+func (c *Client) VerifyEvidencePack(ctx context.Context, incidentId string, packId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewVerifyEvidencePackRequest(c.Server, incidentId, packId)
 	if err != nil {
 		return nil, err
 	}
@@ -7571,8 +8408,9 @@ func (c *Client) GetViolation(ctx context.Context, violationId string, reqEditor
 // `violation_reviewed`). Evidence that is broadcast only
 // (`evidence_trust: broadcast`) is never escalated without a
 // note (spec 06 §2 T1; 400 naming `note`). Escalation requests an
-// incident (`incident_requested`; WP-17 opens it). The review and
-// the request are `events` rows in the same transaction.
+// incident (`incident_requested`) and opens it (`incident_opened`,
+// `GET /v1/incidents?violation_id=`). The review, the request and
+// the incident are written in the same transaction.
 //
 // Takes any type of body and a specified content type.
 //
@@ -7596,8 +8434,9 @@ func (c *Client) ReviewViolationWithBody(ctx context.Context, violationId string
 // `violation_reviewed`). Evidence that is broadcast only
 // (`evidence_trust: broadcast`) is never escalated without a
 // note (spec 06 §2 T1; 400 naming `note`). Escalation requests an
-// incident (`incident_requested`; WP-17 opens it). The review and
-// the request are `events` rows in the same transaction.
+// incident (`incident_requested`) and opens it (`incident_opened`,
+// `GET /v1/incidents?violation_id=`). The review, the request and
+// the incident are written in the same transaction.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -8621,6 +9460,422 @@ func NewCreateDPViewRequestWithBody(server string, contentType string, body io.R
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListIncidentsRequest constructs an http.Request for the ListIncidents method
+func NewListIncidentsRequest(server string, params *ListIncidentsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/incidents")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Kind != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "kind", *params.Kind, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ViolationId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "violation_id", *params.ViolationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateIncidentRequest calls the generic CreateIncident builder with application/json body
+func NewCreateIncidentRequest(server string, body CreateIncidentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateIncidentRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateIncidentRequestWithBody constructs an http.Request for the CreateIncident method, with any body, and a specified content type
+func NewCreateIncidentRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/incidents")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetIncidentRequest constructs an http.Request for the GetIncident method
+func NewGetIncidentRequest(server string, incidentId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "incident_id", incidentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/incidents/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateIncidentRequest calls the generic UpdateIncident builder with application/json body
+func NewUpdateIncidentRequest(server string, incidentId string, body UpdateIncidentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateIncidentRequestWithBody(server, incidentId, "application/json", bodyReader)
+}
+
+// NewUpdateIncidentRequestWithBody constructs an http.Request for the UpdateIncident method, with any body, and a specified content type
+func NewUpdateIncidentRequestWithBody(server string, incidentId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "incident_id", incidentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/incidents/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCreateEvidencePackRequest calls the generic CreateEvidencePack builder with application/json body
+func NewCreateEvidencePackRequest(server string, incidentId string, body CreateEvidencePackJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateEvidencePackRequestWithBody(server, incidentId, "application/json", bodyReader)
+}
+
+// NewCreateEvidencePackRequestWithBody constructs an http.Request for the CreateEvidencePack method, with any body, and a specified content type
+func NewCreateEvidencePackRequestWithBody(server string, incidentId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "incident_id", incidentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/incidents/%s/evidence-packs", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetEvidencePackRequest constructs an http.Request for the GetEvidencePack method
+func NewGetEvidencePackRequest(server string, incidentId string, packId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "incident_id", incidentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "pack_id", packId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/incidents/%s/evidence-packs/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDownloadEvidencePackRequest constructs an http.Request for the DownloadEvidencePack method
+func NewDownloadEvidencePackRequest(server string, incidentId string, packId string, params *DownloadEvidencePackParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "incident_id", incidentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "pack_id", packId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/incidents/%s/evidence-packs/%s/download", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "purpose", params.Purpose, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewVerifyEvidencePackRequest constructs an http.Request for the VerifyEvidencePack method
+func NewVerifyEvidencePackRequest(server string, incidentId string, packId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "incident_id", incidentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "pack_id", packId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/incidents/%s/evidence-packs/%s/verify", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -12688,6 +13943,194 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /v1/dp/views (the `CreateDPView` operationId).
 	CreateDPViewWithResponse(ctx context.Context, body CreateDPViewJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDPViewResponse, error)
 
+	// ListIncidentsWithResponse Incidents, newest first
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/incidents (the `ListIncidents` operationId).
+	ListIncidentsWithResponse(ctx context.Context, params *ListIncidentsParams, reqEditors ...RequestEditorFn) (*ListIncidentsResponse, error)
+
+	// CreateIncidentWithBodyWithResponse Open an incident from the authority's own observation or a notice
+	//
+	// `opened_from` is `own_observation`, `ansp_notice` or
+	// `ussp_notice` (the last two with `notice_ref`); an incident is
+	// opened from a violation only by escalating it (`POST
+	// /v1/violations/{violation_id}/review`), never here (400 naming
+	// `opened_from`). Never from an occurrence report (376/2014 Art.
+	// 15-16). An aircraft's `operator_reg` is stored as its public part
+	// only: a secret part sent is dropped, never stored (spec 06 §5).
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/incidents (the `CreateIncident` operationId).
+	CreateIncidentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateIncidentResponse, error)
+
+	// CreateIncidentWithResponse Open an incident from the authority's own observation or a notice
+	//
+	// `opened_from` is `own_observation`, `ansp_notice` or
+	// `ussp_notice` (the last two with `notice_ref`); an incident is
+	// opened from a violation only by escalating it (`POST
+	// /v1/violations/{violation_id}/review`), never here (400 naming
+	// `opened_from`). Never from an occurrence report (376/2014 Art.
+	// 15-16). An aircraft's `operator_reg` is stored as its public part
+	// only: a secret part sent is dropped, never stored (spec 06 §5).
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/incidents (the `CreateIncident` operationId).
+	CreateIncidentWithResponse(ctx context.Context, body CreateIncidentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateIncidentResponse, error)
+
+	// GetIncidentWithResponse One incident with its aircraft, notes and evidence packs
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/incidents/{incident_id} (the `GetIncident` operationId).
+	GetIncidentWithResponse(ctx context.Context, incidentId string, reqEditors ...RequestEditorFn) (*GetIncidentResponse, error)
+
+	// UpdateIncidentWithBodyWithResponse Change an incident, assign or close it, add an aircraft or a note
+	//
+	// Every member is optional; what is present is applied in one
+	// transaction with one `incident_updated` events row naming each
+	// change (from, to). `status` moves open -> assigned (an
+	// `assignee` is required) -> closed, open -> closed, and a closed
+	// incident is reopened (closed -> open or assigned), so a case is
+	// never shut without a way back. Notes are append-only: `note`
+	// adds one (at most 500 per incident). `add_aircraft` adds
+	// aircraft (at most 32 per incident, E-10).
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v1/incidents/{incident_id} (the `UpdateIncident` operationId).
+	UpdateIncidentWithBodyWithResponse(ctx context.Context, incidentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateIncidentResponse, error)
+
+	// UpdateIncidentWithResponse Change an incident, assign or close it, add an aircraft or a note
+	//
+	// Every member is optional; what is present is applied in one
+	// transaction with one `incident_updated` events row naming each
+	// change (from, to). `status` moves open -> assigned (an
+	// `assignee` is required) -> closed, open -> closed, and a closed
+	// incident is reopened (closed -> open or assigned), so a case is
+	// never shut without a way back. Notes are append-only: `note`
+	// adds one (at most 500 per incident). `add_aircraft` adds
+	// aircraft (at most 32 per incident, E-10).
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v1/incidents/{incident_id} (the `UpdateIncident` operationId).
+	UpdateIncidentWithResponse(ctx context.Context, incidentId string, body UpdateIncidentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateIncidentResponse, error)
+
+	// CreateEvidencePackWithBodyWithResponse Build, seal and store an evidence pack for a window
+	//
+	// Assembles the manifest and the archive of the incident's evidence
+	// in [from, to): track excerpts cut into segments at every silence
+	// longer than the active policy's `max_gap_s`, every recorded
+	// writer gap and every sample without a position, each hole
+	// labelled with its cause or `no recorded cause` (B-13; nothing is
+	// interpolated); the raw Remote ID frames; the Display Provider's
+	// rows while still held (24 h); the zone versions named and in
+	// force; the policy versions; the violations; the events lines;
+	// the ground dataset and spacing of every AGL number (D-05); the
+	// USSP's service record of each USSP flight fetched on demand (02
+	// F7, scope `ussp.records`). A source that cannot be read is in
+	// the manifest as `unavailable` with the reason, never silently
+	// missing. A window longer than `INCIDENTS_PACK_MAX_WINDOW_S` is
+	// refused (400 `window_too_large`) and a section holding more than
+	// `INCIDENTS_PACK_MAX_ROWS` rows is refused (413
+	// `pack_too_large`), never thinned. The archive is deterministic
+	// (sorted entries, fixed timestamps); `content_hash` is its
+	// SHA-256, recorded here and in the `evidence_pack_built` events
+	// row with the purpose; the seal statement (pack id, incident,
+	// kind, window, hash, time) is signed as a detached JWS by the
+	// publication key when one is configured. `oversight` packs carry
+	// no personal data (registration public part and serial only;
+	// frame payloads that may carry the remote pilot position are
+	// withheld and kept by hash); `legal` packs need `case_ref` and a
+	// personal-data role (403 otherwise), resolve the operators'
+	// personal data from the registry (each read audited with the
+	// purpose) and are sealed at rest. 503
+	// `evidence_storage_unavailable` without `EVIDENCE_DIR`; 503
+	// `pack_busy` past `INCIDENTS_PACK_CONCURRENCY` builds at once.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/incidents/{incident_id}/evidence-packs (the `CreateEvidencePack` operationId).
+	CreateEvidencePackWithBodyWithResponse(ctx context.Context, incidentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEvidencePackResponse, error)
+
+	// CreateEvidencePackWithResponse Build, seal and store an evidence pack for a window
+	//
+	// Assembles the manifest and the archive of the incident's evidence
+	// in [from, to): track excerpts cut into segments at every silence
+	// longer than the active policy's `max_gap_s`, every recorded
+	// writer gap and every sample without a position, each hole
+	// labelled with its cause or `no recorded cause` (B-13; nothing is
+	// interpolated); the raw Remote ID frames; the Display Provider's
+	// rows while still held (24 h); the zone versions named and in
+	// force; the policy versions; the violations; the events lines;
+	// the ground dataset and spacing of every AGL number (D-05); the
+	// USSP's service record of each USSP flight fetched on demand (02
+	// F7, scope `ussp.records`). A source that cannot be read is in
+	// the manifest as `unavailable` with the reason, never silently
+	// missing. A window longer than `INCIDENTS_PACK_MAX_WINDOW_S` is
+	// refused (400 `window_too_large`) and a section holding more than
+	// `INCIDENTS_PACK_MAX_ROWS` rows is refused (413
+	// `pack_too_large`), never thinned. The archive is deterministic
+	// (sorted entries, fixed timestamps); `content_hash` is its
+	// SHA-256, recorded here and in the `evidence_pack_built` events
+	// row with the purpose; the seal statement (pack id, incident,
+	// kind, window, hash, time) is signed as a detached JWS by the
+	// publication key when one is configured. `oversight` packs carry
+	// no personal data (registration public part and serial only;
+	// frame payloads that may carry the remote pilot position are
+	// withheld and kept by hash); `legal` packs need `case_ref` and a
+	// personal-data role (403 otherwise), resolve the operators'
+	// personal data from the registry (each read audited with the
+	// purpose) and are sealed at rest. 503
+	// `evidence_storage_unavailable` without `EVIDENCE_DIR`; 503
+	// `pack_busy` past `INCIDENTS_PACK_CONCURRENCY` builds at once.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/incidents/{incident_id}/evidence-packs (the `CreateEvidencePack` operationId).
+	CreateEvidencePackWithResponse(ctx context.Context, incidentId string, body CreateEvidencePackJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEvidencePackResponse, error)
+
+	// GetEvidencePackWithResponse One evidence pack's manifest, hash and signature
+	//
+	// The manifest holds no personal data, whatever the kind.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/incidents/{incident_id}/evidence-packs/{pack_id} (the `GetEvidencePack` operationId).
+	GetEvidencePackWithResponse(ctx context.Context, incidentId string, packId string, reqEditors ...RequestEditorFn) (*GetEvidencePackResponse, error)
+
+	// DownloadEvidencePackWithResponse The sealed archive (purpose required, audited)
+	//
+	// The stored archive is read, opened when sealed at rest, and its
+	// SHA-256 compared with `content_hash` before a byte is served: a
+	// mismatch is refused (409 `evidence_tampered`, with an
+	// `evidence_pack_verified` events row recording the failure).
+	// Every download is an `evidence_pack_downloaded` events row with
+	// the purpose, committed before the body is sent. A legal pack is
+	// served only to a personal-data role (403).
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/incidents/{incident_id}/evidence-packs/{pack_id}/download (the `DownloadEvidencePack` operationId).
+	DownloadEvidencePackWithResponse(ctx context.Context, incidentId string, packId string, params *DownloadEvidencePackParams, reqEditors ...RequestEditorFn) (*DownloadEvidencePackResponse, error)
+
+	// VerifyEvidencePackWithResponse Recompute the stored archive's hash and check the signature
+	//
+	// Reads the stored archive, recomputes its SHA-256 and compares it
+	// with `content_hash`, and verifies the seal statement's signature
+	// against the publication key this system holds. The answer says
+	// what was found, a mismatch included (200 with `hash_matches:
+	// false` and the problem); every verification is an
+	// `evidence_pack_verified` events row.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/incidents/{incident_id}/evidence-packs/{pack_id}/verify (the `VerifyEvidencePack` operationId).
+	VerifyEvidencePackWithResponse(ctx context.Context, incidentId string, packId string, reqEditors ...RequestEditorFn) (*VerifyEvidencePackResponse, error)
+
 	// ListOAuthClientsWithResponse Registered clients
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -13637,8 +15080,9 @@ type ClientWithResponsesInterface interface {
 	// `violation_reviewed`). Evidence that is broadcast only
 	// (`evidence_trust: broadcast`) is never escalated without a
 	// note (spec 06 §2 T1; 400 naming `note`). Escalation requests an
-	// incident (`incident_requested`; WP-17 opens it). The review and
-	// the request are `events` rows in the same transaction.
+	// incident (`incident_requested`) and opens it (`incident_opened`,
+	// `GET /v1/incidents?violation_id=`). The review, the request and
+	// the incident are written in the same transaction.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -13652,8 +15096,9 @@ type ClientWithResponsesInterface interface {
 	// `violation_reviewed`). Evidence that is broadcast only
 	// (`evidence_trust: broadcast`) is never escalated without a
 	// note (spec 06 §2 T1; 400 naming `note`). Escalation requests an
-	// incident (`incident_requested`; WP-17 opens it). The review and
-	// the request are `events` rows in the same transaction.
+	// incident (`incident_requested`) and opens it (`incident_opened`,
+	// `GET /v1/incidents?violation_id=`). The review, the request and
+	// the incident are written in the same transaction.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -14777,6 +16222,517 @@ func (r CreateDPViewResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CreateDPViewResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListIncidentsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *IncidentPage
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListIncidentsResponse) GetJSON200() *IncidentPage {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r ListIncidentsResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ListIncidentsResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListIncidentsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListIncidentsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListIncidentsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListIncidentsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateIncidentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *Incident
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateIncidentResponse) GetJSON201() *Incident {
+	return r.JSON201
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r CreateIncidentResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r CreateIncidentResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateIncidentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateIncidentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateIncidentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateIncidentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetIncidentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Incident
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetIncidentResponse) GetJSON200() *Incident {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r GetIncidentResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetIncidentResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetIncidentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetIncidentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetIncidentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetIncidentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateIncidentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Incident
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateIncidentResponse) GetJSON200() *Incident {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r UpdateIncidentResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r UpdateIncidentResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r UpdateIncidentResponse) GetApplicationproblemJSON409() *Problem {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r UpdateIncidentResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateIncidentResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateIncidentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateIncidentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateIncidentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateEvidencePackResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *EvidencePack
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON403 the response for an HTTP 403 `application/problem+json` response
+	ApplicationproblemJSON403 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON413 the response for an HTTP 413 `application/problem+json` response
+	ApplicationproblemJSON413 *Problem
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateEvidencePackResponse) GetJSON201() *EvidencePack {
+	return r.JSON201
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r CreateEvidencePackResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON403 returns the response for an HTTP 403 `application/problem+json` response
+func (r CreateEvidencePackResponse) GetApplicationproblemJSON403() *Problem {
+	return r.ApplicationproblemJSON403
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r CreateEvidencePackResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON413 returns the response for an HTTP 413 `application/problem+json` response
+func (r CreateEvidencePackResponse) GetApplicationproblemJSON413() *Problem {
+	return r.ApplicationproblemJSON413
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r CreateEvidencePackResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r CreateEvidencePackResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateEvidencePackResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateEvidencePackResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateEvidencePackResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateEvidencePackResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetEvidencePackResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *EvidencePack
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetEvidencePackResponse) GetJSON200() *EvidencePack {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r GetEvidencePackResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetEvidencePackResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetEvidencePackResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetEvidencePackResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetEvidencePackResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetEvidencePackResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// DownloadEvidencePackResponse200Headers the declared response headers of an HTTP 200 response for DownloadEvidencePack
+type DownloadEvidencePackResponse200Headers struct {
+	XContentSHA256     *string
+	XEvidenceSignature *string
+}
+
+type DownloadEvidencePackResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// ApplicationproblemJSON403 the response for an HTTP 403 `application/problem+json` response
+	ApplicationproblemJSON403 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *Problem
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *DownloadEvidencePackResponse200Headers
+}
+
+// GetApplicationproblemJSON403 returns the response for an HTTP 403 `application/problem+json` response
+func (r DownloadEvidencePackResponse) GetApplicationproblemJSON403() *Problem {
+	return r.ApplicationproblemJSON403
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r DownloadEvidencePackResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r DownloadEvidencePackResponse) GetApplicationproblemJSON409() *Problem {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r DownloadEvidencePackResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r DownloadEvidencePackResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r DownloadEvidencePackResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DownloadEvidencePackResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DownloadEvidencePackResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DownloadEvidencePackResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type VerifyEvidencePackResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *EvidencePackVerification
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r VerifyEvidencePackResponse) GetJSON200() *EvidencePackVerification {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r VerifyEvidencePackResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r VerifyEvidencePackResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r VerifyEvidencePackResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r VerifyEvidencePackResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r VerifyEvidencePackResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r VerifyEvidencePackResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r VerifyEvidencePackResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -18980,6 +20936,260 @@ func (c *ClientWithResponses) CreateDPViewWithResponse(ctx context.Context, body
 	return ParseCreateDPViewResponse(rsp)
 }
 
+// ListIncidentsWithResponse Incidents, newest first
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/incidents (the `ListIncidents` operationId).
+func (c *ClientWithResponses) ListIncidentsWithResponse(ctx context.Context, params *ListIncidentsParams, reqEditors ...RequestEditorFn) (*ListIncidentsResponse, error) {
+	rsp, err := c.ListIncidents(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListIncidentsResponse(rsp)
+}
+
+// CreateIncidentWithBodyWithResponse Open an incident from the authority's own observation or a notice
+//
+// `opened_from` is `own_observation`, `ansp_notice` or
+// `ussp_notice` (the last two with `notice_ref`); an incident is
+// opened from a violation only by escalating it (`POST
+// /v1/violations/{violation_id}/review`), never here (400 naming
+// `opened_from`). Never from an occurrence report (376/2014 Art.
+// 15-16). An aircraft's `operator_reg` is stored as its public part
+// only: a secret part sent is dropped, never stored (spec 06 §5).
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/incidents (the `CreateIncident` operationId).
+func (c *ClientWithResponses) CreateIncidentWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateIncidentResponse, error) {
+	rsp, err := c.CreateIncidentWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateIncidentResponse(rsp)
+}
+
+// CreateIncidentWithResponse Open an incident from the authority's own observation or a notice
+//
+// `opened_from` is `own_observation`, `ansp_notice` or
+// `ussp_notice` (the last two with `notice_ref`); an incident is
+// opened from a violation only by escalating it (`POST
+// /v1/violations/{violation_id}/review`), never here (400 naming
+// `opened_from`). Never from an occurrence report (376/2014 Art.
+// 15-16). An aircraft's `operator_reg` is stored as its public part
+// only: a secret part sent is dropped, never stored (spec 06 §5).
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/incidents (the `CreateIncident` operationId).
+func (c *ClientWithResponses) CreateIncidentWithResponse(ctx context.Context, body CreateIncidentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateIncidentResponse, error) {
+	rsp, err := c.CreateIncident(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateIncidentResponse(rsp)
+}
+
+// GetIncidentWithResponse One incident with its aircraft, notes and evidence packs
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/incidents/{incident_id} (the `GetIncident` operationId).
+func (c *ClientWithResponses) GetIncidentWithResponse(ctx context.Context, incidentId string, reqEditors ...RequestEditorFn) (*GetIncidentResponse, error) {
+	rsp, err := c.GetIncident(ctx, incidentId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetIncidentResponse(rsp)
+}
+
+// UpdateIncidentWithBodyWithResponse Change an incident, assign or close it, add an aircraft or a note
+//
+// Every member is optional; what is present is applied in one
+// transaction with one `incident_updated` events row naming each
+// change (from, to). `status` moves open -> assigned (an
+// `assignee` is required) -> closed, open -> closed, and a closed
+// incident is reopened (closed -> open or assigned), so a case is
+// never shut without a way back. Notes are append-only: `note`
+// adds one (at most 500 per incident). `add_aircraft` adds
+// aircraft (at most 32 per incident, E-10).
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v1/incidents/{incident_id} (the `UpdateIncident` operationId).
+func (c *ClientWithResponses) UpdateIncidentWithBodyWithResponse(ctx context.Context, incidentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateIncidentResponse, error) {
+	rsp, err := c.UpdateIncidentWithBody(ctx, incidentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateIncidentResponse(rsp)
+}
+
+// UpdateIncidentWithResponse Change an incident, assign or close it, add an aircraft or a note
+//
+// Every member is optional; what is present is applied in one
+// transaction with one `incident_updated` events row naming each
+// change (from, to). `status` moves open -> assigned (an
+// `assignee` is required) -> closed, open -> closed, and a closed
+// incident is reopened (closed -> open or assigned), so a case is
+// never shut without a way back. Notes are append-only: `note`
+// adds one (at most 500 per incident). `add_aircraft` adds
+// aircraft (at most 32 per incident, E-10).
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v1/incidents/{incident_id} (the `UpdateIncident` operationId).
+func (c *ClientWithResponses) UpdateIncidentWithResponse(ctx context.Context, incidentId string, body UpdateIncidentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateIncidentResponse, error) {
+	rsp, err := c.UpdateIncident(ctx, incidentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateIncidentResponse(rsp)
+}
+
+// CreateEvidencePackWithBodyWithResponse Build, seal and store an evidence pack for a window
+//
+// Assembles the manifest and the archive of the incident's evidence
+// in [from, to): track excerpts cut into segments at every silence
+// longer than the active policy's `max_gap_s`, every recorded
+// writer gap and every sample without a position, each hole
+// labelled with its cause or `no recorded cause` (B-13; nothing is
+// interpolated); the raw Remote ID frames; the Display Provider's
+// rows while still held (24 h); the zone versions named and in
+// force; the policy versions; the violations; the events lines;
+// the ground dataset and spacing of every AGL number (D-05); the
+// USSP's service record of each USSP flight fetched on demand (02
+// F7, scope `ussp.records`). A source that cannot be read is in
+// the manifest as `unavailable` with the reason, never silently
+// missing. A window longer than `INCIDENTS_PACK_MAX_WINDOW_S` is
+// refused (400 `window_too_large`) and a section holding more than
+// `INCIDENTS_PACK_MAX_ROWS` rows is refused (413
+// `pack_too_large`), never thinned. The archive is deterministic
+// (sorted entries, fixed timestamps); `content_hash` is its
+// SHA-256, recorded here and in the `evidence_pack_built` events
+// row with the purpose; the seal statement (pack id, incident,
+// kind, window, hash, time) is signed as a detached JWS by the
+// publication key when one is configured. `oversight` packs carry
+// no personal data (registration public part and serial only;
+// frame payloads that may carry the remote pilot position are
+// withheld and kept by hash); `legal` packs need `case_ref` and a
+// personal-data role (403 otherwise), resolve the operators'
+// personal data from the registry (each read audited with the
+// purpose) and are sealed at rest. 503
+// `evidence_storage_unavailable` without `EVIDENCE_DIR`; 503
+// `pack_busy` past `INCIDENTS_PACK_CONCURRENCY` builds at once.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/incidents/{incident_id}/evidence-packs (the `CreateEvidencePack` operationId).
+func (c *ClientWithResponses) CreateEvidencePackWithBodyWithResponse(ctx context.Context, incidentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateEvidencePackResponse, error) {
+	rsp, err := c.CreateEvidencePackWithBody(ctx, incidentId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateEvidencePackResponse(rsp)
+}
+
+// CreateEvidencePackWithResponse Build, seal and store an evidence pack for a window
+//
+// Assembles the manifest and the archive of the incident's evidence
+// in [from, to): track excerpts cut into segments at every silence
+// longer than the active policy's `max_gap_s`, every recorded
+// writer gap and every sample without a position, each hole
+// labelled with its cause or `no recorded cause` (B-13; nothing is
+// interpolated); the raw Remote ID frames; the Display Provider's
+// rows while still held (24 h); the zone versions named and in
+// force; the policy versions; the violations; the events lines;
+// the ground dataset and spacing of every AGL number (D-05); the
+// USSP's service record of each USSP flight fetched on demand (02
+// F7, scope `ussp.records`). A source that cannot be read is in
+// the manifest as `unavailable` with the reason, never silently
+// missing. A window longer than `INCIDENTS_PACK_MAX_WINDOW_S` is
+// refused (400 `window_too_large`) and a section holding more than
+// `INCIDENTS_PACK_MAX_ROWS` rows is refused (413
+// `pack_too_large`), never thinned. The archive is deterministic
+// (sorted entries, fixed timestamps); `content_hash` is its
+// SHA-256, recorded here and in the `evidence_pack_built` events
+// row with the purpose; the seal statement (pack id, incident,
+// kind, window, hash, time) is signed as a detached JWS by the
+// publication key when one is configured. `oversight` packs carry
+// no personal data (registration public part and serial only;
+// frame payloads that may carry the remote pilot position are
+// withheld and kept by hash); `legal` packs need `case_ref` and a
+// personal-data role (403 otherwise), resolve the operators'
+// personal data from the registry (each read audited with the
+// purpose) and are sealed at rest. 503
+// `evidence_storage_unavailable` without `EVIDENCE_DIR`; 503
+// `pack_busy` past `INCIDENTS_PACK_CONCURRENCY` builds at once.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/incidents/{incident_id}/evidence-packs (the `CreateEvidencePack` operationId).
+func (c *ClientWithResponses) CreateEvidencePackWithResponse(ctx context.Context, incidentId string, body CreateEvidencePackJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateEvidencePackResponse, error) {
+	rsp, err := c.CreateEvidencePack(ctx, incidentId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateEvidencePackResponse(rsp)
+}
+
+// GetEvidencePackWithResponse One evidence pack's manifest, hash and signature
+//
+// The manifest holds no personal data, whatever the kind.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/incidents/{incident_id}/evidence-packs/{pack_id} (the `GetEvidencePack` operationId).
+func (c *ClientWithResponses) GetEvidencePackWithResponse(ctx context.Context, incidentId string, packId string, reqEditors ...RequestEditorFn) (*GetEvidencePackResponse, error) {
+	rsp, err := c.GetEvidencePack(ctx, incidentId, packId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetEvidencePackResponse(rsp)
+}
+
+// DownloadEvidencePackWithResponse The sealed archive (purpose required, audited)
+//
+// The stored archive is read, opened when sealed at rest, and its
+// SHA-256 compared with `content_hash` before a byte is served: a
+// mismatch is refused (409 `evidence_tampered`, with an
+// `evidence_pack_verified` events row recording the failure).
+// Every download is an `evidence_pack_downloaded` events row with
+// the purpose, committed before the body is sent. A legal pack is
+// served only to a personal-data role (403).
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/incidents/{incident_id}/evidence-packs/{pack_id}/download (the `DownloadEvidencePack` operationId).
+func (c *ClientWithResponses) DownloadEvidencePackWithResponse(ctx context.Context, incidentId string, packId string, params *DownloadEvidencePackParams, reqEditors ...RequestEditorFn) (*DownloadEvidencePackResponse, error) {
+	rsp, err := c.DownloadEvidencePack(ctx, incidentId, packId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDownloadEvidencePackResponse(rsp)
+}
+
+// VerifyEvidencePackWithResponse Recompute the stored archive's hash and check the signature
+//
+// Reads the stored archive, recomputes its SHA-256 and compares it
+// with `content_hash`, and verifies the seal statement's signature
+// against the publication key this system holds. The answer says
+// what was found, a mismatch included (200 with `hash_matches:
+// false` and the problem); every verification is an
+// `evidence_pack_verified` events row.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/incidents/{incident_id}/evidence-packs/{pack_id}/verify (the `VerifyEvidencePack` operationId).
+func (c *ClientWithResponses) VerifyEvidencePackWithResponse(ctx context.Context, incidentId string, packId string, reqEditors ...RequestEditorFn) (*VerifyEvidencePackResponse, error) {
+	rsp, err := c.VerifyEvidencePack(ctx, incidentId, packId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseVerifyEvidencePackResponse(rsp)
+}
+
 // ListOAuthClientsWithResponse Registered clients
 //
 // Returns a wrapper object for the known response body format(s).
@@ -20457,8 +22667,9 @@ func (c *ClientWithResponses) GetViolationWithResponse(ctx context.Context, viol
 // `violation_reviewed`). Evidence that is broadcast only
 // (`evidence_trust: broadcast`) is never escalated without a
 // note (spec 06 §2 T1; 400 naming `note`). Escalation requests an
-// incident (`incident_requested`; WP-17 opens it). The review and
-// the request are `events` rows in the same transaction.
+// incident (`incident_requested`) and opens it (`incident_opened`,
+// `GET /v1/incidents?violation_id=`). The review, the request and
+// the incident are written in the same transaction.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -20478,8 +22689,9 @@ func (c *ClientWithResponses) ReviewViolationWithBodyWithResponse(ctx context.Co
 // `violation_reviewed`). Evidence that is broadcast only
 // (`evidence_trust: broadcast`) is never escalated without a
 // note (spec 06 §2 T1; 400 naming `note`). Escalation requests an
-// incident (`incident_requested`; WP-17 opens it). The review and
-// the request are `events` rows in the same transaction.
+// incident (`incident_requested`) and opens it (`incident_opened`,
+// `GET /v1/incidents?violation_id=`). The review, the request and
+// the incident are written in the same transaction.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
@@ -21499,6 +23711,409 @@ func ParseCreateDPViewResponse(rsp *http.Response) (*CreateDPViewResponse, error
 			return nil, err
 		}
 		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListIncidentsResponse parses an HTTP response from a ListIncidentsWithResponse call
+func ParseListIncidentsResponse(rsp *http.Response) (*ListIncidentsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListIncidentsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest IncidentPage
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateIncidentResponse parses an HTTP response from a CreateIncidentWithResponse call
+func ParseCreateIncidentResponse(rsp *http.Response) (*CreateIncidentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateIncidentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Incident
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetIncidentResponse parses an HTTP response from a GetIncidentWithResponse call
+func ParseGetIncidentResponse(rsp *http.Response) (*GetIncidentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetIncidentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Incident
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateIncidentResponse parses an HTTP response from a UpdateIncidentWithResponse call
+func ParseUpdateIncidentResponse(rsp *http.Response) (*UpdateIncidentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateIncidentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Incident
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateEvidencePackResponse parses an HTTP response from a CreateEvidencePackWithResponse call
+func ParseCreateEvidencePackResponse(rsp *http.Response) (*CreateEvidencePackResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateEvidencePackResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest EvidencePack
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetEvidencePackResponse parses an HTTP response from a GetEvidencePackWithResponse call
+func ParseGetEvidencePackResponse(rsp *http.Response) (*GetEvidencePackResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetEvidencePackResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest EvidencePack
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDownloadEvidencePackResponse parses an HTTP response from a DownloadEvidencePackWithResponse call
+func ParseDownloadEvidencePackResponse(rsp *http.Response) (*DownloadEvidencePackResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DownloadEvidencePackResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers DownloadEvidencePackResponse200Headers
+		if values := rsp.Header.Values("X-Content-SHA256"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Content-SHA256", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XContentSHA256 = &value
+		}
+		if values := rsp.Header.Values("X-Evidence-Signature"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Evidence-Signature", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XEvidenceSignature = &value
+		}
+		response.Headers200 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseVerifyEvidencePackResponse parses an HTTP response from a VerifyEvidencePackWithResponse call
+func ParseVerifyEvidencePackResponse(rsp *http.Response) (*VerifyEvidencePackResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &VerifyEvidencePackResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest EvidencePackVerification
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Problem
@@ -24239,6 +26854,30 @@ type ServerInterface interface {
 	// CreateDPView Add an oversight area
 	// (POST /v1/dp/views)
 	CreateDPView(w http.ResponseWriter, r *http.Request)
+	// ListIncidents Incidents, newest first
+	// (GET /v1/incidents)
+	ListIncidents(w http.ResponseWriter, r *http.Request, params ListIncidentsParams)
+	// CreateIncident Open an incident from the authority's own observation or a notice
+	// (POST /v1/incidents)
+	CreateIncident(w http.ResponseWriter, r *http.Request)
+	// GetIncident One incident with its aircraft, notes and evidence packs
+	// (GET /v1/incidents/{incident_id})
+	GetIncident(w http.ResponseWriter, r *http.Request, incidentId string)
+	// UpdateIncident Change an incident, assign or close it, add an aircraft or a note
+	// (PATCH /v1/incidents/{incident_id})
+	UpdateIncident(w http.ResponseWriter, r *http.Request, incidentId string)
+	// CreateEvidencePack Build, seal and store an evidence pack for a window
+	// (POST /v1/incidents/{incident_id}/evidence-packs)
+	CreateEvidencePack(w http.ResponseWriter, r *http.Request, incidentId string)
+	// GetEvidencePack One evidence pack's manifest, hash and signature
+	// (GET /v1/incidents/{incident_id}/evidence-packs/{pack_id})
+	GetEvidencePack(w http.ResponseWriter, r *http.Request, incidentId string, packId string)
+	// DownloadEvidencePack The sealed archive (purpose required, audited)
+	// (GET /v1/incidents/{incident_id}/evidence-packs/{pack_id}/download)
+	DownloadEvidencePack(w http.ResponseWriter, r *http.Request, incidentId string, packId string, params DownloadEvidencePackParams)
+	// VerifyEvidencePack Recompute the stored archive's hash and check the signature
+	// (GET /v1/incidents/{incident_id}/evidence-packs/{pack_id}/verify)
+	VerifyEvidencePack(w http.ResponseWriter, r *http.Request, incidentId string, packId string)
 	// ListOAuthClients Registered clients
 	// (GET /v1/oauth/clients)
 	ListOAuthClients(w http.ResponseWriter, r *http.Request)
@@ -24841,6 +27480,304 @@ func (siw *ServerInterfaceWrapper) CreateDPView(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateDPView(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListIncidents operation middleware
+func (siw *ServerInterfaceWrapper) ListIncidents(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListIncidentsParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "kind" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "kind", r.URL.Query(), &params.Kind, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "kind"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "violation_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "violation_id", r.URL.Query(), &params.ViolationId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "violation_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "violation_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListIncidents(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateIncident operation middleware
+func (siw *ServerInterfaceWrapper) CreateIncident(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateIncident(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetIncident operation middleware
+func (siw *ServerInterfaceWrapper) GetIncident(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "incident_id" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incident_id", r.PathValue("incident_id"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incident_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetIncident(w, r, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateIncident operation middleware
+func (siw *ServerInterfaceWrapper) UpdateIncident(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "incident_id" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incident_id", r.PathValue("incident_id"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incident_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateIncident(w, r, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateEvidencePack operation middleware
+func (siw *ServerInterfaceWrapper) CreateEvidencePack(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "incident_id" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incident_id", r.PathValue("incident_id"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incident_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateEvidencePack(w, r, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetEvidencePack operation middleware
+func (siw *ServerInterfaceWrapper) GetEvidencePack(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "incident_id" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incident_id", r.PathValue("incident_id"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incident_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "pack_id" -------------
+	var packId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "pack_id", r.PathValue("pack_id"), &packId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pack_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetEvidencePack(w, r, incidentId, packId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DownloadEvidencePack operation middleware
+func (siw *ServerInterfaceWrapper) DownloadEvidencePack(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "incident_id" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incident_id", r.PathValue("incident_id"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incident_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "pack_id" -------------
+	var packId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "pack_id", r.PathValue("pack_id"), &packId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pack_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DownloadEvidencePackParams
+
+	// ------------- Required query parameter "purpose" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "purpose", r.URL.Query(), &params.Purpose, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "purpose"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "purpose", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DownloadEvidencePack(w, r, incidentId, packId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// VerifyEvidencePack operation middleware
+func (siw *ServerInterfaceWrapper) VerifyEvidencePack(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "incident_id" -------------
+	var incidentId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incident_id", r.PathValue("incident_id"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incident_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "pack_id" -------------
+	var packId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "pack_id", r.PathValue("pack_id"), &packId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pack_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VerifyEvidencePack(w, r, incidentId, packId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -27498,6 +30435,14 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/violations", wrapper.ListViolations)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/violations/{violation_id}", wrapper.GetViolation)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/violations/{violation_id}/review", wrapper.ReviewViolation)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/incidents", wrapper.ListIncidents)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/incidents", wrapper.CreateIncident)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/incidents/{incident_id}", wrapper.GetIncident)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/v1/incidents/{incident_id}", wrapper.UpdateIncident)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/incidents/{incident_id}/evidence-packs", wrapper.CreateEvidencePack)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/incidents/{incident_id}/evidence-packs/{pack_id}", wrapper.GetEvidencePack)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/incidents/{incident_id}/evidence-packs/{pack_id}/download", wrapper.DownloadEvidencePack)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/incidents/{incident_id}/evidence-packs/{pack_id}/verify", wrapper.VerifyEvidencePack)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/dp/views", wrapper.ListDPViews)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/dp/views", wrapper.CreateDPView)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/dp/providers", wrapper.ListDPProviders)
@@ -28399,6 +31344,610 @@ type CreateDPViewdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response CreateDPViewdefaultApplicationProblemPlusJSONResponse) VisitCreateDPViewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentsRequestObject struct {
+	Params ListIncidentsParams
+}
+
+type ListIncidentsResponseObject interface {
+	VisitListIncidentsResponse(w http.ResponseWriter) error
+}
+
+type ListIncidents200JSONResponse IncidentPage
+
+func (response ListIncidents200JSONResponse) VisitListIncidentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidents400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response ListIncidents400ApplicationProblemPlusJSONResponse) VisitListIncidentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListIncidentsdefaultApplicationProblemPlusJSONResponse) VisitListIncidentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateIncidentRequestObject struct {
+	Body *CreateIncidentJSONRequestBody
+}
+
+type CreateIncidentResponseObject interface {
+	VisitCreateIncidentResponse(w http.ResponseWriter) error
+}
+
+type CreateIncident201JSONResponse Incident
+
+func (response CreateIncident201JSONResponse) VisitCreateIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateIncident400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response CreateIncident400ApplicationProblemPlusJSONResponse) VisitCreateIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateIncidentdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateIncidentdefaultApplicationProblemPlusJSONResponse) VisitCreateIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetIncidentRequestObject struct {
+	IncidentId string `json:"incident_id"`
+}
+
+type GetIncidentResponseObject interface {
+	VisitGetIncidentResponse(w http.ResponseWriter) error
+}
+
+type GetIncident200JSONResponse Incident
+
+func (response GetIncident200JSONResponse) VisitGetIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetIncident404ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetIncident404ApplicationProblemPlusJSONResponse) VisitGetIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetIncidentdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetIncidentdefaultApplicationProblemPlusJSONResponse) VisitGetIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateIncidentRequestObject struct {
+	IncidentId string `json:"incident_id"`
+	Body       *UpdateIncidentJSONRequestBody
+}
+
+type UpdateIncidentResponseObject interface {
+	VisitUpdateIncidentResponse(w http.ResponseWriter) error
+}
+
+type UpdateIncident200JSONResponse Incident
+
+func (response UpdateIncident200JSONResponse) VisitUpdateIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateIncident400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response UpdateIncident400ApplicationProblemPlusJSONResponse) VisitUpdateIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateIncident404ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateIncident404ApplicationProblemPlusJSONResponse) VisitUpdateIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateIncident409ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateIncident409ApplicationProblemPlusJSONResponse) VisitUpdateIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateIncidentdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpdateIncidentdefaultApplicationProblemPlusJSONResponse) VisitUpdateIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEvidencePackRequestObject struct {
+	IncidentId string `json:"incident_id"`
+	Body       *CreateEvidencePackJSONRequestBody
+}
+
+type CreateEvidencePackResponseObject interface {
+	VisitCreateEvidencePackResponse(w http.ResponseWriter) error
+}
+
+type CreateEvidencePack201JSONResponse EvidencePack
+
+func (response CreateEvidencePack201JSONResponse) VisitCreateEvidencePackResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEvidencePack400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response CreateEvidencePack400ApplicationProblemPlusJSONResponse) VisitCreateEvidencePackResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEvidencePack403ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateEvidencePack403ApplicationProblemPlusJSONResponse) VisitCreateEvidencePackResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEvidencePack404ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateEvidencePack404ApplicationProblemPlusJSONResponse) VisitCreateEvidencePackResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEvidencePack413ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateEvidencePack413ApplicationProblemPlusJSONResponse) VisitCreateEvidencePackResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(413)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEvidencePack503ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateEvidencePack503ApplicationProblemPlusJSONResponse) VisitCreateEvidencePackResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEvidencePackdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateEvidencePackdefaultApplicationProblemPlusJSONResponse) VisitCreateEvidencePackResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEvidencePackRequestObject struct {
+	IncidentId string `json:"incident_id"`
+	PackId     string `json:"pack_id"`
+}
+
+type GetEvidencePackResponseObject interface {
+	VisitGetEvidencePackResponse(w http.ResponseWriter) error
+}
+
+type GetEvidencePack200JSONResponse EvidencePack
+
+func (response GetEvidencePack200JSONResponse) VisitGetEvidencePackResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEvidencePack404ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetEvidencePack404ApplicationProblemPlusJSONResponse) VisitGetEvidencePackResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEvidencePackdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetEvidencePackdefaultApplicationProblemPlusJSONResponse) VisitGetEvidencePackResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadEvidencePackRequestObject struct {
+	IncidentId string `json:"incident_id"`
+	PackId     string `json:"pack_id"`
+	Params     DownloadEvidencePackParams
+}
+
+type DownloadEvidencePackResponseObject interface {
+	VisitDownloadEvidencePackResponse(w http.ResponseWriter) error
+}
+
+type DownloadEvidencePack200ResponseHeaders struct {
+	XContentSHA256     *string
+	XEvidenceSignature *string
+}
+
+type DownloadEvidencePack200ApplicationzipResponse struct {
+	Body          io.Reader
+	Headers       DownloadEvidencePack200ResponseHeaders
+	ContentLength int64
+}
+
+func (response DownloadEvidencePack200ApplicationzipResponse) VisitDownloadEvidencePackResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/zip")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.XContentSHA256 != nil {
+		w.Header().Set("X-Content-SHA256", fmt.Sprint(*response.Headers.XContentSHA256))
+	}
+	if response.Headers.XEvidenceSignature != nil {
+		w.Header().Set("X-Evidence-Signature", fmt.Sprint(*response.Headers.XEvidenceSignature))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type DownloadEvidencePack403ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response DownloadEvidencePack403ApplicationProblemPlusJSONResponse) VisitDownloadEvidencePackResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadEvidencePack404ApplicationProblemPlusJSONResponse Problem
+
+func (response DownloadEvidencePack404ApplicationProblemPlusJSONResponse) VisitDownloadEvidencePackResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadEvidencePack409ApplicationProblemPlusJSONResponse Problem
+
+func (response DownloadEvidencePack409ApplicationProblemPlusJSONResponse) VisitDownloadEvidencePackResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadEvidencePack503ApplicationProblemPlusJSONResponse Problem
+
+func (response DownloadEvidencePack503ApplicationProblemPlusJSONResponse) VisitDownloadEvidencePackResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadEvidencePackdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response DownloadEvidencePackdefaultApplicationProblemPlusJSONResponse) VisitDownloadEvidencePackResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyEvidencePackRequestObject struct {
+	IncidentId string `json:"incident_id"`
+	PackId     string `json:"pack_id"`
+}
+
+type VerifyEvidencePackResponseObject interface {
+	VisitVerifyEvidencePackResponse(w http.ResponseWriter) error
+}
+
+type VerifyEvidencePack200JSONResponse EvidencePackVerification
+
+func (response VerifyEvidencePack200JSONResponse) VisitVerifyEvidencePackResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyEvidencePack404ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response VerifyEvidencePack404ApplicationProblemPlusJSONResponse) VisitVerifyEvidencePackResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyEvidencePack503ApplicationProblemPlusJSONResponse Problem
+
+func (response VerifyEvidencePack503ApplicationProblemPlusJSONResponse) VisitVerifyEvidencePackResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyEvidencePackdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response VerifyEvidencePackdefaultApplicationProblemPlusJSONResponse) VisitVerifyEvidencePackResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -31790,6 +35339,30 @@ type StrictServerInterface interface {
 	// CreateDPView Add an oversight area
 	// (POST /v1/dp/views)
 	CreateDPView(ctx context.Context, request CreateDPViewRequestObject) (CreateDPViewResponseObject, error)
+	// ListIncidents Incidents, newest first
+	// (GET /v1/incidents)
+	ListIncidents(ctx context.Context, request ListIncidentsRequestObject) (ListIncidentsResponseObject, error)
+	// CreateIncident Open an incident from the authority's own observation or a notice
+	// (POST /v1/incidents)
+	CreateIncident(ctx context.Context, request CreateIncidentRequestObject) (CreateIncidentResponseObject, error)
+	// GetIncident One incident with its aircraft, notes and evidence packs
+	// (GET /v1/incidents/{incident_id})
+	GetIncident(ctx context.Context, request GetIncidentRequestObject) (GetIncidentResponseObject, error)
+	// UpdateIncident Change an incident, assign or close it, add an aircraft or a note
+	// (PATCH /v1/incidents/{incident_id})
+	UpdateIncident(ctx context.Context, request UpdateIncidentRequestObject) (UpdateIncidentResponseObject, error)
+	// CreateEvidencePack Build, seal and store an evidence pack for a window
+	// (POST /v1/incidents/{incident_id}/evidence-packs)
+	CreateEvidencePack(ctx context.Context, request CreateEvidencePackRequestObject) (CreateEvidencePackResponseObject, error)
+	// GetEvidencePack One evidence pack's manifest, hash and signature
+	// (GET /v1/incidents/{incident_id}/evidence-packs/{pack_id})
+	GetEvidencePack(ctx context.Context, request GetEvidencePackRequestObject) (GetEvidencePackResponseObject, error)
+	// DownloadEvidencePack The sealed archive (purpose required, audited)
+	// (GET /v1/incidents/{incident_id}/evidence-packs/{pack_id}/download)
+	DownloadEvidencePack(ctx context.Context, request DownloadEvidencePackRequestObject) (DownloadEvidencePackResponseObject, error)
+	// VerifyEvidencePack Recompute the stored archive's hash and check the signature
+	// (GET /v1/incidents/{incident_id}/evidence-packs/{pack_id}/verify)
+	VerifyEvidencePack(ctx context.Context, request VerifyEvidencePackRequestObject) (VerifyEvidencePackResponseObject, error)
 	// ListOAuthClients Registered clients
 	// (GET /v1/oauth/clients)
 	ListOAuthClients(ctx context.Context, request ListOAuthClientsRequestObject) (ListOAuthClientsResponseObject, error)
@@ -32482,6 +36055,237 @@ func (sh *strictHandler) CreateDPView(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CreateDPViewResponseObject); ok {
 		if err := validResponse.VisitCreateDPViewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListIncidents operation middleware
+func (sh *strictHandler) ListIncidents(w http.ResponseWriter, r *http.Request, params ListIncidentsParams) {
+	var request ListIncidentsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListIncidents(ctx, request.(ListIncidentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListIncidents")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListIncidentsResponseObject); ok {
+		if err := validResponse.VisitListIncidentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateIncident operation middleware
+func (sh *strictHandler) CreateIncident(w http.ResponseWriter, r *http.Request) {
+	var request CreateIncidentRequestObject
+
+	var body CreateIncidentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateIncident(ctx, request.(CreateIncidentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateIncident")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateIncidentResponseObject); ok {
+		if err := validResponse.VisitCreateIncidentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetIncident operation middleware
+func (sh *strictHandler) GetIncident(w http.ResponseWriter, r *http.Request, incidentId string) {
+	var request GetIncidentRequestObject
+
+	request.IncidentId = incidentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetIncident(ctx, request.(GetIncidentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetIncident")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetIncidentResponseObject); ok {
+		if err := validResponse.VisitGetIncidentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateIncident operation middleware
+func (sh *strictHandler) UpdateIncident(w http.ResponseWriter, r *http.Request, incidentId string) {
+	var request UpdateIncidentRequestObject
+
+	request.IncidentId = incidentId
+
+	var body UpdateIncidentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateIncident(ctx, request.(UpdateIncidentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateIncident")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateIncidentResponseObject); ok {
+		if err := validResponse.VisitUpdateIncidentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateEvidencePack operation middleware
+func (sh *strictHandler) CreateEvidencePack(w http.ResponseWriter, r *http.Request, incidentId string) {
+	var request CreateEvidencePackRequestObject
+
+	request.IncidentId = incidentId
+
+	var body CreateEvidencePackJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateEvidencePack(ctx, request.(CreateEvidencePackRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateEvidencePack")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateEvidencePackResponseObject); ok {
+		if err := validResponse.VisitCreateEvidencePackResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetEvidencePack operation middleware
+func (sh *strictHandler) GetEvidencePack(w http.ResponseWriter, r *http.Request, incidentId string, packId string) {
+	var request GetEvidencePackRequestObject
+
+	request.IncidentId = incidentId
+	request.PackId = packId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetEvidencePack(ctx, request.(GetEvidencePackRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetEvidencePack")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetEvidencePackResponseObject); ok {
+		if err := validResponse.VisitGetEvidencePackResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DownloadEvidencePack operation middleware
+func (sh *strictHandler) DownloadEvidencePack(w http.ResponseWriter, r *http.Request, incidentId string, packId string, params DownloadEvidencePackParams) {
+	var request DownloadEvidencePackRequestObject
+
+	request.IncidentId = incidentId
+	request.PackId = packId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DownloadEvidencePack(ctx, request.(DownloadEvidencePackRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DownloadEvidencePack")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DownloadEvidencePackResponseObject); ok {
+		if err := validResponse.VisitDownloadEvidencePackResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// VerifyEvidencePack operation middleware
+func (sh *strictHandler) VerifyEvidencePack(w http.ResponseWriter, r *http.Request, incidentId string, packId string) {
+	var request VerifyEvidencePackRequestObject
+
+	request.IncidentId = incidentId
+	request.PackId = packId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.VerifyEvidencePack(ctx, request.(VerifyEvidencePackRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "VerifyEvidencePack")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(VerifyEvidencePackResponseObject); ok {
+		if err := validResponse.VisitVerifyEvidencePackResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

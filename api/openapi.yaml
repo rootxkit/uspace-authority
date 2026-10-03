@@ -101,6 +101,12 @@ tags:
       A7, 2019/947 Art. 18(k)): raised and cleared by detect, persisted
       with their evidence excerpt, and reviewed by inspectors.
 
+  - name: incidents
+    description: |
+      Incidents and evidence packs (WP-17, spec 01 A10, 02 F10): the
+      authority's own case files, opened from escalated violations, its
+      own observations and notices, and hash-sealed evidence packs
+      whose creation and every download are audited with the purpose.
   - name: dp
     description: |
       The ASTM F3411-22a Display Provider (WP-14, spec 02 F7):
@@ -2726,8 +2732,9 @@ paths:
         `violation_reviewed`). Evidence that is broadcast only
         (`evidence_trust: broadcast`) is never escalated without a
         note (spec 06 §2 T1; 400 naming `note`). Escalation requests an
-        incident (`incident_requested`; WP-17 opens it). The review and
-        the request are `events` rows in the same transaction.
+        incident (`incident_requested`) and opens it (`incident_opened`,
+        `GET /v1/incidents?violation_id=`). The review, the request and
+        the incident are written in the same transaction.
       security:
         - sessionCookie: []
       x-roles: [inspector]
@@ -2750,6 +2757,302 @@ paths:
         "404":
           $ref: "#/components/responses/Problem"
         "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  # WP-17: incidents and evidence packs (spec 01 A10, 02 F10, 03 §1,
+  # 05 §4, 06 §2 T6-T7, 06 §5); docs/runbooks/incidents.md is the
+  # procedure. Every change and every pack built, downloaded or verified
+  # is an events row (the chain of custody). A legal pack carries
+  # personal data and is built and downloaded only by a session holding
+  # one of the personal-data roles (inspector); an incident officer
+  # builds and downloads oversight packs.
+  /v1/incidents:
+    get:
+      operationId: listIncidents
+      tags: [incidents]
+      summary: Incidents, newest first
+      security:
+        - sessionCookie: []
+      x-roles: [inspector, incident_officer]
+      x-audit: none
+      parameters:
+        - {name: status, in: query, schema: {$ref: "#/components/schemas/IncidentStatus"}}
+        - {name: kind, in: query, schema: {$ref: "#/components/schemas/IncidentKind"}}
+        - {name: violation_id, in: query, description: The incident opened from this violation., schema: {type: string, pattern: "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"}}
+        - {name: cursor, in: query, schema: {type: string, maxLength: 128}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 200, default: 50}}
+      responses:
+        "200":
+          description: One page of incidents.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncidentPage"
+        "400":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createIncident
+      tags: [incidents]
+      summary: Open an incident from the authority's own observation or a notice
+      description: |
+        `opened_from` is `own_observation`, `ansp_notice` or
+        `ussp_notice` (the last two with `notice_ref`); an incident is
+        opened from a violation only by escalating it (`POST
+        /v1/violations/{violation_id}/review`), never here (400 naming
+        `opened_from`). Never from an occurrence report (376/2014 Art.
+        15-16). An aircraft's `operator_reg` is stored as its public part
+        only: a secret part sent is dropped, never stored (spec 06 §5).
+      security:
+        - sessionCookie: []
+      x-roles: [inspector, incident_officer]
+      x-audit: {event_type: incident_opened, entity_type: incident, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncidentInput"
+      responses:
+        "201":
+          description: The incident opened.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Incident"
+        "400":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/incidents/{incident_id}:
+    parameters:
+      - {name: incident_id, in: path, required: true, schema: {type: string, pattern: "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"}}
+    get:
+      operationId: getIncident
+      tags: [incidents]
+      summary: One incident with its aircraft, notes and evidence packs
+      security:
+        - sessionCookie: []
+      x-roles: [inspector, incident_officer]
+      x-audit: none
+      responses:
+        "200":
+          description: The incident.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Incident"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: updateIncident
+      tags: [incidents]
+      summary: Change an incident, assign or close it, add an aircraft or a note
+      description: |
+        Every member is optional; what is present is applied in one
+        transaction with one `incident_updated` events row naming each
+        change (from, to). `status` moves open -> assigned (an
+        `assignee` is required) -> closed, open -> closed, and a closed
+        incident is reopened (closed -> open or assigned), so a case is
+        never shut without a way back. Notes are append-only: `note`
+        adds one (at most 500 per incident). `add_aircraft` adds
+        aircraft (at most 32 per incident, E-10).
+      security:
+        - sessionCookie: []
+      x-roles: [inspector, incident_officer]
+      x-audit: {event_type: incident_updated, entity_type: incident, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncidentPatch"
+      responses:
+        "200":
+          description: The incident as changed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Incident"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/incidents/{incident_id}/evidence-packs:
+    parameters:
+      - {name: incident_id, in: path, required: true, schema: {type: string, pattern: "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"}}
+    post:
+      operationId: createEvidencePack
+      tags: [incidents]
+      summary: Build, seal and store an evidence pack for a window
+      description: |
+        Assembles the manifest and the archive of the incident's evidence
+        in [from, to): track excerpts cut into segments at every silence
+        longer than the active policy's `max_gap_s`, every recorded
+        writer gap and every sample without a position, each hole
+        labelled with its cause or `no recorded cause` (B-13; nothing is
+        interpolated); the raw Remote ID frames; the Display Provider's
+        rows while still held (24 h); the zone versions named and in
+        force; the policy versions; the violations; the events lines;
+        the ground dataset and spacing of every AGL number (D-05); the
+        USSP's service record of each USSP flight fetched on demand (02
+        F7, scope `ussp.records`). A source that cannot be read is in
+        the manifest as `unavailable` with the reason, never silently
+        missing. A window longer than `INCIDENTS_PACK_MAX_WINDOW_S` is
+        refused (400 `window_too_large`) and a section holding more than
+        `INCIDENTS_PACK_MAX_ROWS` rows is refused (413
+        `pack_too_large`), never thinned. The archive is deterministic
+        (sorted entries, fixed timestamps); `content_hash` is its
+        SHA-256, recorded here and in the `evidence_pack_built` events
+        row with the purpose; the seal statement (pack id, incident,
+        kind, window, hash, time) is signed as a detached JWS by the
+        publication key when one is configured. `oversight` packs carry
+        no personal data (registration public part and serial only;
+        frame payloads that may carry the remote pilot position are
+        withheld and kept by hash); `legal` packs need `case_ref` and a
+        personal-data role (403 otherwise), resolve the operators'
+        personal data from the registry (each read audited with the
+        purpose) and are sealed at rest. 503
+        `evidence_storage_unavailable` without `EVIDENCE_DIR`; 503
+        `pack_busy` past `INCIDENTS_PACK_CONCURRENCY` builds at once.
+      security:
+        - sessionCookie: []
+      x-roles: [inspector, incident_officer]
+      x-audit: {event_type: evidence_pack_built, entity_type: incident, purpose: required}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvidencePackInput"
+      responses:
+        "201":
+          description: The pack as sealed, with its manifest.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvidencePack"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "413":
+          $ref: "#/components/responses/Problem"
+        "503":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/incidents/{incident_id}/evidence-packs/{pack_id}:
+    parameters:
+      - {name: incident_id, in: path, required: true, schema: {type: string, pattern: "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"}}
+      - {name: pack_id, in: path, required: true, schema: {type: string, pattern: "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"}}
+    get:
+      operationId: getEvidencePack
+      tags: [incidents]
+      summary: One evidence pack's manifest, hash and signature
+      description: The manifest holds no personal data, whatever the kind.
+      security:
+        - sessionCookie: []
+      x-roles: [inspector, incident_officer]
+      x-audit: none
+      responses:
+        "200":
+          description: The pack.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvidencePack"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/incidents/{incident_id}/evidence-packs/{pack_id}/download:
+    parameters:
+      - {name: incident_id, in: path, required: true, schema: {type: string, pattern: "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"}}
+      - {name: pack_id, in: path, required: true, schema: {type: string, pattern: "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"}}
+    get:
+      operationId: downloadEvidencePack
+      tags: [incidents]
+      summary: The sealed archive (purpose required, audited)
+      description: |
+        The stored archive is read, opened when sealed at rest, and its
+        SHA-256 compared with `content_hash` before a byte is served: a
+        mismatch is refused (409 `evidence_tampered`, with an
+        `evidence_pack_verified` events row recording the failure).
+        Every download is an `evidence_pack_downloaded` events row with
+        the purpose, committed before the body is sent. A legal pack is
+        served only to a personal-data role (403).
+      security:
+        - sessionCookie: []
+      x-roles: [inspector, incident_officer]
+      x-audit: {event_type: evidence_pack_downloaded, entity_type: incident, purpose: required}
+      parameters:
+        - {name: purpose, in: query, required: true, schema: {type: string, minLength: 1, maxLength: 200}}
+      responses:
+        "200":
+          description: The archive (a ZIP file).
+          headers:
+            X-Content-SHA256:
+              description: The archive's hash, as content_hash records it.
+              schema: {type: string}
+            X-Evidence-Signature:
+              description: The detached JWS of the seal statement; empty when the pack is unsigned.
+              schema: {type: string}
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "503":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/incidents/{incident_id}/evidence-packs/{pack_id}/verify:
+    parameters:
+      - {name: incident_id, in: path, required: true, schema: {type: string, pattern: "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"}}
+      - {name: pack_id, in: path, required: true, schema: {type: string, pattern: "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"}}
+    get:
+      operationId: verifyEvidencePack
+      tags: [incidents]
+      summary: Recompute the stored archive's hash and check the signature
+      description: |
+        Reads the stored archive, recomputes its SHA-256 and compares it
+        with `content_hash`, and verifies the seal statement's signature
+        against the publication key this system holds. The answer says
+        what was found, a mismatch included (200 with `hash_matches:
+        false` and the problem); every verification is an
+        `evidence_pack_verified` events row.
+      security:
+        - sessionCookie: []
+      x-roles: [inspector, incident_officer]
+      x-audit: {event_type: evidence_pack_verified, entity_type: incident, purpose: none}
+      responses:
+        "200":
+          description: What the verification found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvidencePackVerification"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "503":
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
@@ -4712,6 +5015,228 @@ components:
         next_cursor:
           type: string
           description: Pass as cursor for the next page; absent on the last page.
+    IncidentKind:
+      type: string
+      enum: [airprox, nonconformance, lost_link, emergency, violation_escalated, other]
+    IncidentStatus:
+      type: string
+      enum: [open, assigned, closed]
+    IncidentSeverity:
+      type: string
+      enum: [info, warning, critical]
+    IncidentOpenedFrom:
+      type: string
+      enum: [violation, own_observation, ansp_notice, ussp_notice]
+    IncidentIdentification:
+      type: object
+      description: The identification of the aircraft as it was judged at the time (uspace-core identify), as recorded.
+      additionalProperties: false
+      properties:
+        status: {type: string, maxLength: 64}
+        reason: {type: string, maxLength: 64}
+        basis: {type: string, maxLength: 64}
+        evidence_trust: {type: string, maxLength: 64}
+    IncidentAircraftInput:
+      type: object
+      additionalProperties: false
+      description: At least one of serial, operator_reg and track_ids.
+      properties:
+        serial: {type: string, minLength: 1, maxLength: 64}
+        operator_reg: {type: string, minLength: 1, maxLength: 64, description: The public part is stored; a secret part is dropped.}
+        track_ids:
+          type: array
+          maxItems: 16
+          items: {type: string, minLength: 1, maxLength: 256}
+        identification:
+          $ref: "#/components/schemas/IncidentIdentification"
+    IncidentAircraft:
+      type: object
+      required: [id, track_ids, identification, added_by, added_at]
+      properties:
+        id: {type: integer, format: int64}
+        serial: {type: [string, "null"]}
+        operator_reg: {type: [string, "null"], description: The registration number's public part.}
+        registry_uas_id: {type: [string, "null"]}
+        track_ids:
+          type: array
+          items: {type: string}
+        identification:
+          $ref: "#/components/schemas/IncidentIdentification"
+        added_by: {type: string}
+        added_at: {type: string, format: date-time}
+    IncidentNote:
+      type: object
+      required: [id, author, body, created_at]
+      properties:
+        id: {type: integer, format: int64}
+        author: {type: string}
+        body: {type: string}
+        created_at: {type: string, format: date-time}
+    IncidentInput:
+      type: object
+      required: [kind, occurred_at, opened_from, severity]
+      additionalProperties: false
+      properties:
+        kind: {$ref: "#/components/schemas/IncidentKind"}
+        occurred_at: {type: string, format: date-time}
+        opened_from: {$ref: "#/components/schemas/IncidentOpenedFrom"}
+        notice_ref: {type: string, minLength: 1, maxLength: 200, description: The ANSP's or USSP's reference of the notice.}
+        severity: {$ref: "#/components/schemas/IncidentSeverity"}
+        narrative: {type: string, maxLength: 20000}
+        intent_refs:
+          type: array
+          maxItems: 32
+          items: {type: string, minLength: 1, maxLength: 256}
+        aircraft:
+          type: array
+          maxItems: 32
+          items:
+            $ref: "#/components/schemas/IncidentAircraftInput"
+    IncidentPatch:
+      type: object
+      additionalProperties: false
+      properties:
+        narrative: {type: string, maxLength: 20000}
+        severity: {$ref: "#/components/schemas/IncidentSeverity"}
+        status: {$ref: "#/components/schemas/IncidentStatus"}
+        assignee: {type: string, minLength: 1, maxLength: 128, description: The account the case is assigned to.}
+        intent_refs:
+          type: array
+          maxItems: 32
+          items: {type: string, minLength: 1, maxLength: 256}
+        add_aircraft:
+          type: array
+          maxItems: 32
+          items:
+            $ref: "#/components/schemas/IncidentAircraftInput"
+        note: {type: string, minLength: 1, maxLength: 4000}
+    IncidentSummary:
+      type: object
+      required: [incident_id, kind, occurred_at, opened_from, severity, status, created_at, updated_at]
+      properties:
+        incident_id: {type: string}
+        kind: {$ref: "#/components/schemas/IncidentKind"}
+        occurred_at: {type: string, format: date-time}
+        opened_from: {$ref: "#/components/schemas/IncidentOpenedFrom"}
+        source_violation_id: {type: [string, "null"]}
+        severity: {$ref: "#/components/schemas/IncidentSeverity"}
+        status: {$ref: "#/components/schemas/IncidentStatus"}
+        assignee: {type: [string, "null"]}
+        closed_at: {type: [string, "null"], format: date-time}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+    IncidentPage:
+      type: object
+      required: [incidents]
+      properties:
+        incidents:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncidentSummary"
+        next_cursor:
+          type: string
+          description: Pass as cursor for the next page; absent on the last page.
+    Incident:
+      type: object
+      required: [incident_id, kind, occurred_at, opened_from, intent_refs, narrative, severity, status, opened_by, created_at,
+                 updated_at, aircraft, notes, evidence_packs]
+      properties:
+        incident_id: {type: string}
+        kind: {$ref: "#/components/schemas/IncidentKind"}
+        occurred_at: {type: string, format: date-time}
+        opened_from: {$ref: "#/components/schemas/IncidentOpenedFrom"}
+        source_violation_id: {type: [string, "null"]}
+        notice_ref: {type: [string, "null"]}
+        intent_refs:
+          type: array
+          items: {type: string}
+        narrative: {type: string}
+        severity: {$ref: "#/components/schemas/IncidentSeverity"}
+        status: {$ref: "#/components/schemas/IncidentStatus"}
+        assignee: {type: [string, "null"]}
+        closed_at: {type: [string, "null"], format: date-time}
+        opened_by: {type: string}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+        aircraft:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncidentAircraft"
+        notes:
+          type: array
+          items:
+            $ref: "#/components/schemas/IncidentNote"
+        evidence_packs:
+          type: array
+          items:
+            $ref: "#/components/schemas/EvidencePackSummary"
+    EvidencePackKind:
+      type: string
+      enum: [oversight, legal]
+    EvidencePackInput:
+      type: object
+      required: [kind, from, to, purpose]
+      additionalProperties: false
+      properties:
+        kind: {$ref: "#/components/schemas/EvidencePackKind"}
+        from: {type: string, format: date-time, description: Inclusive start of the window.}
+        to: {type: string, format: date-time, description: Exclusive end of the window.}
+        purpose: {type: string, minLength: 1, maxLength: 200}
+        case_ref: {type: string, minLength: 1, maxLength: 200, description: Required for a legal pack.}
+    EvidencePackSummary:
+      type: object
+      required: [pack_id, kind, from, to, content_hash, size_bytes, created_by, created_at]
+      properties:
+        pack_id: {type: string}
+        kind: {$ref: "#/components/schemas/EvidencePackKind"}
+        from: {type: string, format: date-time}
+        to: {type: string, format: date-time}
+        content_hash: {type: string, description: "sha256:<64 hex> of the archive."}
+        size_bytes: {type: integer, format: int64}
+        signature_kid: {type: [string, "null"]}
+        created_by: {type: string}
+        created_at: {type: string, format: date-time}
+    EvidencePack:
+      type: object
+      required: [pack_id, incident_id, kind, from, to, content_hash, size_bytes, seal_statement, manifest, purpose, created_by,
+                 created_at]
+      properties:
+        pack_id: {type: string}
+        incident_id: {type: string}
+        kind: {$ref: "#/components/schemas/EvidencePackKind"}
+        from: {type: string, format: date-time}
+        to: {type: string, format: date-time}
+        content_hash: {type: string, description: "sha256:<64 hex> of the archive."}
+        size_bytes: {type: integer, format: int64}
+        signature: {type: [string, "null"], description: "Detached JWS (RFC 7797, b64 false) of the publication key over the seal statement's canonical bytes (seal_statement serialised as stored)."}
+        signature_kid: {type: [string, "null"]}
+        seal_statement:
+          type: object
+          description: What the signature covers (pack_id, incident_id, kind, window, content_hash, created_at).
+          additionalProperties: true
+        manifest:
+          type: object
+          description: What the archive holds, section by section, with what was observed, what was inferred and what was unavailable and why (docs/runbooks/incidents.md). No personal data.
+          additionalProperties: true
+        purpose: {type: string}
+        case_ref: {type: [string, "null"]}
+        created_by: {type: string}
+        created_at: {type: string, format: date-time}
+    EvidencePackVerification:
+      type: object
+      required: [pack_id, content_hash, hash_matches, signature, verified_at]
+      properties:
+        pack_id: {type: string}
+        content_hash: {type: string}
+        recomputed_hash: {type: [string, "null"], description: Null when the stored archive could not be read or opened.}
+        hash_matches: {type: boolean}
+        problem: {type: [string, "null"], description: What was wrong, when something was.}
+        signature:
+          type: string
+          enum: [verified, invalid, unsigned, unverifiable]
+          description: unverifiable when the signing key is not held by this system any more.
+        signature_detail: {type: [string, "null"]}
+        verified_at: {type: string, format: date-time}
     ViolationReviewInput:
       type: object
       required: [decision]
