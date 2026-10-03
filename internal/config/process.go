@@ -100,6 +100,19 @@ type API struct {
 	Violations
 	Incidents
 	DPAdmin
+	Certificates
+}
+
+// Certificates are api's USSP and CISP certificates (WP-16): the lapse
+// job, the repair of the USSP list and of the KV register dp-poller
+// follows, and the public register's rate limit.
+type Certificates struct {
+	CertificatesLapseEveryS    int    `env:"CERTIFICATES_LAPSE_EVERY_S" default:"86400" min:"60" max:"604800" help:"period of the Art. 16(2) lapse job (daily; one replica at a time under an advisory lock, idempotent); the lapse periods themselves are authority_policy columns"`
+	CertificatesRepairS        int    `env:"CERTIFICATES_REPAIR_S" default:"60" min:"1" max:"3600" help:"period of the repair of the USSP list (queued again when a change could not queue it or a certificate left it by expiry) and of the KV register dp-poller follows"`
+	CertificatesBucket         string `env:"CERTIFICATES_BUCKET" default:"certificates" help:"KV bucket of the certified USSPs dp-poller follows (the same variable there)"`
+	CertificatesRegisterPerMin int    `env:"CERTIFICATES_REGISTER_PER_MIN" default:"60" min:"1" max:"100000" help:"public register requests per minute per client address (behind the trusted proxies); past it 429 with Retry-After"`
+	CertificatesRegisterBurst  int    `env:"CERTIFICATES_REGISTER_BURST" default:"20" min:"1" max:"100000" help:"burst of the public register's per-address budget"`
+	CertificatesRegisterMaxIPs int    `env:"CERTIFICATES_REGISTER_MAX_IPS" default:"10000" min:"1" max:"10000000" help:"client addresses the register's limiter remembers; past it the one seen longest ago is forgotten and counted (E-10)"`
 }
 
 // Incidents are api's case files and evidence packs (WP-17).

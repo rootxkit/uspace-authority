@@ -192,6 +192,24 @@ type DPHandler interface {
 	SetDPProviderAvailability(ctx context.Context, request gen.SetDPProviderAvailabilityRequestObject) (gen.SetDPProviderAvailabilityResponseObject, error)
 }
 
+// CertificatesHandler serves /v1/certificates* (api, WP-16): USSP and
+// CISP certificates, their operating status, the public register and
+// the USSP list.
+type CertificatesHandler interface {
+	ListCertificates(ctx context.Context, request gen.ListCertificatesRequestObject) (gen.ListCertificatesResponseObject, error)
+	IssueCertificate(ctx context.Context, request gen.IssueCertificateRequestObject) (gen.IssueCertificateResponseObject, error)
+	GetCertificateRegister(ctx context.Context, request gen.GetCertificateRegisterRequestObject) (gen.GetCertificateRegisterResponseObject, error)
+	PublishUSSPList(ctx context.Context, request gen.PublishUSSPListRequestObject) (gen.PublishUSSPListResponseObject, error)
+	GetCertificate(ctx context.Context, request gen.GetCertificateRequestObject) (gen.GetCertificateResponseObject, error)
+	UpdateCertificate(ctx context.Context, request gen.UpdateCertificateRequestObject) (gen.UpdateCertificateResponseObject, error)
+	PostCertificateStatus(ctx context.Context, request gen.PostCertificateStatusRequestObject) (gen.PostCertificateStatusResponseObject, error)
+	RecordCertificateStatusNotice(ctx context.Context, request gen.RecordCertificateStatusNoticeRequestObject) (gen.RecordCertificateStatusNoticeResponseObject, error)
+	SuspendCertificate(ctx context.Context, request gen.SuspendCertificateRequestObject) (gen.SuspendCertificateResponseObject, error)
+	LimitCertificate(ctx context.Context, request gen.LimitCertificateRequestObject) (gen.LimitCertificateResponseObject, error)
+	RevokeCertificate(ctx context.Context, request gen.RevokeCertificateRequestObject) (gen.RevokeCertificateResponseObject, error)
+	ReinstateCertificate(ctx context.Context, request gen.ReinstateCertificateRequestObject) (gen.ReinstateCertificateResponseObject, error)
+}
+
 // Server implements gen.StrictServerInterface by delegating to one
 // handler per group. A group left nil must not be mounted.
 type Server struct {
@@ -212,6 +230,7 @@ type Server struct {
 	ViolationsHandler
 	IncidentsHandler
 	DPHandler
+	CertificatesHandler
 }
 
 var _ gen.StrictServerInterface = Server{}

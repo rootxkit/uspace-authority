@@ -131,6 +131,17 @@ var Roles = map[string][]string{
 	"CreateDPView":              {RoleAdmin},
 	"ListDPProviders":           {RoleAdmin},
 	"SetDPProviderAvailability": {RoleAdmin},
+
+	"ListCertificates":              {RoleAdmin},
+	"IssueCertificate":              {RoleAdmin},
+	"PublishUSSPList":               {RoleAdmin},
+	"GetCertificate":                {RoleAdmin},
+	"UpdateCertificate":             {RoleAdmin},
+	"RecordCertificateStatusNotice": {RoleAdmin},
+	"SuspendCertificate":            {RoleAdmin},
+	"LimitCertificate":              {RoleAdmin},
+	"RevokeCertificate":             {RoleAdmin},
+	"ReinstateCertificate":          {RoleAdmin},
 }
 
 // Receiver lists the operations a Remote ID receiver calls (`x-receiver:
@@ -181,6 +192,7 @@ var Scopes = map[string]string{
 	"ValidateRegistry":      "registry.validate",
 	"ValidateRegistryBatch": "registry.validate",
 	"ListRegistryChanges":   "registry.validate",
+	"PostCertificateStatus": "certificates.status",
 }
 
 // Public lists the operations with `security: []` in the contract: no
@@ -198,6 +210,8 @@ var Public = map[string]bool{
 	"VerifyMFA":         true,
 
 	"ReceiveCISNotification": true,
+
+	"GetCertificateRegister": true,
 }
 
 // AnySession lists the operations open to every console session

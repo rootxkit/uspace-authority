@@ -12,6 +12,7 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rootxkit/uspace-core/core"
 
+	"github.com/rootxkit/uspace-authority/internal/certkv"
 	"github.com/rootxkit/uspace-authority/internal/dpviews"
 	"github.com/rootxkit/uspace-authority/internal/logging"
 )
@@ -156,6 +157,8 @@ func NewTopology(l Limits) Topology {
 			// WP-14: the Display Provider's areas (internal/dpviews).
 			dpviews.OversightBucketConfig(""),
 			dpviews.ConsoleBucketConfig(""),
+			// WP-16: the certified USSPs dp-poller follows (internal/certkv).
+			certkv.BucketConfig(""),
 		},
 	}
 }

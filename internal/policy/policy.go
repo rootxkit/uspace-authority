@@ -43,6 +43,13 @@ type Thresholds struct {
 	// format (G-07, spec Q5) the registry validates against through
 	// uspace-core regnum (WP-3).
 	RegistrationNumberPattern string `json:"registration_number_pattern"`
+	// CertificateLapseUnusedMonths and CertificateLapseCeasedMonths are
+	// the Art. 16(2) periods (WP-16): a certificate not used within the
+	// first after its issue, or whose operations ceased for the second,
+	// lapses. A certificate keeps the periods of the policy it was
+	// issued under.
+	CertificateLapseUnusedMonths int `json:"certificate_lapse_unused_months"`
+	CertificateLapseCeasedMonths int `json:"certificate_lapse_ceased_months"`
 }
 
 // Defaults are the documented defaults, equal to the predecessor's and
@@ -70,8 +77,19 @@ func Defaults() Thresholds {
 		HeightLimitInUspace:     HeightEvaluate,
 		// regnum.DefaultPattern, the EU shape (G-07).
 		RegistrationNumberPattern: regnum.DefaultPattern,
+		// Reg. 2021/664 Art. 16(2).
+		CertificateLapseUnusedMonths: DefaultLapseUnusedMonths,
+		CertificateLapseCeasedMonths: DefaultLapseCeasedMonths,
 	}
 }
+
+// The Art. 16(2) periods and their bounds (the column CHECK of
+// migration 00018_certificates).
+const (
+	DefaultLapseUnusedMonths = 6
+	DefaultLapseCeasedMonths = 12
+	MaxLapseMonths           = 120
+)
 
 // numbers lists every numeric threshold with its field name.
 func (t Thresholds) numbers() []struct {
@@ -140,6 +158,17 @@ func (t Thresholds) Validate() error {
 			errs = append(errs, core.Fieldf("registration_number_pattern", "not a valid regular expression"))
 		}
 	}
+	for _, m := range []struct {
+		field string
+		value int
+	}{
+		{"certificate_lapse_unused_months", t.CertificateLapseUnusedMonths},
+		{"certificate_lapse_ceased_months", t.CertificateLapseCeasedMonths},
+	} {
+		if m.value < 1 || m.value > MaxLapseMonths {
+			errs = append(errs, core.Fieldf(m.field, "must be between 1 and %d months", MaxLapseMonths))
+		}
+	}
 	return errors.Join(errs...)
 }
 
@@ -178,7 +207,9 @@ func fromRow(r gen.AuthorityPolicy) Policy {
 			CISStaleBoundS:          r.CisStaleBoundS,
 			HeightLimitInUspace:     r.HeightLimitInUspace,
 
-			RegistrationNumberPattern: r.RegistrationNumberPattern,
+			RegistrationNumberPattern:    r.RegistrationNumberPattern,
+			CertificateLapseUnusedMonths: int(r.CertificateLapseUnusedMonths),
+			CertificateLapseCeasedMonths: int(r.CertificateLapseCeasedMonths),
 		},
 		Note:        r.Note,
 		Active:      r.Active,
@@ -194,28 +225,30 @@ func fromRow(r gen.AuthorityPolicy) Policy {
 
 func insertParams(version int64, t Thresholds, note, by string, at time.Time) gen.InsertPolicyParams {
 	return gen.InsertPolicyParams{
-		Version:                   version,
-		HeightLimitAglM:           t.HeightLimitAGLM,
-		PressureUncertaintyM:      t.PressureUncertaintyM,
-		ZoneConditionalSeverity:   string(t.ZoneConditionalSeverity),
-		MismatchSeverity:          string(t.MismatchSeverity),
-		IdentificationSeverity:    string(t.IdentificationSeverity),
-		SpoofDistanceM:            t.SpoofDistanceM,
-		IdentityTtlS:              t.IdentityTTLS,
-		MaxGapS:                   t.MaxGapS,
-		IdentifyWithinS:           t.IdentifyWithinS,
-		BroadcastToleranceS:       t.BroadcastToleranceS,
-		MaxLatencyS:               t.MaxLatencyS,
-		LiveMaxAgeS:               t.LiveMaxAgeS,
-		ClearAfterS:               t.ClearAfterS,
-		StaleAfterS:               t.StaleAfterS,
-		DpViewDiagonalKm:          t.DPViewDiagonalKM,
-		DpPollHz:                  t.DPPollHz,
-		CisStaleBoundS:            t.CISStaleBoundS,
-		HeightLimitInUspace:       t.HeightLimitInUspace,
-		RegistrationNumberPattern: t.RegistrationNumberPattern,
-		Note:                      note,
-		CreatedAt:                 at,
-		CreatedBy:                 by,
+		Version:                      version,
+		HeightLimitAglM:              t.HeightLimitAGLM,
+		PressureUncertaintyM:         t.PressureUncertaintyM,
+		ZoneConditionalSeverity:      string(t.ZoneConditionalSeverity),
+		MismatchSeverity:             string(t.MismatchSeverity),
+		IdentificationSeverity:       string(t.IdentificationSeverity),
+		SpoofDistanceM:               t.SpoofDistanceM,
+		IdentityTtlS:                 t.IdentityTTLS,
+		MaxGapS:                      t.MaxGapS,
+		IdentifyWithinS:              t.IdentifyWithinS,
+		BroadcastToleranceS:          t.BroadcastToleranceS,
+		MaxLatencyS:                  t.MaxLatencyS,
+		LiveMaxAgeS:                  t.LiveMaxAgeS,
+		ClearAfterS:                  t.ClearAfterS,
+		StaleAfterS:                  t.StaleAfterS,
+		DpViewDiagonalKm:             t.DPViewDiagonalKM,
+		DpPollHz:                     t.DPPollHz,
+		CisStaleBoundS:               t.CISStaleBoundS,
+		HeightLimitInUspace:          t.HeightLimitInUspace,
+		RegistrationNumberPattern:    t.RegistrationNumberPattern,
+		CertificateLapseUnusedMonths: int32(t.CertificateLapseUnusedMonths),
+		CertificateLapseCeasedMonths: int32(t.CertificateLapseCeasedMonths),
+		Note:                         note,
+		CreatedAt:                    at,
+		CreatedBy:                    by,
 	}
 }
