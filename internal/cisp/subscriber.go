@@ -345,6 +345,9 @@ func (s *Subscriber) accept(ctx context.Context, v, cur *Version, reconcile bool
 	if err != nil {
 		var ue *UntrustedError
 		if errors.As(err, &ue) {
+			if ue.Mismatch {
+				s.cfg.Counters.Inc(CounterSignedMismatch)
+			}
 			return s.hold(v, ue)
 		}
 		return s.failPull(v.Dataset, err)
@@ -462,7 +465,7 @@ func (s *Subscriber) hold(v *Version, ue *UntrustedError) error {
 	}
 	s.mu.Unlock()
 	if prev == nil || prev.Version != ue.Version || prev.Reason != ue.Reason {
-		s.cfg.Logger.Error("CIS version held: its publisher's signature is not verified; the previous version is kept",
+		s.cfg.Logger.Error("CIS version held: its publisher's signature does not cover it; the previous version is kept",
 			slog.String("dataset", string(v.Dataset)), slog.Int64("cis_version", v.Number), slog.String("reason", ue.Reason))
 	}
 	return ue

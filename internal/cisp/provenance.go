@@ -2,6 +2,7 @@ package cisp
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -42,6 +43,9 @@ type UntrustedError struct {
 	Dataset Dataset
 	Version int64
 	Reason  string
+	// Mismatch is true when the signature verified but what was
+	// served (or merged from a delta) is not what it signs (audit A-B2).
+	Mismatch bool
 }
 
 func (e *UntrustedError) Error() string {
@@ -213,5 +217,147 @@ func checkProvenance(ctx context.Context, r VersionReader, pv PublisherVerifier,
 	if f.PublisherKID != "" && f.PublisherKID != sig.KID {
 		return untrusted("%s names %q, the signature's kid is %q", HeaderPublisherKID, short(f.PublisherKID), sig.KID)
 	}
+	if why := signedContentDiffers(v, f.Body); why != "" {
+		return "", &UntrustedError{Dataset: v.Dataset, Version: v.Number, Reason: why, Mismatch: true}
+	}
 	return sig.KID, nil
+}
+
+// signedContentDiffers ties what is about to be installed to the bytes
+// the publisher signed (audit A-B2): a signature verified over one body
+// says nothing about another. It returns why v is not the signed
+// content, or "" when it is.
+//
+//   - ussp_list: the served list, without the CISP's top-level cis_
+//     members, must be the signed list.
+//   - zones and uspace_airspace (the signed bytes are the whole
+//     collection): the served features must be exactly the signed
+//     features, by identifier and content.
+//   - restrictions (the signed bytes are the ANSP's request for one
+//     restriction): the request's feature must be served as it was
+//     signed; a create's feature must be present. The other features of
+//     the version are covered only by the requests that made them (the
+//     CISP composes the dataset; spec gap in the runbook).
+//
+// Features are compared as canonical JSON (member order and number
+// spelling do not matter) without the extendedProperties members
+// starting with cis_, which the CISP adds.
+func signedContentDiffers(v *Version, signed []byte) string {
+	var top map[string]any
+	if err := json.Unmarshal(signed, &top); err != nil {
+		return "the signed bytes are not a JSON object"
+	}
+	if !v.Dataset.ED318() {
+		var served map[string]any
+		if err := json.Unmarshal(v.Body, &served); err != nil {
+			return "the served list is not a JSON object"
+		}
+		if canonical(withoutTopCIS(top)) != canonical(withoutTopCIS(served)) {
+			return "the served list is not the list its publisher signed"
+		}
+		return ""
+	}
+	held := make(map[string]string, len(v.Features))
+	for _, f := range v.Features {
+		var m map[string]any
+		if err := json.Unmarshal(f.Raw, &m); err != nil {
+			return fmt.Sprintf("served feature %q is not a JSON object", short(f.Identifier))
+		}
+		held[f.Identifier] = canonicalFeature(m)
+	}
+	if top["type"] == "FeatureCollection" {
+		feats, _ := top["features"].([]any)
+		seen := make(map[string]bool, len(feats))
+		for _, raw := range feats {
+			m, _ := raw.(map[string]any)
+			id := featureIdentifier(m)
+			if id == "" {
+				return "a signed feature has no properties.identifier"
+			}
+			seen[id] = true
+			got, ok := held[id]
+			switch {
+			case !ok:
+				return fmt.Sprintf("signed feature %q is not served", short(id))
+			case got != canonicalFeature(m):
+				return fmt.Sprintf("served feature %q is not the feature its publisher signed", short(id))
+			}
+		}
+		for _, f := range v.Features {
+			if !seen[f.Identifier] {
+				return fmt.Sprintf("served feature %q is not in the signed version", short(f.Identifier))
+			}
+		}
+		return ""
+	}
+	if v.Dataset != DatasetRestrictions {
+		return "the signed bytes are not a feature collection"
+	}
+	feat, _ := top["feature"].(map[string]any)
+	if top["type"] == "Feature" {
+		feat = top
+	}
+	if feat == nil {
+		// An op without a feature (end, cancel, extend): nothing in the
+		// request to compare.
+		return ""
+	}
+	id := featureIdentifier(feat)
+	if id == "" {
+		return "the signed feature has no properties.identifier"
+	}
+	got, ok := held[id]
+	_, patch := top["op"]
+	switch {
+	case !ok && patch:
+		return ""
+	case !ok:
+		return fmt.Sprintf("signed feature %q is not served", short(id))
+	case got != canonicalFeature(feat):
+		return fmt.Sprintf("served feature %q is not the feature its publisher signed", short(id))
+	}
+	return ""
+}
+
+func featureIdentifier(m map[string]any) string {
+	props, _ := m["properties"].(map[string]any)
+	id, _ := props["identifier"].(string)
+	return id
+}
+
+// canonicalFeature is m as canonical JSON without the extendedProperties
+// members the CISP adds (cis_*); m is changed.
+func canonicalFeature(m map[string]any) string {
+	if props, ok := m["properties"].(map[string]any); ok {
+		if ext, ok := props["extendedProperties"].(map[string]any); ok {
+			for k := range ext {
+				if strings.HasPrefix(k, "cis_") {
+					delete(ext, k)
+				}
+			}
+			if len(ext) == 0 {
+				delete(props, "extendedProperties")
+			}
+		}
+	}
+	return canonical(m)
+}
+
+func withoutTopCIS(m map[string]any) map[string]any {
+	for k := range m {
+		if strings.HasPrefix(k, "cis_") {
+			delete(m, k)
+		}
+	}
+	return m
+}
+
+// canonical is v marshalled again: object members sorted, numbers as
+// float64.
+func canonical(v any) string {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return ""
+	}
+	return string(b)
 }

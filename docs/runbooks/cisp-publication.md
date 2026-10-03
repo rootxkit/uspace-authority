@@ -122,15 +122,24 @@ retry, conflict, held or refused version and webhook outcome.
   publisher signature and is held until the publisher's next signed
   version; the restriction's own window still ends it for the
   detectors.
+- What is installed must be what was signed, not only signed: the
+  served collection (or the one merged from a delta) is compared,
+  feature by feature without the CISP's `cis_*` members, with the
+  version as published. For zones, uspace_airspace and ussp_list the two
+  must be equal; for restrictions the ANSP's request's feature must be
+  served as signed. Any difference holds the version
+  (`cis_signed_content_mismatch`, `held_reason` names the feature).
 - Restrictions are written whole to `proj_restrictions` (with the
   version in `proj_restrictions_state`; version 0 with no rows when the
   CISP holds none yet) and announced on `cis.v1.restrictions`.
 
 ## Spec gaps
 
-- The CISP builds the collection it serves; the publisher's signature
-  covers the version's bytes, not that collection, and the CISP's own
-  `X-CIS-Signature` is not verified (shared with the USSPs).
+- The CISP builds the restrictions collection it serves; the ANSP's
+  signature covers one request, so only that request's feature is tied
+  to it, the version's other restrictions to the requests that made
+  them. The CISP's own `X-CIS-Signature` is not verified (shared with
+  the USSPs).
 - Reads are unfiltered (`?at=` is not used): the provenance check needs
   the version as published, and the detectors judge each restriction's
   window.
