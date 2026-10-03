@@ -34,8 +34,10 @@
 // Review (Handler, inspector): new or reviewed may become reviewed,
 // dismissed or escalated; dismissed and escalated are final (409).
 // Broadcast-only evidence is never escalated without a note (06 §2 T1).
-// Escalation records incident_requested (WP-17 opens the incident from
-// it). Each decision is an events row with the actor.
+// Escalation records incident_requested and opens the incident in the
+// same transaction through OnEscalate (WP-17's
+// incidents.OpenFromViolation). Each decision is an events row with the
+// actor.
 //
 // Occurrence reports (376/2014) are never read here: no query of this
 // package names them and the occurrences schema (WP-18) grants this role
