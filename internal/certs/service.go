@@ -630,19 +630,29 @@ func (s *Service) RepairList(ctx context.Context) (bool, error) {
 }
 
 // Republish writes the certified USSPs to KV with the register's
-// version (read before the rows: the rows are at least as new as the
-// version, so an older value never replaces a newer one).
+// version. The version and the rows are read in one transaction that
+// holds the certificates lock, so no write is in flight between them:
+// every row_version taken is committed and seen, and the rows are the
+// register at exactly that version, on every replica (audit A-S1). The
+// lock is released before KV is written; an equal version may still
+// overwrite (it carries a valid_until expiry).
 func (s *Service) Republish(ctx context.Context) error {
 	if s.KV == nil {
 		return nil
 	}
-	q := s.DB.Queries()
-	version, err := q.CertificateRegisterVersion(ctx)
-	if err != nil {
-		s.inc(CounterKVFailed)
+	var version int64
+	var rows []pggen.Certificate
+	err := s.DB.WithTx(ctx, func(q *pggen.Queries) error {
+		if err := q.AdvisoryXactLock(ctx, lockCertificates); err != nil {
+			return err
+		}
+		var err error
+		if version, err = q.CertificateRegisterVersion(ctx); err != nil {
+			return err
+		}
+		rows, err = q.ListedUSSPCertificates(ctx, certkv.MaxUSSPs+1)
 		return err
-	}
-	rows, err := q.ListedUSSPCertificates(ctx, certkv.MaxUSSPs+1)
+	})
 	if err != nil {
 		s.inc(CounterKVFailed)
 		return err
