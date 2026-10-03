@@ -11,11 +11,18 @@ import (
 )
 
 const duePublications = `-- name: DuePublications :many
-SELECT DISTINCT ON (dataset) id, dataset, version, payload, payload_hash, feature_count, content_type, state,
-       attempts, next_retry_at, created_at
-FROM publications
-WHERE state IN ('pending', 'sent')
-ORDER BY dataset, id
+SELECT DISTINCT ON (p.dataset) p.id, p.dataset, p.version, p.payload, p.payload_hash, p.feature_count, p.content_type,
+       p.state, p.attempts, p.next_retry_at, p.created_at
+FROM publications p
+WHERE p.state IN ('pending', 'sent')
+  AND (p.resolves_conflict OR NOT EXISTS (
+        SELECT 1 FROM publications c
+        WHERE c.dataset = p.dataset AND c.id < p.id AND c.state = 'conflict'
+          AND NOT EXISTS (
+                SELECT 1 FROM publications a
+                WHERE a.dataset = p.dataset AND a.id > c.id AND a.id < p.id
+                  AND (a.state = 'acknowledged' OR a.resolves_conflict))))
+ORDER BY p.dataset, p.id
 `
 
 type DuePublicationsRow struct {
@@ -33,7 +40,10 @@ type DuePublicationsRow struct {
 }
 
 // The first unfinished row of every dataset (the outbox is delivered in
-// order per dataset), with its payload.
+// order per dataset), with its payload. A row behind a conflict waits
+// for an operator (audit A-S2): it is due only when it resolves the
+// conflict itself, or a row after the conflict was acknowledged or
+// resolved it.
 func (q *Queries) DuePublications(ctx context.Context) ([]DuePublicationsRow, error) {
 	rows, err := q.db.Query(ctx, duePublications)
 	if err != nil {
@@ -92,24 +102,25 @@ func (q *Queries) IfMatchVersion(ctx context.Context, arg IfMatchVersionParams) 
 
 const insertOutboxRow = `-- name: InsertOutboxRow :one
 INSERT INTO publications (dataset, version, payload, payload_hash, feature_count, content_type, signature,
-                          signature_kid, signed_at, created_by)
+                          signature_kid, signed_at, created_by, resolves_conflict)
 VALUES ($1, $2, $3, $4, $5,
         $6, $7, $8, $9,
-        $10)
+        $10, $11)
 RETURNING id, dataset, version, payload_hash, feature_count, signature, state, created_at
 `
 
 type InsertOutboxRowParams struct {
-	Dataset      string
-	Version      int64
-	Payload      []byte
-	PayloadHash  string
-	FeatureCount int32
-	ContentType  string
-	Signature    *string
-	SignatureKid *string
-	SignedAt     *time.Time
-	CreatedBy    string
+	Dataset          string
+	Version          int64
+	Payload          []byte
+	PayloadHash      string
+	FeatureCount     int32
+	ContentType      string
+	Signature        *string
+	SignatureKid     *string
+	SignedAt         *time.Time
+	CreatedBy        string
+	ResolvesConflict bool
 }
 
 type InsertOutboxRowRow struct {
@@ -135,6 +146,7 @@ func (q *Queries) InsertOutboxRow(ctx context.Context, arg InsertOutboxRowParams
 		arg.SignatureKid,
 		arg.SignedAt,
 		arg.CreatedBy,
+		arg.ResolvesConflict,
 	)
 	var i InsertOutboxRowRow
 	err := row.Scan(
@@ -482,12 +494,13 @@ func (q *Queries) RememberDeliveryJTI(ctx context.Context, arg RememberDeliveryJ
 const supersedePendingOutbox = `-- name: SupersedePendingOutbox :many
 UPDATE publications SET state = 'superseded', state_changed_at = now()
 WHERE dataset = $1 AND state = 'pending'
-RETURNING id, version
+RETURNING id, version, resolves_conflict
 `
 
 type SupersedePendingOutboxRow struct {
-	ID      int64
-	Version int64
+	ID               int64
+	Version          int64
+	ResolvesConflict bool
 }
 
 // One pending snapshot per dataset (E-10): a new one supersedes it. A
@@ -501,7 +514,7 @@ func (q *Queries) SupersedePendingOutbox(ctx context.Context, dataset string) ([
 	items := []SupersedePendingOutboxRow{}
 	for rows.Next() {
 		var i SupersedePendingOutboxRow
-		if err := rows.Scan(&i.ID, &i.Version); err != nil {
+		if err := rows.Scan(&i.ID, &i.Version, &i.ResolvesConflict); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

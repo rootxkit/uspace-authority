@@ -551,6 +551,9 @@ func (s *Service) Publish(ctx context.Context, ds Dataset, actor audit.Actor) (P
 		if err != nil {
 			return err
 		}
+		// An operator's publication: it resolves a conflict at the CISP
+		// (audit A-S2).
+		prep.ResolvesConflict = true
 		pub, err := tx.EnqueuePublication(ctx, PublicationInput{Prepared: prep, Version: version, Actor: actor})
 		if err != nil {
 			return err

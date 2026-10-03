@@ -17,24 +17,34 @@ SELECT (coalesce(max(version), 0) + 1)::bigint AS version FROM publications WHER
 -- row in flight (sent) is not superseded: it runs to its answer first.
 UPDATE publications SET state = 'superseded', state_changed_at = now()
 WHERE dataset = sqlc.arg(dataset) AND state = 'pending'
-RETURNING id, version;
+RETURNING id, version, resolves_conflict;
 
 -- name: InsertOutboxRow :one
 INSERT INTO publications (dataset, version, payload, payload_hash, feature_count, content_type, signature,
-                          signature_kid, signed_at, created_by)
+                          signature_kid, signed_at, created_by, resolves_conflict)
 VALUES (sqlc.arg(dataset), sqlc.arg(version), sqlc.arg(payload), sqlc.arg(payload_hash), sqlc.arg(feature_count),
         sqlc.arg(content_type), sqlc.narg(signature), sqlc.narg(signature_kid), sqlc.narg(signed_at),
-        sqlc.arg(created_by))
+        sqlc.arg(created_by), sqlc.arg(resolves_conflict))
 RETURNING id, dataset, version, payload_hash, feature_count, signature, state, created_at;
 
 -- name: DuePublications :many
 -- The first unfinished row of every dataset (the outbox is delivered in
--- order per dataset), with its payload.
-SELECT DISTINCT ON (dataset) id, dataset, version, payload, payload_hash, feature_count, content_type, state,
-       attempts, next_retry_at, created_at
-FROM publications
-WHERE state IN ('pending', 'sent')
-ORDER BY dataset, id;
+-- order per dataset), with its payload. A row behind a conflict waits
+-- for an operator (audit A-S2): it is due only when it resolves the
+-- conflict itself, or a row after the conflict was acknowledged or
+-- resolved it.
+SELECT DISTINCT ON (p.dataset) p.id, p.dataset, p.version, p.payload, p.payload_hash, p.feature_count, p.content_type,
+       p.state, p.attempts, p.next_retry_at, p.created_at
+FROM publications p
+WHERE p.state IN ('pending', 'sent')
+  AND (p.resolves_conflict OR NOT EXISTS (
+        SELECT 1 FROM publications c
+        WHERE c.dataset = p.dataset AND c.id < p.id AND c.state = 'conflict'
+          AND NOT EXISTS (
+                SELECT 1 FROM publications a
+                WHERE a.dataset = p.dataset AND a.id > c.id AND a.id < p.id
+                  AND (a.state = 'acknowledged' OR a.resolves_conflict))))
+ORDER BY p.dataset, p.id;
 
 -- name: IfMatchVersion :one
 -- The version the CISP holds as far as this outbox knows: that of the

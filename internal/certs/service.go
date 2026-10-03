@@ -482,7 +482,9 @@ func (s *Service) listAfter(ctx context.Context, q *pggen.Queries, before, after
 
 // queueList raises wanted, builds the list from q's view and queues it
 // signed; a list the outbox refuses is left pending with the reason
-// (strict: the error is returned instead, for publish-list).
+// (strict: the error is returned instead, for publish-list). Only the
+// operator's publish-list (strict) resolves a conflict at the CISP; a
+// list queued by a change or the repair waits behind one (audit A-S2).
 func (s *Service) queueList(ctx context.Context, q *pggen.Queries, actor audit.Actor, strict bool) (Publication, error) {
 	wanted, err := q.WantUSSPList(ctx)
 	if err != nil {
@@ -513,6 +515,7 @@ func (s *Service) queueList(ctx context.Context, q *pggen.Queries, actor audit.A
 	if err != nil {
 		return pending(err)
 	}
+	prepared.ResolvesConflict = strict
 	row, _, err := cisp.EnqueueTx(ctx, q, s.Audit, prepared, 0, actor)
 	if err != nil {
 		return Publication{}, err

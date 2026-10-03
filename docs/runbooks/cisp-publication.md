@@ -71,7 +71,16 @@ deployment points at the same CISP.
 3. If the CISP's version is right, bring the authority's zones in line
    (import or author the changes), then publish.
 
-The sender never sends the conflict row again.
+The sender never sends the conflict row again, and nothing queued
+automatically after it is sent either: a USSP list queued by a
+certificate change or by the list repair waits `pending` behind the
+conflict (its `age_s` rises on the status line) until an operator
+publishes (`POST /v1/zones/publish`, `POST /v1/uspace/publish`
+or `POST /v1/certificates/publish-list`). Only an operator's
+publication is sent against `conflict_version` (the row's
+`resolves_conflict`, also in its `publication_queued` event); a newer
+automatic snapshot that supersedes it before it is sent carries the
+decision on.
 
 ## What the console shows
 

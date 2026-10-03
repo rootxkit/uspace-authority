@@ -97,6 +97,7 @@ type memOutbox struct {
 
 type memRow struct {
 	DueRow
+	resolves        bool
 	cispVersion     *int64
 	conflictVersion *int64
 	signature       string
@@ -107,8 +108,10 @@ type memRow struct {
 func (m *memOutbox) Enqueue(_ context.Context, p Prepared, version int64, actor audit.Actor) (Row, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	resolves := p.ResolvesConflict
 	for _, r := range m.rows {
 		if r.Dataset == p.Dataset && r.State == StatePending {
+			resolves = resolves || r.resolves
 			r.State = StateSuperseded
 			m.events = append(m.events, fmt.Sprintf("%d %s", r.ID, StateSuperseded))
 		}
@@ -123,7 +126,7 @@ func (m *memOutbox) Enqueue(_ context.Context, p Prepared, version int64, actor 
 	}
 	r := &memRow{DueRow: DueRow{ID: int64(len(m.rows) + 1), Dataset: p.Dataset, Version: version, Payload: p.Payload,
 		PayloadHash: p.PayloadHash, FeatureCount: p.FeatureCount, ContentType: p.ContentType, State: StatePending,
-		CreatedAt: time.Now()}, signature: p.Signature}
+		CreatedAt: time.Now()}, signature: p.Signature, resolves: resolves}
 	m.rows = append(m.rows, r)
 	m.events = append(m.events, fmt.Sprintf("%d queued by %s", r.ID, actor.ID))
 	sig := p.Signature
@@ -138,9 +141,16 @@ func (m *memOutbox) Due(context.Context) ([]DueRow, error) {
 		return nil, fmt.Errorf("the outbox cannot be read")
 	}
 	seen := map[Dataset]bool{}
+	blocked := map[Dataset]bool{}
 	var out []DueRow
 	for _, r := range m.rows {
-		if (r.State == StatePending || r.State == StateSent) && !seen[r.Dataset] {
+		switch {
+		case r.State == StateConflict:
+			blocked[r.Dataset] = true
+		case r.State == StateAcknowledged || r.resolves:
+			blocked[r.Dataset] = false
+		}
+		if (r.State == StatePending || r.State == StateSent) && !seen[r.Dataset] && !blocked[r.Dataset] {
 			seen[r.Dataset] = true
 			out = append(out, r.DueRow)
 		}

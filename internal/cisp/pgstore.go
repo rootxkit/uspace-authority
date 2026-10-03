@@ -52,9 +52,15 @@ func EnqueueTx(ctx context.Context, q *gen.Queries, w *audit.Writer, p Prepared,
 			return Row{}, nil, err
 		}
 	}
+	// A superseded operator's publication hands its decision on: the
+	// newer snapshot resolves the conflict in its place (audit A-S2).
+	resolves := p.ResolvesConflict
+	for _, s := range superseded {
+		resolves = resolves || s.ResolvesConflict
+	}
 	params := gen.InsertOutboxRowParams{
 		Dataset: ds, Version: version, Payload: p.Payload, PayloadHash: p.PayloadHash, FeatureCount: int32(p.FeatureCount),
-		ContentType: p.ContentType, CreatedBy: actor.ID,
+		ContentType: p.ContentType, CreatedBy: actor.ID, ResolvesConflict: resolves,
 	}
 	kid := p.KID
 	if p.Signature != "" {
@@ -81,7 +87,7 @@ func EnqueueTx(ctx context.Context, q *gen.Queries, w *audit.Writer, p Prepared,
 		Actor: actor, EntityType: entityPublication, EntityID: idString(r.ID), EventType: audit.EventPublicationQueued,
 		Payload: map[string]any{
 			"dataset": ds, "version": r.Version, "payload_hash": r.PayloadHash, "feature_count": r.FeatureCount,
-			"signature_kid": kid, "superseded": ids,
+			"signature_kid": kid, "superseded": ids, "resolves_conflict": resolves,
 		},
 	}); err != nil {
 		return Row{}, nil, err
