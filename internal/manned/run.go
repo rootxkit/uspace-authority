@@ -67,7 +67,17 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.MannedIngest, o Opti
 		rt.Logger.Error("AUTHORITY_MTLS_MODE=off: no client certificate is presented to the ANSP (lab and staging only)")
 		rt.AddStatusLevel(func() slog.Level { return slog.LevelError })
 	}
-	rt.AddStatus(func() []slog.Attr { return []slog.Attr{slog.String("mtls_mode", cfg.MTLSMode)} })
+	// The transport is what the base URL makes it: plain http presents
+	// no client certificate whatever the mode says (audit B-S8).
+	transportName := "tls"
+	if strings.HasPrefix(strings.ToLower(cfg.ANSPBaseURL), "http://") {
+		transportName = "plaintext"
+		rt.Logger.Error("ANSP_BASE_URL is plain http: no TLS and no client certificate towards the ANSP (loopback or lab only)")
+		rt.AddStatusLevel(func() slog.Level { return slog.LevelError })
+	}
+	rt.AddStatus(func() []slog.Attr {
+		return []slog.Attr{slog.String("mtls_mode", cfg.MTLSMode), slog.String("transport", transportName)}
+	})
 
 	bp, err := bus.OpenProcess(ctx, cfg.NATSURL, cfg.Bus, "manned-ingest", "", rt.Logger)
 	if err != nil {

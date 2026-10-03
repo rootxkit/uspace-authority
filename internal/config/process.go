@@ -692,11 +692,27 @@ func (c *MannedIngest) Validate() error {
 		errs = append(errs, &core.FieldError{Field: "MANNED_BACKOFF_MAX_MS", Reason: "less than MANNED_BACKOFF_MIN_MS"})
 	}
 	if c.ANSPBaseURL != "" {
-		if u, err := url.Parse(c.ANSPBaseURL); err != nil || (u.Scheme != "https" && u.Scheme != "http") {
+		u, err := url.Parse(c.ANSPBaseURL)
+		switch {
+		case err != nil || (u.Scheme != "https" && u.Scheme != "http"):
 			errs = append(errs, &core.FieldError{Field: "ANSP_BASE_URL", Reason: "must be an https (or, in the lab, http) URL"})
+		case u.Scheme == "http" && c.MTLSMode == "required" && !loopbackHost(u.Hostname()):
+			// Plain http presents no client certificate and sends the
+			// ansp.traffic bearer in clear (audit B-S8).
+			errs = append(errs, &core.FieldError{Field: "ANSP_BASE_URL",
+				Reason: "plain http only to a loopback host with AUTHORITY_MTLS_MODE=required: use https, or mTLS off in the lab"})
 		}
 	}
 	return errors.Join(errs...)
+}
+
+// loopbackHost reports whether host is localhost or a loopback address.
+func loopbackHost(host string) bool {
+	if host == "localhost" {
+		return true
+	}
+	a, err := netip.ParseAddr(host)
+	return err == nil && a.IsLoopback()
 }
 
 // TokenURL is MANNED_TOKEN_URL, or ISSUER_URL's /oauth/token, or empty.

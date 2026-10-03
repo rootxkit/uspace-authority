@@ -68,6 +68,33 @@ func TestMannedIngestRequiresTheClientCertificateUnlessOff(t *testing.T) {
 	}
 }
 
+// Audit B-S8, E-01: with AUTHORITY_MTLS_MODE=required, ANSP_BASE_URL
+// may be plain http only to a loopback host (a bearer in clear and no
+// client certificate otherwise); https anywhere, and http anywhere with
+// mTLS off (the lab), are accepted.
+func TestMannedIngestRefusesPlaintextANSPUnderRequiredMTLS(t *testing.T) {
+	cases := []struct {
+		mode, base string
+		ok         bool
+	}{
+		{"required", "http://ansp.example.test", false},
+		{"required", "http://10.0.0.5:8080", false},
+		{"required", "https://ansp.example.test", true},
+		{"required", "http://127.0.0.1:8080", true},
+		{"required", "http://localhost:8080", true},
+		{"off", "http://ansp.example.test", true},
+	}
+	for _, c := range cases {
+		m := validAPI()
+		m["AUTHORITY_MTLS_MODE"], m["ANSP_BASE_URL"] = c.mode, c.base
+		var cfg MannedIngest
+		err := Load(&cfg, env(m))
+		if c.ok != (err == nil) || (err != nil && !strings.Contains(err.Error(), "ANSP_BASE_URL")) {
+			t.Errorf("%s %s: %v", c.mode, c.base, err)
+		}
+	}
+}
+
 func TestLoadAcceptsAValidAPIConfigAndAppliesDefaults(t *testing.T) {
 	var c API
 	if err := Load(&c, env(validAPI())); err != nil {

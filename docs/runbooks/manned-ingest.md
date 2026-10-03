@@ -26,7 +26,7 @@ fails when a member is added or renamed and the code has not followed.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `ANSP_BASE_URL` | unset | the ANSP's published base URL; its host is the token audience. Unset: nothing is connected and the feed says `unavailable` (`ansp_unconfigured`) |
+| `ANSP_BASE_URL` | unset | the ANSP's published base URL; its host is the token audience. Unset: nothing is connected and the feed says `unavailable` (`ansp_unconfigured`). Plain `http` is refused at start with `AUTHORITY_MTLS_MODE=required` unless the host is loopback; when used, the status line says `transport=plaintext` at error level |
 | `MANNED_BBOX` | unset | `west,south,east,north`: Georgia or the designated areas. Unset: the ANSP's relevance filter alone decides |
 | `AUTHORITY_MTLS_MODE` | `required` | `required`: `MANNED_CLIENT_CERT` and `MANNED_CLIENT_KEY` are presented to the ANSP and must be readable, or the process does not start. `off` (lab, staging): no certificate, said at error level at start and on every status line |
 | `MANNED_CLIENT_ID`, `MANNED_CLIENT_SECRET_FILE`, `MANNED_TOKEN_URL` / `ISSUER_URL` | `authority-01` | this system's client at its own token service; the token has scope `ansp.traffic` and `aud` the ANSP's host. Without a secret every connection is refused locally (`no_token`) |
