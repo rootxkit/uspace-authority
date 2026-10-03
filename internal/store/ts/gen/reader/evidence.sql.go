@@ -92,6 +92,115 @@ func (q *Queries) EvidenceFrames(ctx context.Context, arg EvidenceFramesParams) 
 	return items, nil
 }
 
+const evidenceMannedTracks = `-- name: EvidenceMannedTracks :many
+SELECT captured_at, source_captured_at, rx_ts, ts, time_source, backlog, icao24, callsign, lat_deg, lon_deg,
+       alt_pressure_m, alt_wgs84_m, gs_ms, track_deg, vrate_ms, emergency, spi, squawk, source_class, quality, trust,
+       source, source_instance, state, relevant
+FROM manned_tracks
+WHERE captured_at >= $1 AND captured_at < $2
+  AND lat_deg BETWEEN $3::float8 AND $4::float8
+  AND CASE WHEN $5::float8 <= $6::float8
+           THEN lon_deg BETWEEN $5::float8 AND $6::float8
+           ELSE lon_deg >= $5::float8 OR lon_deg <= $6::float8 END
+ORDER BY captured_at, dedupe_key
+LIMIT $7
+`
+
+type EvidenceMannedTracksParams struct {
+	FromTs   time.Time
+	ToTs     time.Time
+	MinLat   float64
+	MaxLat   float64
+	MinLon   float64
+	MaxLon   float64
+	RowLimit int32
+}
+
+type EvidenceMannedTracksRow struct {
+	CapturedAt       time.Time
+	SourceCapturedAt time.Time
+	RxTs             time.Time
+	Ts               *time.Time
+	TimeSource       string
+	Backlog          bool
+	Icao24           string
+	Callsign         *string
+	LatDeg           float64
+	LonDeg           float64
+	AltPressureM     *float64
+	AltWgs84M        *float64
+	GsMs             *float64
+	TrackDeg         *float64
+	VrateMs          *float64
+	Emergency        *bool
+	Spi              *bool
+	Squawk           *string
+	SourceClass      string
+	Quality          []byte
+	Trust            string
+	Source           string
+	SourceInstance   string
+	State            string
+	Relevant         *bool
+}
+
+// The ANSP's manned traffic (WP-15) placed in the window inside the
+// evidence's extent padded by the caller (airprox evidence, WP-17). A
+// box whose min_lon exceeds its max_lon crosses the antimeridian.
+func (q *Queries) EvidenceMannedTracks(ctx context.Context, arg EvidenceMannedTracksParams) ([]EvidenceMannedTracksRow, error) {
+	rows, err := q.db.Query(ctx, evidenceMannedTracks,
+		arg.FromTs,
+		arg.ToTs,
+		arg.MinLat,
+		arg.MaxLat,
+		arg.MinLon,
+		arg.MaxLon,
+		arg.RowLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []EvidenceMannedTracksRow{}
+	for rows.Next() {
+		var i EvidenceMannedTracksRow
+		if err := rows.Scan(
+			&i.CapturedAt,
+			&i.SourceCapturedAt,
+			&i.RxTs,
+			&i.Ts,
+			&i.TimeSource,
+			&i.Backlog,
+			&i.Icao24,
+			&i.Callsign,
+			&i.LatDeg,
+			&i.LonDeg,
+			&i.AltPressureM,
+			&i.AltWgs84M,
+			&i.GsMs,
+			&i.TrackDeg,
+			&i.VrateMs,
+			&i.Emergency,
+			&i.Spi,
+			&i.Squawk,
+			&i.SourceClass,
+			&i.Quality,
+			&i.Trust,
+			&i.Source,
+			&i.SourceInstance,
+			&i.State,
+			&i.Relevant,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const evidenceOldestUSSPFlight = `-- name: EvidenceOldestUSSPFlight :one
 SELECT coalesce(min(rx_ts), now())::timestamptz AS oldest FROM ussp_flights
 `

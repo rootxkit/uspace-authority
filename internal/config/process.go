@@ -2,6 +2,8 @@ package config
 
 import (
 	"errors"
+	"fmt"
+	"math"
 	"net/netip"
 	"net/url"
 	"slices"
@@ -122,6 +124,7 @@ type Incidents struct {
 	IncidentsPackMaxRows     int    `env:"INCIDENTS_PACK_MAX_ROWS" default:"200000" min:"100" max:"10000000" help:"rows one section of a pack holds at most (tracks, frames, violations, events, ...); a section holding more refuses the pack (pack_too_large), never thinned"`
 	IncidentsPackMaxBytes    int    `env:"INCIDENTS_PACK_MAX_BYTES" default:"268435456" min:"1048576" max:"4294967296" help:"largest archive of one pack; a larger one is refused (pack_too_large)"`
 	IncidentsPackMaxZones    int    `env:"INCIDENTS_PACK_MAX_ZONES" default:"500" min:"1" max:"100000" help:"zone versions one pack names and finds in force at most; past it the pack is refused"`
+	IncidentsMannedMarginM   int    `env:"INCIDENTS_MANNED_MARGIN_M" default:"10000" min:"100" max:"200000" help:"margin around the extent of the evidence's positions within which a pack includes the ANSP's manned traffic of the window (WP-15)"`
 	IncidentsPackConcurrency int    `env:"INCIDENTS_PACK_CONCURRENCY" default:"2" min:"1" max:"64" help:"packs built at once per replica; past it a build is refused with 503 pack_busy and counted (E-10)"`
 	IncidentsBuildTimeoutS   int    `env:"INCIDENTS_BUILD_TIMEOUT_S" default:"120" min:"5" max:"3600" help:"bound on one pack build, its source reads and USSP record fetches included"`
 	IncidentsWriteTimeoutS   int    `env:"INCIDENTS_WRITE_TIMEOUT_S" default:"10" min:"1" max:"600" help:"bound on one incident transaction"`
@@ -619,17 +622,125 @@ func (c *DPPoller) SubscriberURL() string {
 	return strings.TrimSuffix(u, "/")
 }
 
-// MannedIngest is the F4 client of the ANSP manned feed.
+// MannedIngest is the F4 client of the ANSP manned feed (WP-15).
 type MannedIngest struct {
 	Common
 	Bus
 	NATSURL     string `env:"NATS_URL" required:"true" secret:"true" kind:"url" help:"NATS JetStream"`
-	ANSPFeedURL string `env:"ANSP_FEED_URL" kind:"url" help:"ANSP manned-traffic WebSocket; required once WP-15 lands"`
-	MTLSMode    string `env:"AUTHORITY_MTLS_MODE" default:"required" enum:"required|off" help:"client certificate towards the ANSP; off only in the lab and on staging"`
+	ANSPBaseURL string `env:"ANSP_BASE_URL" kind:"url" help:"the ANSP's published base URL (GET /v1/manned-traffic/snapshot and WS /v1/manned-traffic/stream under it); its host is the token audience (M18); unset: nothing is connected and the feed is shown unavailable (ansp_unconfigured)"`
+	MannedBBox  string `env:"MANNED_BBOX" help:"bbox of the stream and the snapshot, west,south,east,north in WGS84 degrees (Georgia or the designated areas); unset: the ANSP's relevance filter alone decides"`
+	MTLSMode    string `env:"AUTHORITY_MTLS_MODE" default:"required" enum:"required|off" help:"client certificate towards the ANSP; off only in the lab and on staging, said at error level on every status line (M25)"`
+	ClientCert  string `env:"MANNED_CLIENT_CERT" help:"PEM file of this system's client certificate towards the ANSP; required with AUTHORITY_MTLS_MODE=required"`
+	ClientKey   string `env:"MANNED_CLIENT_KEY" help:"PEM file of that certificate's private key; required with AUTHORITY_MTLS_MODE=required"`
+	IssuerURL   string `env:"ISSUER_URL" kind:"url" help:"this system's issuer; its /oauth/token issues the ansp.traffic token unless MANNED_TOKEN_URL says otherwise"`
+	MannedClient
+	MannedTuning
+}
+
+// MannedClient is this system's client at its own token service for the
+// ANSP's routes (scope ansp.traffic, M24).
+type MannedClient struct {
+	MannedClientID         string `env:"MANNED_CLIENT_ID" default:"authority-01" help:"this system's client id at its own token service for the ANSP's manned traffic routes (scope ansp.traffic; M24)"`
+	MannedClientSecretFile string `env:"MANNED_CLIENT_SECRET_FILE" help:"file holding that client's secret (client_secret_post); unset: every connection to the ANSP is refused locally and the feed is shown unavailable (no_token)"`
+	MannedTokenURL         string `env:"MANNED_TOKEN_URL" kind:"url" help:"the token endpoint; default ISSUER_URL + /oauth/token"`
+}
+
+// MannedTuning are the feed's thresholds and bounds (INV-03, E-10).
+type MannedTuning struct {
+	FeedInstance     string `env:"MANNED_FEED_INSTANCE" default:"ansp" help:"source instance of the feed itself: its status on src.v1.ansp_feed.<instance> and its source switch (switching it off, or the type ansp_feed, closes the stream)"`
+	StaleAfterS      int    `env:"MANNED_STALE_AFTER_S" default:"5" min:"1" max:"3600" help:"no frame for this long, console/status/v1 included, and the feed is stale (02 F4: 5 s)"`
+	LagAfterS        int    `env:"MANNED_LAG_AFTER_S" default:"15" min:"1" max:"3600" help:"the freshest live aircraft older than this when it arrived and the feed is lagging, with lag_s (B-03: 15 s)"`
+	StatusIntervalMS int    `env:"MANNED_STATUS_INTERVAL_MS" default:"2000" min:"100" max:"60000" help:"interval of src.v1.ansp_feed.<instance> (04 §3.6: every 2 s)"`
+	SilentReconnectS int    `env:"MANNED_SILENT_RECONNECT_S" default:"15" min:"1" max:"3600" help:"a connection that carried no frame for this long is closed and opened again"`
+	RequestTimeoutMS int    `env:"MANNED_REQUEST_TIMEOUT_MS" default:"5000" min:"100" max:"60000" help:"bound on the token, the snapshot and the WebSocket upgrade"`
+	BackoffMinMS     int    `env:"MANNED_BACKOFF_MIN_MS" default:"500" min:"10" max:"600000" help:"first reconnection delay, doubled up to MANNED_BACKOFF_MAX_MS, jittered; reconnection never stops (B-08)"`
+	BackoffMaxMS     int    `env:"MANNED_BACKOFF_MAX_MS" default:"30000" min:"10" max:"600000" help:"longest reconnection delay"`
+	MaxAircraft      int    `env:"MANNED_MAX_AIRCRAFT" default:"10000" min:"1" max:"10000000" help:"aircraft whose last published state is remembered; past it the one updated longest ago is forgotten and counted (E-10)"`
+	MaxFrameBytes    int    `env:"MANNED_MAX_FRAME_BYTES" default:"4194304" min:"1024" max:"67108864" help:"largest frame read from the stream; a larger one closes the connection, which is opened again"`
+	MaxSnapshotBytes int    `env:"MANNED_MAX_SNAPSHOT_BYTES" default:"16777216" min:"1024" max:"268435456" help:"largest snapshot read"`
+	MaxSnapshotItems int    `env:"MANNED_MAX_SNAPSHOT_ITEMS" default:"10000" min:"1" max:"10000000" help:"aircraft taken from one snapshot; the rest are counted"`
+	MaxAdapters      int    `env:"MANNED_MAX_ADAPTERS" default:"64" min:"1" max:"10000" help:"ANSP adapters followed; the rest are counted"`
+	RowsQueue        int    `env:"MANNED_ROWS_QUEUE" default:"1024" min:"1" max:"1000000" help:"row batches waiting for tsdb-writer; past it a batch is shed, counted and recorded as a writer gap"`
+	NATSTimeoutMS    int    `env:"MANNED_NATS_TIMEOUT_MS" default:"2000" min:"50" max:"60000" help:"bound on one row hand-over to tsdb-writer"`
+	SwitchesReapplyS int    `env:"MANNED_SWITCHES_REAPPLY_S" default:"5" min:"1" max:"3600" help:"period of the re-application of source control to the aircraft held besides the follower's changes"`
 }
 
 // String redacts secrets.
 func (c *MannedIngest) String() string { return Describe(c) }
+
+// Validate checks what the tags cannot.
+func (c *MannedIngest) Validate() error {
+	var errs []error
+	if c.MTLSMode == "required" && (c.ClientCert == "" || c.ClientKey == "") {
+		errs = append(errs, &core.FieldError{Field: "MANNED_CLIENT_CERT", Reason: "MANNED_CLIENT_CERT and MANNED_CLIENT_KEY are required with AUTHORITY_MTLS_MODE=required"})
+	}
+	if c.MannedBBox != "" {
+		if _, err := ParseBBox(c.MannedBBox); err != nil {
+			errs = append(errs, core.Fieldf("MANNED_BBOX", "%s", err.Error()))
+		}
+	}
+	if !validInstance(c.FeedInstance) {
+		errs = append(errs, &core.FieldError{Field: "MANNED_FEED_INSTANCE", Reason: "lower-case letters, digits and single hyphens, starting with a letter"})
+	}
+	if c.BackoffMaxMS < c.BackoffMinMS {
+		errs = append(errs, &core.FieldError{Field: "MANNED_BACKOFF_MAX_MS", Reason: "less than MANNED_BACKOFF_MIN_MS"})
+	}
+	if c.ANSPBaseURL != "" {
+		if u, err := url.Parse(c.ANSPBaseURL); err != nil || (u.Scheme != "https" && u.Scheme != "http") {
+			errs = append(errs, &core.FieldError{Field: "ANSP_BASE_URL", Reason: "must be an https (or, in the lab, http) URL"})
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// TokenURL is MANNED_TOKEN_URL, or ISSUER_URL's /oauth/token, or empty.
+func (c *MannedIngest) TokenURL() string {
+	if c.MannedTokenURL != "" {
+		return c.MannedTokenURL
+	}
+	if c.IssuerURL != "" {
+		return strings.TrimSuffix(c.IssuerURL, "/") + "/oauth/token"
+	}
+	return ""
+}
+
+// ParseBBox reads west,south,east,north in WGS84 degrees (west > east
+// crosses the antimeridian).
+func ParseBBox(s string) ([4]float64, error) {
+	var b [4]float64
+	parts := strings.Split(s, ",")
+	if len(parts) != 4 {
+		return b, errors.New("four numbers west,south,east,north")
+	}
+	for i, p := range parts {
+		v, err := strconv.ParseFloat(strings.TrimSpace(p), 64)
+		if err != nil || math.IsNaN(v) || math.IsInf(v, 0) {
+			return b, fmt.Errorf("%q is not a number", p)
+		}
+		b[i] = v
+	}
+	switch {
+	case b[0] < -180 || b[0] > 180 || b[2] < -180 || b[2] > 180:
+		return b, errors.New("longitudes within [-180, 180]")
+	case b[1] < -90 || b[1] > 90 || b[3] < -90 || b[3] > 90:
+		return b, errors.New("latitudes within [-90, 90]")
+	case b[1] >= b[3]:
+		return b, errors.New("south below north")
+	}
+	return b, nil
+}
+
+func validInstance(s string) bool {
+	if s == "" || len(s) > 64 || s[0] < 'a' || s[0] > 'z' || strings.HasSuffix(s, "-") || strings.Contains(s, "--") {
+		return false
+	}
+	for _, r := range s {
+		if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+			return false
+		}
+	}
+	return true
+}
 
 // Detect runs the violation detectors per cell.
 type Detect struct {

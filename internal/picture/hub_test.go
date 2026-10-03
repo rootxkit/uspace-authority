@@ -751,3 +751,52 @@ func TestMannedForwardedByLayer(t *testing.T) {
 		t.Fatalf("snapshot manned %d", len(snap.Manned))
 	}
 }
+
+// WP-15, E-01: manned-ingest republishes an aircraft whose source
+// stopped as the same sample in a later state (stale, source_disabled);
+// the picture takes it in place of the live one and forwards it, so the
+// console sees the aircraft age instead of vanishing; the same sample
+// live again, or in the same state again, is refused as older.
+func TestMannedSameSampleInALaterStateReplacesIt(t *testing.T) {
+	h := testHub(t, func(c *Config, _ *Inputs) { c.StatusInterval = time.Hour })
+	k := connect(t, h, consoleSession(), nil)
+	subscribe(t, k, subscribeFrameOf(44.80, 41.70, 44.85, 41.73))
+	c3, c5, err := cell.Tokens(core.LatLon{LatDeg: baseLatDeg, LonDeg: baseLonDeg})
+	if err != nil {
+		t.Fatal(err)
+	}
+	subject := fmt.Sprintf("man.v1.%s.%s.4ca123", c3, c5)
+	at := time.Now().Add(-time.Second)
+	offer := func(state string) {
+		raw, _ := json.Marshal(bus.SystemEnvelope(SchemaManned, "authority/manned-ingest", at, map[string]any{"icao24": "4ca123", "state": state}))
+		h.OfferManned(subject, raw)
+	}
+	stateOf := func(f frame) string {
+		var b struct {
+			State string `json:"state"`
+		}
+		_ = json.Unmarshal(f.Body, &b)
+		return b.State
+	}
+	offer("live")
+	if f, _ := k.until(t, SchemaManned, time.Second); stateOf(f) != "live" {
+		t.Fatalf("live: %s", stateOf(f))
+	}
+	offer("stale")
+	if f, _ := k.until(t, SchemaManned, time.Second); stateOf(f) != "stale" {
+		t.Fatalf("stale: %s", stateOf(f))
+	}
+	offer("live")
+	offer("stale")
+	if got := h.Counters().Get(CounterMannedOlder); got != 2 {
+		t.Fatalf("older %d", got)
+	}
+	offer("source_disabled")
+	if f, _ := k.until(t, SchemaManned, time.Second); stateOf(f) != "source_disabled" {
+		t.Fatalf("source_disabled: %s", stateOf(f))
+	}
+	_, snap := subscribe(t, k, subscribeFrameOf(44.80, 41.70, 44.85, 41.73))
+	if len(snap.Manned) != 1 || !strings.Contains(string(snap.Manned[0]), `"source_disabled"`) {
+		t.Fatalf("snapshot %d %s", len(snap.Manned), snap.Manned)
+	}
+}

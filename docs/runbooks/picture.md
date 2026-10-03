@@ -31,7 +31,7 @@ and the tests validate every frame picture-ws sends against them.
 | → console | `console/status/v1` | on connect, after every subscription, every 2 s | `authority/picture-ws`, `time_source: system` |
 | → console | `console/snapshot/v1` | on connect and after every subscription, after its status | `authority/picture-ws` |
 | → console | `track/telemetry/v1` | every track message of the viewport (throttled, below) | the producer's (`authority/rid-ingest`, later `authority/dp-poller`) |
-| → console | `track/manned/v1` | every manned message of the viewport (`manned` layer) | the ANSP adapter's, forwarded as received |
+| → console | `track/manned/v1` | every manned message of the viewport (`manned` layer); the same sample again in a later state (`stale`, `source_disabled`) replaces it, so an aircraft whose source stopped ages instead of vanishing | `authority/manned-ingest` (WP-15), forwarded as received |
 | → console | `violation/v1` | a raise, a clear, or the first sighting of an active violation (`alerts` layer) | `authority/detect` |
 | → console | `source/status/v1` | every change of a source's state, disabled by whom, or lagging | `authority/picture-ws` |
 
@@ -108,6 +108,7 @@ margin.
 | `registry_projection_absent` | the registry was never projected | identifications say `registry_unavailable` |
 | `cis_absent`, `cis_stale` | no CIS restrictions version, or older than the policy's `cis_stale_bound_s` | restrictions may be missing or old |
 | `dp_unavailable` | no Display Provider view (`dp_state`) | provider-trust tracks are missing |
+| `manned_unavailable` | the ANSP manned traffic feed (`ansp_feed`) is not live: down since T, stale, or never heard (WP-15) | manned aircraft are missing or old; the sky is not empty. Not raised while the feed is switched off, which its source row says, with by whom |
 | `alerts_unconfirmed` | an active violation was not republished for `PICTURE_ALERT_SILENT_S` (detect silent, C-08) | the violation may have ended; it is kept, not dropped |
 | `alerts_replaying` | ALRT is being read back (start, or the bus came back) | violations are filling in |
 | `session_verifier_unavailable` | this issuer's JWKS has not been fetched | new consoles are refused (1013) |

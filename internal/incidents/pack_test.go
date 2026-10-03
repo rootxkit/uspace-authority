@@ -74,12 +74,12 @@ func trackFile(t *testing.T, files map[string][]byte) map[string]any {
 func TestBuildHoldsEverySectionAndLabelsTheHoles(t *testing.T) {
 	src, tel := richSources()
 	m, files, _ := mustBuild(t, builder(src, tel), buildIn(KindOversight))
-	for _, s := range []string{SecIncident, SecViolations, SecTracks, SecFrames, SecWriterGaps, SecUSSPFlights, SecZones, SecPolicies, SecEvents, SecGround} {
+	for _, s := range []string{SecIncident, SecViolations, SecTracks, SecFrames, SecWriterGaps, SecUSSPFlights, SecManned, SecZones, SecPolicies, SecEvents, SecGround} {
 		if m.Sections[s].State != StateIncluded {
 			t.Errorf("section %s: %+v", s, m.Sections[s])
 		}
 	}
-	if m.Sections[SecManned].State != StateUnavailable || m.Sections[SecManned].Reason == "" {
+	if m.Sections[SecManned].Basis != BasisReceived || m.Sections[SecManned].Count != 1 {
 		t.Errorf("manned %+v", m.Sections[SecManned])
 	}
 	if len(m.Tracks) != 1 || m.Tracks[0].Segments != 3 || m.Tracks[0].Holes != 2 || m.Tracks[0].Samples != 5 {
@@ -101,7 +101,7 @@ func TestBuildHoldsEverySectionAndLabelsTheHoles(t *testing.T) {
 		t.Fatalf("agl %+v", m.AGLNumbers)
 	}
 	for _, f := range []string{"incident.json", "violations.json", "raw_frames.json", "zones.json", "policies.json", "events.json",
-		"writer_gaps.json", "ussp_flights.json", "manifest.json"} {
+		"writer_gaps.json", "ussp_flights.json", "manned_tracks.json", "manifest.json"} {
 		if _, ok := files[f]; !ok {
 			t.Errorf("no %s in the archive", f)
 		}
@@ -414,5 +414,61 @@ func TestZonesNamedAndInForce(t *testing.T) {
 	m, _, _ := mustBuild(t, builder(src, tel), buildIn(KindOversight))
 	if !strings.Contains(m.Sections[SecZones].Reason, "GEO/SC7 version 1 is not in geo_zones") {
 		t.Fatalf("%+v", m.Sections[SecZones])
+	}
+}
+
+// WP-15, WP-17, E-01: the manned section holds the ANSP's manned traffic
+// around the evidence (its extent padded by the margin, in the window),
+// the two altitudes apart; with none recorded it says none and why an
+// empty section is not an empty sky; with the telemetry unreadable it
+// says unavailable; with more rows than a pack carries the pack is
+// refused, never thinned.
+func TestMannedSectionAroundTheEvidence(t *testing.T) {
+	src, tel := richSources()
+	b := builder(src, tel)
+	b.MannedMarginM = 5000
+	_, files, _ := mustBuild(t, b, buildIn(KindOversight))
+	var rows []map[string]any
+	if err := json.Unmarshal(files["manned_tracks.json"], &rows); err != nil || len(rows) != 1 {
+		t.Fatalf("manned_tracks.json %v %d", err, len(rows))
+	}
+	if rows[0]["alt_pressure_m"] != 450.0 || rows[0]["alt_wgs84_m"] != nil || rows[0]["trust"] != "surveillance" {
+		t.Fatalf("row %v", rows[0])
+	}
+	a := tel.mannedArg
+	if !a.FromTs.Equal(at(0)) || !a.ToTs.Equal(at(60)) || a.MinLat >= 41.5 || a.MaxLat <= 41.5 || a.MinLon >= 44.6 || a.MaxLon <= 44.6 || a.MaxLat-a.MinLat < 0.08 || a.RowLimit != 101 {
+		t.Fatalf("query %+v", a)
+	}
+
+	tel.manned = nil
+	m, _, _ := mustBuild(t, builder(src, tel), buildIn(KindOversight))
+	if s := m.Sections[SecManned]; s.State != StateNone || !strings.Contains(s.Reason, "empty sky") {
+		t.Fatalf("none %+v", s)
+	}
+
+	_, broken := richSources()
+	broken.err = errors.New("telemetry down")
+	m, _, _ = mustBuild(t, builder(src, broken), buildIn(KindOversight))
+	if s := m.Sections[SecManned]; s.State != StateUnavailable {
+		t.Fatalf("unreadable %+v", s)
+	}
+	m, _, _ = mustBuild(t, builder(src, nil), buildIn(KindOversight))
+	if s := m.Sections[SecManned]; s.State != StateUnavailable {
+		t.Fatalf("no telemetry %+v", s)
+	}
+	_, mannedDown := richSources()
+	mannedDown.mannedErr = errors.New("manned_tracks unreadable")
+	m, _, _ = mustBuild(t, builder(src, mannedDown), buildIn(KindOversight))
+	if s := m.Sections[SecManned]; s.State != StateUnavailable || !strings.Contains(s.Reason, "manned_tracks unreadable") ||
+		m.Sections[SecTracks].State != StateIncluded {
+		t.Fatalf("manned unreadable %+v", s)
+	}
+
+	_, many := richSources()
+	for range 101 {
+		many.manned = append(many.manned, many.manned[0])
+	}
+	if _, _, err := builder(src, many).Build(context.Background(), buildIn(KindOversight)); err == nil {
+		t.Fatal("a manned section past MaxRows did not refuse the pack")
 	}
 }

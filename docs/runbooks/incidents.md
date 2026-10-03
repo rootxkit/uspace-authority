@@ -60,6 +60,7 @@ same evidence always gives the same bytes:
 | `raw_frames.json` | `raw_frames` | observed | The raw Remote ID frames of the transmitters that broadcast the aircraft's serial in the window (R-15), with what was decoded from them and each payload's SHA-256. |
 | `writer_gaps.json` | `writer_gaps` | recorded | Every batch of the tracks or frames table tsdb-writer recorded as dropped or spilled in the window. |
 | `ussp_flights.json` | `ussp_flights` | received | The Display Provider's rows of the tracks, while still held (24 h, F3411). |
+| `manned_tracks.json` | `manned_tracks` | received | The ANSP's manned traffic (WP-15) placed in the window inside the extent of the evidence's positions padded by `INCIDENTS_MANNED_MARGIN_M` (10 km): what an airprox is weighed against. `alt_pressure_m` is pressure altitude, never AMSL; `alt_wgs84_m` is null when the source gave none. `none` says an ANSP feed outage leaves no row: read `writer_gaps` and the `ansp_feed` status first. |
 | `ussp_records/NN.json` | `ussp_records` | received | The USSP's service record of each USSP flight of the pack (`GET {base_url}/v1/records/flights/{id}`, scope `ussp.records`, fetched while the pack is built; 02 F7, Q-A18), verbatim. |
 | `zones.json` | `zones` | recorded | The zone versions the violations name and every published version in force in the window over the evidence's extent, each ED-318 feature verbatim as authored. |
 | `policies.json` | `policies` | recorded | Every `authority_policy` version the violations were judged with and the one active at build. |
@@ -74,8 +75,7 @@ holds:
   `basis` (`observed` by this system, `recorded` by its people or
   processes, `received` from a peer, `inferred`) and its files. **A
   source that could not be read is `unavailable` with the reason; it is
-  never silently missing.** `manned_tracks` is `unavailable` in this
-  release (the manned traffic store is WP-15's).
+  never silently missing.**
 - `segmenting`: the `max_gap_s` and the policy version that cut the
   tracks.
 - `tracks`: per track its file, samples, segments and holes.
@@ -213,4 +213,3 @@ reference), `evidence_packs_downloaded`, `evidence_packs_verified`,
 - Storage is a directory (`EVIDENCE_DIR`); the S3-compatible bucket the
   brief names is not implemented (no object-storage dependency in this
   release). Point `EVIDENCE_DIR` at a mounted, backed-up volume.
-- Manned tracks (WP-15) are not recorded yet; every pack says so.

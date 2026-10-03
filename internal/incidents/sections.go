@@ -12,6 +12,8 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/rootxkit/uspace-core/geodesy"
+
 	"github.com/rootxkit/uspace-authority/internal/store/pg/gen"
 	"github.com/rootxkit/uspace-authority/internal/store/ts/gen/reader"
 )
@@ -43,7 +45,7 @@ func (st *build) public(p *string) *string {
 }
 
 func (st *build) telemetryUnavailable(why string) {
-	for _, s := range []string{SecTracks, SecFrames, SecWriterGaps, SecUSSPFlights} {
+	for _, s := range []string{SecTracks, SecFrames, SecWriterGaps, SecUSSPFlights, SecManned} {
 		st.section(s, Section{State: StateUnavailable, Basis: BasisObserved, Reason: why})
 	}
 }
@@ -318,6 +320,68 @@ func (st *build) usspFlights(err error) error {
 	st.section(SecUSSPFlights, Section{State: StateIncluded, Basis: BasisReceived, Count: len(out), Files: []string{"ussp_flights.json"},
 		Reason: held})
 	return st.add("ussp_flights.json", out)
+}
+
+// DefaultMannedMarginM is INCIDENTS_MANNED_MARGIN_M's default.
+const DefaultMannedMarginM = 10000
+
+// manned reads the ANSP's manned traffic (manned_tracks, WP-15) placed in
+// the window inside the extent of the evidence's positions padded by
+// MannedMarginM: what an airprox is judged against. The rows are the
+// ANSP's statement as received (basis received); an empty section says
+// that a feed outage leaves no row, so the writer gaps and the feed's
+// status are where to look before reading it as an empty sky.
+func (st *build) manned() error {
+	t := st.b.Telemetry
+	if t == nil {
+		return nil // telemetryUnavailable said so
+	}
+	if !st.box.set && st.m.Sections[SecTracks].State == StateUnavailable {
+		st.section(SecManned, Section{State: StateUnavailable, Basis: BasisReceived,
+			Reason: "the evidence's positions cannot be read, so no manned traffic is looked for around them"})
+		return nil
+	}
+	if !st.box.set {
+		st.section(SecManned, Section{State: StateNone, Basis: BasisReceived,
+			Reason: "the evidence holds no position to look for manned traffic around"})
+		return nil
+	}
+	margin := st.b.MannedMarginM
+	if margin <= 0 {
+		margin = DefaultMannedMarginM
+	}
+	box := geodesy.BBox{MinLat: st.box.minLat, MinLon: st.box.minLon, MaxLat: st.box.maxLat, MaxLon: st.box.maxLon}.PadM(margin)
+	rows, err := t.EvidenceMannedTracks(st.ctx, reader.EvidenceMannedTracksParams{FromTs: st.in.From, ToTs: st.in.To,
+		MinLat: box.MinLat, MaxLat: box.MaxLat, MinLon: box.MinLon, MaxLon: box.MaxLon, RowLimit: int32(st.b.MaxRows + 1)})
+	where := fmt.Sprintf("within %.0f m of the evidence's extent in the window", margin)
+	switch {
+	case err != nil:
+		st.section(SecManned, Section{State: StateUnavailable, Basis: BasisReceived, Reason: "the manned traffic cannot be read: " + reason(err)})
+		return nil
+	case len(rows) > st.b.MaxRows:
+		return tooLarge(SecManned, st.b.MaxRows)
+	case len(rows) == 0:
+		st.section(SecManned, Section{State: StateNone, Basis: BasisReceived, Reason: "no manned traffic recorded " + where +
+			"; an ANSP feed outage leaves no row: see writer_gaps and the ansp_feed status before reading this as an empty sky"})
+		return nil
+	}
+	out := make([]map[string]any, 0, len(rows))
+	for i := range rows {
+		r := &rows[i]
+		out = append(out, map[string]any{
+			"captured_at": stamp(r.CapturedAt), "source_captured_at": stamp(r.SourceCapturedAt), "rx_ts": stamp(r.RxTs),
+			"ts": stampPtr(r.Ts), "time_source": r.TimeSource, "backlog": r.Backlog, "icao24": r.Icao24, "callsign": r.Callsign,
+			"lat_deg": r.LatDeg, "lon_deg": r.LonDeg, "alt_pressure_m": r.AltPressureM, "alt_wgs84_m": r.AltWgs84M, "gs_ms": r.GsMs,
+			"track_deg": r.TrackDeg, "vrate_ms": r.VrateMs, "emergency": r.Emergency, "spi": r.Spi, "squawk": r.Squawk,
+			"source_class": r.SourceClass, "quality": rawOrNull(r.Quality), "trust": r.Trust, "source": r.Source,
+			"source_instance": r.SourceInstance, "state": r.State, "relevant": r.Relevant,
+		})
+	}
+	st.section(SecManned, Section{State: StateIncluded, Basis: BasisReceived, Count: len(out), Files: []string{"manned_tracks.json"},
+		Reason: "the ANSP's manned traffic " + where + "; alt_pressure_m is pressure altitude, never AMSL (D-03)"})
+	st.m.Inferred = append(st.m.Inferred, "manned traffic is selected by the evidence's extent padded by "+fmt.Sprintf("%.0f m", margin)+
+		" and the window, not by a judgement of proximity")
+	return st.add("manned_tracks.json", out)
 }
 
 type zoneKey struct {

@@ -17,6 +17,41 @@ type GooseDbVersionTimeseries struct {
 	Tstamp    pgtype.Timestamp
 }
 
+type MannedTrack struct {
+	SourceCapturedAt time.Time
+	CapturedAt       time.Time
+	DedupeKey        string
+	MsgID            string
+	SourceMsgID      *string
+	Ts               *time.Time
+	RxTs             time.Time
+	TimeSource       string
+	Backlog          bool
+	Icao24           string
+	Callsign         *string
+	LatDeg           float64
+	LonDeg           float64
+	// pressure altitude, ISA 1013.25 hPa; never AMSL (D-03, R-08)
+	AltPressureM *float64
+	// geometric altitude above the WGS84 ellipsoid; null when the source gives none
+	AltWgs84M      *float64
+	GsMs           *float64
+	TrackDeg       *float64
+	VrateMs        *float64
+	Emergency      *bool
+	Spi            *bool
+	Squawk         *string
+	SourceClass    string
+	Quality        []byte
+	Trust          string
+	Source         string
+	SourceInstance string
+	State          string
+	Relevant       *bool
+	PolicyVersion  *string
+	Cell5          *string
+}
+
 type ProjRegistryOperator struct {
 	OperatorID               string
 	RegistrationNumberPublic string

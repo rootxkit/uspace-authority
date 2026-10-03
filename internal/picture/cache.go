@@ -20,9 +20,13 @@ type item struct {
 	pos *core.LatLon
 	// sourceType and instance name the track's source (source_state).
 	sourceType, instance string
-	track                *trackIn
-	raw                  []byte
-	elem                 *list.Element
+	// ageRank orders the states one sample ages through (a manned
+	// aircraft's live, stale, source_disabled; 0 for a track): the same
+	// sample again in a later state replaces the one held.
+	ageRank int
+	track   *trackIn
+	raw     []byte
+	elem    *list.Element
 }
 
 // putResult is what store.put did.
@@ -53,13 +57,15 @@ func newCache(maxItems int) *cache {
 
 // put stores it. A message not newer than the one held for its key is
 // refused (putOlder): the picture never moves an aircraft back in time.
+// The same sample (equal captured) in a later state (a higher ageRank:
+// a manned aircraft aged stale or source_disabled, WP-15) replaces it.
 // A new key past the bound evicts the aircraft updated longest ago,
 // returned.
 func (s *cache) put(it *item) (putResult, *item) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if old, ok := s.byKey[it.key]; ok {
-		if !it.captured.After(old.captured) {
+		if !it.captured.After(old.captured) && (!it.captured.Equal(old.captured) || it.ageRank <= old.ageRank) {
 			return putOlder, nil
 		}
 		s.unlinkCell(old)

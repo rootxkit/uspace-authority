@@ -88,7 +88,19 @@ type fakeTelemetry struct {
 	frames   []reader.EvidenceFramesRow
 	gaps     []reader.EvidenceWriterGapsRow
 	ussp     []reader.EvidenceUSSPFlightsRow
-	err      error
+	manned   []reader.EvidenceMannedTracksRow
+	// mannedArg is the last manned query.
+	mannedArg reader.EvidenceMannedTracksParams
+	mannedErr error
+	err       error
+}
+
+func (f *fakeTelemetry) EvidenceMannedTracks(_ context.Context, arg reader.EvidenceMannedTracksParams) ([]reader.EvidenceMannedTracksRow, error) {
+	f.mannedArg = arg
+	if f.mannedErr != nil {
+		return nil, f.mannedErr
+	}
+	return f.manned, f.err
 }
 
 func (f *fakeTelemetry) EvidenceTrackIDs(context.Context, reader.EvidenceTrackIDsParams) ([]string, error) {
@@ -245,6 +257,9 @@ func richSources() (*fakeSources, *fakeTelemetry) {
 			Count: 3, CountUnit: "rows", At: at(6)}},
 		ussp: []reader.EvidenceUSSPFlightsRow{{RxTs: at(1), UsspID: "USSPA", UssBaseUrl: "https://ussp.example.test/rid", FlightID: "F1",
 			TrackID: testTrack, StateTs: at(1), Flight: []byte(`{"id":"F1"}`), Details: []byte(`{"operator_location":{"lat":41.4,"lng":44.5}}`)}},
+		manned: []reader.EvidenceMannedTracksRow{{CapturedAt: at(2), SourceCapturedAt: at(1.7), RxTs: at(2.3), TimeSource: "provider",
+			Icao24: "4ca7b5", Callsign: sp("TST123"), LatDeg: 41.52, LonDeg: 44.61, AltPressureM: f64(450), SourceClass: "ads_b",
+			Quality: []byte(`{"nic":8}`), Trust: "surveillance", Source: "ansp_feed", SourceInstance: "adsb-tbs", State: "live"}},
 	}
 	return src, tel
 }

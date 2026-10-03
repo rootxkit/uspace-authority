@@ -28,3 +28,20 @@ dss-utm.yaml interuss/astm-utm-protocol 1d3d8fbe75414e23d7e19ce35955770bea5e413f
 # does, and the two must then be equal.
 interuss-observation/observation.yaml interuss/automated_testing_interfaces 17502448f450fd9d923577c0667b7d4cb4812620 rid/v1/observation.yaml
 interuss-observation/commons.yaml interuss/automated_testing_interfaces 17502448f450fd9d923577c0667b7d4cb4812620 rid/v1/commons.yaml
+# WP-15: the ANSP's manned traffic contract (02 F4, 04 §3.1). The ANSP
+# owns track/manned/v1 (M14); this system defines nothing of it. The
+# envelope is the ANSP's pinned copy of the lab's envelope/v1, which the
+# schema references; the examples are the ANSP's own valid and invalid
+# instances, run through internal/manned's validator.
+ansp.yaml rootxkit/uspace-ansp 2f9a7007e000eb210b799a00142c399cb01a8735 api/openapi.yaml
+ansp-schemas/track/manned/v1.json rootxkit/uspace-ansp 2f9a7007e000eb210b799a00142c399cb01a8735 schemas/track/manned/v1.json
+ansp-schemas/common/envelope/v1/schema.json rootxkit/uspace-ansp 2f9a7007e000eb210b799a00142c399cb01a8735 schemas/common/envelope/v1/schema.json
+ansp-schemas/examples/track/manned/v1/invalid/icao24-upper-case.json rootxkit/uspace-ansp 2f9a7007e000eb210b799a00142c399cb01a8735 schemas/examples/track/manned/v1/invalid/icao24-upper-case.json
+ansp-schemas/examples/track/manned/v1/invalid/pressure-alt-spelling.json rootxkit/uspace-ansp 2f9a7007e000eb210b799a00142c399cb01a8735 schemas/examples/track/manned/v1/invalid/pressure-alt-spelling.json
+ansp-schemas/examples/track/manned/v1/invalid/state-lost.json rootxkit/uspace-ansp 2f9a7007e000eb210b799a00142c399cb01a8735 schemas/examples/track/manned/v1/invalid/state-lost.json
+ansp-schemas/examples/track/manned/v1/invalid/track-deg-360.json rootxkit/uspace-ansp 2f9a7007e000eb210b799a00142c399cb01a8735 schemas/examples/track/manned/v1/invalid/track-deg-360.json
+ansp-schemas/examples/track/manned/v1/invalid/trust-not-surveillance.json rootxkit/uspace-ansp 2f9a7007e000eb210b799a00142c399cb01a8735 schemas/examples/track/manned/v1/invalid/trust-not-surveillance.json
+ansp-schemas/examples/track/manned/v1/invalid/wrong-schema-name.json rootxkit/uspace-ansp 2f9a7007e000eb210b799a00142c399cb01a8735 schemas/examples/track/manned/v1/invalid/wrong-schema-name.json
+ansp-schemas/examples/track/manned/v1/live-ads-b.json rootxkit/uspace-ansp 2f9a7007e000eb210b799a00142c399cb01a8735 schemas/examples/track/manned/v1/live-ads-b.json
+ansp-schemas/examples/track/manned/v1/source-disabled-pressure-only.json rootxkit/uspace-ansp 2f9a7007e000eb210b799a00142c399cb01a8735 schemas/examples/track/manned/v1/source-disabled-pressure-only.json
+ansp-schemas/examples/track/manned/v1/stale-after-silence.json rootxkit/uspace-ansp 2f9a7007e000eb210b799a00142c399cb01a8735 schemas/examples/track/manned/v1/stale-after-silence.json

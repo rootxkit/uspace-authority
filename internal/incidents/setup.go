@@ -129,7 +129,8 @@ func Assemble(ctx context.Context, s Setup) (*Parts, error) {
 		personal = RegistryPersonalData{Registry: s.Registry}
 	}
 	builder := &Builder{Sources: s.DB.Queries(), Telemetry: rd.Q, Records: records, Personal: personal,
-		MaxRows: c.IncidentsPackMaxRows, MaxRecords: c.RecordsMaxPerPack, MaxZones: c.IncidentsPackMaxZones, PublicPart: public}
+		MaxRows: c.IncidentsPackMaxRows, MaxRecords: c.RecordsMaxPerPack, MaxZones: c.IncidentsPackMaxZones, PublicPart: public,
+		MannedMarginM: float64(c.IncidentsMannedMarginM)}
 	packs := NewPacks(&Packs{Service: svc, Builder: builder, Sealer: sealer, MaxWindow: time.Duration(c.IncidentsPackMaxWindowS) * time.Second,
 		MaxBytes: int64(c.IncidentsPackMaxBytes), BuildTimeout: time.Duration(c.IncidentsBuildTimeoutS) * time.Second,
 		Counters: counters, Logger: logger}, c.IncidentsPackConcurrency)

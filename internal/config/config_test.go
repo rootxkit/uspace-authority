@@ -24,6 +24,47 @@ func validAPI() map[string]string {
 		"PII_KEY_FILE":         "/run/keys/pii.key",
 
 		"REGISTRY_HASH_KEY_FILE": "/run/keys/registry-hash.key",
+		"MANNED_CLIENT_CERT":     "/run/keys/manned-client.crt",
+		"MANNED_CLIENT_KEY":      "/run/keys/manned-client.key",
+	}
+}
+
+// WP-15, E-01: with AUTHORITY_MTLS_MODE=required the client certificate
+// is required and its absence refuses the start, naming the variable;
+// off needs none. A malformed bbox and feed instance are refused, a
+// valid one accepted.
+func TestMannedIngestRequiresTheClientCertificateUnlessOff(t *testing.T) {
+	m := validAPI()
+	var ok MannedIngest
+	if err := Load(&ok, env(m)); err != nil || ok.MTLSMode != "required" || ok.FeedInstance != "ansp" || ok.StaleAfterS != 5 {
+		t.Fatalf("accepted: %v %+v", err, ok.MannedTuning)
+	}
+	delete(m, "MANNED_CLIENT_KEY")
+	var refused MannedIngest
+	if err := Load(&refused, env(m)); err == nil || !strings.Contains(err.Error(), "MANNED_CLIENT_CERT") {
+		t.Fatalf("no key accepted: %v", err)
+	}
+	m["AUTHORITY_MTLS_MODE"] = "off"
+	var off MannedIngest
+	if err := Load(&off, env(m)); err != nil {
+		t.Fatalf("off: %v", err)
+	}
+	for k, v := range map[string]string{"MANNED_BBOX": "44,41,45", "MANNED_FEED_INSTANCE": "Ansp", "ANSP_BASE_URL": "ftp://ansp.example.test"} {
+		bad := validAPI()
+		bad[k] = v
+		var c MannedIngest
+		if err := Load(&c, env(bad)); err == nil || !strings.Contains(err.Error(), k) {
+			t.Errorf("%s=%s accepted: %v", k, v, err)
+		}
+	}
+	good := validAPI()
+	good["MANNED_BBOX"], good["ANSP_BASE_URL"], good["ISSUER_URL"] = "39.9,41.0,46.8,43.6", "https://ansp.example.test", "https://authority.example.test/"
+	var c MannedIngest
+	if err := Load(&c, env(good)); err != nil || c.TokenURL() != "https://authority.example.test/oauth/token" {
+		t.Fatalf("bbox and token URL: %v %q", err, c.TokenURL())
+	}
+	if b, err := ParseBBox("170,-10,-170,10"); err != nil || b[0] != 170 {
+		t.Fatalf("antimeridian: %v %v", b, err)
 	}
 }
 

@@ -9,7 +9,7 @@ this system from the predecessor's U-15 runbook.
 |---|---|---|
 | `direct_rid` | rid-ingest | a Remote ID receiver id (`rx-tbs-01`) |
 | `network_rid` | dp-poller (WP-14) | a USSP's id |
-| `ansp_feed` | manned-ingest (WP-15) | a feed id |
+| `ansp_feed` | manned-ingest (WP-15) | the feed itself (`MANNED_FEED_INSTANCE`, default `ansp`: switching it off, or the type, closes the stream) or one ANSP adapter (`adsb-tbs`: its aircraft are refused and aged `source_disabled`) |
 
 ## Doing it
 
