@@ -121,9 +121,9 @@ func encodeTrack(m *trackIn, captured, now time.Time, sourceState string, consol
 }
 
 // mannedIn is what the picture reads of a track/manned/v1 message: the
-// envelope only. The body is the ANSP's schema and is forwarded as
-// received (manned-ingest, WP-15, validates it against the ANSP's
-// mirror); its cell and icao24 come from the subject
+// envelope and the body's state. The body is the ANSP's schema and is
+// forwarded as received (manned-ingest, WP-15, validates it against the
+// ANSP's pinned schema); its cell and icao24 come from the subject
 // man.v1.<cell3>.<cell5>.<icao24>.
 type mannedIn struct {
 	Schema     string          `json:"schema"`
@@ -133,35 +133,52 @@ type mannedIn struct {
 	Body       json.RawMessage `json:"body"`
 }
 
+// mannedAgeRank orders the states of a manned aircraft (track/manned/v1
+// body.state): a sample is republished as it ages, live, stale,
+// source_disabled.
+func mannedAgeRank(body json.RawMessage) int {
+	var b struct {
+		State string `json:"state"`
+	}
+	_ = json.Unmarshal(body, &b)
+	switch b.State {
+	case "stale":
+		return 1
+	case "source_disabled":
+		return 2
+	}
+	return 0
+}
+
 // decodeManned reads one man.v1 message and its subject.
-func decodeManned(subject string, raw []byte) (icao24 string, c5 cell.ID, captured time.Time, backlog bool, err error) {
+func decodeManned(subject string, raw []byte) (icao24 string, c5 cell.ID, captured time.Time, backlog bool, rank int, err error) {
 	if len(raw) > maxMessageBytes {
-		return "", cell.ID{}, time.Time{}, false, core.Fieldf("message", "%d bytes, more than %d", len(raw), maxMessageBytes)
+		return "", cell.ID{}, time.Time{}, false, 0, core.Fieldf("message", "%d bytes, more than %d", len(raw), maxMessageBytes)
 	}
 	parts := strings.Split(subject, ".")
 	if len(parts) != 5 || parts[0] != "man" || parts[1] != "v1" {
-		return "", cell.ID{}, time.Time{}, false, core.Fieldf("subject", "%q is not man.v1.<cell3>.<cell5>.<icao24>", subject)
+		return "", cell.ID{}, time.Time{}, false, 0, core.Fieldf("subject", "%q is not man.v1.<cell3>.<cell5>.<icao24>", subject)
 	}
 	c5, err = cell.ParseToken(parts[3])
 	if err != nil || c5.Level != cell.Level5 {
-		return "", cell.ID{}, time.Time{}, false, core.Fieldf("subject", "%q is not a c5 cell token", parts[3])
+		return "", cell.ID{}, time.Time{}, false, 0, core.Fieldf("subject", "%q is not a c5 cell token", parts[3])
 	}
 	if _, err := bus.Token("icao24", parts[4]); err != nil {
-		return "", cell.ID{}, time.Time{}, false, err
+		return "", cell.ID{}, time.Time{}, false, 0, err
 	}
 	var m mannedIn
 	if err := json.Unmarshal(raw, &m); err != nil {
-		return "", cell.ID{}, time.Time{}, false, &core.FieldError{Field: "message", Reason: "not an enveloped message"}
+		return "", cell.ID{}, time.Time{}, false, 0, &core.FieldError{Field: "message", Reason: "not an enveloped message"}
 	}
 	if m.Schema != SchemaManned {
-		return "", cell.ID{}, time.Time{}, false, core.Fieldf("schema", "%q, want %s", m.Schema, SchemaManned)
+		return "", cell.ID{}, time.Time{}, false, 0, core.Fieldf("schema", "%q, want %s", m.Schema, SchemaManned)
 	}
 	if len(m.Body) == 0 || m.Body[0] != '{' {
-		return "", cell.ID{}, time.Time{}, false, &core.FieldError{Field: "body", Reason: "not an object"}
+		return "", cell.ID{}, time.Time{}, false, 0, &core.FieldError{Field: "body", Reason: "not an object"}
 	}
 	captured, err = time.Parse(time.RFC3339Nano, m.CapturedAt)
 	if err != nil {
-		return "", cell.ID{}, time.Time{}, false, &core.FieldError{Field: "captured_at", Reason: "not a time"}
+		return "", cell.ID{}, time.Time{}, false, 0, &core.FieldError{Field: "captured_at", Reason: "not a time"}
 	}
-	return parts[4], c5, captured, m.Backlog, nil
+	return parts[4], c5, captured, m.Backlog, mannedAgeRank(m.Body), nil
 }

@@ -232,3 +232,42 @@ func TestHubAnnouncesSourceChanges(t *testing.T) {
 		return
 	}
 }
+
+// WP-15, E-01: the console's status says manned_unavailable while the
+// ANSP feed is never heard or down, and not once its status says live;
+// switched off, the source row says so and the slug is not raised.
+func TestStatusSaysMannedUnavailableUntilTheFeedIsLive(t *testing.T) {
+	store := sources.NewStatusStore(10)
+	sw := &fakeSwitches{known: true}
+	sv := &SourceView{Statuses: store, Switches: sw, StaleAfter: 10 * time.Second, Types: sources.Types}
+	h := NewHub(Config{StatusInterval: time.Hour}, Inputs{SwitchesKnown: sw.Known}, sv, nil)
+	t.Cleanup(h.Close)
+	conn := connect(t, h, consoleSession(), nil)
+	feed := func(state string, at time.Time) []byte {
+		id, age := "ansp", 0.2
+		raw, _ := json.Marshal(bus.SystemEnvelope("source/status/v1", "authority/manned-ingest", at, sources.StatusBody{
+			Source: sources.TypeANSPFeed, SourceInstance: &id, State: state, Since: bus.Stamp(at), AgeS: &age,
+			Counters: map[string]uint64{"accepted": 1, "refused": 0}}))
+		return raw
+	}
+	now := time.Now()
+	h.Tick(now)
+	if st := statusOf(t, mustUntil(t, conn, SchemaStatus)); !has(st.Degraded, DegradedManned) {
+		t.Fatalf("never heard: %v", st.Degraded)
+	}
+	store.Offer(feed("live", now))
+	h.Tick(now.Add(time.Second))
+	if st := statusOf(t, mustUntil(t, conn, SchemaStatus)); has(st.Degraded, DegradedManned) {
+		t.Fatalf("live: %v", st.Degraded)
+	}
+	store.Offer(feed("down", now.Add(2*time.Second)))
+	h.Tick(now.Add(2 * time.Second))
+	if st := statusOf(t, mustUntil(t, conn, SchemaStatus)); !has(st.Degraded, DegradedManned) {
+		t.Fatalf("down: %v", st.Degraded)
+	}
+	sw.switchOff(sources.TypeANSPFeed, nil, coresources.WhyType, "admin:test")
+	h.Tick(now.Add(3 * time.Second))
+	if st := statusOf(t, mustUntil(t, conn, SchemaStatus)); has(st.Degraded, DegradedManned) {
+		t.Fatalf("switched off: %v", st.Degraded)
+	}
+}

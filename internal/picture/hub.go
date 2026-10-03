@@ -67,12 +67,16 @@ const (
 
 // Degraded slugs of console/status/v1 (docs/runbooks/picture.md).
 const (
-	DegradedNATS              = "nats_unavailable"
-	DegradedProjections       = "projections_unreadable"
-	DegradedRegistryAbsent    = "registry_projection_absent"
-	DegradedCISAbsent         = "cis_absent"
-	DegradedCISStale          = "cis_stale"
-	DegradedDP                = "dp_unavailable"
+	DegradedNATS           = "nats_unavailable"
+	DegradedProjections    = "projections_unreadable"
+	DegradedRegistryAbsent = "registry_projection_absent"
+	DegradedCISAbsent      = "cis_absent"
+	DegradedCISStale       = "cis_stale"
+	DegradedDP             = "dp_unavailable"
+	// DegradedManned: the ANSP's manned traffic feed is not live (down
+	// since T, stale, or never heard; WP-15): manned aircraft are missing
+	// or old, the sky is not empty.
+	DegradedManned            = "manned_unavailable"
 	DegradedAlertsUnconfirmed = "alerts_unconfirmed"
 	DegradedAlertsReplaying   = "alerts_replaying"
 	DegradedSessions          = "session_verifier_unavailable"
@@ -432,7 +436,7 @@ func (h *Hub) encodeTrack(it *item, now time.Time, state string, console bool) [
 // received to every console watching its cell with the manned layer.
 func (h *Hub) OfferManned(subject string, raw []byte) {
 	h.counters.Inc(CounterManned)
-	icao24, c5, captured, backlog, err := decodeManned(subject, raw)
+	icao24, c5, captured, backlog, rank, err := decodeManned(subject, raw)
 	if err != nil {
 		h.counters.Inc(CounterMannedMalformed)
 		h.cfg.Limiter.Limited("picture_manned_malformed").Warn("manned message refused", slog.String("error", err.Error()))
@@ -442,7 +446,7 @@ func (h *Hub) OfferManned(subject string, raw []byte) {
 		h.counters.Inc(CounterMannedBacklog)
 		return
 	}
-	res, evicted := h.manned.put(&item{key: icao24, cell: c5, captured: captured, raw: raw})
+	res, evicted := h.manned.put(&item{key: icao24, cell: c5, captured: captured, ageRank: rank, raw: raw})
 	switch {
 	case res == putOlder:
 		h.counters.Inc(CounterMannedOlder)
@@ -610,6 +614,11 @@ func (h *Hub) parts(now time.Time, all []SourceState, unconfirmed int, unconfirm
 	default:
 		p.dpState = DPUnavailable
 		present[DegradedDP] = time.Time{}
+	}
+	switch h.sources.TypeState("ansp_feed") {
+	case StateLive, StateDisabled:
+	default:
+		present[DegradedManned] = time.Time{}
 	}
 	if unconfirmed > 0 {
 		present[DegradedAlertsUnconfirmed] = unconfirmedSince

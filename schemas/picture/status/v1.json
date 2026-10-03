@@ -12,10 +12,10 @@
   "$defs": {
     "timestamp": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$" },
     "slug": {
-      "description": "What is degraded. Global: nats_unavailable (the bus is lost: nothing leaves the picture, every aircraft ages), projections_unreadable, registry_projection_absent, cis_absent, cis_stale (older than the policy's cis_stale_bound_s), dp_unavailable (no Display Provider view: provider tracks are missing), alerts_unconfirmed (an active violation detect stopped republishing), alerts_replaying (the read-back of ALRT at start or after the bus came back), session_verifier_unavailable, source_control_unknown (B-09: every source enabled until the switches are read), policy_default (the documented defaults, policy version 0), tracks_evicted (the track cache is at its bound). Per connection: no_subscription, viewport_too_large (the previous viewport is kept), session_unchecked (the session could not be re-checked; the connection closes past the grace).",
+      "description": "What is degraded. Global: nats_unavailable (the bus is lost: nothing leaves the picture, every aircraft ages), projections_unreadable, registry_projection_absent, cis_absent, cis_stale (older than the policy's cis_stale_bound_s), dp_unavailable (no Display Provider view: provider tracks are missing), manned_unavailable (the ANSP manned traffic feed is not live: down since T, stale or never heard; manned aircraft are missing or old), alerts_unconfirmed (an active violation detect stopped republishing), alerts_replaying (the read-back of ALRT at start or after the bus came back), session_verifier_unavailable, source_control_unknown (B-09: every source enabled until the switches are read), policy_default (the documented defaults, policy version 0), tracks_evicted (the track cache is at its bound). Per connection: no_subscription, viewport_too_large (the previous viewport is kept), session_unchecked (the session could not be re-checked; the connection closes past the grace).",
       "enum": [
         "nats_unavailable", "projections_unreadable", "registry_projection_absent", "cis_absent", "cis_stale",
-        "dp_unavailable", "alerts_unconfirmed", "alerts_replaying", "session_verifier_unavailable",
+        "dp_unavailable", "manned_unavailable", "alerts_unconfirmed", "alerts_replaying", "session_verifier_unavailable",
         "source_control_unknown", "policy_default", "tracks_evicted",
         "no_subscription", "viewport_too_large", "session_unchecked"
       ]
