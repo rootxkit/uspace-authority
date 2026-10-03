@@ -28,6 +28,12 @@ var RetentionChecks = []RetentionCheck{
 	{Table: "ussp_flights", Column: "rx_ts", MaxAge: f3411.NetDpMaxDataRetentionPeriodSeconds * time.Second},
 }
 
+// UncheckedRetention are the hypertables with personal data whose
+// retention period no check verifies yet (WP-27 owns them): named on the
+// status line as unchecked, so a clean line is never read as covering
+// them (audit B-N4).
+var UncheckedRetention = []string{"tracks", "rid_observations", "manned_tracks"}
+
 // OlderThaner counts rows older than an age (ts.WriterPool.OlderThan).
 type OlderThaner interface {
 	OlderThan(ctx context.Context, table, column string, age time.Duration) (int64, error)
@@ -45,15 +51,20 @@ const (
 	RetentionClean    = "clean"
 	RetentionViolated = "violated"
 	RetentionUnknown  = "unknown"
+	// RetentionUnchecked names a table with personal data whose
+	// retention no check verifies yet (audit B-N4).
+	RetentionUnchecked = "unchecked"
 )
 
 // Retention runs the checks at start and every Interval.
 type Retention struct {
-	Store    OlderThaner
-	Checks   []RetentionCheck
-	Interval time.Duration
-	Counters *core.Counters
-	Logger   *slog.Logger
+	Store  OlderThaner
+	Checks []RetentionCheck
+	// Unchecked are named on the status line as unchecked.
+	Unchecked []string
+	Interval  time.Duration
+	Counters  *core.Counters
+	Logger    *slog.Logger
 
 	mu   sync.Mutex
 	last map[string]string
@@ -92,11 +103,14 @@ func (r *Retention) Check(ctx context.Context) map[string]string {
 	return out
 }
 
-// Last is the result of the last Check.
+// Last is the result of the last Check, with the unchecked tables named.
 func (r *Retention) Last() map[string]string {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	out := make(map[string]string, len(r.last))
+	out := make(map[string]string, len(r.last)+len(r.Unchecked))
+	for _, t := range r.Unchecked {
+		out[t] = RetentionUnchecked
+	}
 	for k, v := range r.last {
 		out[k] = v
 	}

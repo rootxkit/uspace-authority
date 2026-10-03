@@ -68,6 +68,33 @@ func TestMannedIngestRequiresTheClientCertificateUnlessOff(t *testing.T) {
 	}
 }
 
+// Audit B-S8, E-01: with AUTHORITY_MTLS_MODE=required, ANSP_BASE_URL
+// may be plain http only to a loopback host (a bearer in clear and no
+// client certificate otherwise); https anywhere, and http anywhere with
+// mTLS off (the lab), are accepted.
+func TestMannedIngestRefusesPlaintextANSPUnderRequiredMTLS(t *testing.T) {
+	cases := []struct {
+		mode, base string
+		ok         bool
+	}{
+		{"required", "http://ansp.example.test", false},
+		{"required", "http://10.0.0.5:8080", false},
+		{"required", "https://ansp.example.test", true},
+		{"required", "http://127.0.0.1:8080", true},
+		{"required", "http://localhost:8080", true},
+		{"off", "http://ansp.example.test", true},
+	}
+	for _, c := range cases {
+		m := validAPI()
+		m["AUTHORITY_MTLS_MODE"], m["ANSP_BASE_URL"] = c.mode, c.base
+		var cfg MannedIngest
+		err := Load(&cfg, env(m))
+		if c.ok != (err == nil) || (err != nil && !strings.Contains(err.Error(), "ANSP_BASE_URL")) {
+			t.Errorf("%s %s: %v", c.mode, c.base, err)
+		}
+	}
+}
+
 func TestLoadAcceptsAValidAPIConfigAndAppliesDefaults(t *testing.T) {
 	var c API
 	if err := Load(&c, env(validAPI())); err != nil {
@@ -434,5 +461,54 @@ func TestPictureWSConfigDefaultsAndRefusals(t *testing.T) {
 	}
 	if o, ok := OriginOf("http://[::1]:8080"); !ok || o != "http://[::1]:8080" {
 		t.Fatalf("ipv6 origin %q", o)
+	}
+}
+
+// Audit B-N3, E-01: a queued message is kept alive only on the failure
+// paths, so the queue's age must stay under half the ack wait or healthy
+// queued messages are redelivered: half or more is refused naming the
+// variable, under half accepted.
+func TestTSDBWriterQueueAgeUnderHalfTheAckWait(t *testing.T) {
+	for _, c := range []struct {
+		age string
+		ok  bool
+	}{{"29", true}, {"30", false}, {"59", false}} {
+		m := validAPI()
+		m["TSDB_WRITER_ACK_WAIT_S"], m["TSDB_WRITER_QUEUE_MAX_AGE_S"] = "60", c.age
+		var cfg TSDBWriter
+		err := Load(&cfg, env(m))
+		if c.ok != (err == nil) || (err != nil && !strings.Contains(err.Error(), "TSDB_WRITER_QUEUE_MAX_AGE_S")) {
+			t.Errorf("queue age %s with ack wait 60: %v", c.age, err)
+		}
+	}
+}
+
+// System audit F-5, E-01: the CISP signs a notification's aud as the
+// host of the callback URL, so a callback whose host is not one of
+// AUTHORITY_AUDIENCES would have every webhook refused while the
+// subscription shows active. It is refused at start naming both
+// variables; a callback on an accepted host is accepted.
+func TestAPIRefusesACallbackHostOutsideTheAudiences(t *testing.T) {
+	cases := []struct {
+		callback, audiences string
+		ok                  bool
+	}{
+		{"https://authority.example.test/v1/cis/notifications", "", true},
+		{"https://authority.example.test/v1/cis/notifications", "authority.example.test,authority", true},
+		{"https://authority/v1/cis/notifications", "authority.example.test,authority", true},
+		{"https://callback.example.test/v1/cis/notifications", "", false},
+		{"https://callback.example.test/v1/cis/notifications", "authority.example.test,authority", false},
+	}
+	for _, c := range cases {
+		m := validAPI()
+		m["CIS_CALLBACK_URL"] = c.callback
+		if c.audiences != "" {
+			m["AUTHORITY_AUDIENCES"] = c.audiences
+		}
+		var cfg API
+		err := Load(&cfg, env(m))
+		if c.ok != (err == nil) || (err != nil && (!strings.Contains(err.Error(), "CIS_CALLBACK_URL") || !strings.Contains(err.Error(), "AUTHORITY_AUDIENCES"))) {
+			t.Errorf("%s with %q: %v", c.callback, c.audiences, err)
+		}
 	}
 }

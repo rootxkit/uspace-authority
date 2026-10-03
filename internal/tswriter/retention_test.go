@@ -86,3 +86,26 @@ func TestRetentionRunChecksAtOnceAndEveryInterval(t *testing.T) {
 	cancel()
 	<-done
 }
+
+// Audit B-N4, E-02: the tables whose retention is not checked yet are
+// named on the status line as unchecked, before and after a check, so a
+// clean line is not read as "retention is fine" for them.
+func TestRetentionNamesTheUncheckedTables(t *testing.T) {
+	r := &Retention{
+		Store:     olderThan{"ussp_flights": {}},
+		Checks:    []RetentionCheck{{Table: "ussp_flights", Column: "rx_ts", MaxAge: 24 * time.Hour}},
+		Unchecked: []string{"tracks", "rid_observations"},
+		Counters:  &core.Counters{}, Logger: slog.New(slog.DiscardHandler), Interval: time.Hour,
+	}
+	if last := r.Last(); last["tracks"] != RetentionUnchecked || last["rid_observations"] != RetentionUnchecked {
+		t.Fatalf("before a check %v", last)
+	}
+	r.Check(context.Background())
+	last := r.Last()
+	if last["ussp_flights"] != RetentionClean || last["tracks"] != RetentionUnchecked || len(last) != 3 {
+		t.Fatalf("after a check %v", last)
+	}
+	if len(UncheckedRetention) == 0 {
+		t.Fatal("no unchecked table is declared")
+	}
+}

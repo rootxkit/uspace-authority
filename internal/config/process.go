@@ -119,22 +119,25 @@ type Certificates struct {
 
 // Incidents are api's case files and evidence packs (WP-17).
 type Incidents struct {
-	EvidenceDir              string `env:"EVIDENCE_DIR" help:"directory the sealed evidence packs are stored under (<incident>/<pack>.zip, never overwritten); unset: building, downloading and verifying a pack is refused with 503 evidence_storage_unavailable"`
-	IncidentsPackMaxWindowS  int    `env:"INCIDENTS_PACK_MAX_WINDOW_S" default:"21600" min:"60" max:"604800" help:"longest window of one evidence pack; a longer one is refused (window_too_large), never thinned (B-13)"`
-	IncidentsPackMaxRows     int    `env:"INCIDENTS_PACK_MAX_ROWS" default:"200000" min:"100" max:"10000000" help:"rows one section of a pack holds at most (tracks, frames, violations, events, ...); a section holding more refuses the pack (pack_too_large), never thinned"`
-	IncidentsPackMaxBytes    int    `env:"INCIDENTS_PACK_MAX_BYTES" default:"268435456" min:"1048576" max:"4294967296" help:"largest archive of one pack; a larger one is refused (pack_too_large)"`
-	IncidentsPackMaxZones    int    `env:"INCIDENTS_PACK_MAX_ZONES" default:"500" min:"1" max:"100000" help:"zone versions one pack names and finds in force at most; past it the pack is refused"`
-	IncidentsMannedMarginM   int    `env:"INCIDENTS_MANNED_MARGIN_M" default:"10000" min:"100" max:"200000" help:"margin around the extent of the evidence's positions within which a pack includes the ANSP's manned traffic of the window (WP-15)"`
-	IncidentsPackConcurrency int    `env:"INCIDENTS_PACK_CONCURRENCY" default:"2" min:"1" max:"64" help:"packs built at once per replica; past it a build is refused with 503 pack_busy and counted (E-10)"`
-	IncidentsBuildTimeoutS   int    `env:"INCIDENTS_BUILD_TIMEOUT_S" default:"120" min:"5" max:"3600" help:"bound on one pack build, its source reads and USSP record fetches included"`
-	IncidentsWriteTimeoutS   int    `env:"INCIDENTS_WRITE_TIMEOUT_S" default:"10" min:"1" max:"600" help:"bound on one incident transaction"`
-	IncidentsBackfillS       int    `env:"INCIDENTS_BACKFILL_S" default:"300" min:"10" max:"86400" help:"period of the job opening the incident of an escalation recorded without one (WP-12's incident_requested)"`
-	IncidentsBackfillBatch   int    `env:"INCIDENTS_BACKFILL_BATCH" default:"100" min:"1" max:"10000" help:"incidents that job opens at most per run"`
-	RecordsClientID          string `env:"RECORDS_CLIENT_ID" default:"authority-01" help:"this system's client id at its own token service for the USSP service-record reads (scope ussp.records, 02 F7; M24)"`
-	RecordsClientSecretFile  string `env:"RECORDS_CLIENT_SECRET_FILE" help:"file holding that client's secret; unset: every USSP record of a pack is unavailable with that reason"`
-	RecordsTimeoutMS         int    `env:"RECORDS_TIMEOUT_MS" default:"5000" min:"100" max:"60000" help:"deadline of one USSP service-record fetch"`
-	RecordsMaxBytes          int    `env:"RECORDS_MAX_BYTES" default:"1048576" min:"1024" max:"16777216" help:"largest USSP service record read; a larger one is unavailable with that reason"`
-	RecordsMaxPerPack        int    `env:"RECORDS_MAX_PER_PACK" default:"16" min:"1" max:"1000" help:"USSP service records fetched per pack at most; the rest are unavailable with that reason"`
+	EvidenceDir                  string `env:"EVIDENCE_DIR" help:"directory the sealed evidence packs are stored under (<incident>/<pack>.zip, never overwritten); unset: building, downloading and verifying a pack is refused with 503 evidence_storage_unavailable"`
+	IncidentsPackMaxWindowS      int    `env:"INCIDENTS_PACK_MAX_WINDOW_S" default:"21600" min:"60" max:"604800" help:"longest window of one evidence pack; a longer one is refused (window_too_large), never thinned (B-13)"`
+	IncidentsPackMaxRows         int    `env:"INCIDENTS_PACK_MAX_ROWS" default:"200000" min:"100" max:"10000000" help:"rows one section of a pack holds at most (tracks, frames, violations, events, ...); a section holding more refuses the pack (pack_too_large), never thinned"`
+	IncidentsPackMaxBytes        int    `env:"INCIDENTS_PACK_MAX_BYTES" default:"268435456" min:"1048576" max:"4294967296" help:"largest archive of one pack; a larger one is refused (pack_too_large)"`
+	IncidentsPackMaxZones        int    `env:"INCIDENTS_PACK_MAX_ZONES" default:"500" min:"1" max:"100000" help:"zone versions one pack names and finds in force at most; past it the pack is refused"`
+	IncidentsMannedMarginM       int    `env:"INCIDENTS_MANNED_MARGIN_M" default:"10000" min:"100" max:"200000" help:"margin around the extent of the evidence's positions within which a pack includes the ANSP's manned traffic of the window (WP-15)"`
+	IncidentsPackConcurrency     int    `env:"INCIDENTS_PACK_CONCURRENCY" default:"2" min:"1" max:"64" help:"packs built at once per replica; past it a build is refused with 503 pack_busy and counted (E-10)"`
+	IncidentsPackReadConcurrency int    `env:"INCIDENTS_PACK_READ_CONCURRENCY" default:"4" min:"1" max:"64" help:"pack downloads and verifications at once per replica (each holds a whole archive in memory); past it 503 pack_busy, counted"`
+	IncidentsBuildTimeoutS       int    `env:"INCIDENTS_BUILD_TIMEOUT_S" default:"120" min:"5" max:"3600" help:"bound on one pack build, its source reads and USSP record fetches included"`
+	IncidentsWriteTimeoutS       int    `env:"INCIDENTS_WRITE_TIMEOUT_S" default:"10" min:"1" max:"600" help:"bound on one incident transaction"`
+	IncidentsBackfillS           int    `env:"INCIDENTS_BACKFILL_S" default:"300" min:"10" max:"86400" help:"period of the job opening the incident of an escalation recorded without one (WP-12's incident_requested)"`
+	IncidentsBackfillBatch       int    `env:"INCIDENTS_BACKFILL_BATCH" default:"100" min:"1" max:"10000" help:"incidents that job opens at most per run"`
+	RecordsClientID              string `env:"RECORDS_CLIENT_ID" default:"authority-01" help:"this system's client id at its own token service for the USSP service-record reads (scope ussp.records, 02 F7; M24)"`
+	RecordsClientSecretFile      string `env:"RECORDS_CLIENT_SECRET_FILE" help:"file holding that client's secret; unset: every USSP record of a pack is unavailable with that reason"`
+	RecordsTimeoutMS             int    `env:"RECORDS_TIMEOUT_MS" default:"5000" min:"100" max:"60000" help:"deadline of one USSP service-record fetch"`
+	RecordsMaxBytes              int    `env:"RECORDS_MAX_BYTES" default:"1048576" min:"1024" max:"16777216" help:"largest USSP service record read; a larger one is unavailable with that reason"`
+	RecordsMaxPerPack            int    `env:"RECORDS_MAX_PER_PACK" default:"16" min:"1" max:"1000" help:"USSP service records fetched per pack at most; the rest are unavailable with that reason"`
+	RecordsConcurrency           int    `env:"RECORDS_CONCURRENCY" default:"4" min:"1" max:"64" help:"USSP service records of a legal pack read at once"`
+	RecordsStepTimeoutS          int    `env:"RECORDS_STEP_TIMEOUT_S" default:"30" min:"1" max:"600" help:"deadline of a legal pack's whole records step; the records not read by then are unavailable with that reason (oversight packs read none)"`
 }
 
 // DPAdmin is api's administration of the F3411 Display Provider
@@ -526,7 +529,9 @@ type DPPollerTuning struct {
 	MaxViews             int     `env:"DP_MAX_VIEWS" default:"64" min:"1" max:"10000" help:"views (oversight areas and console viewports) followed; past it the rest are counted and logged"`
 	MaxTiles             int     `env:"DP_MAX_TILES" default:"512" min:"1" max:"100000" help:"tiles discovered and subscribed in all; past it the rest are counted and logged"`
 	MaxISAs              int     `env:"DP_MAX_ISAS" default:"10000" min:"1" max:"1000000" help:"identification service areas held; past it a new one is refused and counted"`
-	MaxProviders         int     `env:"DP_MAX_PROVIDERS" default:"256" min:"1" max:"100000" help:"Service Providers held; past it a new one is counted and not polled"`
+	MaxProviders         int     `env:"DP_MAX_PROVIDERS" default:"256" min:"1" max:"100000" help:"Service Providers held; past it a new one is counted and not polled, unless a DSS-listed ISA names it and a provider only notifications named can give way"`
+	ProviderForgetAfterS int     `env:"DP_PROVIDER_FORGET_AFTER_S" default:"600" min:"10" max:"86400" help:"a Service Provider no held ISA names for this long is forgotten (its status goes)"`
+	NotifiedISAMaxS      int     `env:"DP_NOTIFIED_ISA_MAX_LIFETIME_S" default:"86400" min:"60" max:"86400" help:"an ISA learned from a notification is trusted until its time_end, capped at now plus this (F3411: 24 h); a DSS search that does not list it drops it earlier"`
 	MaxFlightsHeld       int     `env:"DP_MAX_FLIGHTS_HELD" default:"50000" min:"1" max:"10000000" help:"flights whose last published state, details and identification are remembered; past it the one seen longest ago is forgotten and counted (E-10)"`
 	DiscoveryRereadS     int     `env:"DP_DISCOVERY_REREAD_S" default:"30" min:"1" max:"3600" help:"seconds between ISA searches per tile besides the notifications (repair, G-08)"`
 	ViewsRereadS         int     `env:"DP_VIEWS_REREAD_S" default:"5" min:"1" max:"3600" help:"seconds between reads of the oversight areas and the console viewports"`
@@ -656,6 +661,7 @@ type MannedTuning struct {
 	BackoffMinMS     int    `env:"MANNED_BACKOFF_MIN_MS" default:"500" min:"10" max:"600000" help:"first reconnection delay, doubled up to MANNED_BACKOFF_MAX_MS, jittered; reconnection never stops (B-08)"`
 	BackoffMaxMS     int    `env:"MANNED_BACKOFF_MAX_MS" default:"30000" min:"10" max:"600000" help:"longest reconnection delay"`
 	MaxAircraft      int    `env:"MANNED_MAX_AIRCRAFT" default:"10000" min:"1" max:"10000000" help:"aircraft whose last published state is remembered; past it the one updated longest ago is forgotten and counted (E-10)"`
+	MaxSourceAheadMS int    `env:"MANNED_MAX_SOURCE_AHEAD_MS" default:"5000" min:"100" max:"600000" help:"a sample stamped more than this after it arrived is ordered at its arrival plus this, counted source_time_in_future, so an ANSP clock jump cannot freeze an aircraft"`
 	MaxFrameBytes    int    `env:"MANNED_MAX_FRAME_BYTES" default:"4194304" min:"1024" max:"67108864" help:"largest frame read from the stream; a larger one closes the connection, which is opened again"`
 	MaxSnapshotBytes int    `env:"MANNED_MAX_SNAPSHOT_BYTES" default:"16777216" min:"1024" max:"268435456" help:"largest snapshot read"`
 	MaxSnapshotItems int    `env:"MANNED_MAX_SNAPSHOT_ITEMS" default:"10000" min:"1" max:"10000000" help:"aircraft taken from one snapshot; the rest are counted"`
@@ -686,11 +692,27 @@ func (c *MannedIngest) Validate() error {
 		errs = append(errs, &core.FieldError{Field: "MANNED_BACKOFF_MAX_MS", Reason: "less than MANNED_BACKOFF_MIN_MS"})
 	}
 	if c.ANSPBaseURL != "" {
-		if u, err := url.Parse(c.ANSPBaseURL); err != nil || (u.Scheme != "https" && u.Scheme != "http") {
+		u, err := url.Parse(c.ANSPBaseURL)
+		switch {
+		case err != nil || (u.Scheme != "https" && u.Scheme != "http"):
 			errs = append(errs, &core.FieldError{Field: "ANSP_BASE_URL", Reason: "must be an https (or, in the lab, http) URL"})
+		case u.Scheme == "http" && c.MTLSMode == "required" && !loopbackHost(u.Hostname()):
+			// Plain http presents no client certificate and sends the
+			// ansp.traffic bearer in clear (audit B-S8).
+			errs = append(errs, &core.FieldError{Field: "ANSP_BASE_URL",
+				Reason: "plain http only to a loopback host with AUTHORITY_MTLS_MODE=required: use https, or mTLS off in the lab"})
 		}
 	}
 	return errors.Join(errs...)
+}
+
+// loopbackHost reports whether host is localhost or a loopback address.
+func loopbackHost(host string) bool {
+	if host == "localhost" {
+		return true
+	}
+	a, err := netip.ParseAddr(host)
+	return err == nil && a.IsLoopback()
 }
 
 // TokenURL is MANNED_TOKEN_URL, or ISSUER_URL's /oauth/token, or empty.
@@ -811,8 +833,12 @@ func (c *TSDBWriter) Validate() error {
 	if c.RetryMaxMS < c.RetryMinMS {
 		errs = append(errs, &core.FieldError{Field: "TSDB_WRITER_RETRY_MAX_MS", Reason: "must be at least TSDB_WRITER_RETRY_MIN_MS"})
 	}
-	if c.AckWaitS <= c.QueueMaxAgeS {
-		errs = append(errs, &core.FieldError{Field: "TSDB_WRITER_ACK_WAIT_S", Reason: "must exceed TSDB_WRITER_QUEUE_MAX_AGE_S, or queued messages are redelivered while held"})
+	if 2*c.QueueMaxAgeS >= c.AckWaitS {
+		// A queued message is kept alive (in progress) only on the
+		// failure paths: a healthy queue older than half the ack wait
+		// is redelivered while held (audit B-N3).
+		errs = append(errs, &core.FieldError{Field: "TSDB_WRITER_QUEUE_MAX_AGE_S",
+			Reason: "must be under half of TSDB_WRITER_ACK_WAIT_S, or queued messages are redelivered while held"})
 	}
 	return errors.Join(errs...)
 }
@@ -1018,6 +1044,16 @@ func (c *API) Validate() error {
 	for _, a := range c.Audiences {
 		if strings.ContainsAny(a, "/:@ ") || a != strings.ToLower(a) {
 			errs = append(errs, core.Fieldf("AUTHORITY_AUDIENCES", "%q is not a lower-case host name", a))
+		}
+	}
+	if c.CISCallbackURL != "" {
+		// The CISP signs a notification's aud as the host of the
+		// callback (WP-2); a host this receiver does not accept would
+		// have every webhook refused while the subscription shows
+		// active (system audit F-5, as the ANSP refuses it).
+		if u, err := url.Parse(c.CISCallbackURL); err == nil && !slices.Contains(c.AudienceList(), strings.ToLower(u.Hostname())) {
+			errs = append(errs, core.Fieldf("CIS_CALLBACK_URL", "its host %q is not one of AUTHORITY_AUDIENCES %v: the CISP signs aud as that host and every notification would be refused",
+				strings.ToLower(u.Hostname()), c.AudienceList()))
 		}
 	}
 	for _, p := range c.TrustedProxies {

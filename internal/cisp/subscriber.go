@@ -67,6 +67,9 @@ type SubscriberConfig struct {
 	// ReconcileInterval is CIS_RECONCILE_S (60 s).
 	ReconcileInterval time.Duration
 	SubscribeRetry    time.Duration
+	// SubscriptionRecheck is how often the push subscription is asked
+	// of the CISP again once it is made (default five reconciliations).
+	SubscriptionRecheck time.Duration
 	// StaleBoundS is the policy's cis_stale_bound_s.
 	StaleBoundS func() float64
 	Now         func() time.Time
@@ -117,6 +120,9 @@ func NewSubscriber(cfg SubscriberConfig) *Subscriber {
 	}
 	if cfg.SubscribeRetry <= 0 {
 		cfg.SubscribeRetry = 30 * time.Second
+	}
+	if cfg.SubscriptionRecheck <= 0 {
+		cfg.SubscriptionRecheck = 5 * cfg.ReconcileInterval
 	}
 	if cfg.Now == nil {
 		cfg.Now = time.Now
@@ -345,6 +351,9 @@ func (s *Subscriber) accept(ctx context.Context, v, cur *Version, reconcile bool
 	if err != nil {
 		var ue *UntrustedError
 		if errors.As(err, &ue) {
+			if ue.Mismatch {
+				s.cfg.Counters.Inc(CounterSignedMismatch)
+			}
 			return s.hold(v, ue)
 		}
 		return s.failPull(v.Dataset, err)
@@ -462,7 +471,7 @@ func (s *Subscriber) hold(v *Version, ue *UntrustedError) error {
 	}
 	s.mu.Unlock()
 	if prev == nil || prev.Version != ue.Version || prev.Reason != ue.Reason {
-		s.cfg.Logger.Error("CIS version held: its publisher's signature is not verified; the previous version is kept",
+		s.cfg.Logger.Error("CIS version held: its publisher's signature does not cover it; the previous version is kept",
 			slog.String("dataset", string(v.Dataset)), slog.Int64("cis_version", v.Number), slog.String("reason", ue.Reason))
 	}
 	return ue
@@ -549,6 +558,11 @@ func (st *dsState) age(now time.Time) (float64, bool) {
 	return math.Max(0, now.Sub(st.checkedAt).Seconds()), true
 }
 
+// subscribeLoop makes the push subscription and asks for it again every
+// SubscriptionRecheck (Subscribe is idempotent): a subscription the
+// CISP lost (a restore, a delete) is made again, and the status shown is
+// the one the CISP answered last, never the one of start-up (audit
+// A-S3).
 func (s *Subscriber) subscribeLoop(ctx context.Context) {
 	if s.cfg.CISP == nil || s.cfg.CallbackURL == "" {
 		return
@@ -559,23 +573,36 @@ func (s *Subscriber) subscribeLoop(ctx context.Context) {
 			return
 		}
 		s.mu.Lock()
+		prevID, prevStatus := s.subscribed, s.subStatus
 		if err == nil {
 			s.subscribed, s.subStatus, s.subErr = sub.Id, string(sub.Status), ""
 		} else {
 			s.subErr = short(err.Error())
 		}
 		s.mu.Unlock()
-		if err == nil {
+		wait := s.cfg.SubscribeRetry
+		switch {
+		case err != nil:
+			s.cfg.Counters.Inc(CounterSubscribeFailed)
+			s.cfg.Logger.Warn("CISP subscription failed; the reconciliation alone keeps the cache", slog.String("error", short(err.Error())))
+		case prevID == "":
+			wait = s.cfg.SubscriptionRecheck
 			s.cfg.Logger.Info("subscribed to the CISP's change notifications", slog.String("subscription", sub.Id),
 				slog.String("status", string(sub.Status)))
-			return
+		default:
+			wait = s.cfg.SubscriptionRecheck
+			s.cfg.Counters.Inc(CounterSubscriptionRechecks)
+			if sub.Id != prevID || string(sub.Status) != prevStatus {
+				s.cfg.Counters.Inc(CounterSubscriptionChanged)
+				s.cfg.Logger.Warn("the CISP's subscription changed since it was last checked; it is the one shown now",
+					slog.String("subscription", sub.Id), slog.String("was", prevID), slog.String("status", string(sub.Status)),
+					slog.String("was_status", prevStatus))
+			}
 		}
-		s.cfg.Counters.Inc(CounterSubscribeFailed)
-		s.cfg.Logger.Warn("CISP subscription failed; the reconciliation alone keeps the cache", slog.String("error", short(err.Error())))
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(s.cfg.SubscribeRetry):
+		case <-time.After(wait):
 		}
 	}
 }

@@ -42,6 +42,12 @@ type Prepared struct {
 	Signature    string
 	KID          string
 	SignedAt     time.Time
+	// ResolvesConflict marks an operator's publication (POST
+	// /v1/zones/publish, /v1/certificates/publish-list): the decision
+	// that a conflict at the CISP is resolved by overwriting it. A
+	// publication queued automatically waits behind a conflict (audit
+	// A-S2).
+	ResolvesConflict bool
 }
 
 // Row is one outbox row as written.
@@ -120,14 +126,15 @@ func (o *Outbox) Prepare(ds Dataset, payload []byte) (Prepared, error) {
 
 // Enqueue prepares payload and writes it pending in a transaction of its
 // own, superseding the dataset's pending row, then wakes the sender. It
-// is the outbox of publications that are not written inside another
-// transaction (the USSP list, WP-16); zones and U-space airspaces are
-// written by their publication's transaction through EnqueueTx.
+// is an operator's publication (ResolvesConflict) that is not written
+// inside another transaction; zones, U-space airspaces and the USSP list
+// are written by their own transactions through EnqueueTx.
 func (o *Outbox) Enqueue(ctx context.Context, ds Dataset, payload []byte, actor audit.Actor) (Row, error) {
 	p, err := o.Prepare(ds, payload)
 	if err != nil {
 		return Row{}, err
 	}
+	p.ResolvesConflict = true
 	row, err := o.Store.Enqueue(ctx, p, 0, actor)
 	if err != nil {
 		return Row{}, err

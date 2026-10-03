@@ -173,3 +173,71 @@ func FuzzParseNotification(f *testing.F) {
 		}
 	})
 }
+
+// impostorNotification is a notification for isa-9 that names owner and
+// base, as a Service Provider other than the held owner would post it.
+func impostorNotification(owner, base string) []byte {
+	a := isa("isa-9", owner, base)
+	v := Volume(box2km, t0.Add(-time.Hour), t0.Add(time.Hour))
+	raw, _ := json.Marshal(f3411.PutIdentificationServiceAreaNotificationParameters{ServiceArea: &a, Extents: &v})
+	return raw
+}
+
+// Audit A-B1, E-01: a replacement of a held ISA is accepted from the
+// held owner and refused (403, counted, nothing changed) from another
+// Service Provider, even when the body names that Service Provider as
+// the owner.
+func TestNotificationReplaceOnlyByTheHeldOwner(t *testing.T) {
+	k := newIssuerKit(t)
+	isas := &ISAs{Max: 10}
+	cnt := &core.Counters{}
+	n := &Notifications{Verifier: k.v, ISAs: isas, MaxBytes: 64 << 10, Counters: cnt}
+	mux := http.NewServeMux()
+	n.Mount(mux)
+	sp := string(f3411.ScopeServiceProvider)
+
+	if code, body := post(t, mux, k.token(t, "ussp-lab-01", ownHost, sp), impostorNotification("ussp-lab-01", spBase)); code != 204 {
+		t.Fatalf("created by its owner: %d %s", code, body)
+	}
+	code, body := post(t, mux, k.token(t, "ussp-other-01", ownHost, sp), impostorNotification("ussp-other-01", "https://other.example.test"))
+	if code != http.StatusForbidden || cnt.Snapshot()[CounterNotifyNotOwner] != 1 {
+		t.Fatalf("replaced by another Service Provider: %d %s %v", code, body, cnt.Snapshot())
+	}
+	if owner, _ := isas.Owner("isa-9"); owner != "ussp-lab-01" {
+		t.Fatalf("the impostor took the ISA: owner %q", owner)
+	}
+	if got := isas.ForTile(Tile{Box: box2km}, t0); len(got) != 1 || got[0].UssBaseUrl != spBase {
+		t.Fatalf("the impostor changed the base URL: %+v", got)
+	}
+	// The held owner replaces it.
+	if code, body := post(t, mux, k.token(t, "ussp-lab-01", ownHost, sp), impostorNotification("ussp-lab-01", "https://sp2.example.test")); code != 204 {
+		t.Fatalf("replaced by its owner: %d %s", code, body)
+	}
+	if got := isas.ForTile(Tile{Box: box2km}, t0); len(got) != 1 || got[0].UssBaseUrl != "https://sp2.example.test" {
+		t.Fatalf("the owner's replacement was not applied: %+v", got)
+	}
+}
+
+// Audit A-B1, defence in depth: ISAs.Notify itself refuses a change of
+// owner and applies a replacement by the same owner.
+func TestISAsNotifyRefusesOwnerChange(t *testing.T) {
+	s := &ISAs{Max: 10}
+	a := isa("isa-1", "ussp-a-01", spBase)
+	if !s.Notify("isa-1", &a, nil) {
+		t.Fatal("creation refused")
+	}
+	b := isa("isa-1", "ussp-b-01", "https://b.example.test")
+	if s.Notify("isa-1", &b, nil) {
+		t.Fatal("owner change applied")
+	}
+	if owner, _ := s.Owner("isa-1"); owner != "ussp-a-01" {
+		t.Fatalf("owner %q", owner)
+	}
+	if s.Counters.Snapshot()[CounterISAsOwnerChange] != 1 {
+		t.Fatalf("not counted: %v", s.Counters.Snapshot())
+	}
+	a2 := isa("isa-1", "ussp-a-01", "https://a2.example.test")
+	if !s.Notify("isa-1", &a2, nil) {
+		t.Fatal("replacement by the owner refused")
+	}
+}

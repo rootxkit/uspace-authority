@@ -106,6 +106,7 @@ type Fake struct {
 	requests      []Request
 	deliveries    []Delivery
 	subs          []*Subscription
+	subsMade      int
 	heartbeats    []time.Time
 	down          bool
 	suppress      bool
@@ -187,6 +188,14 @@ func (f *Fake) Deliveries() []Delivery {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return slices.Clone(f.deliveries)
+}
+
+// DropSubscriptions forgets every subscription, as a CISP restored from
+// a backup or an operator's delete would.
+func (f *Fake) DropSubscriptions() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.subs = nil
 }
 
 // Subscriptions are the registered subscriptions.
@@ -555,7 +564,8 @@ func (f *Fake) subscriptions(w http.ResponseWriter, r *http.Request, parts []str
 			return
 		}
 		f.mu.Lock()
-		s := &Subscription{ID: fmt.Sprintf("sub-%d", len(f.subs)+1), Callback: in.CallbackURL, Datasets: in.Datasets, BBox: in.BBox}
+		f.subsMade++
+		s := &Subscription{ID: fmt.Sprintf("sub-%d", f.subsMade), Callback: in.CallbackURL, Datasets: in.Datasets, BBox: in.BBox}
 		f.subs = append(f.subs, s)
 		f.mu.Unlock()
 		w.Header().Set("Location", "/v1/subscriptions/"+s.ID)

@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rootxkit/uspace-core/core"
+
 	"github.com/rootxkit/uspace-authority/internal/tokens"
 )
 
@@ -291,6 +293,38 @@ func TestCheckLimitations(t *testing.T) {
 	for _, bad := range [][]string{{" "}, {strings.Repeat("x", MaxLimitation+1)}, make([]string, MaxLimitations+1)} {
 		if err := CheckLimitations("limitations", bad); err == nil {
 			t.Errorf("%d limitations accepted", len(bad))
+		}
+	}
+}
+
+// Audit A-S7, E-01: a notice's at may not precede the holder's own
+// recorded history: ceased before the start, restarted before the
+// cease, are refused naming at; at or after them they are accepted.
+func TestCheckNoticeOrder(t *testing.T) {
+	started := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
+	ceased := started.Add(24 * time.Hour)
+	cases := []struct {
+		name            string
+		state           string
+		at              time.Time
+		started, ceased *time.Time
+		ok              bool
+	}{
+		{"ceased after the start", NoticeCeased, started.Add(time.Hour), &started, nil, true},
+		{"ceased at the start", NoticeCeased, started, &started, nil, true},
+		{"ceased before the start", NoticeCeased, started.Add(-time.Second), &started, nil, false},
+		{"restarted after the cease", NoticeRestarted, ceased.Add(time.Hour), &started, &ceased, true},
+		{"restarted before the cease", NoticeRestarted, ceased.Add(-time.Second), &started, &ceased, false},
+		{"started with no history", NoticeStarted, started, nil, nil, true},
+	}
+	for _, c := range cases {
+		err := CheckNoticeOrder(c.state, c.at, c.started, c.ceased)
+		if (err == nil) != c.ok {
+			t.Errorf("%s: %v", c.name, err)
+		}
+		var fe *core.FieldError
+		if err != nil && (!errors.As(err, &fe) || fe.Field != "at") {
+			t.Errorf("%s: not a refusal of at: %v", c.name, err)
 		}
 	}
 }

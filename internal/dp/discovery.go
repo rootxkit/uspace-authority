@@ -17,12 +17,15 @@ import (
 
 // Counters of discovery (E-09).
 const (
-	CounterSearches            = "isa_searches"
-	CounterSearchFailed        = "isa_search_failed"
-	CounterSubsCreated         = "subscriptions_created"
-	CounterSubsRenewed         = "subscriptions_renewed"
-	CounterSubsDeleted         = "subscriptions_deleted"
-	CounterSubsFailed          = "subscription_failed"
+	CounterSearches     = "isa_searches"
+	CounterSearchFailed = "isa_search_failed"
+	CounterSubsCreated  = "subscriptions_created"
+	CounterSubsRenewed  = "subscriptions_renewed"
+	CounterSubsDeleted  = "subscriptions_deleted"
+	CounterSubsFailed   = "subscription_failed"
+	// CounterSubsLost counts renewals the DSS refused because it no
+	// longer holds the subscription (404, 409); a new one is made.
+	CounterSubsLost            = "subscriptions_lost_remade"
 	CounterSubsRefusedLimit    = "subscriptions_refused_429"
 	CounterSubsDeleteFailed    = "subscription_delete_failed"
 	CounterTilesOverCap        = "tiles_over_cap"
@@ -266,6 +269,19 @@ func (d *Discovery) subscribe(ctx context.Context, st *tileState, now time.Time)
 	resp, err := d.DSS.PutSubscription(cctx, id, version, st.tile.Box, now, end, d.USSBaseURL)
 	if err != nil {
 		if ctx.Err() != nil {
+			return
+		}
+		if code := StatusOf(err); version != "" && (code == http.StatusNotFound || code == http.StatusConflict) {
+			// The DSS no longer holds this subscription (or its
+			// version): renewing it again would fail for ever and the
+			// tile would get no notifications once it ends. Forget it;
+			// the next sync makes a new one (audit A-S4).
+			d.Counters.Inc(CounterSubsLost)
+			d.mu.Lock()
+			delete(d.subscribers, st.sub.id)
+			d.mu.Unlock()
+			st.sub = nil
+			d.warn("dp_subscription_lost", "the DSS refused the renewal of a subscription it no longer holds; a new one is made", err)
 			return
 		}
 		if StatusOf(err) == http.StatusTooManyRequests {

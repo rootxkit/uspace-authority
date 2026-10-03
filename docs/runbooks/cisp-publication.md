@@ -14,7 +14,7 @@ from the CISP's file at that commit).
 | `CISP_BASE_URL` | unset | The CISP. https only (http to a loopback host for tests). Unset: nothing is sent or pulled; the console says `cisp_configured: false` and every age grows. |
 | `PUBLICATION_KEY_FILE` | unset | The publication key (WP-2, listed in this issuer's JWKS under its own `kid`). Unset: every publication is refused 503 `publication_key_missing`, nothing is queued. |
 | `CISP_CLIENT_ID`, `CISP_CLIENT_SECRET_FILE`, `CISP_TOKEN_URL` | `authority-01`, unset, `ISSUER_URL/oauth/token` | The client this system uses at its own token service for the CISP's tokens (audience = the CISP's host, M18). Create it with `POST /v1/oauth/clients` (scopes `cis.read`, `cis.publish:zones`, `cis.publish:uspace`, `cis.publish:ussp_list`; audience the CISP's host). |
-| `CIS_CALLBACK_URL` | unset | This system's `POST /v1/cis/notifications` as the CISP must call it. Unset: no subscription; the 60 s reconciliation alone keeps the cache. |
+| `CIS_CALLBACK_URL` | unset | This system's `POST /v1/cis/notifications` as the CISP must call it. Unset: no subscription; the 60 s reconciliation alone keeps the cache. Its host must be one of `AUTHORITY_AUDIENCES` (the CISP signs `aud` as that host): api refuses to start otherwise. |
 | `AUTHORITY_CIS_NOTIFY_ISSUERS` | the CISP and ANSP peers | `<iss>=<jwks_url>`, at most two: the CISP (`CISP_ISSUER_URL`) and the ANSP's direct delivery (`ANSP_ISSUER_URL`, M5). |
 | `CIS_ANSP_PUBLISHER_JWKS_URL` | `ANSP_JWKS_URL` | The ANSP's keys, which must have signed every restrictions version this system uses. |
 | `CIS_RECONCILE_S` | 60 | The reconciliation of every dataset (at most 60, 02 F3). |
@@ -71,7 +71,16 @@ deployment points at the same CISP.
 3. If the CISP's version is right, bring the authority's zones in line
    (import or author the changes), then publish.
 
-The sender never sends the conflict row again.
+The sender never sends the conflict row again, and nothing queued
+automatically after it is sent either: a USSP list queued by a
+certificate change or by the list repair waits `pending` behind the
+conflict (its `age_s` rises on the status line) until an operator
+publishes (`POST /v1/zones/publish`, `POST /v1/uspace/publish`
+or `POST /v1/certificates/publish-list`). Only an operator's
+publication is sent against `conflict_version` (the row's
+`resolves_conflict`, also in its `publication_queued` event); a newer
+automatic snapshot that supersedes it before it is sent carries the
+decision on.
 
 ## What the console shows
 
@@ -106,7 +115,11 @@ retry, conflict, held or refused version and webhook outcome.
 
 - On start the subscriber registers `CIS_CALLBACK_URL` for the four
   datasets (idempotent: an existing subscription with the same callback
-  is reused or patched) and reads every dataset.
+  is reused or patched) and reads every dataset. The subscription is
+  asked for again every five reconciliations: one the CISP lost (a
+  restore, a delete) is made again, and the console shows the status
+  the CISP answered last (`cis_subscription_rechecks`,
+  `cis_subscription_changed`).
 - A notification is a hint: it is verified (compact JWS from an allowed
   issuer, `aud` one of `AUTHORITY_AUDIENCES`, `iat` within five
   minutes, `jti` single-use) and, for `publication` and the
@@ -122,15 +135,24 @@ retry, conflict, held or refused version and webhook outcome.
   publisher signature and is held until the publisher's next signed
   version; the restriction's own window still ends it for the
   detectors.
+- What is installed must be what was signed, not only signed: the
+  served collection (or the one merged from a delta) is compared,
+  feature by feature without the CISP's `cis_*` members, with the
+  version as published. For zones, uspace_airspace and ussp_list the two
+  must be equal; for restrictions the ANSP's request's feature must be
+  served as signed. Any difference holds the version
+  (`cis_signed_content_mismatch`, `held_reason` names the feature).
 - Restrictions are written whole to `proj_restrictions` (with the
   version in `proj_restrictions_state`; version 0 with no rows when the
   CISP holds none yet) and announced on `cis.v1.restrictions`.
 
 ## Spec gaps
 
-- The CISP builds the collection it serves; the publisher's signature
-  covers the version's bytes, not that collection, and the CISP's own
-  `X-CIS-Signature` is not verified (shared with the USSPs).
+- The CISP builds the restrictions collection it serves; the ANSP's
+  signature covers one request, so only that request's feature is tied
+  to it, the version's other restrictions to the requests that made
+  them. The CISP's own `X-CIS-Signature` is not verified (shared with
+  the USSPs).
 - Reads are unfiltered (`?at=` is not used): the provenance check needs
   the version as published, and the detectors judge each restriction's
   window.

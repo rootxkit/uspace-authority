@@ -54,8 +54,9 @@
 // evidence_tampered) and audited; every download is an
 // evidence_pack_downloaded events row with the purpose, committed before
 // a byte is served. Oversight packs carry no personal data (frame
-// payloads that may carry the remote pilot position, the Display
-// Provider's details and USSP records are withheld and kept by hash);
+// payloads that may carry the remote pilot position and the Display
+// Provider's details are withheld and kept by hash; USSP records are not
+// even fetched);
 // legal packs are built and downloaded by a personal-data role only
 // (apiserver.PIIRoles).
 package incidents

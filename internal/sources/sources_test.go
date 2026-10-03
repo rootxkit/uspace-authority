@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"strings"
 	"testing"
@@ -393,5 +394,23 @@ func TestFollowerSignalsTakenStatesOnly(t *testing.T) {
 	case <-f.Changes():
 		t.Fatal("an ignored state signalled")
 	default:
+	}
+}
+
+// Audit B-N6, E-10: a status naming a source type this system does not
+// know is refused and counted, so a flood of invented types cannot
+// evict the real sources; a known type is kept.
+func TestStatusStoreRefusesUnknownSourceTypes(t *testing.T) {
+	s := NewStatusStore(2)
+	c := s.Counters
+	s.Offer(statusMsg(t, TypeDirectRID, "rx-1", "live", nil, false))
+	for i := range 5 {
+		s.Offer(statusMsg(t, fmt.Sprintf("invented_%d", i), "x", "live", nil, false))
+	}
+	if _, ok := s.Get(TypeDirectRID, strp("rx-1")); !ok || s.Len() != 1 {
+		t.Fatalf("a real source was evicted by unknown types: %v", s.Instances())
+	}
+	if c.Get(CounterStatusUnknownType) != 5 || c.Get(CounterStatusEvicted) != 0 {
+		t.Fatalf("counters %v", c.Snapshot())
 	}
 }

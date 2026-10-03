@@ -1041,3 +1041,56 @@ func TestQuietTableRecordsNoRetentionGap(t *testing.T) {
 		})
 	}
 }
+
+// Audit B-S9, E-01: a rejected message whose gap record is refused for
+// its detail (the cause text) is recorded with the minimal record, never
+// lost; when even that is refused it is unrecorded, and that stays on
+// the status line at error level, not only in a counter.
+func TestRejectedRecordFallsBackToTheMinimalRecord(t *testing.T) {
+	k := newKit(t, nil)
+	k.store.setFail(func(parts []ts.Part) error {
+		if len(parts[0].Rows) > 0 {
+			return dataError() // the message's rows
+		}
+		for _, r := range parts[1].Rows {
+			if r[10] != nil {
+				return dataError() // a gap with a detail
+			}
+		}
+		return nil
+	})
+	m := rowsMsg(t, 1, "a")
+	k.src.add(m)
+	k.run(t)
+	eventually(t, "ack", func() bool { a, _, _ := m.counts(); return a == 1 })
+	gaps := k.store.gaps()
+	if k.c.Snapshot()[CounterRejectedUnrecorded] != 0 || len(gaps) != 1 || gaps[0]["cause"] != CauseRejected || gaps[0]["count"] != int64(1) {
+		t.Fatalf("counters %v gaps %v", k.c.Snapshot(), gaps)
+	}
+	if s := k.p.Snapshot(); s.RejectedUnrecorded != 0 {
+		t.Fatalf("snapshot %+v", s)
+	}
+}
+
+// Audit B-S9: rejected_unrecorded is on the status line.
+func TestRejectedUnrecordedIsOnTheStatusLine(t *testing.T) {
+	k := newKit(t, nil)
+	k.store.setFail(func([]ts.Part) error { return dataError() })
+	m := rowsMsg(t, 1, "a")
+	k.src.add(m)
+	k.run(t)
+	eventually(t, "ack", func() bool { a, _, _ := m.counts(); return a == 1 })
+	if s := k.p.Snapshot(); s.RejectedUnrecorded != 1 {
+		t.Fatalf("snapshot %+v", s)
+	}
+	attrs := Status([]*Pipeline{k.p}, nil)()
+	found := false
+	for _, a := range attrs {
+		if a.Key == "rejected_unrecorded" && a.Value.Uint64() == 1 {
+			found = true
+		}
+	}
+	if !found || StatusLevel([]*Pipeline{k.p})() != slog.LevelError {
+		t.Fatalf("status %v", attrs)
+	}
+}

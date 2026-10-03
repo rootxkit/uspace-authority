@@ -167,3 +167,44 @@ func TestNotificationPostedByTheServiceProvider(t *testing.T) {
 		t.Fatalf("own aud: %v %v, %d ISAs", ok, err, isas.Len())
 	}
 }
+
+// Audit A-S4, E-01: a renewal the DSS refuses because it no longer holds
+// the subscription (404, or 409 for the version) is not retried for
+// ever: the subscription is forgotten, counted, and the next sync makes
+// a new one; a renewal the DSS accepts keeps the id.
+func TestDiscoveryRemakesASubscriptionWhoseRenewalIsRefused(t *testing.T) {
+	dss := fakedss.NewDSS()
+	defer dss.Close()
+	now := time.Now().UTC()
+	clk := &clock{t: now}
+	d, _ := discovery(dss, clk, "https://authority.example.test")
+	d.DSS.(*dp.Client).Tokens = newIssuer(t)
+	tile := dp.Tile{Box: box}
+	d.Sync(context.Background(), []dp.Tile{tile})
+	var first string
+	for id := range dss.Subscriptions() {
+		first = id
+	}
+	clk.add(19 * time.Hour) // past 75 %: renewed, same id
+	d.Sync(context.Background(), []dp.Tile{tile})
+	if _, ok := dss.Subscriptions()[first]; !ok || d.Counters.Snapshot()[dp.CounterSubsRenewed] != 1 || !d.Known(first) {
+		t.Fatalf("an accepted renewal: %v %v", dss.Subscriptions(), d.Counters.Snapshot())
+	}
+	dss.DropSubscriptions()
+	clk.add(19 * time.Hour)
+	d.Sync(context.Background(), []dp.Tile{tile})
+	if d.Counters.Snapshot()[dp.CounterSubsLost] != 1 || d.Known(first) {
+		t.Fatalf("the refused renewal: counters %v, still known %v", d.Counters.Snapshot(), d.Known(first))
+	}
+	clk.add(time.Second)
+	d.Sync(context.Background(), []dp.Tile{tile})
+	subs := dss.Subscriptions()
+	if len(subs) != 1 || d.Subscriptions() != 1 {
+		t.Fatalf("no new subscription: %v", subs)
+	}
+	for id := range subs {
+		if id == first || !d.Known(id) {
+			t.Fatalf("subscription %s (first %s)", id, first)
+		}
+	}
+}

@@ -145,9 +145,11 @@ func Status(pipes []*Pipeline, ret *Retention) func() []slog.Attr {
 	return func() []slog.Attr {
 		state := StateOK
 		tables := make([]Snapshot, 0, len(pipes))
+		var unrecorded uint64
 		for _, p := range pipes {
 			s := p.Snapshot()
 			tables = append(tables, s)
+			unrecorded += s.RejectedUnrecorded
 			switch {
 			case s.State == StateSpilling:
 				state = StateSpilling
@@ -155,9 +157,27 @@ func Status(pipes []*Pipeline, ret *Retention) func() []slog.Attr {
 				state = StateWriteFailing
 			}
 		}
-		return []slog.Attr{
-			slog.String("writer_state", state), slog.Any("tables", tables), slog.Any("retention", ret.Last()),
+		attrs := []slog.Attr{slog.String("writer_state", state), slog.Any("tables", tables)}
+		if ret != nil {
+			attrs = append(attrs, slog.Any("retention", ret.Last()))
 		}
+		if unrecorded > 0 {
+			attrs = append(attrs, slog.Uint64("rejected_unrecorded", unrecorded))
+		}
+		return attrs
+	}
+}
+
+// StatusLevel is error once a hole has no record (rejected_unrecorded),
+// so it is seen before it scrolls away (audit B-S9).
+func StatusLevel(pipes []*Pipeline) func() slog.Level {
+	return func() slog.Level {
+		for _, p := range pipes {
+			if p.Snapshot().RejectedUnrecorded > 0 {
+				return slog.LevelError
+			}
+		}
+		return slog.LevelInfo
 	}
 }
 
@@ -232,9 +252,10 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.TSDBWriter, o Option
 	if checks == nil {
 		checks = RetentionChecks
 	}
-	ret := &Retention{Store: db, Checks: checks, Interval: time.Duration(t.RetentionCheckS) * time.Second,
+	ret := &Retention{Store: db, Checks: checks, Unchecked: UncheckedRetention, Interval: time.Duration(t.RetentionCheckS) * time.Second,
 		Counters: counters, Logger: rt.Logger}
 	rt.AddStatus(Status(pipes, ret))
+	rt.AddStatusLevel(StatusLevel(pipes))
 	rt.Logger.Info("tsdb-writer consuming", slog.Any("tables", names), slog.Int("batch_max_rows", t.BatchMaxRows),
 		slog.Int("queue_max_rows", t.QueueMaxRows), slog.Int("queue_max_age_s", t.QueueMaxAgeS))
 

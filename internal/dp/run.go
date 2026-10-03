@@ -57,6 +57,7 @@ func SettingsOf(t config.DPPollerTuning) Settings {
 	s.UnavailableAfter = time.Duration(t.UnavailableAfterS) * time.Second
 	s.SlowPollHz, s.MaxSplitDepth = t.SlowPollHz, t.MaxSplitDepth
 	s.MaxViews, s.MaxTiles, s.MaxProviders = t.MaxViews, t.MaxTiles, t.MaxProviders
+	s.ProviderForgetAfter = time.Duration(t.ProviderForgetAfterS) * time.Second
 	return s
 }
 
@@ -188,7 +189,7 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.DPPoller, o Options)
 	rt.AddCounters("dp_mapping", mapCounters)
 	discCounters := &core.Counters{}
 	rt.AddCounters("dp_discovery", discCounters)
-	isas := &ISAs{Max: t.MaxISAs, Counters: discCounters}
+	isas := &ISAs{Max: t.MaxISAs, Counters: discCounters, NotifiedMaxLifetime: time.Duration(t.NotifiedISAMaxS) * time.Second}
 	disc := &Discovery{ISAs: isas, USSBaseURL: cfg.SubscriberURL(), Reread: time.Duration(t.DiscoveryRereadS) * time.Second,
 		MaxSubscriptions: t.MaxTiles, Timeout: time.Duration(t.RequestTimeoutMS) * time.Millisecond, Counters: discCounters, Limiter: limiter}
 	if cfg.DSSBaseURL != "" {

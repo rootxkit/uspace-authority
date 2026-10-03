@@ -3,15 +3,20 @@ package incidents
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/rootxkit/uspace-authority/internal/httpx"
 	"github.com/rootxkit/uspace-authority/internal/store/pg/gen"
+	"github.com/rootxkit/uspace-authority/internal/store/ts/gen/reader"
 )
 
 func builder(src *fakeSources, tel *fakeTelemetry) *Builder {
@@ -305,9 +310,12 @@ func TestUSSPRecords(t *testing.T) {
 	if !strings.Contains(string(files[m.USSPRecords[0].File]), `"alerts"`) {
 		t.Fatal("the record is not in the pack")
 	}
+	// An oversight pack reads no record (audit B-S4): withheld, not
+	// fetched, so there is no hash to keep.
+	gotPath = ""
 	m, _, _ = mustBuild(t, b, buildIn(KindOversight))
-	if m.USSPRecords[0].State != StateWithheld || m.USSPRecords[0].SHA256 == "" || m.Sections[SecUSSPRecords].State != StateWithheld {
-		t.Fatalf("oversight records %+v", m.USSPRecords)
+	if m.USSPRecords[0].State != StateWithheld || m.USSPRecords[0].SHA256 != "" || m.Sections[SecUSSPRecords].State != StateWithheld || gotPath != "" {
+		t.Fatalf("oversight records %+v, read %q", m.USSPRecords, gotPath)
 	}
 
 	unavailable := func(mutate func(b *Builder, src *fakeSources, tel *fakeTelemetry), want string) {
@@ -470,5 +478,248 @@ func TestMannedSectionAroundTheEvidence(t *testing.T) {
 	}
 	if _, _, err := builder(src, many).Build(context.Background(), buildIn(KindOversight)); err == nil {
 		t.Fatal("a manned section past MaxRows did not refuse the pack")
+	}
+}
+
+// Audit B-B1, E-01: an Operator ID frame (ODID type 5) carries whatever
+// was broadcast, the EU secret suffix included: its payload is withheld
+// from an oversight pack (kept by hash, counted) and carried in a legal
+// pack.
+func TestOperatorIDPayloadWithheldFromOversight(t *testing.T) {
+	src, tel := richSources()
+	secret := []byte(testReg + "-abc")
+	tel.frames = append(tel.frames, reader.EvidenceFramesRow{IngestTs: at(3), FrameID: "f5", ReceiverID: "rx-1", Transmitter: testTx,
+		MsgType: i16(5), Payload: secret, PayloadSha256: []byte{5}})
+	b := builder(src, tel)
+	b.Personal = personal()
+	m, files, archive := mustBuild(t, b, buildIn(KindOversight))
+	var frames []map[string]any
+	if err := json.Unmarshal(files["raw_frames.json"], &frames); err != nil {
+		t.Fatal(err)
+	}
+	last := frames[len(frames)-1]
+	if last["frame_id"] != "f5" || last["payload_b64"] != nil || last["payload_withheld"] == nil || m.FramesWithheld != 2 {
+		t.Fatalf("oversight frame %v withheld %d", last, m.FramesWithheld)
+	}
+	if bytes.Contains(archive, []byte(base64.StdEncoding.EncodeToString(secret))) {
+		t.Fatal("the Operator ID payload is in an oversight archive")
+	}
+	_, lfiles, _ := mustBuild(t, b, buildIn(KindLegal))
+	if err := json.Unmarshal(lfiles["raw_frames.json"], &frames); err != nil {
+		t.Fatal(err)
+	}
+	if last := frames[len(frames)-1]; last["payload_b64"] != base64.StdEncoding.EncodeToString(secret) {
+		t.Fatalf("legal frame %v", last)
+	}
+}
+
+// Audit B-S3, E-01: a USSP that answers a record read with a redirect is
+// not followed (the request would reach wherever it points, inside the
+// authority's network, and the answer would be sealed as the USSP's
+// record): the fetch fails naming the status, nothing is requested at the
+// target, with the default client and with a configured one alike; a 200
+// at the USSP is read.
+func TestFetchFollowsNoRedirect(t *testing.T) {
+	var hits atomic.Int32
+	inside := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		hits.Add(1)
+		_, _ = w.Write([]byte(`{"internal":true}`))
+	}))
+	t.Cleanup(inside.Close)
+	ussp := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/OK") {
+			_, _ = w.Write([]byte(`{"flight_id":"OK"}`))
+			return
+		}
+		http.Redirect(w, r, inside.URL+"/admin", http.StatusFound)
+	}))
+	t.Cleanup(ussp.Close)
+	for _, hc := range []*http.Client{nil, {Timeout: 5 * time.Second}} {
+		r := &Records{Tokens: fakeTokens{}, MaxBytes: 4096, HTTP: hc}
+		if _, err := r.Fetch(context.Background(), ussp.URL, "F1"); err == nil || !strings.Contains(err.Error(), "302") {
+			t.Fatalf("a redirect: %v", err)
+		}
+		if hits.Load() != 0 {
+			t.Fatal("the redirect was followed")
+		}
+		if _, err := r.Fetch(context.Background(), ussp.URL, "OK"); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// recordServer answers record reads after delay (forever when hang),
+// counting the reads and the most in flight at once.
+type recordServer struct {
+	*httptest.Server
+	reads, inFlight, maxInFlight atomic.Int32
+}
+
+func newRecordServer(t *testing.T, delay time.Duration, hang chan struct{}) *recordServer {
+	s := &recordServer{}
+	s.Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s.reads.Add(1)
+		n := s.inFlight.Add(1)
+		defer s.inFlight.Add(-1)
+		for m := s.maxInFlight.Load(); n > m && !s.maxInFlight.CompareAndSwap(m, n); m = s.maxInFlight.Load() {
+		}
+		wait := time.After(delay)
+		if hang != nil {
+			wait = nil // only hang (or the client giving up) ends it
+		}
+		select {
+		case <-hang:
+		case <-r.Context().Done():
+			return
+		case <-wait:
+		}
+		_, _ = w.Write([]byte(`{"flight_id":"` + strings.TrimPrefix(r.URL.Path, "/v1/records/flights/") + `"}`))
+	}))
+	t.Cleanup(s.Close)
+	return s
+}
+
+func recordSources(base string, flights int) (*fakeSources, *fakeTelemetry) {
+	src, tel := richSources()
+	src.usspBases = []gen.PackUSSPBaseURLsRow{{Code: "USSPA", ClientID: "ussp-USSPA-01", BaseUrl: base}}
+	row := tel.ussp[0]
+	tel.ussp = nil
+	for i := range flights {
+		r := row
+		r.FlightID = fmt.Sprintf("F%d", i+1)
+		tel.ussp = append(tel.ussp, r)
+	}
+	return src, tel
+}
+
+// Audit B-S4, E-01: an oversight pack does not read the USSP records it
+// would only keep by hash (they may carry personal data): none is
+// requested and each is withheld, not fetched; a legal pack reads them.
+func TestOversightPackFetchesNoRecord(t *testing.T) {
+	srv := newRecordServer(t, 0, nil)
+	src, tel := recordSources(srv.URL, 2)
+	b := builder(src, tel)
+	b.Records = &Records{Tokens: fakeTokens{}, MaxBytes: 1 << 20}
+	m, _, _ := mustBuild(t, b, buildIn(KindOversight))
+	if srv.reads.Load() != 0 {
+		t.Fatalf("an oversight pack read %d records", srv.reads.Load())
+	}
+	if len(m.USSPRecords) != 2 || m.Sections[SecUSSPRecords].State != StateWithheld {
+		t.Fatalf("%+v %+v", m.USSPRecords, m.Sections[SecUSSPRecords])
+	}
+	for _, r := range m.USSPRecords {
+		if r.State != StateWithheld || r.SHA256 != "" || !strings.Contains(r.Reason, "not fetched") {
+			t.Fatalf("oversight record %+v", r)
+		}
+	}
+	m, _, _ = mustBuild(t, b, buildIn(KindLegal))
+	if srv.reads.Load() != 2 || m.Sections[SecUSSPRecords].State != StateIncluded {
+		t.Fatalf("legal: reads %d %+v", srv.reads.Load(), m.Sections[SecUSSPRecords])
+	}
+}
+
+// Audit B-S4, E-10: a legal pack's records are read at most
+// RecordsConcurrency at a time, in parallel, in a stable order; the
+// records step has its own deadline, past which the records not read are
+// unavailable with that reason instead of spending the build's budget.
+func TestRecordsAreReadInParallelWithinTheirDeadline(t *testing.T) {
+	srv := newRecordServer(t, 100*time.Millisecond, nil)
+	src, tel := recordSources(srv.URL, 4)
+	b := builder(src, tel)
+	b.Records = &Records{Tokens: fakeTokens{}, MaxBytes: 1 << 20}
+	b.RecordsConcurrency = 2
+	m, files, _ := mustBuild(t, b, buildIn(KindLegal))
+	if got := srv.maxInFlight.Load(); got != 2 {
+		t.Fatalf("at most %d records read at once, want 2", got)
+	}
+	for i, r := range m.USSPRecords {
+		want := fmt.Sprintf("ussp_records/%02d.json", i+1)
+		if r.State != StateIncluded || r.File != want || !strings.Contains(string(files[want]), r.FlightID) {
+			t.Fatalf("record %d %+v", i, r)
+		}
+	}
+
+	hang := make(chan struct{})
+	defer close(hang)
+	slow := newRecordServer(t, 0, hang)
+	src, tel = recordSources(slow.URL, 3)
+	b = builder(src, tel)
+	b.Records = &Records{Tokens: fakeTokens{}, MaxBytes: 1 << 20, Timeout: time.Minute}
+	b.RecordsTimeout = 200 * time.Millisecond
+	start := time.Now()
+	m, _, _ = mustBuild(t, b, buildIn(KindLegal))
+	if took := time.Since(start); took > 5*time.Second {
+		t.Fatalf("the records step took %s past its deadline", took)
+	}
+	for _, r := range m.USSPRecords {
+		if r.State != StateUnavailable || r.Reason == "" {
+			t.Fatalf("a record past the deadline %+v", r)
+		}
+	}
+}
+
+// Audit B-N2, E-01: notes are free text officers type, names included:
+// an oversight pack, which states it holds no personal data, carries
+// each note without its body (kept by hash); a legal pack carries the
+// body.
+func TestNoteBodiesHeldToTheLegalPack(t *testing.T) {
+	src, tel := richSources()
+	b := builder(src, tel)
+	b.Personal = personal()
+	in := buildIn(KindOversight)
+	in.Incident.Notes[0].Body = "called " + piiName
+	_, files, _ := mustBuild(t, b, in)
+	for name, data := range files {
+		if bytes.Contains(data, []byte(piiName)) {
+			t.Fatalf("a note's body is in the oversight pack's %s", name)
+		}
+	}
+	var doc struct {
+		Notes []map[string]any `json:"notes"`
+	}
+	if err := json.Unmarshal(files["incident.json"], &doc); err != nil {
+		t.Fatal(err)
+	}
+	if len(doc.Notes) != 1 || doc.Notes[0]["body"] != nil || doc.Notes[0]["body_sha256"] == nil || doc.Notes[0]["author"] != "inspector-1" {
+		t.Fatalf("oversight notes %v", doc.Notes)
+	}
+	lin := buildIn(KindLegal)
+	lin.Incident.Notes[0].Body = "called " + piiName
+	_, lfiles, _ := mustBuild(t, b, lin)
+	if err := json.Unmarshal(lfiles["incident.json"], &doc); err != nil {
+		t.Fatal(err)
+	}
+	if doc.Notes[0]["body"] != "called "+piiName {
+		t.Fatalf("legal notes %v", doc.Notes)
+	}
+}
+
+// System audit F-4, E-01: the service-record route is pinned by no
+// USSP contract yet, so a 404 from it says that, in the hole's reason,
+// rather than a bare status (the pack shows why every record is
+// missing); any other refusal names its status; a 200 is read.
+func TestFetchNamesTheUnpinnedRecordsRoute(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/GONE"):
+			http.NotFound(w, r)
+		case strings.HasSuffix(r.URL.Path, "/DOWN"):
+			http.Error(w, "down", http.StatusServiceUnavailable)
+		default:
+			_, _ = w.Write([]byte(`{"flight_id":"F1"}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	r := &Records{Tokens: fakeTokens{}, MaxBytes: 4096}
+	if _, err := r.Fetch(context.Background(), srv.URL, "GONE"); err == nil || !strings.Contains(err.Error(), "no contract") ||
+		!strings.Contains(err.Error(), "404") {
+		t.Fatalf("404: %v", err)
+	}
+	if _, err := r.Fetch(context.Background(), srv.URL, "DOWN"); err == nil || !strings.Contains(err.Error(), "answered 503") ||
+		strings.Contains(err.Error(), "no contract") {
+		t.Fatalf("503: %v", err)
+	}
+	if _, err := r.Fetch(context.Background(), srv.URL, "F1"); err != nil {
+		t.Fatal(err)
 	}
 }

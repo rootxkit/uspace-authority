@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"slices"
@@ -23,13 +24,16 @@ import (
 // Counters of the evidence packs (E-09).
 const (
 	CounterPackBuilt          = "evidence_packs_built"
-	CounterPackRefused        = "evidence_packs_refused"  // a build refused (window, size, role, storage, busy)
-	CounterPackBusy           = "evidence_packs_busy"     // a build refused past the concurrency bound (E-10)
-	CounterPackUnsigned       = "evidence_packs_unsigned" // built without a publication key
-	CounterPackOrphaned       = "evidence_packs_orphaned" // stored but not recorded (the transaction failed)
+	CounterPackRefused        = "evidence_packs_refused"        // a build refused (window, size, role, storage, busy)
+	CounterPackBusy           = "evidence_packs_busy"           // a build refused past the concurrency bound (E-10)
+	CounterPackReadBusy       = "evidence_pack_reads_busy"      // a download or verification refused past its bound (E-10)
+	CounterPackUnsigned       = "evidence_packs_unsigned"       // built without a publication key
+	CounterPackOrphaned       = "evidence_packs_orphaned"       // stored but not recorded (the transaction failed), and not removed
+	CounterPackOrphanRemoved  = "evidence_packs_orphan_removed" // stored, not recorded, and removed again
 	CounterPackDownloaded     = "evidence_packs_downloaded"
 	CounterPackVerified       = "evidence_packs_verified"
 	CounterPackTampered       = "evidence_packs_tampered"       // a stored archive that does not match its hash
+	CounterPackUnreadable     = "evidence_packs_unreadable"     // a stored archive that cannot be read (storage, key): not evidence of tampering
 	CounterSectionUnavailable = "evidence_sections_unavailable" // a section of a built pack unavailable
 )
 
@@ -98,19 +102,50 @@ type Packs struct {
 	MaxBytes  int64
 	// BuildTimeout bounds one build.
 	BuildTimeout time.Duration
-	// sem bounds the builds at once (E-10).
+	// ReadConcurrency bounds the downloads and verifications at once
+	// (each holds a whole archive in memory; audit B-S5).
+	ReadConcurrency int
+	// sem bounds the builds at once, readSem the reads (E-10).
 	sem      chan struct{}
+	readSem  chan struct{}
 	Counters *core.Counters
 	Logger   *slog.Logger
 }
 
-// NewPacks returns p with its concurrency bound set to concurrency.
+// DefaultReadConcurrency is ReadConcurrency when it is not set.
+const DefaultReadConcurrency = 4
+
+// NewPacks returns p with its build bound set to concurrency and its
+// read bound to ReadConcurrency.
 func NewPacks(p *Packs, concurrency int) *Packs {
 	if concurrency < 1 {
 		concurrency = 1
 	}
 	p.sem = make(chan struct{}, concurrency)
+	reads := p.ReadConcurrency
+	if reads < 1 {
+		reads = DefaultReadConcurrency
+	}
+	p.readSem = make(chan struct{}, reads)
 	return p
+}
+
+// acquireRead takes a read slot or refuses (503 pack_busy, counted):
+// every download and verification holds a whole archive in memory, so
+// they are bounded like the builds (audit B-S5). release is to be
+// deferred.
+func (p *Packs) acquireRead() (release func(), err error) {
+	if p.readSem == nil {
+		return func() {}, nil
+	}
+	select {
+	case p.readSem <- struct{}{}:
+		return func() { <-p.readSem }, nil
+	default:
+		p.inc(CounterPackReadBusy)
+		return nil, httpx.Refuse(http.StatusServiceUnavailable, SlugPackBusy,
+			"as many packs as configured are being read; try again shortly")
+	}
 }
 
 func (p *Packs) inc(name string) {
@@ -267,9 +302,18 @@ func (p *Packs) Create(ctx context.Context, actor audit.Actor, piiRole bool, inc
 		return err
 	})
 	if err != nil {
-		p.inc(CounterPackOrphaned)
-		logger(p.Logger).Error("evidence pack stored but not recorded; the stored file is an orphan",
-			slog.String("pack_id", packID), slog.String("storage_ref", row.StorageRef), slog.String("error", err.Error()))
+		// The row did not commit: the archive it would have named is
+		// removed (a legal one holds sealed personal data; audit B-N1).
+		if derr := p.Storage.Discard(row.StorageRef); derr != nil {
+			p.inc(CounterPackOrphaned)
+			logger(p.Logger).Error("evidence pack stored but not recorded, and not removed; the stored file is an orphan",
+				slog.String("pack_id", packID), slog.String("storage_ref", row.StorageRef), slog.String("error", err.Error()),
+				slog.String("remove_error", derr.Error()))
+		} else {
+			p.inc(CounterPackOrphanRemoved)
+			logger(p.Logger).Error("evidence pack stored but not recorded; its archive was removed",
+				slog.String("pack_id", packID), slog.String("error", err.Error()))
+		}
 		return gen.EvidencePack{}, err
 	}
 	p.inc(CounterPackBuilt)
@@ -306,6 +350,10 @@ func (p *Packs) checkRequest(piiRole bool, r *PackRequest) error {
 	if r.CaseRef != "" && (!utf8.ValidString(r.CaseRef) || utf8.RuneCountInString(r.CaseRef) > 200) {
 		return core.Fieldf("case_ref", "at most 200 characters of UTF-8")
 	}
+	// The window is stored as timestamptz (microseconds) and the seal is
+	// verified over the stored row: it is signed over the same precision,
+	// or a genuine pack would read as tampered (audit B-S1).
+	r.From, r.To = r.From.Truncate(time.Microsecond), r.To.Truncate(time.Microsecond)
 	if r.From.IsZero() || !r.To.After(r.From) {
 		return core.Fieldf("to", "must be after from")
 	}
@@ -357,31 +405,50 @@ func (p *Packs) Get(ctx context.Context, incidentID, packID string) (gen.Evidenc
 }
 
 // read reads the stored archive and opens it when sealed at rest.
-func (p *Packs) read(row *gen.EvidencePack) ([]byte, error) {
+// read returns the stored archive. unreadable says the bytes could not
+// be had at all (the storage failed, the object is above the read
+// bound, the PII key is not configured or is another one): that is an
+// outage, not evidence about the archive. A sealed archive that does
+// not open under its own key is a modified one (unreadable false).
+func (p *Packs) read(row *gen.EvidencePack) (data []byte, unreadable bool, err error) {
 	// A sealed archive is the plaintext plus the nonce and the tag.
-	data, err := p.Storage.Get(row.StorageRef, p.MaxBytes+64)
+	data, err = p.Storage.Get(row.StorageRef, p.MaxBytes+64)
 	if err != nil {
-		return nil, err
+		return nil, true, err
 	}
 	if row.SealedKeyID == nil {
-		return data, nil
+		return data, false, nil
 	}
 	if p.Sealer == nil {
-		return nil, errors.New("the archive is sealed at rest and the PII key is not configured")
+		return nil, true, errors.New("the archive is sealed at rest and the PII key is not configured")
 	}
-	return p.Sealer.Open(*row.SealedKeyID, data, packAAD(row.PackID))
+	if *row.SealedKeyID != p.Sealer.KeyID() {
+		return nil, true, fmt.Errorf("the archive is sealed under key %q, the configured PII key is %q", *row.SealedKeyID, p.Sealer.KeyID())
+	}
+	data, err = p.Sealer.Open(*row.SealedKeyID, data, packAAD(row.PackID))
+	return data, false, err
 }
 
 // Verification is what a check of a stored pack found.
 type Verification struct {
-	PackID          string
-	ContentHash     string
-	RecomputedHash  *string
-	HashMatches     bool
-	Problem         *string
+	PackID         string
+	ContentHash    string
+	RecomputedHash *string
+	HashMatches    bool
+	Problem        *string
+	// Unreadable is true when the stored archive could not be read at
+	// all: whether it matches is unknown, and it is not tampering
+	// (audit B-S2).
+	Unreadable      bool
 	Signature       string
 	SignatureDetail *string
 	VerifiedAt      time.Time
+}
+
+// tampered reports whether v is evidence of a modification: a hash that
+// differs (over bytes that were read), or a seal that does not verify.
+func (v *Verification) tampered() bool {
+	return (!v.Unreadable && !v.HashMatches) || v.Signature == SigInvalid
 }
 
 // Signature verdicts.
@@ -398,10 +465,13 @@ func strPtr(s string) *string { return &s }
 // statement's signature; data is the archive when the hash matches.
 func (p *Packs) check(ctx context.Context, row *gen.EvidencePack) (Verification, []byte) {
 	v := Verification{PackID: row.PackID, ContentHash: row.ContentHash, Signature: SigUnsigned}
-	data, err := p.read(row)
+	data, unreadable, err := p.read(row)
 	switch {
+	case unreadable:
+		v.Unreadable = true
+		v.Problem = strPtr("the stored archive cannot be read: " + reason(err))
 	case err != nil:
-		v.Problem = strPtr("the stored archive cannot be read or opened (a modified sealed archive does not open): " + reason(err))
+		v.Problem = strPtr("the stored sealed archive does not open under its key: it was modified after sealing: " + reason(err))
 	default:
 		h := ContentHash(data)
 		v.RecomputedHash = &h
@@ -448,10 +518,14 @@ func (p *Packs) recordVerification(ctx context.Context, actor audit.Actor, row *
 			return err
 		}
 		v.VerifiedAt = at.UTC()
+		var matches any = v.HashMatches
+		if v.Unreadable {
+			matches = nil // unknown: nothing was read to compare
+		}
 		_, err = p.Service.Audit.Record(ctx, q, audit.Event{Actor: actor, EntityType: EntityType, EntityID: row.IncidentID,
 			EventType: audit.EventEvidencePackVerified, Payload: map[string]any{
 				"pack_id": row.PackID, "via": via, "content_hash": row.ContentHash, "recomputed_hash": v.RecomputedHash,
-				"hash_matches": v.HashMatches, "signature": v.Signature, "problem": v.Problem,
+				"hash_matches": matches, "unreadable": v.Unreadable, "signature": v.Signature, "problem": v.Problem,
 			}})
 		return err
 	})
@@ -463,19 +537,41 @@ func (p *Packs) Verify(ctx context.Context, actor audit.Actor, incidentID, packI
 	if err := p.storageOK(); err != nil {
 		return Verification{}, err
 	}
+	release, err := p.acquireRead()
+	if err != nil {
+		return Verification{}, err
+	}
+	defer release()
 	row, err := p.Get(ctx, incidentID, packID)
 	if err != nil {
 		return Verification{}, err
 	}
 	v, _ := p.check(ctx, &row)
 	p.inc(CounterPackVerified)
-	if !v.HashMatches || v.Signature == SigInvalid {
-		p.inc(CounterPackTampered)
-	}
+	p.countCheck(&v)
 	if err := p.recordVerification(ctx, actor, &row, &v, "verify"); err != nil {
 		return Verification{}, err
 	}
+	if v.Unreadable && !v.tampered() {
+		err := unreadableProblem(&v)
+		return v, err
+	}
 	return v, nil
+}
+
+// countCheck counts a check that found tampering or could not read.
+func (p *Packs) countCheck(v *Verification) {
+	switch {
+	case v.tampered():
+		p.inc(CounterPackTampered)
+	case v.Unreadable:
+		p.inc(CounterPackUnreadable)
+	}
+}
+
+func unreadableProblem(v *Verification) error {
+	return httpx.Refuse(http.StatusServiceUnavailable, SlugStorageUnavailable,
+		"the stored pack cannot be read; whether it matches its seal is unknown: "+deref(v.Problem))
 }
 
 // Download reads a stored pack for purpose: the hash (and a signature
@@ -490,6 +586,11 @@ func (p *Packs) Download(ctx context.Context, actor audit.Actor, piiRole bool, i
 	if err := p.storageOK(); err != nil {
 		return nil, gen.EvidencePack{}, err
 	}
+	release, err := p.acquireRead()
+	if err != nil {
+		return nil, gen.EvidencePack{}, err
+	}
+	defer release()
 	row, err := p.Get(ctx, incidentID, packID)
 	if err != nil {
 		return nil, row, err
@@ -499,9 +600,12 @@ func (p *Packs) Download(ctx context.Context, actor audit.Actor, piiRole bool, i
 	}
 	v, data := p.check(ctx, &row)
 	if data == nil {
-		p.inc(CounterPackTampered)
+		p.countCheck(&v)
 		if err := p.recordVerification(ctx, actor, &row, &v, "download"); err != nil {
 			return nil, row, err
+		}
+		if !v.tampered() {
+			return nil, row, unreadableProblem(&v)
 		}
 		return nil, row, httpx.Refuse(http.StatusConflict, SlugTampered,
 			"the stored pack does not match its seal and is not served: "+deref(v.Problem)+deref(v.SignatureDetail))

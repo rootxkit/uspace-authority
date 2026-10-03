@@ -148,8 +148,77 @@ func TestBusSinkQueueBound(t *testing.T) {
 		t.Fatalf("depth %d counters %v", s.Depth(), cnt.Snapshot())
 	}
 	s.Rows([]track.Row{{}, {}}, nil)
+	// The gap is recorded by the drain worker, not on the poll's path
+	// (audit A-S5).
+	s.flushShed(context.Background())
 	if cnt.Snapshot()[CounterRowsShed] != 2 || len(w.gaps) != 1 {
 		t.Fatalf("counters %v gaps %d", cnt.Snapshot(), len(w.gaps))
+	}
+}
+
+// blockingWriter is a ts.Writer whose every call waits for release: a
+// JetStream that is slow.
+type blockingWriter struct {
+	fakeWriter
+	release chan struct{}
+	calls   chan string
+}
+
+func (w *blockingWriter) Enqueue(ctx context.Context, table string, rows any, msgID string) error {
+	w.calls <- "rows"
+	<-w.release
+	return w.fakeWriter.Enqueue(ctx, table, rows, msgID)
+}
+
+func (w *blockingWriter) EnqueueGap(ctx context.Context, g ts.GapMessage, id string) error {
+	w.calls <- "gap"
+	<-w.release
+	return w.fakeWriter.EnqueueGap(ctx, g, id)
+}
+
+// Audit A-S5, E-10: with JetStream slow and the queue full, Rows sheds
+// without calling JetStream (a poll is never held), and the drain worker
+// records the shed rows as one coalesced gap per table, every row
+// counted.
+func TestBusSinkShedNeverBlocksThePoll(t *testing.T) {
+	w := &blockingWriter{release: make(chan struct{}), calls: make(chan string, 64)}
+	cnt := &core.Counters{}
+	s := &BusSink{Writer: w, Counters: cnt}
+	s.init()
+	for range QueueSize {
+		s.Rows([]track.Row{{}}, nil)
+	}
+	done := make(chan struct{})
+	go func() {
+		for range 3 {
+			s.Rows([]track.Row{{}, {}}, []FlightRow{{Flight: json.RawMessage(`{}`)}})
+		}
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		close(w.release)
+		t.Fatal("Rows blocked on a slow JetStream while shedding")
+	}
+	if len(w.calls) != 0 || cnt.Snapshot()[CounterRowsShed] != 9 {
+		t.Fatalf("JetStream called from Rows: %d calls, counters %v", len(w.calls), cnt.Snapshot())
+	}
+	close(w.release)
+	s.flushShed(context.Background())
+	if len(w.gaps) != 2 {
+		t.Fatalf("gaps %+v", w.gaps)
+	}
+	got := map[string]int64{}
+	for _, g := range w.gaps {
+		got[g.Table] = g.Count
+	}
+	if got[TableTracks] != 6 || got[TableUSSPFlights] != 3 {
+		t.Fatalf("coalesced gaps %v", got)
+	}
+	s.flushShed(context.Background())
+	if len(w.gaps) != 2 {
+		t.Fatal("a flush with nothing shed recorded a gap")
 	}
 }
 

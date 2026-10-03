@@ -61,7 +61,7 @@ same evidence always gives the same bytes:
 | `writer_gaps.json` | `writer_gaps` | recorded | Every batch of the tracks or frames table tsdb-writer recorded as dropped or spilled in the window. |
 | `ussp_flights.json` | `ussp_flights` | received | The Display Provider's rows of the tracks, while still held (24 h, F3411). |
 | `manned_tracks.json` | `manned_tracks` | received | The ANSP's manned traffic (WP-15) placed in the window inside the extent of the evidence's positions padded by `INCIDENTS_MANNED_MARGIN_M` (10 km): what an airprox is weighed against. `alt_pressure_m` is pressure altitude, never AMSL; `alt_wgs84_m` is null when the source gave none. `none` says an ANSP feed outage leaves no row: read `writer_gaps` and the `ansp_feed` status first. |
-| `ussp_records/NN.json` | `ussp_records` | received | The USSP's service record of each USSP flight of the pack (`GET {base_url}/v1/records/flights/{id}`, scope `ussp.records`, fetched while the pack is built; 02 F7, Q-A18), verbatim. |
+| `ussp_records/NN.json` | `ussp_records` | received | The USSP's service record of each USSP flight of the pack (`GET {base_url}/v1/records/flights/{id}`, scope `ussp.records`, fetched while a legal pack is built; 02 F7, Q-A18), verbatim. An oversight pack fetches none. |
 | `zones.json` | `zones` | recorded | The zone versions the violations name and every published version in force in the window over the evidence's extent, each ED-318 feature verbatim as authored. |
 | `policies.json` | `policies` | recorded | Every `authority_policy` version the violations were judged with and the one active at build. |
 | `events.json` | `events` | recorded | Every audit row of the incident, its packs and its violations, with `prev_hash` and `hash` (T7). The pack's own `evidence_pack_built` row follows them. |
@@ -130,7 +130,11 @@ a frame of a Message Pack without a decoded position is not counted as
   sealed archive that does not open) is refused with 409
   `evidence_tampered` and recorded (`evidence_pack_verified`,
   `hash_matches: false`); `GET .../verify` answers what it found and
-  records it. The verdicts on the signature: `verified`, `invalid` (the
+  records it. An archive that cannot be read at all (the storage lost
+  it or is unmounted, an object above `INCIDENTS_PACK_MAX_BYTES`, the
+  PII key missing or another one) is not tampering: verify and download
+  answer 503 `evidence_storage_unavailable`, count
+  `evidence_packs_unreadable` and record `hash_matches: null`. The verdicts on the signature: `verified`, `invalid` (the
   row or archive changed), `unsigned`, `unverifiable` (signed with a
   publication key this system no longer holds: verify against the JWKS
   published at the time).
@@ -151,9 +155,10 @@ The chain of custody is the incident's events: `incident_opened`,
 | Who builds and downloads | inspector, incident officer | a personal-data role only (`inspector`; 403 otherwise) |
 | `case_ref` | optional | required |
 | Operators | registration public part and serial only | plus their personal data from the registry |
-| Raw frame payloads | Basic ID, Location, Authentication, Operator ID; System (remote pilot position), Self-ID (free text) and Message Pack payloads withheld, kept by SHA-256 | all |
+| Raw frame payloads | Basic ID, Location, Authentication; System (remote pilot position), Self-ID (free text), Operator ID (the registration as broadcast, which may hold the EU secret part) and Message Pack payloads withheld, kept by SHA-256 | all |
 | Display Provider details | withheld (may carry the remote pilot position) | included |
-| USSP service records | withheld, kept by SHA-256 (no contract fixes their shape) | included |
+| USSP service records | not fetched, withheld (no contract fixes their shape; they may carry personal data) | included |
+| Incident notes | bodies withheld, kept by SHA-256 (free text that may name people); the narrative is included as written, so write it without names | included |
 | At rest | as built | sealed with the PII key |
 
 **The legal pack procedure.** Only for a stated legal purpose with a
@@ -181,11 +186,13 @@ case reference (a court order, a prosecutor's request):
 | `INCIDENTS_PACK_MAX_BYTES` | 268435456 | Largest archive; larger is 413 `pack_too_large`. |
 | `INCIDENTS_PACK_MAX_ZONES` | 500 | Zone versions named and in force. |
 | `INCIDENTS_PACK_CONCURRENCY` | 2 | Builds at once per replica; past it 503 `pack_busy` (`evidence_packs_busy`). |
+| `INCIDENTS_PACK_READ_CONCURRENCY` | 4 | Downloads and verifications at once per replica (each holds a whole archive, up to `INCIDENTS_PACK_MAX_BYTES`, in memory); past it 503 `pack_busy` (`evidence_pack_reads_busy`). |
 | `INCIDENTS_BUILD_TIMEOUT_S` | 120 | Bound on one build, record fetches included. |
 | `INCIDENTS_WRITE_TIMEOUT_S` | 10 | Bound on one incident transaction. |
 | `INCIDENTS_BACKFILL_S`, `INCIDENTS_BACKFILL_BATCH` | 300, 100 | The job opening incidents of earlier escalations. |
 | `RECORDS_CLIENT_ID`, `RECORDS_CLIENT_SECRET_FILE` | `authority-01`, unset | The client asking this issuer for `ussp.records` tokens. Unset: every record is `unavailable` with that reason, said at start. |
 | `RECORDS_TIMEOUT_MS`, `RECORDS_MAX_BYTES`, `RECORDS_MAX_PER_PACK` | 5000, 1048576, 16 | One record fetch; past the bounds a record is `unavailable` with the reason. |
+| `RECORDS_CONCURRENCY`, `RECORDS_STEP_TIMEOUT_S` | 4, 30 | A legal pack reads its USSP records this many at once, the whole step within this deadline (records not read by then are `unavailable`). An oversight pack reads none: each is `withheld`, not fetched. |
 
 A USSP's `base_url` comes from its certificate (WP-16), found by its
 code or its client id (the owner of its ISAs), whatever the
@@ -198,18 +205,26 @@ Counters (`/metrics`, status line `incidents`): `incidents_opened`,
 `incidents_backfilled`, `incidents_backfill_failed`,
 `incidents_bound_refused`, `evidence_packs_built`,
 `evidence_packs_refused`, `evidence_packs_busy`,
-`evidence_packs_unsigned`, `evidence_packs_orphaned` (an archive stored
-whose row did not commit: the file is an orphan, logged with its
-reference), `evidence_packs_downloaded`, `evidence_packs_verified`,
-`evidence_packs_tampered`, `evidence_sections_unavailable`.
+`evidence_packs_unsigned`, `evidence_packs_orphan_removed` (an archive
+stored whose row did not commit, removed again), `evidence_packs_orphaned`
+(such an archive that could not be removed: the file is an orphan,
+logged with its reference; remove it by hand), `evidence_packs_downloaded`, `evidence_packs_verified`,
+`evidence_packs_tampered`, `evidence_packs_unreadable`,
+`evidence_sections_unavailable`.
 
 ## Known gaps
 
-- The USSP service-record body has no contract yet (`uspace-ussp` at
-  `8c64876` names the `records` tag but no operation). The record is kept
-  verbatim as an opaque JSON object with its hash; it is withheld from
-  oversight packs because its shape, and so its personal data, is not
-  known.
+- The USSP service-record route and body have no contract yet
+  (`uspace-ussp` at `db1df01` still names the `records` tag but no
+  operation; system audit F-4). `GET {base_url}/v1/records/flights/{id}`
+  is this system's reading of 02 F7, so a USSP answers it 404 today:
+  each record is then `unavailable` with that reason ("no contract pins
+  the service-record route yet"). When `uspace-ussp` publishes the
+  route (`/v1/records/flights/{id}`, `/v1/records/daily/{date}`), pin it
+  under `api/clients/` and read it through the generated client. The
+  record is kept verbatim as an opaque JSON object with its hash; an
+  oversight pack does not fetch it because its shape, and so its
+  personal data, is not known.
 - Storage is a directory (`EVIDENCE_DIR`); the S3-compatible bucket the
   brief names is not implemented (no object-storage dependency in this
   release). Point `EVIDENCE_DIR` at a mounted, backed-up volume.

@@ -63,6 +63,19 @@ func CheckBaseURL(raw string) (*url.URL, error) {
 	return u, nil
 }
 
+// noRedirect is hc (a plain client when nil) that never follows a
+// redirect: a USSP's 3xx would make the authority request wherever it
+// points and seal the answer as the USSP's record (audit B-S3). The
+// 3xx itself is the answer, refused as not 200.
+func noRedirect(hc *http.Client) *http.Client {
+	c := &http.Client{}
+	if hc != nil {
+		*c = *hc
+	}
+	c.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	return c
+}
+
 // MaxCertificates bounds the USSP certificates a pack reads base URLs
 // from (E-10).
 const MaxCertificates = 1000
@@ -115,11 +128,7 @@ func (r *Records) Fetch(ctx context.Context, baseURL, flightID string) (json.Raw
 	}
 	req.Header.Set("Authorization", "Bearer "+tok)
 	req.Header.Set("Accept", "application/json")
-	hc := r.HTTP
-	if hc == nil {
-		hc = http.DefaultClient
-	}
-	resp, err := hc.Do(req)
+	resp, err := noRedirect(r.HTTP).Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("GET %s: %w", u.Host+recordsPath+"{id}", err)
 	}
@@ -132,7 +141,13 @@ func (r *Records) Fetch(ctx context.Context, baseURL, flightID string) (json.Raw
 	if err != nil {
 		return nil, fmt.Errorf("read record: %w", err)
 	}
-	if resp.StatusCode != http.StatusOK {
+	switch {
+	case resp.StatusCode == http.StatusNotFound:
+		// The route is this system's reading of spec 02 F7; no USSP
+		// contract pins it yet (system audit F-4), so a 404 most likely
+		// means the USSP serves no such route: said in the hole's reason.
+		return nil, fmt.Errorf("the USSP answered 404 at GET %s{id}: no contract pins the service-record route yet (spec gap), so the USSP may serve none", recordsPath)
+	case resp.StatusCode != http.StatusOK:
 		return nil, fmt.Errorf("the USSP answered %d", resp.StatusCode)
 	}
 	return ParseRecord(body, maxBytes)

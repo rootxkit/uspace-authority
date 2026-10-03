@@ -484,3 +484,53 @@ func TestIntegrationIssueWithoutPolicyIsRefused(t *testing.T) {
 		t.Fatal("something was written")
 	}
 }
+
+// Audit A-S1: the register's version and rows are read under the
+// certificates lock in one transaction. A write in flight (lock held,
+// row_version taken, not committed) holds the republication back until
+// it commits, and what reaches KV then carries the write; nothing is
+// published from a snapshot older than its version.
+func TestIntegrationRepublishWaitsForTheWriteInFlight(t *testing.T) {
+	r := newRig(t, false)
+	ctx := context.Background()
+	start := func(code string) string {
+		is, err := r.svc.Issue(ctx, ussp(code), admin)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return is.Certificate.ID
+	}
+	first := start("RA11")
+	if _, err := r.svc.RecordNotice(ctx, first, NoticeInput{State: NoticeStarted, At: time.Now(), Reference: "R-1"}, SourceManual, nil, admin); err != nil {
+		t.Fatal(err)
+	}
+	second := start("RB22")
+	tx, err := r.sql.BeginTx(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	if _, err := tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock($1)`, lockCertificates); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE certificates SET operations = 'operating', operations_started_at = now(),
+		row_version = nextval('certificates_version_seq') WHERE id = $1`, second); err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan error, 1)
+	go func() { done <- r.service(t, false).Republish(ctx) }()
+	select {
+	case err := <-done:
+		t.Fatalf("republished while a certificate write was in flight (%v): %v", err, r.kvClients(t))
+	case <-time.After(500 * time.Millisecond):
+	}
+	if err := tx.Commit(); err != nil {
+		t.Fatal(err)
+	}
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+	if got := r.kvClients(t); !slices.Equal(got, []string{"ussp-RA11-01", "ussp-RB22-01"}) {
+		t.Fatalf("KV after the write committed: %v", got)
+	}
+}

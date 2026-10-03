@@ -54,7 +54,16 @@ type BusSink struct {
 	queue chan rowBatch
 	mu    sync.Mutex
 	seq   uint64
+	// shed and shedAt are the rows the full queue shed since the last
+	// flush and when the first was: recorded by the drain worker, never
+	// from the stream reader or the status loop (audit B-S7).
+	shed   int
+	shedAt time.Time
 }
+
+// shedFlushEvery is how often the drain worker records the shed rows as
+// one gap.
+const shedFlushEvery = time.Second
 
 type rowBatch struct {
 	rows []Row
@@ -94,14 +103,32 @@ func (s *BusSink) Publish(p Published) error {
 	return s.NC.Publish(p.Subject, data)
 }
 
-// Rows implements Sink: queued, never blocking the stream.
+// Rows implements Sink: queued, never blocking the stream. Rows the
+// full queue sheds are counted here and recorded as a gap by the drain
+// worker: JetStream is never called from the reader.
 func (s *BusSink) Rows(rows []Row) {
 	s.init()
 	select {
 	case s.queue <- rowBatch{rows: rows, at: time.Now()}:
 	default:
 		s.Counters.Add(CounterRowsShed, uint64(len(rows)))
-		s.lost(context.Background(), "queue full", len(rows), time.Now())
+		s.mu.Lock()
+		if s.shed == 0 {
+			s.shedAt = time.Now()
+		}
+		s.shed += len(rows)
+		s.mu.Unlock()
+	}
+}
+
+// flushShed records the rows shed since the last flush as one gap.
+func (s *BusSink) flushShed(ctx context.Context) {
+	s.mu.Lock()
+	n, at := s.shed, s.shedAt
+	s.shed = 0
+	s.mu.Unlock()
+	if n > 0 {
+		s.lost(ctx, "queue full", n, at)
 	}
 }
 
@@ -111,15 +138,21 @@ func (s *BusSink) Depth() int {
 	return len(s.queue)
 }
 
-// Run drains the queue until ctx ends.
+// Run drains the queue until ctx ends, and records what the full queue
+// shed.
 func (s *BusSink) Run(ctx context.Context) {
 	s.init()
+	t := time.NewTicker(shedFlushEvery)
+	defer t.Stop()
 	for {
 		select {
 		case <-ctx.Done():
+			s.flushShed(context.WithoutCancel(ctx))
 			return
 		case b := <-s.queue:
 			s.write(ctx, b)
+		case <-t.C:
+			s.flushShed(ctx)
 		}
 	}
 }

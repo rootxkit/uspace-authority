@@ -319,3 +319,90 @@ func TestUSSPListIsCached(t *testing.T) {
 		t.Fatalf("%+v", st)
 	}
 }
+
+// Audit A-B2, E-01: what is installed is what the publisher signed. A
+// delta (or a whole served body) whose features differ from the signed
+// version's is held, counted and never used, the version before kept; a
+// version whose served features are the signed ones is installed (also
+// through the delta).
+func TestServedContentMustBeTheSignedContent(t *testing.T) {
+	for _, delta := range []bool{true, false} {
+		name := "whole"
+		if delta {
+			name = "delta"
+		}
+		t.Run(name, func(t *testing.T) {
+			w := newWorld(t)
+			ctx := context.Background()
+			authority, _ := rings(t)
+			w.publishZones(t, true, "TST001", "TST002")
+			if err := w.sub.Pull(ctx, DatasetZones, nil); err != nil {
+				t.Fatal(err)
+			}
+			if !delta {
+				// Forget the version held so the next pull reads the
+				// dataset whole.
+				w.sub.mu.Lock()
+				w.sub.st[DatasetZones].cur = nil
+				w.sub.mu.Unlock()
+			}
+			signed := zoneCollection(zoneFeature("TST002", "SENSITIVE"), zoneFeature("TST003", "SENSITIVE"))
+			served := []json.RawMessage{json.RawMessage(zoneFeature("TST002", "SENSITIVE")), json.RawMessage(zoneFeature("TST003", "DAR"))}
+			if _, err := w.fake.Publish("zones", served, signed, authority, "publication"); err != nil {
+				t.Fatal(err)
+			}
+			err := w.sub.Pull(ctx, DatasetZones, nil)
+			var ue *UntrustedError
+			if !asUntrusted(err, &ue) || ue.Version != 2 || !strings.Contains(ue.Reason, "TST003") {
+				t.Fatalf("a served version unlike the signed one: %v", err)
+			}
+			if w.count(CounterSignedMismatch) != 1 || w.count(CounterUntrusted) != 1 {
+				t.Fatalf("mismatch %d untrusted %d", w.count(CounterSignedMismatch), w.count(CounterUntrusted))
+			}
+			if v := w.sub.Current(DatasetZones); delta && (v == nil || v.Number != 1) {
+				t.Fatalf("the held version moved: %+v", v)
+			}
+			if c, _ := w.cache.get(DatasetZones); c.Version != 1 {
+				t.Fatalf("cached %d", c.Version)
+			}
+			// The twin: served as signed, installed.
+			w.publishZones(t, true, "TST002", "TST004")
+			if err := w.sub.Pull(ctx, DatasetZones, nil); err != nil {
+				t.Fatal(err)
+			}
+			if v := w.sub.Current(DatasetZones); v == nil || v.Number != 3 || v.Delta != delta {
+				t.Fatalf("the signed version was not installed: %+v", v)
+			}
+		})
+	}
+}
+
+// Audit A-S3, E-02: the push subscription is not trusted from start-up
+// for ever. The CISP losing it (a restore, a delete) is found by the
+// re-check, the subscription is made again and the status shows the new
+// one; while it is unchanged the re-check says nothing changed.
+func TestSubscriptionIsRecheckedAndRecreated(t *testing.T) {
+	w := newWorld(t)
+	w.sub.cfg.CallbackURL = w.rx.URL + NotificationsPath
+	w.sub.cfg.SubscriptionRecheck = 50 * time.Millisecond
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() { w.sub.subscribeLoop(ctx); close(done) }()
+	defer func() { cancel(); <-done }()
+	waitFor(t, 5*time.Second, "the first subscription", func() bool { return w.sub.Subscription().ID != "" })
+	first := w.sub.Subscription().ID
+	waitFor(t, 5*time.Second, "a re-check", func() bool { return w.count(CounterSubscriptionRechecks) >= 2 })
+	if w.count(CounterSubscriptionChanged) != 0 || len(w.fake.Subscriptions()) != 1 {
+		t.Fatalf("an unchanged subscription: changed %d, %d at the CISP", w.count(CounterSubscriptionChanged), len(w.fake.Subscriptions()))
+	}
+	w.fake.DropSubscriptions()
+	waitFor(t, 5*time.Second, "the subscription made again", func() bool {
+		return len(w.fake.Subscriptions()) == 1 && w.sub.Subscription().ID != first
+	})
+	if w.count(CounterSubscriptionChanged) == 0 {
+		t.Fatal("the change was not counted")
+	}
+	if st := w.sub.Subscription(); st.ID != w.fake.Subscriptions()[0].ID || st.Status != "active" {
+		t.Fatalf("status %+v", st)
+	}
+}

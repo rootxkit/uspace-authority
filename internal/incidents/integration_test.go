@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -303,7 +304,9 @@ func TestIntegrationEscalatedViolationToAVerifiedPack(t *testing.T) {
 	f.zone()
 	zoneID, heightID := f.violations()
 	f.telemetry()
+	var usspReads atomic.Int32
 	usspDown := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		usspReads.Add(1)
 		http.Error(w, "down", http.StatusServiceUnavailable)
 	}))
 	t.Cleanup(usspDown.Close)
@@ -371,9 +374,12 @@ func TestIntegrationEscalatedViolationToAVerifiedPack(t *testing.T) {
 	if len(m.AGLNumbers) != 1 || m.AGLNumbers[0].ViolationID != heightID || m.AGLNumbers[0].State != StateIncluded {
 		t.Errorf("agl %+v", m.AGLNumbers)
 	}
-	// The fake USSP's record endpoint is down: said, never missing.
-	if len(m.USSPRecords) != 1 || m.USSPRecords[0].State != StateUnavailable || !strings.Contains(m.USSPRecords[0].Reason, "answered 503") {
-		t.Errorf("ussp_record %+v", m.USSPRecords)
+	// An oversight pack reads no USSP record (audit B-S4): the record
+	// is named, withheld and not fetched (the down endpoint is not even
+	// asked); TestIntegrationLegalPackRecordDownIsUnavailable reads it.
+	if len(m.USSPRecords) != 1 || m.USSPRecords[0].State != StateWithheld || !strings.Contains(m.USSPRecords[0].Reason, "not fetched") ||
+		usspReads.Load() != 0 {
+		t.Errorf("ussp_record %+v, %d reads", m.USSPRecords, usspReads.Load())
 	}
 	data := f.stored(row.StorageRef)
 	files := entries(t, data)
@@ -673,4 +679,191 @@ func entries(t *testing.T, archive []byte) map[string][]byte {
 		out[e.Path] = e.Data
 	}
 	return out
+}
+
+// Audit B-S1, E-01: a window given to the nanosecond is stored to the
+// microsecond (timestamptz); the seal is made over what is stored, so
+// the pack verifies and downloads, and its window is the stored one.
+func TestIntegrationNanosecondWindowVerifies(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	zoneID, _ := f.violations()
+	f.telemetry()
+	if _, err := f.vio.Review(ctx, inspector, zoneID, violations.DecisionEscalated, sp("note")); err != nil {
+		t.Fatal(err)
+	}
+	rows, _ := f.inc.List(ctx, listByViolation(zoneID))
+	incID := rows[0].IncidentID
+	r := f.request(KindOversight)
+	r.From, r.To = r.From.Add(456789*time.Nanosecond), r.To.Add(987654321*time.Nanosecond)
+	row, err := f.packs.Create(ctx, inspector, false, incID, r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !row.WindowFrom.Equal(r.From.Truncate(time.Microsecond)) || !row.WindowTo.Equal(r.To.Truncate(time.Microsecond)) {
+		t.Fatalf("window %s %s", row.WindowFrom, row.WindowTo)
+	}
+	v, err := f.packs.Verify(ctx, inspector, incID, row.PackID)
+	if err != nil || !v.HashMatches || v.Signature != SigVerified {
+		t.Fatalf("a genuine pack with a nanosecond window does not verify: %+v %v", v, err)
+	}
+	if _, _, err := f.packs.Download(ctx, inspector, false, incID, row.PackID, "review"); err != nil {
+		t.Fatalf("a genuine pack is not served: %v", err)
+	}
+}
+
+// Audit B-S2, E-01: a stored archive that cannot be read (the storage
+// lost it, or it is unmounted) is not tampering: verify and download
+// answer 503 evidence_storage_unavailable, count it unreadable (not
+// tampered) and audit hash_matches as unknown (null). A modified
+// archive is still tampering (TestIntegrationEscalatedViolationToAVerifiedPack).
+func TestIntegrationUnreadableArchiveIsNotTampering(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	zoneID, _ := f.violations()
+	f.telemetry()
+	if _, err := f.vio.Review(ctx, inspector, zoneID, violations.DecisionEscalated, sp("note")); err != nil {
+		t.Fatal(err)
+	}
+	rows, _ := f.inc.List(ctx, listByViolation(zoneID))
+	incID := rows[0].IncidentID
+	row, err := f.packs.Create(ctx, inspector, false, incID, f.request(KindOversight))
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(f.dir, filepath.FromSlash(strings.TrimPrefix(row.StorageRef, refPrefix)))
+	if err := os.Chmod(path, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+	_, err = f.packs.Verify(ctx, inspector, incID, row.PackID)
+	if p := httpx.ProblemFromError(err); err == nil || p.Status != http.StatusServiceUnavailable || p.Slug() != SlugStorageUnavailable {
+		t.Fatalf("verify of an unreadable archive: %v", err)
+	}
+	_, payload := f.lastEvent(incID, audit.EventEvidencePackVerified)
+	if v, ok := payload["hash_matches"]; !ok || v != nil {
+		t.Fatalf("verified event %v", payload)
+	}
+	_, _, err = f.packs.Download(ctx, inspector, false, incID, row.PackID, "review")
+	if p := httpx.ProblemFromError(err); err == nil || p.Status != http.StatusServiceUnavailable || p.Slug() != SlugStorageUnavailable {
+		t.Fatalf("download of an unreadable archive: %v", err)
+	}
+	snap := f.packs.Counters.Snapshot()
+	if snap[CounterPackTampered] != 0 || snap[CounterPackUnreadable] != 2 {
+		t.Fatalf("counters %v", snap)
+	}
+}
+
+// Audit B-S4, E-01: a legal pack reads the USSP records; the USSP's
+// record endpoint down is said (unavailable, the status named), never
+// missing.
+func TestIntegrationLegalPackRecordDownIsUnavailable(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	var reads atomic.Int32
+	down := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		reads.Add(1)
+		http.Error(w, "down", http.StatusServiceUnavailable)
+	}))
+	t.Cleanup(down.Close)
+	f.usspCertificate(down.URL)
+	zoneID, _ := f.violations()
+	f.telemetry()
+	if _, err := f.vio.Review(ctx, inspector, zoneID, violations.DecisionEscalated, sp("note")); err != nil {
+		t.Fatal(err)
+	}
+	rows, _ := f.inc.List(ctx, listByViolation(zoneID))
+	f.packs.Builder.Personal = &fakePersonal{known: map[string]map[string]string{itReg: {"full_name": piiName}}}
+	row, err := f.packs.Create(ctx, inspector, true, rows[0].IncidentID, f.request(KindLegal))
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := manifestOf(t, row.Manifest)
+	if len(m.USSPRecords) != 1 || m.USSPRecords[0].State != StateUnavailable || !strings.Contains(m.USSPRecords[0].Reason, "answered 503") ||
+		reads.Load() != 1 {
+		t.Fatalf("ussp_record %+v, %d reads", m.USSPRecords, reads.Load())
+	}
+}
+
+// Audit B-S5, E-10: downloads and verifications read whole archives into
+// memory, so they are bounded apart from the builds: with every read
+// slot held, verify and download answer 503 pack_busy, counted, and
+// record nothing; a slot free, they run.
+func TestIntegrationPackReadsAreBounded(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	zoneID, _ := f.violations()
+	f.telemetry()
+	if _, err := f.vio.Review(ctx, inspector, zoneID, violations.DecisionEscalated, sp("note")); err != nil {
+		t.Fatal(err)
+	}
+	rows, _ := f.inc.List(ctx, listByViolation(zoneID))
+	incID := rows[0].IncidentID
+	row, err := f.packs.Create(ctx, inspector, false, incID, f.request(KindOversight))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range cap(f.packs.readSem) {
+		f.packs.readSem <- struct{}{}
+	}
+	before := f.events("incident", incID)
+	_, err = f.packs.Verify(ctx, inspector, incID, row.PackID)
+	if p := httpx.ProblemFromError(err); err == nil || p.Status != http.StatusServiceUnavailable || p.Slug() != SlugPackBusy {
+		t.Fatalf("verify with every read slot held: %v", err)
+	}
+	_, _, err = f.packs.Download(ctx, inspector, false, incID, row.PackID, "review")
+	if p := httpx.ProblemFromError(err); err == nil || p.Status != http.StatusServiceUnavailable || p.Slug() != SlugPackBusy {
+		t.Fatalf("download with every read slot held: %v", err)
+	}
+	if got := f.events("incident", incID); !slices.Equal(got, before) || f.packs.Counters.Snapshot()[CounterPackReadBusy] != 2 {
+		t.Fatalf("events %v, counters %v", got, f.packs.Counters.Snapshot())
+	}
+	<-f.packs.readSem
+	if v, err := f.packs.Verify(ctx, inspector, incID, row.PackID); err != nil || !v.HashMatches {
+		t.Fatalf("verify with a slot free: %+v %v", v, err)
+	}
+	if _, _, err := f.packs.Download(ctx, inspector, false, incID, row.PackID, "review"); err != nil {
+		t.Fatalf("download with a slot free: %v", err)
+	}
+}
+
+// Audit B-N1, E-01: an archive stored for a pack whose row does not
+// commit is removed again (a legal one holds sealed personal data), and
+// the build says so; a pack that commits keeps its archive.
+func TestIntegrationUncommittedPackLeavesNoArchive(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	zoneID, _ := f.violations()
+	f.telemetry()
+	if _, err := f.vio.Review(ctx, inspector, zoneID, violations.DecisionEscalated, sp("note")); err != nil {
+		t.Fatal(err)
+	}
+	rows, _ := f.inc.List(ctx, listByViolation(zoneID))
+	incID := rows[0].IncidentID
+	kept, err := f.packs.Create(ctx, inspector, false, incID, f.request(KindOversight))
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.exec(f.pg, `CREATE FUNCTION test_refuse_pack() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'refused by the test'; END $$`)
+	f.exec(f.pg, `CREATE TRIGGER test_refuse_pack BEFORE INSERT ON evidence_packs FOR EACH ROW EXECUTE FUNCTION test_refuse_pack()`)
+	if _, err := f.packs.Create(ctx, inspector, false, incID, f.request(KindOversight)); err == nil {
+		t.Fatal("a pack whose row was refused was built")
+	}
+	var files []string
+	if err := filepath.WalkDir(f.dir, func(p string, d fs.DirEntry, err error) error {
+		if err == nil && !d.IsDir() {
+			files = append(files, p)
+		}
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if len(files) != 1 || !strings.HasSuffix(filepath.ToSlash(files[0]), strings.TrimPrefix(kept.StorageRef, refPrefix)) {
+		t.Fatalf("archives on disk %v, the kept one %s", files, kept.StorageRef)
+	}
+	if s := f.packs.Counters.Snapshot(); s[CounterPackOrphanRemoved] != 1 || s[CounterPackOrphaned] != 0 {
+		t.Fatalf("counters %v", s)
+	}
 }

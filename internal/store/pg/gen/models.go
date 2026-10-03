@@ -297,28 +297,29 @@ type PilotCompetency struct {
 }
 
 type Publication struct {
-	ID              int64
-	Dataset         string
-	Version         int64
-	Payload         []byte
-	PayloadHash     string
-	FeatureCount    int32
-	Signature       *string
-	State           string
-	Attempts        int32
-	NextRetryAt     *time.Time
-	CispVersion     *int64
-	CreatedAt       time.Time
-	CreatedBy       string
-	ContentType     string
-	SignatureKid    *string
-	SignedAt        *time.Time
-	StateChangedAt  time.Time
-	LastAttemptAt   *time.Time
-	LastStatus      *int32
-	LastError       *string
-	ConflictVersion *int64
-	AcknowledgedAt  *time.Time
+	ID               int64
+	Dataset          string
+	Version          int64
+	Payload          []byte
+	PayloadHash      string
+	FeatureCount     int32
+	Signature        *string
+	State            string
+	Attempts         int32
+	NextRetryAt      *time.Time
+	CispVersion      *int64
+	CreatedAt        time.Time
+	CreatedBy        string
+	ContentType      string
+	SignatureKid     *string
+	SignedAt         *time.Time
+	StateChangedAt   time.Time
+	LastAttemptAt    *time.Time
+	LastStatus       *int32
+	LastError        *string
+	ConflictVersion  *int64
+	AcknowledgedAt   *time.Time
+	ResolvesConflict bool
 }
 
 type RegistryStatusChange struct {

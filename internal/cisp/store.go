@@ -117,9 +117,9 @@ type CacheStore interface {
 	Save(ctx context.Context, c *Cached) error
 	// Touch records that the CISP confirmed version.
 	Touch(ctx context.Context, ds Dataset, version int64) error
-	// RememberJTI records a verified delivery id for ttl. fresh is false
-	// for a replay; full is true when maxLive ids are live and nothing
-	// was recorded.
+	// RememberJTI records a verified delivery id for ttl, at most maxLive
+	// live ids per issuer. fresh is false for a replay; full is true when
+	// maxLive ids of the issuer are live and nothing was recorded.
 	RememberJTI(ctx context.Context, issuer, jti string, ttl time.Duration, maxLive int64) (fresh, full bool, err error)
 	// SweepJTIs deletes the expired delivery ids.
 	SweepJTIs(ctx context.Context) (int64, error)

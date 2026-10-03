@@ -77,6 +77,8 @@ type Flight struct {
 	// state is not published again (R-14).
 	StateTS  time.Time
 	Position [3]float64 // lat, lng, alt (HAE, NaN when absent)
+	// Status is the operational status of that state ("" when absent).
+	Status string
 	// Details and DetailsAt: the last details fetched.
 	Details    *f3411.RIDFlightDetails
 	DetailsRaw []byte
@@ -177,19 +179,24 @@ func same(a, b [3]float64) bool {
 }
 
 // Fresh reports whether st differs from the last state published for k
-// (its timestamp or its position) and, when it does, records it as
-// published. An identical state is counted (R-14).
+// (its timestamp, its position or its operational status: an emergency
+// declared at the same instant is news, audit A-N3) and, when it does,
+// records it as published. An identical state is counted (R-14).
 func (m *Memory) Fresh(k FlightKey, st *f3411.RIDAircraftState, now time.Time) bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	f := m.entry(k)
 	f.LastSeen = now
 	pos := position(st)
-	if !f.StateTS.IsZero() && f.StateTS.Equal(st.Timestamp.Value) && same(f.Position, pos) {
+	status := ""
+	if st.OperationalStatus != nil {
+		status = string(*st.OperationalStatus)
+	}
+	if !f.StateTS.IsZero() && f.StateTS.Equal(st.Timestamp.Value) && same(f.Position, pos) && f.Status == status {
 		m.counters.Inc(CounterStateUnchanged)
 		return false
 	}
-	f.StateTS, f.Position = st.Timestamp.Value, pos
+	f.StateTS, f.Position, f.Status = st.Timestamp.Value, pos, status
 	return true
 }
 

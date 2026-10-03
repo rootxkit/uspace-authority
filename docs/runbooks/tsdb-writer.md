@@ -35,7 +35,9 @@ Every `STATUS_INTERVAL_S` the process logs a `status` line with:
   `retention_checks`, `retention_violations` and
   `retention_check_failed`. The same names are on `/metrics`.
 - `retention`: for each table with a retention period, `clean`,
-  `violated` or `unknown`.
+  `violated` or `unknown`; `tracks`, `rid_observations` and
+  `manned_tracks` are listed `unchecked` (no check covers them until
+  WP-27), so a `clean` line never reads as covering them.
 
 A healthy writer under load shows `writer_state: ok`, `queue_age_s`
 under a second, and `rows_written` rising.
@@ -112,8 +114,11 @@ FROM writer_gaps ORDER BY at DESC LIMIT 50;
   the migration (`uspace-authority migrate`) and report the `detail` to
   the owning work package.
 - `rejected_unrecorded` above zero: a rejected message's own gap record
-  was refused too. Those rows are lost and only counted; the log line
-  has the stream sequence. Report it.
+  was refused too, also without its detail (a record refused for its
+  detail is written without it first). Those rows are lost and only
+  counted; the status line carries `rejected_unrecorded` and is at
+  error level from then on, and the log line has the stream sequence.
+  Report it.
 
 - `stream_purge`: someone purged `TSW` (`nats stream purge TSW`) or
   deleted messages from it. Never purge `TSW`: every message in it is a
@@ -196,5 +201,5 @@ and their defaults:
 | `TSDB_WRITER_QUEUE_MAX_AGE_S` | 10 |
 | `TSDB_WRITER_QUEUE_MAX_ROWS` | 30000 |
 | `TSDB_WRITER_MAX_ACK_PENDING` | 1000 |
-| `TSDB_WRITER_ACK_WAIT_S` | 60 (must exceed the queue's age bound) |
+| `TSDB_WRITER_ACK_WAIT_S` | 60 (must exceed twice the queue's age bound `TSDB_WRITER_QUEUE_MAX_AGE_S`) |
 | `TSDB_WRITER_RETENTION_CHECK_S` | 3600 |

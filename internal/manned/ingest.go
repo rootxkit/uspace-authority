@@ -34,6 +34,7 @@ const (
 	CounterWithoutAge        = "batches_without_age"
 	CounterDuplicates        = "duplicates_skipped"
 	CounterOlder             = "older_samples_skipped"
+	CounterSourceAhead       = "source_time_in_future" // a sample stamped more than MaxSourceAhead after it arrived: ordered by its arrival
 	CounterEvicted           = "aircraft_evicted"
 	CounterAgedStale         = "aircraft_aged_stale"
 	CounterAgedDisabled      = "aircraft_aged_source_disabled"
@@ -71,12 +72,20 @@ type Settings struct {
 	MaxAdapters int
 	// MaxSpacing is PlaceBatch's bound (T-02).
 	MaxSpacing time.Duration
+	// MaxSourceAhead bounds how far after its arrival a sample's own
+	// time orders it: one stamped later is ordered at arrival plus this,
+	// counted, so a clock jump at the ANSP cannot make every genuine
+	// sample after it look older (audit B-S6).
+	MaxSourceAhead time.Duration
 }
+
+// DefaultMaxSourceAhead is MaxSourceAhead when it is not set.
+const DefaultMaxSourceAhead = 5 * time.Second
 
 // DefaultSettings are the configuration's defaults.
 func DefaultSettings() Settings {
 	return Settings{FeedInstance: "ansp", MaxAircraft: 10000, MaxFrameBytes: 4 << 20, MaxSnapshotItems: 10000, MaxAdapters: 64,
-		MaxSpacing: timeplace.DefaultMaxBatchSpacing}
+		MaxSpacing: timeplace.DefaultMaxBatchSpacing, MaxSourceAhead: DefaultMaxSourceAhead}
 }
 
 // instanceRe is the ANSP's adapter id (track/manned/v1
@@ -135,6 +144,9 @@ func (in *Ingest) init() {
 		}
 		if in.S.MaxSpacing <= 0 {
 			in.S.MaxSpacing = d.MaxSpacing
+		}
+		if in.S.MaxSourceAhead <= 0 {
+			in.S.MaxSourceAhead = d.MaxSourceAhead
 		}
 		in.lru, in.byKey = list.New(), map[string]*list.Element{}
 	})
@@ -289,12 +301,22 @@ func (in *Ingest) handleTracks(envs []envelopeIn, arrival time.Time) {
 // is skipped unless it moves the aircraft's state forward (live, stale,
 // source_disabled), in which case the held message is republished in
 // the new state at its own placement.
+//
+// Samples are ordered by their own time, but never later than
+// MaxSourceAhead after their arrival (audit B-S6).
 func (in *Ingest) acceptLocked(p *placed) (Row, bool) {
 	icao := p.body.ICAO24
+	p.orderAt = p.sourceAt
+	if bound := p.rx.Add(in.S.MaxSourceAhead); p.orderAt.After(bound) {
+		p.orderAt = bound
+		in.Counters.Inc(CounterSourceAhead)
+		in.Limiter.Limited("manned_source_ahead").Warn("an ANSP sample is stamped ahead of its arrival; it is ordered by its arrival",
+			slog.String("icao24", icao), slog.Duration("ahead", p.sourceAt.Sub(p.rx)))
+	}
 	if e, ok := in.byKey[icao]; ok {
 		old, _ := e.Value.(*held)
 		switch {
-		case p.sourceAt.Before(old.sourceAt):
+		case p.orderAt.Before(old.orderAt):
 			in.Counters.Inc(CounterOlder)
 			return Row{}, false
 		case p.sourceAt.Equal(old.sourceAt):

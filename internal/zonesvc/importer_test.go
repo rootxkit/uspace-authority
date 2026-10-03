@@ -222,3 +222,29 @@ func TestGovGeShapesBounded(t *testing.T) {
 		t.Fatalf("%v", errs[:min(len(errs), 3)])
 	}
 }
+
+// Audit B-N7, E-01: an import says which identifiers already existed
+// (a new version made over a held one, a draft superseded): the
+// zones_imported event lists them as replaced; a first import replaces
+// none.
+func TestImportEventNamesTheReplacedIdentifiers(t *testing.T) {
+	s, st, _, _ := newService(t)
+	if _, err := importDoc(t, s, ed269Doc(ed269Zone("TSA001", "PROHIBITED"))); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := importDoc(t, s, ed269Doc(ed269Zone("TSA001", "PROHIBITED"), ed269Zone("TSA002", "PROHIBITED"))); err != nil {
+		t.Fatal(err)
+	}
+	evs := st.events()
+	if len(evs) != 2 {
+		t.Fatalf("%d events", len(evs))
+	}
+	first, _ := evs[0].Payload.(map[string]any)
+	second, _ := evs[1].Payload.(map[string]any)
+	if r, _ := first["replaced"].([]string); first == nil || len(r) != 0 {
+		t.Fatalf("first import %v", first)
+	}
+	if r, _ := second["replaced"].([]string); len(r) != 1 || r[0] != "TSA001" {
+		t.Fatalf("second import %v", second)
+	}
+}

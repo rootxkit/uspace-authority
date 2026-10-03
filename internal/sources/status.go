@@ -41,6 +41,9 @@ const (
 	CounterStatusReceived  = "status_received"
 	CounterStatusMalformed = "status_malformed"
 	CounterStatusEvicted   = "status_evicted"
+	// CounterStatusUnknownType counts statuses naming a source type
+	// this system does not know, refused (audit B-N6).
+	CounterStatusUnknownType = "status_unknown_type"
 )
 
 // StatusStore keeps the last source/status/v1 per (type, instance), at
@@ -76,6 +79,12 @@ func (s *StatusStore) Offer(raw []byte) {
 		return
 	}
 	s.inc(CounterStatusReceived)
+	if !slices.Contains(Types, env.Body.Source) {
+		// Bounded is not enough: a flood of invented types would evict
+		// every real source (audit B-N6).
+		s.inc(CounterStatusUnknownType)
+		return
+	}
 	k := keyOf(env.Body.Source, env.Body.SourceInstance)
 	s.mu.Lock()
 	defer s.mu.Unlock()

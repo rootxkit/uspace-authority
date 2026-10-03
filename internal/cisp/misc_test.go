@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/rootxkit/uspace-core/auth"
+	"github.com/rootxkit/uspace-core/core"
 
 	"github.com/rootxkit/uspace-authority/api/gen"
 	"github.com/rootxkit/uspace-authority/internal/apiserver"
@@ -325,6 +326,27 @@ func TestCacheMessageMatchesItsSchema(t *testing.T) {
 	for _, r := range s.Properties.Body.Required {
 		if _, ok := m[r]; !ok {
 			t.Fatalf("required %s missing", r)
+		}
+	}
+}
+
+// Audit A-N1, E-01: limit is held to the contract's 1 to 500: outside it
+// is refused naming limit and nothing is read; at the bounds it is
+// accepted.
+func TestHandlerHoldsLimitToTheContract(t *testing.T) {
+	w := newWorld(t)
+	ctx := context.Background()
+	h := Handler{Store: w.store, Subscriber: w.sub, Configured: true}
+	for _, n := range []int{0, -1, MaxListLimit + 1, 1 << 30} {
+		_, err := h.ListPublications(ctx, gen.ListPublicationsRequestObject{Params: gen.ListPublicationsParams{Limit: &n}})
+		var fe *core.FieldError
+		if !errors.As(err, &fe) || fe.Field != "limit" {
+			t.Errorf("limit %d: %v", n, err)
+		}
+	}
+	for _, n := range []int{1, MaxListLimit} {
+		if _, err := h.ListPublications(ctx, gen.ListPublicationsRequestObject{Params: gen.ListPublicationsParams{Limit: &n}}); err != nil {
+			t.Errorf("limit %d: %v", n, err)
 		}
 	}
 }

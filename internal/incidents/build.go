@@ -96,6 +96,12 @@ type Builder struct {
 	// MaxRecords bounds the USSP records fetched per pack; the rest are
 	// unavailable with that reason.
 	MaxRecords int
+	// RecordsConcurrency bounds the USSP records read at once (default
+	// DefaultRecordsConcurrency); RecordsTimeout bounds the whole records
+	// step of a legal pack (default DefaultRecordsTimeout), so slow USSPs
+	// do not spend the build's budget (audit B-S4).
+	RecordsConcurrency int
+	RecordsTimeout     time.Duration
 	// MaxZones bounds the zone versions named and in force.
 	MaxZones int
 	// MannedMarginM pads the evidence's extent for the manned traffic a
@@ -218,12 +224,21 @@ const (
 	SecPersonalData = "personal_data"
 )
 
+// Defaults of the records step of a legal pack (audit B-S4).
+const (
+	DefaultRecordsConcurrency = 4
+	DefaultRecordsTimeout     = 30 * time.Second
+)
+
 // payloadTypes are the ODID message types whose raw payload an
-// oversight pack carries: Basic ID (0), Location (1), Authentication (2)
-// and Operator ID (5, the public part). System (4) carries the remote
-// pilot position, Self-ID (3) free text and a Message Pack (15) either,
-// so their payloads are withheld and kept by hash (06 §2 T6).
-var payloadTypes = []int16{0, 1, 2, 5}
+// oversight pack carries: Basic ID (0), Location (1) and Authentication
+// (2). System (4) carries the remote pilot position, Self-ID (3) free
+// text, Operator ID (5) the registration as broadcast, which may hold
+// the EU secret part (LESSONS G-04; audit B-B1: the parsed operator_reg
+// is cut to its public part, the bytes are not), and a Message Pack (15)
+// any of them, so their payloads are withheld and kept by hash (06 §2
+// T6).
+var payloadTypes = []int16{0, 1, 2}
 
 // ODID message type 1 is Location.
 const odidLocation = 1
@@ -315,7 +330,7 @@ func (b *Builder) Build(ctx context.Context, in BuildInput) (Manifest, []Entry, 
 		st.m.CaseRef = in.CaseRef
 		st.m.Redaction = "legal: personal data resolved from the registry for the purpose and case reference, in personal_data/; the archive is sealed at rest"
 	} else {
-		st.m.Redaction = "oversight: no personal data; operators by registration public part and aircraft by serial only; frame payloads that may carry the remote pilot position withheld and kept by hash"
+		st.m.Redaction = "oversight: no personal data; operators by registration public part and aircraft by serial only; frame payloads that may carry the remote pilot position, free text or the registration's secret part withheld and kept by hash"
 	}
 	pol, err := b.Sources.PackActivePolicy(ctx)
 	if err != nil {
@@ -359,7 +374,14 @@ func (st *build) incident() error {
 	}
 	notes := make([]map[string]any, 0, len(v.Notes))
 	for _, n := range v.Notes {
-		notes = append(notes, map[string]any{"id": n.ID, "author": n.Author, "body": n.Body, "created_at": stamp(n.CreatedAt)})
+		note := map[string]any{"id": n.ID, "author": n.Author, "body": n.Body, "created_at": stamp(n.CreatedAt)}
+		if st.in.Kind != KindLegal {
+			// A note is free text an officer typed, names included: an
+			// oversight pack keeps it by hash (audit B-N2).
+			note["body"], note["body_sha256"] = nil, ContentHash([]byte(n.Body))
+			note["body_withheld"] = "free text that may name people; carried in a legal pack"
+		}
+		notes = append(notes, note)
 	}
 	doc := map[string]any{
 		"incident_id": inc.IncidentID, "kind": inc.Kind, "occurred_at": stamp(inc.OccurredAt), "opened_from": inc.OpenedFrom,

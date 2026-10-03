@@ -34,6 +34,12 @@ const (
 	CounterProviderBadURL     = "providers_refused_base_url"
 	CounterProviderOwnerClash = "providers_owner_conflict"
 	CounterRowsQueued         = "rows_queued"
+	// CounterProvidersEvicted counts providers no DSS-listed ISA named,
+	// dropped at the bound for one a DSS-listed ISA names (audit A-B3).
+	CounterProvidersEvicted = "providers_evicted_unconfirmed"
+	// CounterProvidersForgotten counts providers no ISA named for
+	// ProviderForgetAfter, forgotten (audit A-B3).
+	CounterProvidersForgotten = "providers_forgotten"
 )
 
 // Gate is the source-control switch (internal/sources.Follower).
@@ -68,6 +74,9 @@ type Settings struct {
 	MaxViews           int
 	MaxTiles           int
 	MaxProviders       int
+	// ProviderForgetAfter is how long a provider no held ISA names is
+	// kept before it is forgotten.
+	ProviderForgetAfter time.Duration
 	// DetailsTTL is how long fetched details are used before they are
 	// fetched again.
 	DetailsTTL time.Duration
@@ -79,7 +88,7 @@ func DefaultSettings() Settings {
 	return Settings{
 		RequestTimeout: 5 * time.Second, MaxFlights: 500, MaxTilesPerSP: 64, MaxDetailsPerPoll: 20, DetailsConcurrency: 4,
 		UnavailableAfter: 10 * time.Second, SlowPollHz: 0.5, MaxSplitDepth: 3, MaxViews: 64, MaxTiles: 512,
-		MaxProviders: 256, DetailsTTL: 5 * time.Minute, Network: timeplace.DefaultNetworkPolicy(),
+		MaxProviders: 256, ProviderForgetAfter: 10 * time.Minute, DetailsTTL: 5 * time.Minute, Network: timeplace.DefaultNetworkPolicy(),
 	}
 }
 
@@ -118,9 +127,11 @@ type Engine struct {
 
 	mu        sync.Mutex
 	providers map[string]*Provider // by base URL
-	pollers   map[pollKey]*running
-	tiles     []Tile
-	wg        sync.WaitGroup
+	// unnamed is since when no held ISA names a provider.
+	unnamed map[string]time.Time
+	pollers map[pollKey]*running
+	tiles   []Tile
+	wg      sync.WaitGroup
 }
 
 type pollKey struct {
@@ -143,6 +154,9 @@ func (e *Engine) now() time.Time {
 func (e *Engine) init() {
 	if e.providers == nil {
 		e.providers, e.pollers = map[string]*Provider{}, map[pollKey]*running{}
+	}
+	if e.unnamed == nil {
+		e.unnamed = map[string]time.Time{}
 	}
 	if e.Counters == nil {
 		e.Counters = &core.Counters{}
@@ -268,11 +282,19 @@ func (e *Engine) Reconcile(ctx context.Context) {
 	desired := map[pollKey]want{}
 	perSP := map[*Provider]int{}
 	isasPerSP := map[*Provider]map[string]bool{}
+	named, confirmed := e.ISAs.Named()
+	e.forgetLocked(named, now)
 	for _, t := range tiles {
 		isas := e.ISAs.ForTile(t, now)
 		for i := range isas {
 			isa := &isas[i]
-			p := e.providerLocked(isa, now)
+			p := e.providerLocked(isa, now, confirmed, func(base string) {
+				for k := range desired {
+					if k.base == base {
+						delete(desired, k)
+					}
+				}
+			})
 			if p == nil || !e.Enabled(p.USSID) {
 				continue
 			}
@@ -336,11 +358,23 @@ func (e *Engine) leaves(p *Provider, t Tile) []Tile {
 // (bounded); nil when the ISA cannot be polled: an owner that is not a
 // subject token, a base URL refused (plain http to a non-loopback host)
 // or the bound reached. e.mu is held.
-func (e *Engine) providerLocked(isa *f3411.IdentificationServiceArea, now time.Time) *Provider {
+//
+// At the bound, a provider that a DSS-listed ISA names takes the place
+// of one that no DSS-listed ISA names (only notifications did), so
+// notifications alone cannot keep a Service Provider the DSS lists from
+// being polled (audit A-B3); evicted is told the base URL dropped.
+func (e *Engine) providerLocked(isa *f3411.IdentificationServiceArea, now time.Time, confirmed map[string]bool, evicted func(base string)) *Provider {
 	base := isa.UssBaseUrl
 	if p, ok := e.providers[base]; ok {
 		if p.USSID != isa.Owner {
+			// Polling it under p would attribute its flights, its
+			// source control and its register state to another USSP
+			// (audit A-S6): refused, counted, logged.
 			e.Counters.Inc(CounterProviderOwnerClash)
+			e.Limiter.Limited("dp_owner_clash:"+isa.Owner).Warn("an ISA names a uss_base_url another owner's Service Provider holds; it is not polled",
+				slog.String("isa_id", isa.Id), slog.String("uss_id", isa.Owner), slog.String("held_by", p.USSID),
+				slog.String("uss_base_url", base))
+			return nil
 		}
 		return p
 	}
@@ -359,6 +393,9 @@ func (e *Engine) providerLocked(isa *f3411.IdentificationServiceArea, now time.T
 			slog.String("uss_id", isa.Owner), slog.String("error", err.Error()))
 		return nil
 	}
+	if e.S.MaxProviders > 0 && len(e.providers) >= e.S.MaxProviders && confirmed[base] {
+		e.evictUnconfirmedLocked(confirmed, evicted)
+	}
 	if e.S.MaxProviders > 0 && len(e.providers) >= e.S.MaxProviders {
 		e.Counters.Inc(CounterProvidersOverCap)
 		e.Limiter.Limited("dp_providers_cap").Warn("more Service Providers than DP_MAX_PROVIDERS; the new one is not polled",
@@ -376,6 +413,58 @@ func (e *Engine) providerLocked(isa *f3411.IdentificationServiceArea, now time.T
 	}
 	e.providers[base] = p
 	return p
+}
+
+// evictUnconfirmedLocked drops one provider no DSS-listed ISA names,
+// with its pollers. e.mu is held.
+func (e *Engine) evictUnconfirmedLocked(confirmed map[string]bool, evicted func(base string)) {
+	for base, p := range e.providers {
+		if confirmed[base] {
+			continue
+		}
+		e.dropProviderLocked(base)
+		if evicted != nil {
+			evicted(base)
+		}
+		e.Counters.Inc(CounterProvidersEvicted)
+		e.Logger.Warn("Service Provider named only by notifications dropped for one the DSS lists (DP_MAX_PROVIDERS)",
+			slog.String("uss_id", p.USSID), slog.String("uss_base_url", base))
+		return
+	}
+}
+
+// forgetLocked forgets the providers no held ISA has named for
+// ProviderForgetAfter. e.mu is held.
+func (e *Engine) forgetLocked(named map[string]bool, now time.Time) {
+	for base, p := range e.providers {
+		if named[base] {
+			delete(e.unnamed, base)
+			continue
+		}
+		since, ok := e.unnamed[base]
+		if !ok {
+			e.unnamed[base] = now
+			continue
+		}
+		if e.S.ProviderForgetAfter > 0 && now.Sub(since) >= e.S.ProviderForgetAfter {
+			e.dropProviderLocked(base)
+			e.Counters.Inc(CounterProvidersForgotten)
+			e.Logger.Info("Service Provider no ISA names any more forgotten", slog.String("uss_id", p.USSID),
+				slog.String("uss_base_url", base))
+		}
+	}
+}
+
+// dropProviderLocked stops the provider's pollers and forgets it.
+func (e *Engine) dropProviderLocked(base string) {
+	for k, r := range e.pollers {
+		if k.base == base {
+			r.cancel()
+			delete(e.pollers, k)
+		}
+	}
+	delete(e.providers, base)
+	delete(e.unnamed, base)
 }
 
 // certified is the register's set of certified owners (empty when none

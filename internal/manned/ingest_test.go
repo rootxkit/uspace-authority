@@ -310,3 +310,25 @@ func TestSourceSwitches(t *testing.T) {
 		t.Fatal("aged twice")
 	}
 }
+
+// Audit B-S6, E-01: one sample stamped ten minutes ahead (an adapter
+// clock jump) does not freeze its aircraft: it is published and counted,
+// and the genuine samples after it are published again, not skipped as
+// older; an older genuine sample is still skipped.
+func TestFutureSampleDoesNotFreezeTheAircraft(t *testing.T) {
+	in, sink := newTestIngest(t)
+	in.HandleFrame(frame(t, t0, 0.3, nil), t0.Add(time.Second))
+	in.HandleFrame(frame(t, t0.Add(10*time.Minute), 0.3, nil), t0.Add(2*time.Second))
+	if in.Counters.Get(CounterSourceAhead) != 1 {
+		t.Fatalf("the future sample is not counted: %v", in.Counters.Snapshot())
+	}
+	n := len(sink.published())
+	in.HandleFrame(frame(t, t0.Add(9*time.Second), 0.3, nil), t0.Add(10*time.Second))
+	if len(sink.published()) != n+1 {
+		t.Fatalf("a genuine sample after the future one was skipped: %v", in.Counters.Snapshot())
+	}
+	in.HandleFrame(frame(t, t0.Add(8*time.Second), 0.3, nil), t0.Add(10*time.Second))
+	if len(sink.published()) != n+1 || in.Counters.Get(CounterOlder) != 1 {
+		t.Fatalf("an older genuine sample was published: %v", in.Counters.Snapshot())
+	}
+}
