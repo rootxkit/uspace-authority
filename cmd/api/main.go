@@ -21,6 +21,7 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/cell/assign"
 	"github.com/rootxkit/uspace-authority/internal/config"
 	"github.com/rootxkit/uspace-authority/internal/dpadmin"
+	"github.com/rootxkit/uspace-authority/internal/incidents"
 	"github.com/rootxkit/uspace-authority/internal/passhash"
 	"github.com/rootxkit/uspace-authority/internal/policy"
 	"github.com/rootxkit/uspace-authority/internal/proc"
@@ -260,7 +261,37 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 			NATSTimeout: time.Duration(cfg.NATSTimeoutMS) * time.Millisecond, Logger: rt.Logger, Limiter: rt.Limiter,
 		})
 		rt.AddCounters("violations", vio.Counters)
+
+		// Incidents and evidence packs (WP-17): an escalation opens its
+		// incident in the review's transaction; packs are read from both
+		// databases (the telemetry one as the reader role), sealed by
+		// their hash and the publication key, and stored under
+		// EVIDENCE_DIR.
+		pubRing, err := tok.Keys.PublicationRing()
+		if err != nil {
+			return err
+		}
+		inc, err := incidents.Assemble(ctx, incidents.Setup{
+			DB: db, Audit: auditWriter, Config: cfg.Incidents, TSURL: cfg.TSURL, TSRole: cfg.TSReaderRole, TSMaxConns: cfg.TSMaxConns,
+			StatementTimeout: time.Duration(cfg.PGStatementTimeoutS) * time.Second, PIIKeyID: cfg.PIIKeyID, PIIKeyFile: cfg.PIIKeyFile,
+			PublicationRing: pubRing, TokenURL: cfg.Issuer() + "/oauth/token", Registry: reg.Service,
+			Pattern: func() (string, bool) {
+				p, ok := follower.Current()
+				return p.RegistrationNumberPattern, ok
+			},
+			Logger: rt.Logger, Limiter: rt.Limiter,
+		})
+		if err != nil {
+			return err
+		}
+		defer func() { cancel(); wg.Wait(); inc.Close() }()
+		rt.AddCounters("incidents", inc.Counters)
+		if inc.RecordTokens != nil {
+			rt.AddCounters("records_token_client", inc.RecordTokens)
+		}
+		vio.Service.OnEscalate = inc.Service.OpenFromViolation
 		wg.Go(func() { vio.Run(ctx) })
+		wg.Go(func() { inc.Run(ctx) })
 
 		// The Display Provider's administration (WP-14).
 		dpa, err := dpadmin.Assemble(cfg, rt, db, auditWriter, bp)
@@ -288,6 +319,7 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 			USpaceHandler:     zs.Handler,
 			CISPHandler:       cis.Handler,
 			ViolationsHandler: vio.Handler,
+			IncidentsHandler:  inc.Handler,
 			DPHandler:         dpa,
 		}, apiserver.Options{
 			Logger:      rt.Logger,

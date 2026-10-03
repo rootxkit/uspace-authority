@@ -98,7 +98,27 @@ type API struct {
 	Zones
 	CISP
 	Violations
+	Incidents
 	DPAdmin
+}
+
+// Incidents are api's case files and evidence packs (WP-17).
+type Incidents struct {
+	EvidenceDir              string `env:"EVIDENCE_DIR" help:"directory the sealed evidence packs are stored under (<incident>/<pack>.zip, never overwritten); unset: building, downloading and verifying a pack is refused with 503 evidence_storage_unavailable"`
+	IncidentsPackMaxWindowS  int    `env:"INCIDENTS_PACK_MAX_WINDOW_S" default:"21600" min:"60" max:"604800" help:"longest window of one evidence pack; a longer one is refused (window_too_large), never thinned (B-13)"`
+	IncidentsPackMaxRows     int    `env:"INCIDENTS_PACK_MAX_ROWS" default:"200000" min:"100" max:"10000000" help:"rows one section of a pack holds at most (tracks, frames, violations, events, ...); a section holding more refuses the pack (pack_too_large), never thinned"`
+	IncidentsPackMaxBytes    int    `env:"INCIDENTS_PACK_MAX_BYTES" default:"268435456" min:"1048576" max:"4294967296" help:"largest archive of one pack; a larger one is refused (pack_too_large)"`
+	IncidentsPackMaxZones    int    `env:"INCIDENTS_PACK_MAX_ZONES" default:"500" min:"1" max:"100000" help:"zone versions one pack names and finds in force at most; past it the pack is refused"`
+	IncidentsPackConcurrency int    `env:"INCIDENTS_PACK_CONCURRENCY" default:"2" min:"1" max:"64" help:"packs built at once per replica; past it a build is refused with 503 pack_busy and counted (E-10)"`
+	IncidentsBuildTimeoutS   int    `env:"INCIDENTS_BUILD_TIMEOUT_S" default:"120" min:"5" max:"3600" help:"bound on one pack build, its source reads and USSP record fetches included"`
+	IncidentsWriteTimeoutS   int    `env:"INCIDENTS_WRITE_TIMEOUT_S" default:"10" min:"1" max:"600" help:"bound on one incident transaction"`
+	IncidentsBackfillS       int    `env:"INCIDENTS_BACKFILL_S" default:"300" min:"10" max:"86400" help:"period of the job opening the incident of an escalation recorded without one (WP-12's incident_requested)"`
+	IncidentsBackfillBatch   int    `env:"INCIDENTS_BACKFILL_BATCH" default:"100" min:"1" max:"10000" help:"incidents that job opens at most per run"`
+	RecordsClientID          string `env:"RECORDS_CLIENT_ID" default:"authority-01" help:"this system's client id at its own token service for the USSP service-record reads (scope ussp.records, 02 F7; M24)"`
+	RecordsClientSecretFile  string `env:"RECORDS_CLIENT_SECRET_FILE" help:"file holding that client's secret; unset: every USSP record of a pack is unavailable with that reason"`
+	RecordsTimeoutMS         int    `env:"RECORDS_TIMEOUT_MS" default:"5000" min:"100" max:"60000" help:"deadline of one USSP service-record fetch"`
+	RecordsMaxBytes          int    `env:"RECORDS_MAX_BYTES" default:"1048576" min:"1024" max:"16777216" help:"largest USSP service record read; a larger one is unavailable with that reason"`
+	RecordsMaxPerPack        int    `env:"RECORDS_MAX_PER_PACK" default:"16" min:"1" max:"1000" help:"USSP service records fetched per pack at most; the rest are unavailable with that reason"`
 }
 
 // DPAdmin is api's administration of the F3411 Display Provider

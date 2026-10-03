@@ -118,6 +118,15 @@ var Roles = map[string][]string{
 	"GetViolation":    {RoleInspector},
 	"ReviewViolation": {RoleInspector},
 
+	"ListIncidents":        {RoleInspector, RoleIncidentOfficer},
+	"CreateIncident":       {RoleInspector, RoleIncidentOfficer},
+	"GetIncident":          {RoleInspector, RoleIncidentOfficer},
+	"UpdateIncident":       {RoleInspector, RoleIncidentOfficer},
+	"CreateEvidencePack":   {RoleInspector, RoleIncidentOfficer},
+	"GetEvidencePack":      {RoleInspector, RoleIncidentOfficer},
+	"DownloadEvidencePack": {RoleInspector, RoleIncidentOfficer},
+	"VerifyEvidencePack":   {RoleInspector, RoleIncidentOfficer},
+
 	"ListDPViews":               {RoleAdmin},
 	"CreateDPView":              {RoleAdmin},
 	"ListDPProviders":           {RoleAdmin},

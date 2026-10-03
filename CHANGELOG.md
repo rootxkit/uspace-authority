@@ -227,3 +227,20 @@ Unreleased; the format follows Keep a Changelog.
   contracts in `api/clients/` with generated clients on uspace-core's
   types; the fake DSS and Service Provider in `internal/ltest/fakedss`;
   the Display Provider runbook.
+- WP-17: incidents and evidence packs (`internal/incidents`, migration
+  `00017_incidents`, `/v1/incidents*`): case files opened from an
+  escalated violation in the review's transaction (and a backfill of
+  earlier escalations), from the authority's own observation or an
+  ANSP or USSP notice, with aircraft by registration public part,
+  append-only notes and every change audited; evidence packs for a
+  window with tracks cut at silences, recorded writer gaps and samples
+  without a position (holes labelled, never interpolated), raw frames,
+  Display Provider rows, zone and policy versions, violations, events,
+  the ground of every AGL number and the USSP service record fetched on
+  demand, every unreadable source stated as unavailable; deterministic
+  ZIP archives sealed by SHA-256 (in `evidence_packs` and `events`) and
+  a detached JWS of the seal statement by the publication key, stored
+  once under `EVIDENCE_DIR`, legal packs sealed at rest with the PII key
+  and gated to personal-data roles; downloads and verifications that
+  re-check the hash first and are audited with the purpose; the
+  incidents runbook.

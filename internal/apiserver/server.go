@@ -169,6 +169,19 @@ type ViolationsHandler interface {
 	ReviewViolation(ctx context.Context, request gen.ReviewViolationRequestObject) (gen.ReviewViolationResponseObject, error)
 }
 
+// IncidentsHandler serves /v1/incidents* (api, WP-17): the case files
+// and their evidence packs.
+type IncidentsHandler interface {
+	ListIncidents(ctx context.Context, request gen.ListIncidentsRequestObject) (gen.ListIncidentsResponseObject, error)
+	CreateIncident(ctx context.Context, request gen.CreateIncidentRequestObject) (gen.CreateIncidentResponseObject, error)
+	GetIncident(ctx context.Context, request gen.GetIncidentRequestObject) (gen.GetIncidentResponseObject, error)
+	UpdateIncident(ctx context.Context, request gen.UpdateIncidentRequestObject) (gen.UpdateIncidentResponseObject, error)
+	CreateEvidencePack(ctx context.Context, request gen.CreateEvidencePackRequestObject) (gen.CreateEvidencePackResponseObject, error)
+	GetEvidencePack(ctx context.Context, request gen.GetEvidencePackRequestObject) (gen.GetEvidencePackResponseObject, error)
+	DownloadEvidencePack(ctx context.Context, request gen.DownloadEvidencePackRequestObject) (gen.DownloadEvidencePackResponseObject, error)
+	VerifyEvidencePack(ctx context.Context, request gen.VerifyEvidencePackRequestObject) (gen.VerifyEvidencePackResponseObject, error)
+}
+
 // DPHandler serves /v1/dp/* administration (api, WP-14): oversight
 // areas, the Service Providers seen, USS availability arbitration. The
 // x-dp operations are served by dp-poller (DisplayProvider).
@@ -197,6 +210,7 @@ type Server struct {
 	USpaceHandler
 	CISPHandler
 	ViolationsHandler
+	IncidentsHandler
 	DPHandler
 }
 

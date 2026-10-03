@@ -90,6 +90,26 @@ type Event struct {
 	Hash       string
 }
 
+type EvidencePack struct {
+	PackID        string
+	IncidentID    string
+	Kind          string
+	WindowFrom    time.Time
+	WindowTo      time.Time
+	ContentHash   string
+	SizeBytes     int64
+	Signature     *string
+	SignatureKid  *string
+	SealStatement []byte
+	Manifest      []byte
+	StorageRef    string
+	SealedKeyID   *string
+	CreatedBy     string
+	Purpose       string
+	CaseRef       *string
+	CreatedAt     time.Time
+}
+
 type GeoZone struct {
 	ID                    int64
 	Dataset               string
@@ -139,6 +159,44 @@ type GooseDbVersionRelational struct {
 	VersionID int64
 	IsApplied bool
 	Tstamp    pgtype.Timestamp
+}
+
+type Incident struct {
+	IncidentID        string
+	Kind              string
+	OccurredAt        time.Time
+	OpenedFrom        string
+	SourceViolationID *string
+	NoticeRef         *string
+	IntentRefs        []string
+	Narrative         string
+	Severity          string
+	Status            string
+	Assignee          *string
+	ClosedAt          *time.Time
+	OpenedBy          string
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+}
+
+type IncidentAircraft struct {
+	ID             int64
+	IncidentID     string
+	Serial         *string
+	OperatorReg    *string
+	RegistryUasID  *string
+	TrackIds       []string
+	Identification []byte
+	AddedBy        string
+	AddedAt        time.Time
+}
+
+type IncidentNote struct {
+	ID         int64
+	IncidentID string
+	Author     string
+	Body       string
+	CreatedAt  time.Time
 }
 
 type LoginChallenge struct {

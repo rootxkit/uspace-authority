@@ -57,6 +57,11 @@ type Service struct {
 	WriteTimeout time.Duration
 	Counters     *core.Counters
 	Logger       *slog.Logger
+	// OnEscalate opens the incident of an escalated violation inside the
+	// review's transaction, the violation row locked (WP-17:
+	// incidents.Service.OpenFromViolation). Nil leaves the request
+	// (incident_requested) for incidents' backfill job.
+	OnEscalate func(ctx context.Context, q *gen.Queries, actor audit.Actor, v *gen.GetViolationForUpdateRow) (string, error)
 }
 
 func (s *Service) logger() *slog.Logger {
@@ -452,7 +457,8 @@ func notFound(id string) error {
 
 // Review records an inspector's decision in one transaction with its
 // events row (06 §2 T1: broadcast-only evidence is never escalated
-// without a note); escalation requests an incident (WP-17 opens it).
+// without a note); escalation requests an incident and, through
+// OnEscalate, opens it in the same transaction.
 func (s *Service) Review(ctx context.Context, actor audit.Actor, id, decision string, note *string) (gen.GetViolationRow, error) {
 	switch decision {
 	case DecisionReviewed, DecisionDismissed, DecisionEscalated:
@@ -496,11 +502,18 @@ func (s *Service) Review(ctx context.Context, actor audit.Actor, id, decision st
 			return err
 		}
 		if escalate {
-			// WP-17 opens the incident from this request; until it merges the
-			// request is the record.
+			// The request is recorded, and the incident opened from it in
+			// this transaction (WP-17), so an escalation never commits
+			// without its case file when the hook is wired.
 			if _, err := s.Audit.Record(ctx, q, audit.Event{Actor: actor, EntityType: entityType, EntityID: id,
 				EventType: audit.EventIncidentRequested, Payload: map[string]any{"kind": row.Kind, "opened_from": "violation"}}); err != nil {
 				return err
+			}
+			if s.OnEscalate != nil {
+				row.Status, row.ReviewedBy, row.ReviewNote = decision, &actor.ID, note
+				if _, err := s.OnEscalate(ctx, q, actor, &row); err != nil {
+					return err
+				}
 			}
 		}
 		out, err = q.GetViolation(ctx, id)

@@ -188,6 +188,18 @@ const (
 	EventIncidentRequested        = "incident_requested"
 )
 
+// Event types of WP-17's incidents (internal/incidents): an incident
+// opened (from a violation, an observation or a notice) and every
+// change of it; every evidence pack built, downloaded and verified (the
+// chain of custody, 06 §5). A build and a download need a purpose.
+const (
+	EventIncidentOpened         = "incident_opened"
+	EventIncidentUpdated        = "incident_updated"
+	EventEvidencePackBuilt      = "evidence_pack_built"
+	EventEvidencePackDownloaded = "evidence_pack_downloaded"
+	EventEvidencePackVerified   = "evidence_pack_verified"
+)
+
 // The F3411 Display Provider's events (WP-14): an oversight area added,
 // and a USS availability arbitration requested (before the DSS call),
 // set or failed (after it).
@@ -281,6 +293,12 @@ func DefaultCatalogue() Catalogue {
 		EventViolationDismissed:       {},
 		EventViolationEscalated:       {},
 		EventIncidentRequested:        {},
+
+		EventIncidentOpened:         {},
+		EventIncidentUpdated:        {},
+		EventEvidencePackBuilt:      {PIIView: true},
+		EventEvidencePackDownloaded: {PIIView: true},
+		EventEvidencePackVerified:   {},
 
 		EventDPViewCreated:           {},
 		EventDPAvailabilityRequested: {},

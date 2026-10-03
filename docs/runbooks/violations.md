@@ -56,7 +56,8 @@ POST /v1/violations/{id}/review   {"decision": "reviewed" | "dismissed" | "escal
 `dismissed` and `escalated` are final (409 `violation_reviewed`).
 Broadcast-only evidence is never escalated without a note (06 §2 T1:
 400 naming `note`): a broadcast can be spoofed, so say what corroborates
-it. Escalation records `incident_requested`; WP-17 opens the incident.
+it. Escalation records `incident_requested` and opens the incident in the
+same transaction (docs/runbooks/incidents.md).
 Every decision is an `events` row with the inspector and the note.
 
 ## The audit trail of one violation
