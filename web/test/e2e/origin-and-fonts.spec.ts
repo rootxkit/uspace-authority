@@ -38,7 +38,15 @@ test("the CSP is the kit's and refuses a request to another origin", async ({ pa
   // The pair: a same-origin read is allowed, a foreign one is refused before it is sent.
   const outcome = await page.evaluate(async () => {
     const violations: string[] = [];
-    document.addEventListener("securitypolicyviolation", (e) => violations.push(e.violatedDirective));
+    // The event is queued as its own task, after the fetch has already
+    // failed: wait for it (bounded), not for a frame.
+    const reported = new Promise<void>((resolve) => {
+      document.addEventListener("securitypolicyviolation", (e) => {
+        violations.push(e.violatedDirective);
+        resolve();
+      });
+      setTimeout(resolve, 5000);
+    });
     const own = await fetch("/healthz").then(
       (r) => r.status,
       () => -1,
@@ -47,7 +55,7 @@ test("the CSP is the kit's and refuses a request to another origin", async ({ pa
       () => "sent",
       () => "refused",
     );
-    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    await reported;
     return { own, foreign, violations };
   });
   expect(outcome.own).toBe(200);
