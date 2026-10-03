@@ -297,12 +297,51 @@ var USSPFlights = Table{Name: "ussp_flights", Columns: []Column{
 	{Name: "details", Kind: KindJSON, Nullable: true},
 }}
 
+// MannedTracks is manned_tracks (timeseries 00012, WP-15): the ANSP's
+// manned traffic as manned-ingest published it, internal/manned.Row's
+// JSON. The body's members are the ANSP's track/manned/v1; the time is
+// the sample's captured_at on the ANSP's clock, which names it across
+// reconnections and restarts.
+var MannedTracks = Table{Name: "manned_tracks", Columns: []Column{
+	{Name: "source_captured_at", Kind: KindTime},
+	{Name: "captured_at", Kind: KindTime},
+	{Name: "dedupe_key", Kind: KindText},
+	{Name: "msg_id", Kind: KindText},
+	{Name: "source_msg_id", Kind: KindText, Nullable: true},
+	{Name: "ts", Kind: KindTime, Nullable: true},
+	{Name: "rx_ts", Kind: KindTime},
+	{Name: "time_source", Kind: KindText},
+	{Name: "backlog", Kind: KindBool},
+	{Name: "icao24", Kind: KindText},
+	{Name: "callsign", Kind: KindText, Nullable: true},
+	{Name: "lat_deg", Kind: KindFloat},
+	{Name: "lon_deg", Kind: KindFloat},
+	{Name: "alt_pressure_m", Kind: KindFloat, Nullable: true},
+	{Name: "alt_wgs84_m", Kind: KindFloat, Nullable: true},
+	{Name: "gs_ms", Kind: KindFloat, Nullable: true},
+	{Name: "track_deg", Kind: KindFloat, Nullable: true},
+	{Name: "vrate_ms", Kind: KindFloat, Nullable: true},
+	{Name: "emergency", Kind: KindBool, Nullable: true},
+	{Name: "spi", Kind: KindBool, Nullable: true},
+	{Name: "squawk", Kind: KindText, Nullable: true},
+	{Name: "source_class", Kind: KindText},
+	{Name: "quality", Kind: KindJSON, Nullable: true},
+	{Name: "trust", Kind: KindText},
+	{Name: "source", Kind: KindText},
+	{Name: "source_instance", Kind: KindText},
+	{Name: "state", Kind: KindText},
+	{Name: "relevant", Kind: KindBool, Nullable: true},
+	{Name: "policy_version", Kind: KindText, Nullable: true},
+	{Name: "cell5", Kind: KindText, Nullable: true},
+}}
+
 // Tables are the hypertables tsdb-writer consumes tsw.v1.<table> for,
-// by name. manned_tracks (WP-15) is added by its WP with its migration.
+// by name.
 var Tables = map[string]Table{
 	RIDObservations.Name: RIDObservations,
 	Tracks.Name:          Tracks,
 	USSPFlights.Name:     USSPFlights,
+	MannedTracks.Name:    MannedTracks,
 }
 
 // Gap is one writer_gaps row.

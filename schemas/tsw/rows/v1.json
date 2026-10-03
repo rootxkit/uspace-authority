@@ -9,7 +9,7 @@
     "table": {
       "description": "The hypertable; equal to the <table> token of the subject.",
       "type": "string",
-      "enum": ["rid_observations", "tracks", "ussp_flights"]
+      "enum": ["rid_observations", "tracks", "ussp_flights", "manned_tracks"]
     },
     "rows": {
       "description": "Rows of the table. Each member is a column of the table (migrations/timeseries), by its column name: timestamptz as an RFC 3339 string, bytea as standard base64, integers and floats as JSON numbers, booleans as JSON booleans, jsonb as a JSON object; a nullable column may be null or absent.",
@@ -123,6 +123,44 @@
         "provider_unknown": { "type": "boolean" },
         "flight": { "type": "object" },
         "details": { "type": ["object", "null"] }
+      }
+    },
+    "manned_tracks": {
+      "description": "One manned_tracks row (timeseries 00012, WP-15; internal/manned.Row's JSON): a track/manned/v1 message manned-ingest published, the ANSP's body members flattened (uspace-ansp schemas/track/manned/v1.json). alt_pressure_m is pressure altitude and never AMSL; alt_wgs84_m is geometric (D-03). source_captured_at is the sample's time on the ANSP's clock and part of dedupe_key.",
+      "type": "object",
+      "required": ["source_captured_at", "captured_at", "dedupe_key", "msg_id", "rx_ts", "time_source", "backlog", "icao24", "lat_deg", "lon_deg", "source_class", "trust", "source", "source_instance", "state"],
+      "additionalProperties": false,
+      "properties": {
+        "source_captured_at": { "type": "string", "format": "date-time" },
+        "captured_at": { "type": "string", "format": "date-time" },
+        "dedupe_key": { "type": "string" },
+        "msg_id": { "type": "string" },
+        "source_msg_id": { "type": ["string", "null"] },
+        "ts": { "type": ["string", "null"], "format": "date-time" },
+        "rx_ts": { "type": "string", "format": "date-time" },
+        "time_source": { "enum": ["provider", "system"] },
+        "backlog": { "type": "boolean" },
+        "icao24": { "type": "string", "pattern": "^[0-9a-f]{6}$" },
+        "callsign": { "type": ["string", "null"] },
+        "lat_deg": { "type": "number", "minimum": -90, "maximum": 90 },
+        "lon_deg": { "type": "number", "minimum": -180, "maximum": 180 },
+        "alt_pressure_m": { "type": ["number", "null"] },
+        "alt_wgs84_m": { "type": ["number", "null"] },
+        "gs_ms": { "type": ["number", "null"] },
+        "track_deg": { "type": ["number", "null"] },
+        "vrate_ms": { "type": ["number", "null"] },
+        "emergency": { "type": ["boolean", "null"] },
+        "spi": { "type": ["boolean", "null"] },
+        "squawk": { "type": ["string", "null"] },
+        "source_class": { "enum": ["ads_b", "mode_s", "ssr", "atm_feed", "ads_l"] },
+        "quality": { "type": ["object", "null"] },
+        "trust": { "const": "surveillance" },
+        "source": { "const": "ansp_feed" },
+        "source_instance": { "type": "string" },
+        "state": { "enum": ["live", "stale", "source_disabled"] },
+        "relevant": { "type": ["boolean", "null"] },
+        "policy_version": { "type": ["string", "null"] },
+        "cell5": { "type": ["string", "null"] }
       }
     }
   }
