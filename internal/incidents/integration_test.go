@@ -674,3 +674,34 @@ func entries(t *testing.T, archive []byte) map[string][]byte {
 	}
 	return out
 }
+
+// Audit B-S1, E-01: a window given to the nanosecond is stored to the
+// microsecond (timestamptz); the seal is made over what is stored, so
+// the pack verifies and downloads, and its window is the stored one.
+func TestIntegrationNanosecondWindowVerifies(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	zoneID, _ := f.violations()
+	f.telemetry()
+	if _, err := f.vio.Review(ctx, inspector, zoneID, violations.DecisionEscalated, sp("note")); err != nil {
+		t.Fatal(err)
+	}
+	rows, _ := f.inc.List(ctx, listByViolation(zoneID))
+	incID := rows[0].IncidentID
+	r := f.request(KindOversight)
+	r.From, r.To = r.From.Add(456789*time.Nanosecond), r.To.Add(987654321*time.Nanosecond)
+	row, err := f.packs.Create(ctx, inspector, false, incID, r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !row.WindowFrom.Equal(r.From.Truncate(time.Microsecond)) || !row.WindowTo.Equal(r.To.Truncate(time.Microsecond)) {
+		t.Fatalf("window %s %s", row.WindowFrom, row.WindowTo)
+	}
+	v, err := f.packs.Verify(ctx, inspector, incID, row.PackID)
+	if err != nil || !v.HashMatches || v.Signature != SigVerified {
+		t.Fatalf("a genuine pack with a nanosecond window does not verify: %+v %v", v, err)
+	}
+	if _, _, err := f.packs.Download(ctx, inspector, false, incID, row.PackID, "review"); err != nil {
+		t.Fatalf("a genuine pack is not served: %v", err)
+	}
+}

@@ -306,6 +306,10 @@ func (p *Packs) checkRequest(piiRole bool, r *PackRequest) error {
 	if r.CaseRef != "" && (!utf8.ValidString(r.CaseRef) || utf8.RuneCountInString(r.CaseRef) > 200) {
 		return core.Fieldf("case_ref", "at most 200 characters of UTF-8")
 	}
+	// The window is stored as timestamptz (microseconds) and the seal is
+	// verified over the stored row: it is signed over the same precision,
+	// or a genuine pack would read as tampered (audit B-S1).
+	r.From, r.To = r.From.Truncate(time.Microsecond), r.To.Truncate(time.Microsecond)
 	if r.From.IsZero() || !r.To.After(r.From) {
 		return core.Fieldf("to", "must be after from")
 	}
