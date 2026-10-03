@@ -135,6 +135,8 @@ type Incidents struct {
 	RecordsTimeoutMS         int    `env:"RECORDS_TIMEOUT_MS" default:"5000" min:"100" max:"60000" help:"deadline of one USSP service-record fetch"`
 	RecordsMaxBytes          int    `env:"RECORDS_MAX_BYTES" default:"1048576" min:"1024" max:"16777216" help:"largest USSP service record read; a larger one is unavailable with that reason"`
 	RecordsMaxPerPack        int    `env:"RECORDS_MAX_PER_PACK" default:"16" min:"1" max:"1000" help:"USSP service records fetched per pack at most; the rest are unavailable with that reason"`
+	RecordsConcurrency       int    `env:"RECORDS_CONCURRENCY" default:"4" min:"1" max:"64" help:"USSP service records of a legal pack read at once"`
+	RecordsStepTimeoutS      int    `env:"RECORDS_STEP_TIMEOUT_S" default:"30" min:"1" max:"600" help:"deadline of a legal pack's whole records step; the records not read by then are unavailable with that reason (oversight packs read none)"`
 }
 
 // DPAdmin is api's administration of the F3411 Display Provider

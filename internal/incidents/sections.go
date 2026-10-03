@@ -1,6 +1,7 @@
 package incidents
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -9,6 +10,7 @@ import (
 	"slices"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -631,12 +633,21 @@ func (st *build) records() error {
 			}
 		}
 	}
-	included := 0
-	var files []string
+	// What each reference gets: an oversight pack reads none (a record
+	// may carry personal data and would only be kept by hash; audit
+	// B-S4), a legal pack reads those it may, in parallel and within the
+	// records step's own deadline.
+	summaries := make([]RecordSummary, len(refs))
+	bodies := make([]json.RawMessage, len(refs))
+	errs := make([]error, len(refs))
+	var fetch []int
 	for i, r := range refs {
 		rs := RecordSummary{USSPID: r.ussp, FlightID: r.flight, State: StateUnavailable}
-		base, known := bases[r.ussp]
+		_, known := bases[r.ussp]
 		switch {
+		case st.in.Kind != KindLegal:
+			rs.State = StateWithheld
+			rs.Reason = "not fetched for an oversight pack: the record's shape is fixed by no contract this system pins and may carry personal data; a legal pack reads it"
 		case listWhy != "":
 			rs.Reason = listWhy
 		case i >= st.b.MaxRecords:
@@ -644,33 +655,60 @@ func (st *build) records() error {
 		case !known:
 			rs.Reason = "the USSP holds no certificate in the register (no base_url known)"
 		default:
-			body, err := st.b.Records.Fetch(st.ctx, base, r.flight)
-			if err != nil {
-				rs.Reason = reason(err)
-				break
-			}
-			rs.SHA256 = ContentHash(body)
-			if st.in.Kind != KindLegal {
-				rs.State = StateWithheld
-				rs.Reason = "the record's shape is fixed by no contract this system pins and may carry personal data; kept by hash in an oversight pack"
-				break
-			}
-			path := fmt.Sprintf("ussp_records/%02d.json", len(files)+1)
-			if err := st.add(path, map[string]any{"ussp_id": r.ussp, "flight_id": r.flight, "base_url": base, "record": body}); err != nil {
-				return err
-			}
-			rs.State, rs.File = StateIncluded, path
-			files = append(files, path)
-			included++
+			fetch = append(fetch, i)
 		}
-		st.m.USSPRecords = append(st.m.USSPRecords, rs)
+		summaries[i] = rs
 	}
+	if len(fetch) > 0 {
+		timeout, conc := st.b.RecordsTimeout, st.b.RecordsConcurrency
+		if timeout <= 0 {
+			timeout = DefaultRecordsTimeout
+		}
+		if conc <= 0 {
+			conc = DefaultRecordsConcurrency
+		}
+		ctx, cancel := context.WithTimeout(st.ctx, timeout)
+		sem := make(chan struct{}, conc)
+		var wg sync.WaitGroup
+		for _, i := range fetch {
+			wg.Go(func() {
+				select {
+				case sem <- struct{}{}:
+				case <-ctx.Done():
+					errs[i] = fmt.Errorf("not read within the records step's %s: %w", timeout, ctx.Err())
+					return
+				}
+				defer func() { <-sem }()
+				bodies[i], errs[i] = st.b.Records.Fetch(ctx, bases[refs[i].ussp], refs[i].flight)
+			})
+		}
+		wg.Wait()
+		cancel()
+	}
+	included := 0
+	var files []string
+	for _, i := range fetch {
+		rs, r := &summaries[i], refs[i]
+		if errs[i] != nil {
+			rs.Reason = reason(errs[i])
+			continue
+		}
+		rs.SHA256 = ContentHash(bodies[i])
+		path := fmt.Sprintf("ussp_records/%02d.json", len(files)+1)
+		if err := st.add(path, map[string]any{"ussp_id": r.ussp, "flight_id": r.flight, "base_url": bases[r.ussp], "record": bodies[i]}); err != nil {
+			return err
+		}
+		rs.State, rs.File = StateIncluded, path
+		files = append(files, path)
+		included++
+	}
+	st.m.USSPRecords = append(st.m.USSPRecords, summaries...)
 	s := Section{Basis: BasisReceived, Count: included, Files: files}
 	switch {
 	case included > 0:
 		s.State = StateIncluded
 	case allWithheld(st.m.USSPRecords):
-		s.State, s.Reason = StateWithheld, "every record fetched is withheld from an oversight pack (kept by hash)"
+		s.State, s.Reason = StateWithheld, "an oversight pack reads no USSP record (each may carry personal data)"
 	default:
 		s.State, s.Reason = StateUnavailable, "no record could be had; ussp_records says why for each"
 	}

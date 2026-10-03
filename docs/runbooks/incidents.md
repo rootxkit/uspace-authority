@@ -61,7 +61,7 @@ same evidence always gives the same bytes:
 | `writer_gaps.json` | `writer_gaps` | recorded | Every batch of the tracks or frames table tsdb-writer recorded as dropped or spilled in the window. |
 | `ussp_flights.json` | `ussp_flights` | received | The Display Provider's rows of the tracks, while still held (24 h, F3411). |
 | `manned_tracks.json` | `manned_tracks` | received | The ANSP's manned traffic (WP-15) placed in the window inside the extent of the evidence's positions padded by `INCIDENTS_MANNED_MARGIN_M` (10 km): what an airprox is weighed against. `alt_pressure_m` is pressure altitude, never AMSL; `alt_wgs84_m` is null when the source gave none. `none` says an ANSP feed outage leaves no row: read `writer_gaps` and the `ansp_feed` status first. |
-| `ussp_records/NN.json` | `ussp_records` | received | The USSP's service record of each USSP flight of the pack (`GET {base_url}/v1/records/flights/{id}`, scope `ussp.records`, fetched while the pack is built; 02 F7, Q-A18), verbatim. |
+| `ussp_records/NN.json` | `ussp_records` | received | The USSP's service record of each USSP flight of the pack (`GET {base_url}/v1/records/flights/{id}`, scope `ussp.records`, fetched while a legal pack is built; 02 F7, Q-A18), verbatim. An oversight pack fetches none. |
 | `zones.json` | `zones` | recorded | The zone versions the violations name and every published version in force in the window over the evidence's extent, each ED-318 feature verbatim as authored. |
 | `policies.json` | `policies` | recorded | Every `authority_policy` version the violations were judged with and the one active at build. |
 | `events.json` | `events` | recorded | Every audit row of the incident, its packs and its violations, with `prev_hash` and `hash` (T7). The pack's own `evidence_pack_built` row follows them. |
@@ -190,6 +190,7 @@ case reference (a court order, a prosecutor's request):
 | `INCIDENTS_BACKFILL_S`, `INCIDENTS_BACKFILL_BATCH` | 300, 100 | The job opening incidents of earlier escalations. |
 | `RECORDS_CLIENT_ID`, `RECORDS_CLIENT_SECRET_FILE` | `authority-01`, unset | The client asking this issuer for `ussp.records` tokens. Unset: every record is `unavailable` with that reason, said at start. |
 | `RECORDS_TIMEOUT_MS`, `RECORDS_MAX_BYTES`, `RECORDS_MAX_PER_PACK` | 5000, 1048576, 16 | One record fetch; past the bounds a record is `unavailable` with the reason. |
+| `RECORDS_CONCURRENCY`, `RECORDS_STEP_TIMEOUT_S` | 4, 30 | A legal pack reads its USSP records this many at once, the whole step within this deadline (records not read by then are `unavailable`). An oversight pack reads none: each is `withheld`, not fetched. |
 
 A USSP's `base_url` comes from its certificate (WP-16), found by its
 code or its client id (the owner of its ISAs), whatever the

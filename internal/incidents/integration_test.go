@@ -303,7 +303,9 @@ func TestIntegrationEscalatedViolationToAVerifiedPack(t *testing.T) {
 	f.zone()
 	zoneID, heightID := f.violations()
 	f.telemetry()
+	var usspReads atomic.Int32
 	usspDown := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		usspReads.Add(1)
 		http.Error(w, "down", http.StatusServiceUnavailable)
 	}))
 	t.Cleanup(usspDown.Close)
@@ -371,9 +373,12 @@ func TestIntegrationEscalatedViolationToAVerifiedPack(t *testing.T) {
 	if len(m.AGLNumbers) != 1 || m.AGLNumbers[0].ViolationID != heightID || m.AGLNumbers[0].State != StateIncluded {
 		t.Errorf("agl %+v", m.AGLNumbers)
 	}
-	// The fake USSP's record endpoint is down: said, never missing.
-	if len(m.USSPRecords) != 1 || m.USSPRecords[0].State != StateUnavailable || !strings.Contains(m.USSPRecords[0].Reason, "answered 503") {
-		t.Errorf("ussp_record %+v", m.USSPRecords)
+	// An oversight pack reads no USSP record (audit B-S4): the record
+	// is named, withheld and not fetched (the down endpoint is not even
+	// asked); TestIntegrationLegalPackRecordDownIsUnavailable reads it.
+	if len(m.USSPRecords) != 1 || m.USSPRecords[0].State != StateWithheld || !strings.Contains(m.USSPRecords[0].Reason, "not fetched") ||
+		usspReads.Load() != 0 {
+		t.Errorf("ussp_record %+v, %d reads", m.USSPRecords, usspReads.Load())
 	}
 	data := f.stored(row.StorageRef)
 	files := entries(t, data)
@@ -747,5 +752,36 @@ func TestIntegrationUnreadableArchiveIsNotTampering(t *testing.T) {
 	snap := f.packs.Counters.Snapshot()
 	if snap[CounterPackTampered] != 0 || snap[CounterPackUnreadable] != 2 {
 		t.Fatalf("counters %v", snap)
+	}
+}
+
+// Audit B-S4, E-01: a legal pack reads the USSP records; the USSP's
+// record endpoint down is said (unavailable, the status named), never
+// missing.
+func TestIntegrationLegalPackRecordDownIsUnavailable(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	var reads atomic.Int32
+	down := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		reads.Add(1)
+		http.Error(w, "down", http.StatusServiceUnavailable)
+	}))
+	t.Cleanup(down.Close)
+	f.usspCertificate(down.URL)
+	zoneID, _ := f.violations()
+	f.telemetry()
+	if _, err := f.vio.Review(ctx, inspector, zoneID, violations.DecisionEscalated, sp("note")); err != nil {
+		t.Fatal(err)
+	}
+	rows, _ := f.inc.List(ctx, listByViolation(zoneID))
+	f.packs.Builder.Personal = &fakePersonal{known: map[string]map[string]string{itReg: {"full_name": piiName}}}
+	row, err := f.packs.Create(ctx, inspector, true, rows[0].IncidentID, f.request(KindLegal))
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := manifestOf(t, row.Manifest)
+	if len(m.USSPRecords) != 1 || m.USSPRecords[0].State != StateUnavailable || !strings.Contains(m.USSPRecords[0].Reason, "answered 503") ||
+		reads.Load() != 1 {
+		t.Fatalf("ussp_record %+v, %d reads", m.USSPRecords, reads.Load())
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -309,9 +310,12 @@ func TestUSSPRecords(t *testing.T) {
 	if !strings.Contains(string(files[m.USSPRecords[0].File]), `"alerts"`) {
 		t.Fatal("the record is not in the pack")
 	}
+	// An oversight pack reads no record (audit B-S4): withheld, not
+	// fetched, so there is no hash to keep.
+	gotPath = ""
 	m, _, _ = mustBuild(t, b, buildIn(KindOversight))
-	if m.USSPRecords[0].State != StateWithheld || m.USSPRecords[0].SHA256 == "" || m.Sections[SecUSSPRecords].State != StateWithheld {
-		t.Fatalf("oversight records %+v", m.USSPRecords)
+	if m.USSPRecords[0].State != StateWithheld || m.USSPRecords[0].SHA256 != "" || m.Sections[SecUSSPRecords].State != StateWithheld || gotPath != "" {
+		t.Fatalf("oversight records %+v, read %q", m.USSPRecords, gotPath)
 	}
 
 	unavailable := func(mutate func(b *Builder, src *fakeSources, tel *fakeTelemetry), want string) {
@@ -540,6 +544,116 @@ func TestFetchFollowsNoRedirect(t *testing.T) {
 		}
 		if _, err := r.Fetch(context.Background(), ussp.URL, "OK"); err != nil {
 			t.Fatal(err)
+		}
+	}
+}
+
+// recordServer answers record reads after delay (forever when hang),
+// counting the reads and the most in flight at once.
+type recordServer struct {
+	*httptest.Server
+	reads, inFlight, maxInFlight atomic.Int32
+}
+
+func newRecordServer(t *testing.T, delay time.Duration, hang chan struct{}) *recordServer {
+	s := &recordServer{}
+	s.Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s.reads.Add(1)
+		n := s.inFlight.Add(1)
+		defer s.inFlight.Add(-1)
+		for m := s.maxInFlight.Load(); n > m && !s.maxInFlight.CompareAndSwap(m, n); m = s.maxInFlight.Load() {
+		}
+		wait := time.After(delay)
+		if hang != nil {
+			wait = nil // only hang (or the client giving up) ends it
+		}
+		select {
+		case <-hang:
+		case <-r.Context().Done():
+			return
+		case <-wait:
+		}
+		_, _ = w.Write([]byte(`{"flight_id":"` + strings.TrimPrefix(r.URL.Path, "/v1/records/flights/") + `"}`))
+	}))
+	t.Cleanup(s.Close)
+	return s
+}
+
+func recordSources(base string, flights int) (*fakeSources, *fakeTelemetry) {
+	src, tel := richSources()
+	src.usspBases = []gen.PackUSSPBaseURLsRow{{Code: "USSPA", ClientID: "ussp-USSPA-01", BaseUrl: base}}
+	row := tel.ussp[0]
+	tel.ussp = nil
+	for i := range flights {
+		r := row
+		r.FlightID = fmt.Sprintf("F%d", i+1)
+		tel.ussp = append(tel.ussp, r)
+	}
+	return src, tel
+}
+
+// Audit B-S4, E-01: an oversight pack does not read the USSP records it
+// would only keep by hash (they may carry personal data): none is
+// requested and each is withheld, not fetched; a legal pack reads them.
+func TestOversightPackFetchesNoRecord(t *testing.T) {
+	srv := newRecordServer(t, 0, nil)
+	src, tel := recordSources(srv.URL, 2)
+	b := builder(src, tel)
+	b.Records = &Records{Tokens: fakeTokens{}, MaxBytes: 1 << 20}
+	m, _, _ := mustBuild(t, b, buildIn(KindOversight))
+	if srv.reads.Load() != 0 {
+		t.Fatalf("an oversight pack read %d records", srv.reads.Load())
+	}
+	if len(m.USSPRecords) != 2 || m.Sections[SecUSSPRecords].State != StateWithheld {
+		t.Fatalf("%+v %+v", m.USSPRecords, m.Sections[SecUSSPRecords])
+	}
+	for _, r := range m.USSPRecords {
+		if r.State != StateWithheld || r.SHA256 != "" || !strings.Contains(r.Reason, "not fetched") {
+			t.Fatalf("oversight record %+v", r)
+		}
+	}
+	m, _, _ = mustBuild(t, b, buildIn(KindLegal))
+	if srv.reads.Load() != 2 || m.Sections[SecUSSPRecords].State != StateIncluded {
+		t.Fatalf("legal: reads %d %+v", srv.reads.Load(), m.Sections[SecUSSPRecords])
+	}
+}
+
+// Audit B-S4, E-10: a legal pack's records are read at most
+// RecordsConcurrency at a time, in parallel, in a stable order; the
+// records step has its own deadline, past which the records not read are
+// unavailable with that reason instead of spending the build's budget.
+func TestRecordsAreReadInParallelWithinTheirDeadline(t *testing.T) {
+	srv := newRecordServer(t, 100*time.Millisecond, nil)
+	src, tel := recordSources(srv.URL, 4)
+	b := builder(src, tel)
+	b.Records = &Records{Tokens: fakeTokens{}, MaxBytes: 1 << 20}
+	b.RecordsConcurrency = 2
+	m, files, _ := mustBuild(t, b, buildIn(KindLegal))
+	if got := srv.maxInFlight.Load(); got != 2 {
+		t.Fatalf("at most %d records read at once, want 2", got)
+	}
+	for i, r := range m.USSPRecords {
+		want := fmt.Sprintf("ussp_records/%02d.json", i+1)
+		if r.State != StateIncluded || r.File != want || !strings.Contains(string(files[want]), r.FlightID) {
+			t.Fatalf("record %d %+v", i, r)
+		}
+	}
+
+	hang := make(chan struct{})
+	defer close(hang)
+	slow := newRecordServer(t, 0, hang)
+	src, tel = recordSources(slow.URL, 3)
+	b = builder(src, tel)
+	b.Records = &Records{Tokens: fakeTokens{}, MaxBytes: 1 << 20, Timeout: time.Minute}
+	b.RecordsTimeout = 200 * time.Millisecond
+	start := time.Now()
+	m, _, _ = mustBuild(t, b, buildIn(KindLegal))
+	if took := time.Since(start); took > 5*time.Second {
+		t.Fatalf("the records step took %s past its deadline", took)
+	}
+	for _, r := range m.USSPRecords {
+		if r.State != StateUnavailable || r.Reason == "" {
+			t.Fatalf("a record past the deadline %+v", r)
 		}
 	}
 }

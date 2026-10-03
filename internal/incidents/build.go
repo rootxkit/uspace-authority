@@ -96,6 +96,12 @@ type Builder struct {
 	// MaxRecords bounds the USSP records fetched per pack; the rest are
 	// unavailable with that reason.
 	MaxRecords int
+	// RecordsConcurrency bounds the USSP records read at once (default
+	// DefaultRecordsConcurrency); RecordsTimeout bounds the whole records
+	// step of a legal pack (default DefaultRecordsTimeout), so slow USSPs
+	// do not spend the build's budget (audit B-S4).
+	RecordsConcurrency int
+	RecordsTimeout     time.Duration
 	// MaxZones bounds the zone versions named and in force.
 	MaxZones int
 	// MannedMarginM pads the evidence's extent for the manned traffic a
@@ -216,6 +222,12 @@ const (
 	SecEvents       = "events"
 	SecGround       = "ground"
 	SecPersonalData = "personal_data"
+)
+
+// Defaults of the records step of a legal pack (audit B-S4).
+const (
+	DefaultRecordsConcurrency = 4
+	DefaultRecordsTimeout     = 30 * time.Second
 )
 
 // payloadTypes are the ODID message types whose raw payload an
