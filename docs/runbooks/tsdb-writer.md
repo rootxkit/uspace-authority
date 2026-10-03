@@ -35,7 +35,9 @@ Every `STATUS_INTERVAL_S` the process logs a `status` line with:
   `retention_checks`, `retention_violations` and
   `retention_check_failed`. The same names are on `/metrics`.
 - `retention`: for each table with a retention period, `clean`,
-  `violated` or `unknown`.
+  `violated` or `unknown`; `tracks`, `rid_observations` and
+  `manned_tracks` are listed `unchecked` (no check covers them until
+  WP-27), so a `clean` line never reads as covering them.
 
 A healthy writer under load shows `writer_state: ok`, `queue_age_s`
 under a second, and `rows_written` rising.

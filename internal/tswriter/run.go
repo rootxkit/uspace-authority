@@ -252,7 +252,7 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.TSDBWriter, o Option
 	if checks == nil {
 		checks = RetentionChecks
 	}
-	ret := &Retention{Store: db, Checks: checks, Interval: time.Duration(t.RetentionCheckS) * time.Second,
+	ret := &Retention{Store: db, Checks: checks, Unchecked: UncheckedRetention, Interval: time.Duration(t.RetentionCheckS) * time.Second,
 		Counters: counters, Logger: rt.Logger}
 	rt.AddStatus(Status(pipes, ret))
 	rt.AddStatusLevel(StatusLevel(pipes))
