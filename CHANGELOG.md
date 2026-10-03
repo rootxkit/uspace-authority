@@ -258,3 +258,20 @@ Unreleased; the format follows Keep a Changelog.
   dp-poller (replacing `DP_CERTIFIED_USSPS`) and USSP base URLs for
   evidence packs from the register (replacing the CIS list); the
   certificates runbook.
+- WP-15: manned-ingest (`internal/manned`, timeseries `00012_manned_tracks`):
+  the ANSP's manned traffic stream and snapshot (`api/clients/ansp.yaml`
+  and its `track/manned/v1` schema pinned at uspace-ansp 2f9a700) with a
+  token of scope `ansp.traffic` for the ANSP's host and, with
+  `AUTHORITY_MTLS_MODE=required`, this system's client certificate
+  (`off` said at error level on every status line); frames dispatched on
+  schema, bodies validated against the ANSP's schema, placed with
+  `PlaceBatch` (arrival minus the ANSP's age; at arrival and counted
+  without `rx_ts`), the two altitudes kept apart, deduplicated per
+  aircraft and aged forward (stale, source_disabled) never removed;
+  published on `man.v1` and written to `manned_tracks`; the feed's state
+  (healthy, stale, unavailable since T, lagging, disabled by whom) and
+  each ANSP adapter's on `src.v1.ansp_feed`, reconnecting forever and
+  following source control; the picture's `manned_unavailable` and
+  aged-sample replacement; evidence packs' `manned_tracks` section around
+  the evidence (replacing WP-17's "unavailable"); the fake ANSP of
+  `internal/ltest`; the manned-ingest runbook.
