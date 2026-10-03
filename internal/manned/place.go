@@ -27,6 +27,9 @@ type placed struct {
 	rx         time.Time
 	capturedAt time.Time
 	timeSource core.TimeSource
+	// orderAt is what orders the sample against the one held: sourceAt,
+	// bounded by the arrival (Ingest.acceptLocked).
+	orderAt time.Time
 }
 
 func parseStamp(p *string) (time.Time, bool) {

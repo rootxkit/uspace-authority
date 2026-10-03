@@ -64,8 +64,12 @@ know this system's certificate subject (its `ANSP_MTLS_MODE`).
 Per aircraft one state is kept: an older sample, or the same sample
 again (the snapshot after a reconnection), is skipped
 (`duplicates_skipped`, `older_samples_skipped`); the same sample in a
-later state is republished in that state with its own placement. An
-aircraft is aged, never removed by this process; the picture removes an
+later state is republished in that state with its own placement.
+Samples are ordered by their own time, but never later than
+`MANNED_MAX_SOURCE_AHEAD_MS` (5 s) after they arrived: one stamped
+further ahead (an adapter clock jump) is counted
+`source_time_in_future` and ordered at its arrival, so the genuine
+samples after it are not skipped as older. An aircraft is aged, never removed by this process; the picture removes an
 aircraft older than `stale_after_s` on its own, and says
 `manned_unavailable` while the feed is not live.
 

@@ -661,6 +661,7 @@ type MannedTuning struct {
 	BackoffMinMS     int    `env:"MANNED_BACKOFF_MIN_MS" default:"500" min:"10" max:"600000" help:"first reconnection delay, doubled up to MANNED_BACKOFF_MAX_MS, jittered; reconnection never stops (B-08)"`
 	BackoffMaxMS     int    `env:"MANNED_BACKOFF_MAX_MS" default:"30000" min:"10" max:"600000" help:"longest reconnection delay"`
 	MaxAircraft      int    `env:"MANNED_MAX_AIRCRAFT" default:"10000" min:"1" max:"10000000" help:"aircraft whose last published state is remembered; past it the one updated longest ago is forgotten and counted (E-10)"`
+	MaxSourceAheadMS int    `env:"MANNED_MAX_SOURCE_AHEAD_MS" default:"5000" min:"100" max:"600000" help:"a sample stamped more than this after it arrived is ordered at its arrival plus this, counted source_time_in_future, so an ANSP clock jump cannot freeze an aircraft"`
 	MaxFrameBytes    int    `env:"MANNED_MAX_FRAME_BYTES" default:"4194304" min:"1024" max:"67108864" help:"largest frame read from the stream; a larger one closes the connection, which is opened again"`
 	MaxSnapshotBytes int    `env:"MANNED_MAX_SNAPSHOT_BYTES" default:"16777216" min:"1024" max:"268435456" help:"largest snapshot read"`
 	MaxSnapshotItems int    `env:"MANNED_MAX_SNAPSHOT_ITEMS" default:"10000" min:"1" max:"10000000" help:"aircraft taken from one snapshot; the rest are counted"`

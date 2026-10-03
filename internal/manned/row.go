@@ -60,6 +60,7 @@ func DedupeKey(instance, icao24 string, sourceAt time.Time, state string) string
 type held struct {
 	msg      Message
 	sourceAt time.Time
+	orderAt  time.Time
 	srcMsgID string
 	ts       *time.Time
 	capAt    time.Time
@@ -98,7 +99,7 @@ func newHeld(p placed) (*held, error) {
 		s := bus.Stamp(*p.ts)
 		m.TS = &s
 	}
-	return &held{msg: m, sourceAt: p.sourceAt, srcMsgID: p.env.MsgID, ts: p.ts, capAt: p.capturedAt, rx: p.rx, cell3: c3, cell5: c5}, nil
+	return &held{msg: m, sourceAt: p.sourceAt, orderAt: p.orderAt, srcMsgID: p.env.MsgID, ts: p.ts, capAt: p.capturedAt, rx: p.rx, cell3: c3, cell5: c5}, nil
 }
 
 // published is h as a message, its subject and its row.

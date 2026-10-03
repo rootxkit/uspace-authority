@@ -118,6 +118,7 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.MannedIngest, o Opti
 	feed := NewFeed(FeedSettings{StaleAfter: time.Duration(t.StaleAfterS) * time.Second, LagAfter: time.Duration(t.LagAfterS) * time.Second}, time.Now())
 	s := DefaultSettings()
 	s.FeedInstance, s.MaxAircraft, s.MaxFrameBytes = t.FeedInstance, t.MaxAircraft, t.MaxFrameBytes
+	s.MaxSourceAhead = time.Duration(t.MaxSourceAheadMS) * time.Millisecond
 	s.MaxSnapshotItems, s.MaxAdapters = t.MaxSnapshotItems, t.MaxAdapters
 	in := &Ingest{S: s, V: v, Gate: follower, Sink: sink, Feed: feed, Counters: counters, Limiter: limiter}
 	if o.Ingest != nil {
