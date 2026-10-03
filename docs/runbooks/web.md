@@ -71,6 +71,96 @@ picture-ws must allow the origin `http://127.0.0.1:3000`
 trusted proxy (`AUTHORITY_TRUSTED_PROXIES`), or its per-address sign-in
 limits apply to the BFF instead of the client.
 
+## Run against the development stack: WP-13's SC-06 picture
+
+Recorded on 2026-10-04 (Windows, Go 1.27.1, Node 22.13, the head of
+this branch). This is the "Done when" run: no stub, every process real.
+
+Stack: `deploy/compose.dev.yaml` under its own project name and ports
+(`docker compose -p wp21fix-dev`, `AUTHORITY_DEV_*_PORT` 57532, 57533,
+57522, 57922), `uspace-authority migrate` (relational 19, timeseries
+12). Then `api` (bootstrap admin), `rid-ingest` (EGM2008 grid),
+`picture-ws` (`PICTURE_ALLOWED_ORIGINS=http://127.0.0.1:3000`,
+`PICTURE_SESSION_URL` and `PICTURE_JWKS_URL` on api), `next start`
+(`WEB_API_INTERNAL_URL` on api, `WEB_TRUSTED_PROXY_HOPS=1`), and
+`scripts/dev-origin.mjs` on `:3000` in front of all three.
+`AUTHORITY_PUBLIC_URL` and `ISSUER_URL` were the origin,
+`http://127.0.0.1:3000`. Keys, passwords and TOTP secrets were
+throwaway values outside the repository.
+
+SC-06 through api, as WP-13's `TestIntegrationSC06…` sets it up in
+process:
+
+1. The admin signs in (password, then TOTP enrolment) and creates
+   `registrar1` and `inspector1`.
+2. The registrar registers operator `GEOTEST00000001` and the UAS
+   `TESTREG0001`, `TESTSUS0002` (then suspended) and `TESTUNK0003`.
+3. The admin registers receiver `rx-sc06`.
+4. The lab's `cmd/sim-receiver` (uspace-lab 9be1c13) is fed four
+   synthetic `sim/vehicle/v1` vehicles on stdin. It broadcasts them as
+   signed ODID batches to rid-ingest:
+
+   ```
+   --tx 1=AA:BB:CC:00:06:01,TESTREG0001,GEOTEST00000001-x9z
+   --tx 2=AA:BB:CC:00:06:02,TESTSUS0002,GEOTEST00000001
+   --tx 3=AA:BB:CC:00:06:03,TESTUNK0003,GEOTEST00000099
+   --tx 5=AA:BB:CC:00:06:05
+   ```
+
+   The first transmitter also broadcasts an EU secret part, `x9z`.
+
+Chromium (Playwright) signed in as `inspector1` through the console's
+own form (password, then the TOTP code) and read the page:
+
+```
+websocket ws://127.0.0.1:3000/v1/picture/ws
+track 4de281b6-…  data-ident=unidentified      "as broadcast and unverified"  0 s · Live  source live
+track TESTUNK0003 data-ident=unknown_operator  "as broadcast and unverified"  0 s · Live  source live
+track TESTSUS0002 data-ident=suspended         "as broadcast and unverified"  0 s · Live  source live
+track TESTREG0001 data-ident=registered        "as broadcast and unverified"  0 s · Live  source live
+thresholds  stale after 15 s, live within 10 s, policy 1 (as the server sends them)
+dropped     0
+banner      CIS absent, Display Provider unavailable, manned traffic not live (true of this stack)
+secret part in DOM: false
+requests off the origin: []
+```
+
+![SC-06 on the development stack](img/web-sc06-dev-stack.png)
+
+The bus was then taken away (`docker stop` of this stack's NATS):
+
+```
+22:05:05.086Z picture-ws  NATS unavailable: the consoles are told and nothing leaves the picture until it is back
+22:05:05.630Z banner      The bus is unavailable since 2026-10-03 22:05:05 UTC: the picture is frozen, ...
+22:05:05.644Z GET /v1/picture/sources 200 {"nats":"unavailable","nats_since":"2026-10-03T22:05:05.086Z"}
+22:05:13.662Z tracks held while the bus is lost: 4 -> 4, each "10 s · Ageing"
+22:05:14.444Z NATS started; the nats line left the banner, "The active violations are being read back" came up
+```
+
+The banner's time is `nats_since` from `GET /v1/picture/sources`, and
+it is the instant in picture-ws's own log line. The four tracks stayed
+and aged (E-02). During the outage rid-ingest answered the receiver
+503. The receiver kept its batches and its ledger balanced, and after
+the bus returned the snapshot held the four statuses again, live.
+
+![The bus lost: the banner with nats_since, the tracks held and ageing](img/web-sc06-nats-lost.png)
+
+Notes from the run:
+
+- Headless Chromium has no WebGL by default, and the map then shows the
+  lists without symbols. With `--use-angle=swiftshader` the symbols are
+  drawn (the first screenshot, lower left). No base map was configured.
+- `TESTUNK0003` is `unknown_operator` and also shows "operator
+  mismatch": it broadcasts `GEOTEST00000099`, and it is registered
+  under `GEOTEST00000001`. The console shows the mismatch flag as
+  picture-ws sent it.
+- The strip's "Degraded:" line names `cis_absent`, `dp_unavailable` and
+  `manned_unavailable` "as the server names it", although the banner
+  below says each one in words. The strip is the kit's, and its
+  catalogue lacks those slugs.
+- Afterwards every process was stopped and the stack removed
+  (`docker compose -p wp21fix-dev down -v`).
+
 ## Configuration
 
 Read at start or at request time, never at build: the image is built
