@@ -109,8 +109,8 @@ func (h *held) published() (Published, error) {
 	}
 	b := h.msg.Body
 	r := Row{
-		SourceCapturedAt: h.sourceAt, CapturedAt: h.capAt, DedupeKey: DedupeKey(b.SourceInstance, b.ICAO24, h.sourceAt, b.State),
-		MsgID: h.msg.MsgID, TS: h.ts, RxTS: h.rx, TimeSource: h.msg.TimeSource, Backlog: h.msg.Backlog, ICAO24: b.ICAO24,
+		SourceCapturedAt: h.sourceAt.UTC(), CapturedAt: h.capAt.UTC(), DedupeKey: DedupeKey(b.SourceInstance, b.ICAO24, h.sourceAt, b.State),
+		MsgID: h.msg.MsgID, TS: h.ts, RxTS: h.rx.UTC(), TimeSource: h.msg.TimeSource, Backlog: h.msg.Backlog, ICAO24: b.ICAO24,
 		Callsign: b.Callsign, LatDeg: b.Position.Lat, LonDeg: b.Position.Lng, AltPressureM: b.AltPressureM, AltWGS84M: b.AltWGS84M,
 		GSMS: b.GSMS, TrackDeg: b.TrackDeg, VRateMS: b.VRateMS, Emergency: b.Emergency, SPI: b.SPI, Squawk: b.Squawk,
 		SourceClass: b.SourceClass, Trust: b.Trust, Source: b.Source, SourceInstance: b.SourceInstance, State: b.State,

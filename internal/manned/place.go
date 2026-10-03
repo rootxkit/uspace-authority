@@ -86,8 +86,9 @@ func placeBatch(samples []sample, arrival time.Time, maxSpacing time.Duration) (
 	var idx []int
 	var write time.Time
 	haveWrite := false
-	for i, s := range samples {
-		out[i] = placed{sample: s, rx: arrival}
+	for i := range samples {
+		s := &samples[i]
+		out[i] = placed{sample: *s, rx: arrival}
 		if !s.rxOK || s.sourceAt.IsZero() {
 			out[i].capturedAt, out[i].timeSource = arrival, core.TimeSystem
 			if out[i].sourceAt.IsZero() {

@@ -44,7 +44,7 @@ type gate struct {
 	off map[string]bool
 }
 
-func (g *gate) Query(sourceType string, instanceID *string) coresources.Decision {
+func (g *gate) Query(_ string, instanceID *string) coresources.Decision {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	if g.off["*"] {

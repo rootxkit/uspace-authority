@@ -181,7 +181,9 @@ func FuzzHandleFrame(f *testing.F) {
 		in := &Ingest{V: v, Sink: sink, Feed: NewFeed(DefaultFeedSettings(), t0)}
 		in.S.MaxFrameBytes = 1 << 16
 		in.HandleFrame(data, t0)
-		for _, p := range sink.published() {
+		pubs := sink.published()
+		for i := range pubs {
+			p := &pubs[i]
 			if p.Message.Schema != SchemaTrack || p.Message.CapturedAt == "" || !ValidInstance(p.Message.Body.SourceInstance) {
 				t.Fatalf("published %+v", p.Message)
 			}

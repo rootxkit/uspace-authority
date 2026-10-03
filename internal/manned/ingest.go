@@ -102,7 +102,6 @@ type Ingest struct {
 	Feed     *Feed
 	Counters *core.Counters
 	Limiter  *logging.Limiter
-	Now      func() time.Time
 
 	once  sync.Once
 	mu    sync.Mutex
@@ -139,13 +138,6 @@ func (in *Ingest) init() {
 		}
 		in.lru, in.byKey = list.New(), map[string]*list.Element{}
 	})
-}
-
-func (in *Ingest) now() time.Time {
-	if in.Now != nil {
-		return in.Now()
-	}
-	return time.Now()
 }
 
 // Len is the aircraft held.
@@ -277,7 +269,8 @@ func (in *Ingest) handleTracks(envs []envelopeIn, arrival time.Time) {
 	}
 	var rows []Row
 	in.mu.Lock()
-	for _, p := range ps {
+	for i := range ps {
+		p := &ps[i]
 		if r, ok := in.acceptLocked(p); ok {
 			rows = append(rows, r)
 			if p.body.State == StateLive {
@@ -296,7 +289,7 @@ func (in *Ingest) handleTracks(envs []envelopeIn, arrival time.Time) {
 // is skipped unless it moves the aircraft's state forward (live, stale,
 // source_disabled), in which case the held message is republished in
 // the new state at its own placement.
-func (in *Ingest) acceptLocked(p placed) (Row, bool) {
+func (in *Ingest) acceptLocked(p *placed) (Row, bool) {
 	icao := p.body.ICAO24
 	if e, ok := in.byKey[icao]; ok {
 		old, _ := e.Value.(*held)
@@ -311,7 +304,7 @@ func (in *Ingest) acceptLocked(p placed) (Row, bool) {
 			}
 			return in.ageLocked(e, p.body.State, p.rx)
 		}
-		h, err := newHeld(p)
+		h, err := newHeld(*p)
 		if err != nil {
 			in.Counters.Inc(CounterRefusedSchema)
 			return Row{}, false
@@ -320,7 +313,7 @@ func (in *Ingest) acceptLocked(p placed) (Row, bool) {
 		in.lru.MoveToFront(e)
 		return in.publishLocked(h)
 	}
-	h, err := newHeld(p)
+	h, err := newHeld(*p)
 	if err != nil {
 		in.Counters.Inc(CounterRefusedSchema)
 		return Row{}, false
