@@ -291,6 +291,9 @@ func TestIntegrationRetentionHelperAndCheck(t *testing.T) {
 	if err := db.QueryRow(`SELECT count(*) FROM timescaledb_information.jobs WHERE hypertable_name = 'wp9_dp_probe' AND proc_name = 'policy_compression'`).Scan(&compression); err != nil || compression != 0 {
 		t.Fatalf("compression on the DP cache: %d %v", compression, err)
 	}
+	// The policy's first run would drop the backdated rows below if it
+	// came after them (storetest.PauseRetention).
+	storetest.PauseRetention(t, db, "wp9_dp_probe")
 	w := openWriter(t, u)
 	if n, err := w.OlderThan(ctx, "wp9_dp_probe", "rx_ts", 24*time.Hour); err != nil || n != 0 {
 		t.Fatalf("clean table: %d %v", n, err)

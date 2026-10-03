@@ -716,6 +716,9 @@ func TestIntegrationRetentionCheckCleanThenViolated(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	// The policy's first run would drop the backdated row below if it
+	// came after it (storetest.PauseRetention).
+	storetest.PauseRetention(t, h.db, "wp9_dp_probe")
 	h.start(map[string]string{"TSDB_WRITER_RETENTION_CHECK_S": "1"}, tswriter.Options{
 		RetentionChecks: []tswriter.RetentionCheck{{Table: "wp9_dp_probe", Column: "rx_ts", MaxAge: 24 * time.Hour}},
 	})

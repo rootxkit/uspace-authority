@@ -90,3 +90,36 @@ func Open(t testing.TB, u string) *sql.DB {
 	t.Cleanup(func() { _ = db.Close() })
 	return db
 }
+
+// PauseRetention unschedules the retention policy of hypertable and
+// waits until no run of it is in progress, returning its job id. A
+// policy's first run is due as soon as it exists, and TimescaleDB starts
+// a scheduler for a scratch database a few hundred milliseconds after
+// the extension is created: a test that writes backdated rows and then
+// checks for them races that run, which drops their chunks. The test
+// runs the job itself (CALL run_job) when it wants the disposal.
+func PauseRetention(t testing.TB, db *sql.DB, hypertable string) int {
+	t.Helper()
+	var job int
+	if err := db.QueryRow(`SELECT job_id FROM timescaledb_information.jobs
+		WHERE hypertable_name = $1 AND proc_name = 'policy_retention'`, hypertable).Scan(&job); err != nil {
+		t.Fatalf("retention policy of %s: %v", hypertable, err)
+	}
+	if _, err := db.Exec(`SELECT alter_job($1, scheduled => false)`, job); err != nil {
+		t.Fatal(err)
+	}
+	deadline := time.Now().Add(30 * time.Second)
+	for {
+		var status string
+		if err := db.QueryRow(`SELECT job_status FROM timescaledb_information.job_stats WHERE job_id = $1`, job).Scan(&status); err != nil {
+			t.Fatal(err)
+		}
+		if status != "Running" {
+			return job
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("retention job %d of %s still running after 30 s", job, hypertable)
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+}
