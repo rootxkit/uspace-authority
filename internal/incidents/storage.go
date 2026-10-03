@@ -125,7 +125,7 @@ func (d Dir) Get(ref string, maxBytes int64) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	f, err := os.Open(p)
+	f, err := os.Open(filepath.Clean(p))
 	if err != nil {
 		return nil, fmt.Errorf("evidence storage: %w", err)
 	}

@@ -553,7 +553,8 @@ func (p *Packs) Verify(ctx context.Context, actor audit.Actor, incidentID, packI
 		return Verification{}, err
 	}
 	if v.Unreadable && !v.tampered() {
-		return v, unreadableProblem(&v)
+		err := unreadableProblem(&v)
+		return v, err
 	}
 	return v, nil
 }
