@@ -320,3 +320,25 @@ func TestISAOfAnotherOwnerAtAHeldBaseURLIsRefused(t *testing.T) {
 		t.Fatal("the clash is not counted")
 	}
 }
+
+// Audit A-N3, E-01: a state with the timestamp and position of the one
+// published but another operational status (an emergency declared) is
+// published; the same state with the same status is not.
+func TestStatusChangeIsRepublished(t *testing.T) {
+	m := NewMemory(10, &core.Counters{})
+	k := FlightKey{USSID: "ussp-lab-01", FlightID: "fl-1"}
+	st := state(t0, baseLatDeg, baseLonDeg)
+	if !m.Fresh(k, st, t0) {
+		t.Fatal("the first state is not fresh")
+	}
+	same := state(t0, baseLatDeg, baseLonDeg)
+	if m.Fresh(k, same, t0) {
+		t.Fatal("an identical state is fresh")
+	}
+	emergency := state(t0, baseLatDeg, baseLonDeg)
+	e := f3411.Emergency
+	emergency.OperationalStatus = &e
+	if !m.Fresh(k, emergency, t0) {
+		t.Fatal("an emergency at the same timestamp and position is not published")
+	}
+}
