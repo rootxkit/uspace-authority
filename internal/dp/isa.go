@@ -14,6 +14,9 @@ const (
 	CounterISAsRefused = "isas_refused_bound"
 	CounterISAsExpired = "isas_expired"
 	CounterISAsRemoved = "isas_removed_by_notification"
+	// CounterISAsOwnerChange counts notifications refused because they
+	// would change the owner of a held ISA (audit A-B1).
+	CounterISAsOwnerChange = "isas_refused_owner_change"
 )
 
 type isaEntry struct {
@@ -99,8 +102,10 @@ func (s *ISAs) upsertLocked(isa f3411.IdentificationServiceArea, tileKey string,
 
 // Notify applies an ISA change notification (02 F7): with a service area
 // the ISA is created or replaced, its extent from the notification's
-// extents; without one it was deleted.
-func (s *ISAs) Notify(id string, area *f3411.IdentificationServiceArea, extents *f3411.Volume4D) {
+// extents; without one it was deleted. A notification never changes
+// the owner of a held ISA: it is refused (false) and counted, whoever
+// checked the caller before (audit A-B1, defence in depth).
+func (s *ISAs) Notify(id string, area *f3411.IdentificationServiceArea, extents *f3411.Volume4D) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.init()
@@ -109,7 +114,11 @@ func (s *ISAs) Notify(id string, area *f3411.IdentificationServiceArea, extents 
 			delete(s.m, id)
 			s.Counters.Inc(CounterISAsRemoved)
 		}
-		return
+		return true
+	}
+	if e, ok := s.m[id]; ok && e.isa.Owner != area.Owner {
+		s.Counters.Inc(CounterISAsOwnerChange)
+		return false
 	}
 	var box *Box
 	if extents != nil {
@@ -120,6 +129,7 @@ func (s *ISAs) Notify(id string, area *f3411.IdentificationServiceArea, extents 
 	isa := *area
 	isa.Id = id
 	s.upsertLocked(isa, "", box)
+	return true
 }
 
 // Expire forgets the ISAs whose time_end has passed.

@@ -218,7 +218,11 @@ func (n *Notifications) serve(w http.ResponseWriter, r *http.Request, id string)
 			errorResponse(w, http.StatusBadRequest, "service_area.id is not the id of the path")
 			return
 		}
-		if p.ServiceArea.Owner != cl.Subject {
+		// The body's owner must be the caller, and an ISA already held
+		// may be replaced only by its held owner: a body naming the
+		// caller as owner does not make the caller the owner of
+		// another Service Provider's ISA (audit A-B1).
+		if owner, known := n.ISAs.Owner(id); p.ServiceArea.Owner != cl.Subject || (known && owner != cl.Subject) {
 			n.inc(CounterNotifyNotOwner)
 			errorResponse(w, http.StatusForbidden, "the client identified in the access token is not the owner of this Entity")
 			return
@@ -241,7 +245,12 @@ func (n *Notifications) serve(w http.ResponseWriter, r *http.Request, id string)
 			n.inc(CounterNotificationsUnsub)
 		}
 	}
-	n.ISAs.Notify(id, p.ServiceArea, p.Extents)
+	if !n.ISAs.Notify(id, p.ServiceArea, p.Extents) {
+		// The owner changed between the check and the apply.
+		n.inc(CounterNotifyNotOwner)
+		errorResponse(w, http.StatusForbidden, "the client identified in the access token is not the owner of this Entity")
+		return
+	}
 	n.inc(CounterNotifyAccepted)
 	if n.Limiter != nil {
 		n.Limiter.Limited("dp_notification:"+cl.Subject).Info("ISA change notification applied",
