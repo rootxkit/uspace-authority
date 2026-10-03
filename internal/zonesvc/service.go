@@ -392,13 +392,20 @@ func (s *Service) Import(ctx context.Context, in ImportInput, actor audit.Actor)
 			return validation("the file was refused whole; nothing was imported", capped, more)
 		}
 		ids := make([]string, 0, len(out))
+		// replaced are the identifiers that already existed: the import
+		// made a new version over them (superseding a draft not
+		// published), which the event says by name (audit B-N7).
+		replaced := []string{}
 		for i := range out {
 			ids = append(ids, fmt.Sprintf("%s@%d", out[i].Identifier, out[i].ZoneVersion))
+			if out[i].ZoneVersion > 1 {
+				replaced = append(replaced, out[i].Identifier)
+			}
 		}
 		return tx.Record(ctx, audit.Event{
 			Actor: actor, EntityType: entityZone, EntityID: "import", EventType: audit.EventZonesImported,
 			Payload: map[string]any{"format": im.format, "source": in.Source, "zones": len(out), "versions": ids,
-				"valid_from": from.UTC(), "valid_to": to.UTC()},
+				"replaced": replaced, "valid_from": from.UTC(), "valid_to": to.UTC()},
 		})
 	})
 	if err != nil {
