@@ -1,0 +1,55 @@
+{
+  "schema": "violation/v1",
+  "msg_id": "01K6H3BV4H15G5E4G7X0NTH82F",
+  "producer": "authority/detect",
+  "ts": "2026-10-02T09:15:04.000Z",
+  "rx_ts": "2026-10-02T09:15:04.500Z",
+  "captured_at": "2026-10-02T09:15:04.000Z",
+  "time_source": "system",
+  "backlog": false,
+  "body": {
+    "violation_id": "01K6H3BV4H15G5E4G7X0NTH82F",
+    "kind": "height_120m",
+    "state": "updated",
+    "severity": "critical",
+    "alert_key": "height:authority-1:rid:4A:7C:91:0E:22:B5",
+    "track_ref": "authority-1:rid:4A:7C:91:0E:22:B5",
+    "serial": "1581F5FJD239C00DW1B5",
+    "operator_reg": null,
+    "registry_uas_id": null,
+    "zone_id": null,
+    "zone_version": null,
+    "zone_type": null,
+    "captured_at": "2026-10-02T09:15:04.000Z",
+    "opened_at": "2026-10-02T09:14:40.000Z",
+    "closed_at": null,
+    "clear_reason": null,
+    "policy_version": 3,
+    "peak": {
+      "name": "height_agl_m",
+      "value": 131.2
+    },
+    "detail": {
+      "vertical_known": true,
+      "height_agl_m": 128.4,
+      "max_height_agl_m": 120
+    },
+    "clearing_detail": null,
+    "terrain_source": {
+      "dataset": "TEST-DEM",
+      "spacing_m": 30,
+      "attribution": "test fixture"
+    },
+    "in_uspace": false,
+    "evidence_trust": "broadcast",
+    "evidence_refs": [
+      {
+        "type": "track",
+        "id": "authority-1:rid:4A:7C:91:0E:22:B5",
+        "version": null
+      }
+    ],
+    "evidence_excerpt": [],
+    "cell5": "c5:1322:2226"
+  }
+}
