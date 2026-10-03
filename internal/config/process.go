@@ -1046,6 +1046,16 @@ func (c *API) Validate() error {
 			errs = append(errs, core.Fieldf("AUTHORITY_AUDIENCES", "%q is not a lower-case host name", a))
 		}
 	}
+	if c.CISCallbackURL != "" {
+		// The CISP signs a notification's aud as the host of the
+		// callback (WP-2); a host this receiver does not accept would
+		// have every webhook refused while the subscription shows
+		// active (system audit F-5, as the ANSP refuses it).
+		if u, err := url.Parse(c.CISCallbackURL); err == nil && !slices.Contains(c.AudienceList(), strings.ToLower(u.Hostname())) {
+			errs = append(errs, core.Fieldf("CIS_CALLBACK_URL", "its host %q is not one of AUTHORITY_AUDIENCES %v: the CISP signs aud as that host and every notification would be refused",
+				strings.ToLower(u.Hostname()), c.AudienceList()))
+		}
+	}
 	for _, p := range c.TrustedProxies {
 		if _, err := netip.ParsePrefix(p); err != nil {
 			if _, err := netip.ParseAddr(p); err != nil {

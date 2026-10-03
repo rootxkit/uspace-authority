@@ -482,3 +482,33 @@ func TestTSDBWriterQueueAgeUnderHalfTheAckWait(t *testing.T) {
 		}
 	}
 }
+
+// System audit F-5, E-01: the CISP signs a notification's aud as the
+// host of the callback URL, so a callback whose host is not one of
+// AUTHORITY_AUDIENCES would have every webhook refused while the
+// subscription shows active. It is refused at start naming both
+// variables; a callback on an accepted host is accepted.
+func TestAPIRefusesACallbackHostOutsideTheAudiences(t *testing.T) {
+	cases := []struct {
+		callback, audiences string
+		ok                  bool
+	}{
+		{"https://authority.example.test/v1/cis/notifications", "", true},
+		{"https://authority.example.test/v1/cis/notifications", "authority.example.test,authority", true},
+		{"https://authority/v1/cis/notifications", "authority.example.test,authority", true},
+		{"https://callback.example.test/v1/cis/notifications", "", false},
+		{"https://callback.example.test/v1/cis/notifications", "authority.example.test,authority", false},
+	}
+	for _, c := range cases {
+		m := validAPI()
+		m["CIS_CALLBACK_URL"] = c.callback
+		if c.audiences != "" {
+			m["AUTHORITY_AUDIENCES"] = c.audiences
+		}
+		var cfg API
+		err := Load(&cfg, env(m))
+		if c.ok != (err == nil) || (err != nil && (!strings.Contains(err.Error(), "CIS_CALLBACK_URL") || !strings.Contains(err.Error(), "AUTHORITY_AUDIENCES"))) {
+			t.Errorf("%s with %q: %v", c.callback, c.audiences, err)
+		}
+	}
+}

@@ -14,7 +14,7 @@ from the CISP's file at that commit).
 | `CISP_BASE_URL` | unset | The CISP. https only (http to a loopback host for tests). Unset: nothing is sent or pulled; the console says `cisp_configured: false` and every age grows. |
 | `PUBLICATION_KEY_FILE` | unset | The publication key (WP-2, listed in this issuer's JWKS under its own `kid`). Unset: every publication is refused 503 `publication_key_missing`, nothing is queued. |
 | `CISP_CLIENT_ID`, `CISP_CLIENT_SECRET_FILE`, `CISP_TOKEN_URL` | `authority-01`, unset, `ISSUER_URL/oauth/token` | The client this system uses at its own token service for the CISP's tokens (audience = the CISP's host, M18). Create it with `POST /v1/oauth/clients` (scopes `cis.read`, `cis.publish:zones`, `cis.publish:uspace`, `cis.publish:ussp_list`; audience the CISP's host). |
-| `CIS_CALLBACK_URL` | unset | This system's `POST /v1/cis/notifications` as the CISP must call it. Unset: no subscription; the 60 s reconciliation alone keeps the cache. |
+| `CIS_CALLBACK_URL` | unset | This system's `POST /v1/cis/notifications` as the CISP must call it. Unset: no subscription; the 60 s reconciliation alone keeps the cache. Its host must be one of `AUTHORITY_AUDIENCES` (the CISP signs `aud` as that host): api refuses to start otherwise. |
 | `AUTHORITY_CIS_NOTIFY_ISSUERS` | the CISP and ANSP peers | `<iss>=<jwks_url>`, at most two: the CISP (`CISP_ISSUER_URL`) and the ANSP's direct delivery (`ANSP_ISSUER_URL`, M5). |
 | `CIS_ANSP_PUBLISHER_JWKS_URL` | `ANSP_JWKS_URL` | The ANSP's keys, which must have signed every restrictions version this system uses. |
 | `CIS_RECONCILE_S` | 60 | The reconciliation of every dataset (at most 60, 02 F3). |
