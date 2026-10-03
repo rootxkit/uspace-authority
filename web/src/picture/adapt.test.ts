@@ -25,12 +25,24 @@ function withBody(f: ConsoleFrame, patch: Record<string, unknown>): ConsoleFrame
 
 const trackDir = path.join(LAB, "track/telemetry/v1/examples");
 
+/** picture-ws's extras (schemas/picture/track/v1.json), which every track it sends carries. */
+const EXTRAS = { age_s: 0.8, source_state: "live" };
+
+/** A lab example as picture-ws sends it: the lab's frame plus this system's extras. */
+function sentFrameOf(file: string): ConsoleFrame {
+  return withBody(frameOf(file), EXTRAS);
+}
+
 describe("adaptTrack", () => {
   const valid = readdirSync(trackDir).filter((n) => n.endsWith(".json"));
 
-  it("accepts every valid lab example", () => {
+  it("accepts every valid lab example with picture-ws's extras", () => {
     expect(valid.length).toBeGreaterThan(2);
-    for (const n of valid) expect(adaptTrack(frameOf(path.join(trackDir, n))), n).not.toBeNull();
+    for (const n of valid) expect(adaptTrack(sentFrameOf(path.join(trackDir, n))), n).not.toBeNull();
+  });
+
+  it("refuses every valid lab example without the extras (the pair above): age_s and source_state are required", () => {
+    for (const n of valid) expect(adaptTrack(frameOf(path.join(trackDir, n))), n).toBeNull();
   });
 
   // The invalid examples whose fault is a member the adapter reads. The
@@ -47,17 +59,31 @@ describe("adaptTrack", () => {
   ];
   for (const n of refused) {
     it(`refuses invalid/${n}`, () => {
+      // With the extras, so the refusal is for the example's own fault.
       const raw = JSON.parse(readFileSync(path.join(trackDir, "invalid", n), "utf8"));
-      const f = parseFrame(raw);
+      const f = parseFrame(typeof raw.body === "object" && raw.body !== null ? { ...raw, body: { ...raw.body, ...EXTRAS } } : raw);
       expect(f === null ? null : adaptTrack(f)).toBeNull();
     });
   }
 
-  it("reads this system's extras when present and leaves them null when absent", () => {
-    const lab = adaptTrack(frameOf(path.join(trackDir, "direct-rid-pressure-altitude.json")));
-    expect(lab?.extras).toEqual({ ageS: null, sourceState: null });
+  it("reads this system's extras", () => {
+    const lab = adaptTrack(sentFrameOf(path.join(trackDir, "direct-rid-pressure-altitude.json")));
+    expect(lab?.extras).toEqual({ ageS: 0.8, sourceState: "live" });
     const provider = adaptTrack(frameOf(path.join(FIXTURES, "provider-track.json")));
     expect(provider?.extras).toEqual({ ageS: 1.4, sourceState: "live" });
+  });
+
+  it("refuses a frame without age_s or without source_state (the pair: the fixture above)", () => {
+    const f = frameOf(path.join(FIXTURES, "provider-track.json"));
+    const without = (member: string): ConsoleFrame => ({
+      ...f,
+      body: Object.fromEntries(Object.entries(f.body as Record<string, unknown>).filter(([k]) => k !== member)),
+    });
+    expect(adaptTrack(f)).not.toBeNull();
+    expect(adaptTrack(without("age_s"))).toBeNull();
+    expect(adaptTrack(without("source_state"))).toBeNull();
+    expect(adaptTrack(withBody(f, { age_s: null }))).toBeNull();
+    expect(adaptTrack(withBody(f, { source_state: null }))).toBeNull();
   });
 
   it("refuses a negative age and an unknown source state (the pair: the fixture above)", () => {
@@ -76,8 +102,8 @@ describe("adaptTrack", () => {
   });
 
   it("says a broadcast and a provider track are unverified claims, an authenticated one is not", () => {
-    const broadcast = adaptTrack(frameOf(path.join(trackDir, "direct-rid-pressure-altitude.json")));
-    const authenticated = adaptTrack(frameOf(path.join(trackDir, "authenticated-operator-session.json")));
+    const broadcast = adaptTrack(sentFrameOf(path.join(trackDir, "direct-rid-pressure-altitude.json")));
+    const authenticated = adaptTrack(sentFrameOf(path.join(trackDir, "authenticated-operator-session.json")));
     const provider = adaptTrack(frameOf(path.join(FIXTURES, "provider-track.json")));
     expect(broadcast !== null && isUnverifiedClaim(broadcast.view)).toBe(true);
     expect(provider !== null && isUnverifiedClaim(provider.view)).toBe(true);

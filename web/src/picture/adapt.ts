@@ -56,10 +56,10 @@ const HEIGHT_REFS = ["TakeoffLocation", "GroundLevel"] as const;
 
 /** The authority's extras of a track frame (schemas/picture/track/v1.json), as sent. */
 export interface TrackExtras {
-  /** now - captured_at on this system's clock when picture-ws sent the frame; null when absent. */
-  ageS: number | null;
-  /** The track's source instance state; null when absent (a frame from the lab's examples). */
-  sourceState: PictureTrackExtras["source_state"] | null;
+  /** now - captured_at on this system's clock when picture-ws sent the frame. */
+  ageS: number;
+  /** The track's source instance state. */
+  sourceState: PictureTrackExtras["source_state"];
 }
 
 export interface AdaptedTrack {
@@ -81,8 +81,8 @@ function identificationOf(raw: unknown): Identification | null | undefined {
 
 /**
  * A `track/telemetry/v1` frame as the kit's TrackView and this system's
- * extras, or null when the frame breaks the lab's schema or this
- * system's extras. `operator_position` is never read.
+ * extras, or null when the frame breaks the lab's schema or lacks or
+ * breaks this system's extras. `operator_position` is never read.
  */
 export function adaptTrack(frame: ConsoleFrame): AdaptedTrack | null {
   if (frame.schema !== TRACK_SCHEMA || frame.capturedAt === null) return null;
@@ -115,11 +115,13 @@ export function adaptTrack(frame: ConsoleFrame): AdaptedTrack | null {
   if (heightM !== null && heightRef === null) return null;
   if (trackDeg !== null && trackDeg !== undefined && (trackDeg < 0 || trackDeg >= 360)) return null;
 
-  // This system's extras: absent on the lab's examples, typed when present.
+  // This system's extras, required on every track picture-ws sends
+  // (schemas/picture/track/v1.json): a frame without them is refused, not
+  // shown with an unknown age or source.
   const age = b["age_s"];
   const state = b["source_state"];
-  if (age !== undefined && !(isNum(age) && age >= 0)) return null;
-  if (state !== undefined && !WIRE_SOURCE_STATES.includes(state as WireSourceState)) return null;
+  if (!(isNum(age) && age >= 0)) return null;
+  if (!WIRE_SOURCE_STATES.includes(state as WireSourceState)) return null;
 
   return {
     view: {
@@ -151,8 +153,8 @@ export function adaptTrack(frame: ConsoleFrame): AdaptedTrack | null {
       },
     },
     extras: {
-      ageS: isNum(age) ? age : null,
-      sourceState: (state as PictureTrackExtras["source_state"] | undefined) ?? null,
+      ageS: age,
+      sourceState: state as PictureTrackExtras["source_state"],
     },
   };
 }

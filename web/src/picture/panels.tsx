@@ -92,7 +92,7 @@ export function DegradedBanner(props: { feed: LiveFeed; natsSince: string | null
 
 /** The age picture-ws measured when it sent the frame, plus the time this console has held it. */
 export function serverAgeS(x: HeldExtras | undefined, nowMs: number): number | null {
-  if (x === undefined || x.ageS === null) return null;
+  if (x === undefined) return null;
   const held = (nowMs - x.receivedAtMs) / 1000;
   return Number.isFinite(held) ? x.ageS + Math.max(0, held) : null;
 }
@@ -146,7 +146,7 @@ export function TrackList(props: {
               <span className="flex flex-wrap items-center gap-2">
                 <AgeChip ageS={ageS(tr, props.nowMs)} staleAfterS={props.staleAfterS} />
                 <span>{t("authority.tracks.server_age", { age: fmtAge(serverAgeS(x, props.nowMs), lang) })}</span>
-                {x?.sourceState !== undefined && x.sourceState !== null && (
+                {x !== undefined && (
                   <span data-testid="source-state">{t(`authority.tracks.source_state.${x.sourceState}`)}</span>
                 )}
               </span>
