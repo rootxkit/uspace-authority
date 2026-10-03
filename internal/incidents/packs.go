@@ -24,10 +24,11 @@ import (
 // Counters of the evidence packs (E-09).
 const (
 	CounterPackBuilt          = "evidence_packs_built"
-	CounterPackRefused        = "evidence_packs_refused"  // a build refused (window, size, role, storage, busy)
-	CounterPackBusy           = "evidence_packs_busy"     // a build refused past the concurrency bound (E-10)
-	CounterPackUnsigned       = "evidence_packs_unsigned" // built without a publication key
-	CounterPackOrphaned       = "evidence_packs_orphaned" // stored but not recorded (the transaction failed)
+	CounterPackRefused        = "evidence_packs_refused"   // a build refused (window, size, role, storage, busy)
+	CounterPackBusy           = "evidence_packs_busy"      // a build refused past the concurrency bound (E-10)
+	CounterPackReadBusy       = "evidence_pack_reads_busy" // a download or verification refused past its bound (E-10)
+	CounterPackUnsigned       = "evidence_packs_unsigned"  // built without a publication key
+	CounterPackOrphaned       = "evidence_packs_orphaned"  // stored but not recorded (the transaction failed)
 	CounterPackDownloaded     = "evidence_packs_downloaded"
 	CounterPackVerified       = "evidence_packs_verified"
 	CounterPackTampered       = "evidence_packs_tampered"       // a stored archive that does not match its hash
@@ -100,19 +101,50 @@ type Packs struct {
 	MaxBytes  int64
 	// BuildTimeout bounds one build.
 	BuildTimeout time.Duration
-	// sem bounds the builds at once (E-10).
+	// ReadConcurrency bounds the downloads and verifications at once
+	// (each holds a whole archive in memory; audit B-S5).
+	ReadConcurrency int
+	// sem bounds the builds at once, readSem the reads (E-10).
 	sem      chan struct{}
+	readSem  chan struct{}
 	Counters *core.Counters
 	Logger   *slog.Logger
 }
 
-// NewPacks returns p with its concurrency bound set to concurrency.
+// DefaultReadConcurrency is ReadConcurrency when it is not set.
+const DefaultReadConcurrency = 4
+
+// NewPacks returns p with its build bound set to concurrency and its
+// read bound to ReadConcurrency.
 func NewPacks(p *Packs, concurrency int) *Packs {
 	if concurrency < 1 {
 		concurrency = 1
 	}
 	p.sem = make(chan struct{}, concurrency)
+	reads := p.ReadConcurrency
+	if reads < 1 {
+		reads = DefaultReadConcurrency
+	}
+	p.readSem = make(chan struct{}, reads)
 	return p
+}
+
+// acquireRead takes a read slot or refuses (503 pack_busy, counted):
+// every download and verification holds a whole archive in memory, so
+// they are bounded like the builds (audit B-S5). release is to be
+// deferred.
+func (p *Packs) acquireRead() (release func(), err error) {
+	if p.readSem == nil {
+		return func() {}, nil
+	}
+	select {
+	case p.readSem <- struct{}{}:
+		return func() { <-p.readSem }, nil
+	default:
+		p.inc(CounterPackReadBusy)
+		return nil, httpx.Refuse(http.StatusServiceUnavailable, SlugPackBusy,
+			"as many packs as configured are being read; try again shortly")
+	}
 }
 
 func (p *Packs) inc(name string) {
@@ -495,6 +527,11 @@ func (p *Packs) Verify(ctx context.Context, actor audit.Actor, incidentID, packI
 	if err := p.storageOK(); err != nil {
 		return Verification{}, err
 	}
+	release, err := p.acquireRead()
+	if err != nil {
+		return Verification{}, err
+	}
+	defer release()
 	row, err := p.Get(ctx, incidentID, packID)
 	if err != nil {
 		return Verification{}, err
@@ -538,6 +575,11 @@ func (p *Packs) Download(ctx context.Context, actor audit.Actor, piiRole bool, i
 	if err := p.storageOK(); err != nil {
 		return nil, gen.EvidencePack{}, err
 	}
+	release, err := p.acquireRead()
+	if err != nil {
+		return nil, gen.EvidencePack{}, err
+	}
+	defer release()
 	row, err := p.Get(ctx, incidentID, packID)
 	if err != nil {
 		return nil, row, err

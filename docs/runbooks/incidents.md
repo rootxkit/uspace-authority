@@ -185,6 +185,7 @@ case reference (a court order, a prosecutor's request):
 | `INCIDENTS_PACK_MAX_BYTES` | 268435456 | Largest archive; larger is 413 `pack_too_large`. |
 | `INCIDENTS_PACK_MAX_ZONES` | 500 | Zone versions named and in force. |
 | `INCIDENTS_PACK_CONCURRENCY` | 2 | Builds at once per replica; past it 503 `pack_busy` (`evidence_packs_busy`). |
+| `INCIDENTS_PACK_READ_CONCURRENCY` | 4 | Downloads and verifications at once per replica (each holds a whole archive, up to `INCIDENTS_PACK_MAX_BYTES`, in memory); past it 503 `pack_busy` (`evidence_pack_reads_busy`). |
 | `INCIDENTS_BUILD_TIMEOUT_S` | 120 | Bound on one build, record fetches included. |
 | `INCIDENTS_WRITE_TIMEOUT_S` | 10 | Bound on one incident transaction. |
 | `INCIDENTS_BACKFILL_S`, `INCIDENTS_BACKFILL_BATCH` | 300, 100 | The job opening incidents of earlier escalations. |

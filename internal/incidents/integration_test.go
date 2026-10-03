@@ -785,3 +785,45 @@ func TestIntegrationLegalPackRecordDownIsUnavailable(t *testing.T) {
 		t.Fatalf("ussp_record %+v, %d reads", m.USSPRecords, reads.Load())
 	}
 }
+
+// Audit B-S5, E-10: downloads and verifications read whole archives into
+// memory, so they are bounded apart from the builds: with every read
+// slot held, verify and download answer 503 pack_busy, counted, and
+// record nothing; a slot free, they run.
+func TestIntegrationPackReadsAreBounded(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	zoneID, _ := f.violations()
+	f.telemetry()
+	if _, err := f.vio.Review(ctx, inspector, zoneID, violations.DecisionEscalated, sp("note")); err != nil {
+		t.Fatal(err)
+	}
+	rows, _ := f.inc.List(ctx, listByViolation(zoneID))
+	incID := rows[0].IncidentID
+	row, err := f.packs.Create(ctx, inspector, false, incID, f.request(KindOversight))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range cap(f.packs.readSem) {
+		f.packs.readSem <- struct{}{}
+	}
+	before := f.events("incident", incID)
+	_, err = f.packs.Verify(ctx, inspector, incID, row.PackID)
+	if p := httpx.ProblemFromError(err); err == nil || p.Status != http.StatusServiceUnavailable || p.Slug() != SlugPackBusy {
+		t.Fatalf("verify with every read slot held: %v", err)
+	}
+	_, _, err = f.packs.Download(ctx, inspector, false, incID, row.PackID, "review")
+	if p := httpx.ProblemFromError(err); err == nil || p.Status != http.StatusServiceUnavailable || p.Slug() != SlugPackBusy {
+		t.Fatalf("download with every read slot held: %v", err)
+	}
+	if got := f.events("incident", incID); !slices.Equal(got, before) || f.packs.Counters.Snapshot()[CounterPackReadBusy] != 2 {
+		t.Fatalf("events %v, counters %v", got, f.packs.Counters.Snapshot())
+	}
+	<-f.packs.readSem
+	if v, err := f.packs.Verify(ctx, inspector, incID, row.PackID); err != nil || !v.HashMatches {
+		t.Fatalf("verify with a slot free: %+v %v", v, err)
+	}
+	if _, _, err := f.packs.Download(ctx, inspector, false, incID, row.PackID, "review"); err != nil {
+		t.Fatalf("download with a slot free: %v", err)
+	}
+}
