@@ -50,8 +50,20 @@ The Service Provider that owns an ISA posts its changes to
 the subscribers). The token must come from an allow-listed issuer (this
 system's, or the lab's in the lab), with `aud` one of
 `AUTHORITY_AUDIENCES` and `rid.service_provider`; the service area's
-owner must be the token's subject (403 otherwise). Searches repeat every
-`DP_DISCOVERY_REREAD_S` (30 s) in case a notification is lost.
+owner must be the token's subject (403 otherwise), and a held ISA is
+replaced or deleted only by its held owner (`isas_refused_owner_change`).
+Searches repeat every `DP_DISCOVERY_REREAD_S` (30 s) in case a
+notification is lost.
+
+An ISA learned only from a notification is provisional: its `time_end`
+is capped at now plus `DP_NOTIFIED_ISA_MAX_LIFETIME_S` (24 h,
+`isas_notified_time_end_capped`), and the next DSS search of a tile its
+extent meets drops it when the DSS does not list it
+(`isas_notified_not_listed_by_dss`). At `DP_MAX_PROVIDERS`, a Service
+Provider a DSS-listed ISA names takes the place of one only
+notifications named (`providers_evicted_unconfirmed`), and a provider no
+held ISA names for `DP_PROVIDER_FORGET_AFTER_S` (10 min) is forgotten
+(`providers_forgotten`).
 
 **The Service Providers polled come only from the ISAs** (`00 §7`):
 never from a configured USSP address. Each is identified by the ISA's

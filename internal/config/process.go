@@ -526,7 +526,9 @@ type DPPollerTuning struct {
 	MaxViews             int     `env:"DP_MAX_VIEWS" default:"64" min:"1" max:"10000" help:"views (oversight areas and console viewports) followed; past it the rest are counted and logged"`
 	MaxTiles             int     `env:"DP_MAX_TILES" default:"512" min:"1" max:"100000" help:"tiles discovered and subscribed in all; past it the rest are counted and logged"`
 	MaxISAs              int     `env:"DP_MAX_ISAS" default:"10000" min:"1" max:"1000000" help:"identification service areas held; past it a new one is refused and counted"`
-	MaxProviders         int     `env:"DP_MAX_PROVIDERS" default:"256" min:"1" max:"100000" help:"Service Providers held; past it a new one is counted and not polled"`
+	MaxProviders         int     `env:"DP_MAX_PROVIDERS" default:"256" min:"1" max:"100000" help:"Service Providers held; past it a new one is counted and not polled, unless a DSS-listed ISA names it and a provider only notifications named can give way"`
+	ProviderForgetAfterS int     `env:"DP_PROVIDER_FORGET_AFTER_S" default:"600" min:"10" max:"86400" help:"a Service Provider no held ISA names for this long is forgotten (its status goes)"`
+	NotifiedISAMaxS      int     `env:"DP_NOTIFIED_ISA_MAX_LIFETIME_S" default:"86400" min:"60" max:"86400" help:"an ISA learned from a notification is trusted until its time_end, capped at now plus this (F3411: 24 h); a DSS search that does not list it drops it earlier"`
 	MaxFlightsHeld       int     `env:"DP_MAX_FLIGHTS_HELD" default:"50000" min:"1" max:"10000000" help:"flights whose last published state, details and identification are remembered; past it the one seen longest ago is forgotten and counted (E-10)"`
 	DiscoveryRereadS     int     `env:"DP_DISCOVERY_REREAD_S" default:"30" min:"1" max:"3600" help:"seconds between ISA searches per tile besides the notifications (repair, G-08)"`
 	ViewsRereadS         int     `env:"DP_VIEWS_REREAD_S" default:"5" min:"1" max:"3600" help:"seconds between reads of the oversight areas and the console viewports"`
