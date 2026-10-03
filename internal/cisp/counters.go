@@ -24,23 +24,25 @@ const (
 	CounterHeartbeatSkipped = "cis_heartbeat_skipped" // another replica held the heartbeat's lock
 
 	// Subscriber (F3).
-	CounterPulls               = "cis_pulls"
-	CounterPullFailed          = "cis_pull_failed"
-	CounterNotModified         = "cis_not_modified"
-	CounterHeads               = "cis_heads"
-	CounterDeltaPulls          = "cis_delta_pulls"
-	CounterDeltaUnusable       = "cis_delta_unusable"
-	CounterRejectedPublication = "cis_rejected_publications"   // a version refused whole (ed318.Parse or the pinned schema), the previous one kept (T9)
-	CounterUntrusted           = "cis_publisher_untrusted"     // a version held: its publisher's signature is missing or does not verify
-	CounterSignedMismatch      = "cis_signed_content_mismatch" // a version held: what was served (or merged from a delta) is not what the publisher signed
-	CounterVersionReplays      = "cis_version_replays"
-	CounterReconcileCatchups   = "cis_reconcile_catchups" // a newer version found by the 60 s reconciliation, not by a notification
-	CounterStoreFailed         = "cis_store_failed"
-	CounterProjectionFailed    = "cis_projection_failed"
-	CounterProjectionOlder     = "cis_projection_older" // a restrictions write older than the projection's, skipped
-	CounterAnnounceFailed      = "cis_announce_failed"
-	CounterSubscribeFailed     = "cis_subscribe_failed"
-	CounterStaleTransitions    = "cis_stale"
+	CounterPulls                = "cis_pulls"
+	CounterPullFailed           = "cis_pull_failed"
+	CounterNotModified          = "cis_not_modified"
+	CounterHeads                = "cis_heads"
+	CounterDeltaPulls           = "cis_delta_pulls"
+	CounterDeltaUnusable        = "cis_delta_unusable"
+	CounterRejectedPublication  = "cis_rejected_publications"   // a version refused whole (ed318.Parse or the pinned schema), the previous one kept (T9)
+	CounterUntrusted            = "cis_publisher_untrusted"     // a version held: its publisher's signature is missing or does not verify
+	CounterSignedMismatch       = "cis_signed_content_mismatch" // a version held: what was served (or merged from a delta) is not what the publisher signed
+	CounterVersionReplays       = "cis_version_replays"
+	CounterReconcileCatchups    = "cis_reconcile_catchups" // a newer version found by the 60 s reconciliation, not by a notification
+	CounterStoreFailed          = "cis_store_failed"
+	CounterProjectionFailed     = "cis_projection_failed"
+	CounterProjectionOlder      = "cis_projection_older" // a restrictions write older than the projection's, skipped
+	CounterAnnounceFailed       = "cis_announce_failed"
+	CounterSubscribeFailed      = "cis_subscribe_failed"
+	CounterSubscriptionRechecks = "cis_subscription_rechecks" // the push subscription asked of the CISP again
+	CounterSubscriptionChanged  = "cis_subscription_changed"  // a re-check found it gone (made again) or its status changed
+	CounterStaleTransitions     = "cis_stale"
 
 	// Receiver (POST /v1/cis/notifications).
 	CounterWebhooks           = "cis_webhooks"

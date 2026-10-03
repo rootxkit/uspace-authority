@@ -115,7 +115,11 @@ retry, conflict, held or refused version and webhook outcome.
 
 - On start the subscriber registers `CIS_CALLBACK_URL` for the four
   datasets (idempotent: an existing subscription with the same callback
-  is reused or patched) and reads every dataset.
+  is reused or patched) and reads every dataset. The subscription is
+  asked for again every five reconciliations: one the CISP lost (a
+  restore, a delete) is made again, and the console shows the status
+  the CISP answered last (`cis_subscription_rechecks`,
+  `cis_subscription_changed`).
 - A notification is a hint: it is verified (compact JWS from an allowed
   issuer, `aud` one of `AUTHORITY_AUDIENCES`, `iat` within five
   minutes, `jti` single-use) and, for `publication` and the

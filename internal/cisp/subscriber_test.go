@@ -376,3 +376,33 @@ func TestServedContentMustBeTheSignedContent(t *testing.T) {
 		})
 	}
 }
+
+// Audit A-S3, E-02: the push subscription is not trusted from start-up
+// for ever. The CISP losing it (a restore, a delete) is found by the
+// re-check, the subscription is made again and the status shows the new
+// one; while it is unchanged the re-check says nothing changed.
+func TestSubscriptionIsRecheckedAndRecreated(t *testing.T) {
+	w := newWorld(t)
+	w.sub.cfg.CallbackURL = w.rx.URL + NotificationsPath
+	w.sub.cfg.SubscriptionRecheck = 50 * time.Millisecond
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() { w.sub.subscribeLoop(ctx); close(done) }()
+	defer func() { cancel(); <-done }()
+	waitFor(t, 5*time.Second, "the first subscription", func() bool { return w.sub.Subscription().ID != "" })
+	first := w.sub.Subscription().ID
+	waitFor(t, 5*time.Second, "a re-check", func() bool { return w.count(CounterSubscriptionRechecks) >= 2 })
+	if w.count(CounterSubscriptionChanged) != 0 || len(w.fake.Subscriptions()) != 1 {
+		t.Fatalf("an unchanged subscription: changed %d, %d at the CISP", w.count(CounterSubscriptionChanged), len(w.fake.Subscriptions()))
+	}
+	w.fake.DropSubscriptions()
+	waitFor(t, 5*time.Second, "the subscription made again", func() bool {
+		return len(w.fake.Subscriptions()) == 1 && w.sub.Subscription().ID != first
+	})
+	if w.count(CounterSubscriptionChanged) == 0 {
+		t.Fatal("the change was not counted")
+	}
+	if st := w.sub.Subscription(); st.ID != w.fake.Subscriptions()[0].ID || st.Status != "active" {
+		t.Fatalf("status %+v", st)
+	}
+}
