@@ -59,3 +59,21 @@ export function createKeyedStore<V>(max: number): KeyedStore<V> {
     evicted: () => evicted,
   };
 }
+
+/** A store whose keys another follows: the kit's alert or track store. */
+export interface KeySource {
+  snapshot(): ReadonlyMap<string, unknown>;
+  subscribe(fn: () => void): () => void;
+}
+
+/**
+ * Keeps `held` to the ids `source` holds, at once and on every change of
+ * `source`: when the kit drops an alert (a cleared one at the end of its
+ * hold, one past its bound, one a snapshot left out), what the console
+ * keeps beside it goes too. Returns the unsubscribe.
+ */
+export function followKeys(source: KeySource, held: KeyedStore<unknown>): () => void {
+  const sync = () => held.retain(new Set(source.snapshot().keys()));
+  sync();
+  return source.subscribe(sync);
+}

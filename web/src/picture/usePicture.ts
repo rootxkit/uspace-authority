@@ -25,7 +25,7 @@ import type { AlertView, TrackView } from "@rootxkit/uspace-ui/model";
 import type { components } from "../api/types";
 import { PICTURE_SOURCES_PATH, PICTURE_WS_PATH } from "../runtime";
 import { SOURCE_STATUS_SCHEMA, TRACK_SCHEMA, VIOLATION_SCHEMA, adaptTrack, adaptViolation, type AdaptedViolation, type TrackExtras } from "./adapt";
-import { createKeyedStore, type KeyedStore } from "./keyed";
+import { createKeyedStore, followKeys, type KeyedStore } from "./keyed";
 
 /**
  * Tracks this console holds; past it the least recently updated is
@@ -117,6 +117,10 @@ export function usePicture(onUnauthorized: () => void): Picture {
   const [stores] = useState(makeStores);
   const [counters, setCounters] = useState<PictureCounters>({ tracksRefused: 0, violationsRefused: 0, framesNotShown: 0 });
   useEffect(() => () => stores.alerts.dispose(), [stores]);
+  // A violation's members are kept while the kit holds its alert: a
+  // cleared alert dropped at the end of its hold, or one a snapshot left
+  // out, takes them with it.
+  useEffect(() => followKeys(stores.alerts, stores.violations), [stores]);
 
   const bump = (k: keyof PictureCounters) => setCounters((c) => ({ ...c, [k]: c[k] + 1 }));
 
