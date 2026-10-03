@@ -219,11 +219,14 @@ const (
 )
 
 // payloadTypes are the ODID message types whose raw payload an
-// oversight pack carries: Basic ID (0), Location (1), Authentication (2)
-// and Operator ID (5, the public part). System (4) carries the remote
-// pilot position, Self-ID (3) free text and a Message Pack (15) either,
-// so their payloads are withheld and kept by hash (06 §2 T6).
-var payloadTypes = []int16{0, 1, 2, 5}
+// oversight pack carries: Basic ID (0), Location (1) and Authentication
+// (2). System (4) carries the remote pilot position, Self-ID (3) free
+// text, Operator ID (5) the registration as broadcast, which may hold
+// the EU secret part (LESSONS G-04; audit B-B1: the parsed operator_reg
+// is cut to its public part, the bytes are not), and a Message Pack (15)
+// any of them, so their payloads are withheld and kept by hash (06 §2
+// T6).
+var payloadTypes = []int16{0, 1, 2}
 
 // ODID message type 1 is Location.
 const odidLocation = 1
@@ -315,7 +318,7 @@ func (b *Builder) Build(ctx context.Context, in BuildInput) (Manifest, []Entry, 
 		st.m.CaseRef = in.CaseRef
 		st.m.Redaction = "legal: personal data resolved from the registry for the purpose and case reference, in personal_data/; the archive is sealed at rest"
 	} else {
-		st.m.Redaction = "oversight: no personal data; operators by registration public part and aircraft by serial only; frame payloads that may carry the remote pilot position withheld and kept by hash"
+		st.m.Redaction = "oversight: no personal data; operators by registration public part and aircraft by serial only; frame payloads that may carry the remote pilot position, free text or the registration's secret part withheld and kept by hash"
 	}
 	pol, err := b.Sources.PackActivePolicy(ctx)
 	if err != nil {

@@ -151,7 +151,7 @@ The chain of custody is the incident's events: `incident_opened`,
 | Who builds and downloads | inspector, incident officer | a personal-data role only (`inspector`; 403 otherwise) |
 | `case_ref` | optional | required |
 | Operators | registration public part and serial only | plus their personal data from the registry |
-| Raw frame payloads | Basic ID, Location, Authentication, Operator ID; System (remote pilot position), Self-ID (free text) and Message Pack payloads withheld, kept by SHA-256 | all |
+| Raw frame payloads | Basic ID, Location, Authentication; System (remote pilot position), Self-ID (free text), Operator ID (the registration as broadcast, which may hold the EU secret part) and Message Pack payloads withheld, kept by SHA-256 | all |
 | Display Provider details | withheld (may carry the remote pilot position) | included |
 | USSP service records | withheld, kept by SHA-256 (no contract fixes their shape) | included |
 | At rest | as built | sealed with the PII key |

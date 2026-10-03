@@ -172,7 +172,7 @@ func (st *build) frames(frames []reader.EvidenceFramesRow, err error) error {
 			row["payload_b64"] = base64.StdEncoding.EncodeToString(f.Payload)
 		} else {
 			row["payload_b64"] = nil
-			row["payload_withheld"] = "may carry the remote pilot position or free text (06 §2 T6); kept by payload_sha256"
+			row["payload_withheld"] = "may carry the remote pilot position, free text or the registration's secret part (06 §2 T6); kept by payload_sha256"
 			st.m.FramesWithheld++
 		}
 		if f.LatDeg != nil && f.LonDeg != nil {

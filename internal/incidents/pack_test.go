@@ -3,6 +3,7 @@ package incidents
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/rootxkit/uspace-authority/internal/httpx"
 	"github.com/rootxkit/uspace-authority/internal/store/pg/gen"
+	"github.com/rootxkit/uspace-authority/internal/store/ts/gen/reader"
 )
 
 func builder(src *fakeSources, tel *fakeTelemetry) *Builder {
@@ -470,5 +472,37 @@ func TestMannedSectionAroundTheEvidence(t *testing.T) {
 	}
 	if _, _, err := builder(src, many).Build(context.Background(), buildIn(KindOversight)); err == nil {
 		t.Fatal("a manned section past MaxRows did not refuse the pack")
+	}
+}
+
+// Audit B-B1, E-01: an Operator ID frame (ODID type 5) carries whatever
+// was broadcast, the EU secret suffix included: its payload is withheld
+// from an oversight pack (kept by hash, counted) and carried in a legal
+// pack.
+func TestOperatorIDPayloadWithheldFromOversight(t *testing.T) {
+	src, tel := richSources()
+	secret := []byte(testReg + "-abc")
+	tel.frames = append(tel.frames, reader.EvidenceFramesRow{IngestTs: at(3), FrameID: "f5", ReceiverID: "rx-1", Transmitter: testTx,
+		MsgType: i16(5), Payload: secret, PayloadSha256: []byte{5}})
+	b := builder(src, tel)
+	b.Personal = personal()
+	m, files, archive := mustBuild(t, b, buildIn(KindOversight))
+	var frames []map[string]any
+	if err := json.Unmarshal(files["raw_frames.json"], &frames); err != nil {
+		t.Fatal(err)
+	}
+	last := frames[len(frames)-1]
+	if last["frame_id"] != "f5" || last["payload_b64"] != nil || last["payload_withheld"] == nil || m.FramesWithheld != 2 {
+		t.Fatalf("oversight frame %v withheld %d", last, m.FramesWithheld)
+	}
+	if bytes.Contains(archive, []byte(base64.StdEncoding.EncodeToString(secret))) {
+		t.Fatal("the Operator ID payload is in an oversight archive")
+	}
+	_, lfiles, _ := mustBuild(t, b, buildIn(KindLegal))
+	if err := json.Unmarshal(lfiles["raw_frames.json"], &frames); err != nil {
+		t.Fatal(err)
+	}
+	if last := frames[len(frames)-1]; last["payload_b64"] != base64.StdEncoding.EncodeToString(secret) {
+		t.Fatalf("legal frame %v", last)
 	}
 }
