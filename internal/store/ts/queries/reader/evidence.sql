@@ -63,3 +63,19 @@ LIMIT sqlc.arg(row_limit);
 -- The oldest Display Provider row held: before it the cache holds
 -- nothing (disposed of within 24 h).
 SELECT coalesce(min(rx_ts), now())::timestamptz AS oldest FROM ussp_flights;
+
+-- name: EvidenceMannedTracks :many
+-- The ANSP's manned traffic (WP-15) placed in the window inside the
+-- evidence's extent padded by the caller (airprox evidence, WP-17). A
+-- box whose min_lon exceeds its max_lon crosses the antimeridian.
+SELECT captured_at, source_captured_at, rx_ts, ts, time_source, backlog, icao24, callsign, lat_deg, lon_deg,
+       alt_pressure_m, alt_wgs84_m, gs_ms, track_deg, vrate_ms, emergency, spi, squawk, source_class, quality, trust,
+       source, source_instance, state, relevant
+FROM manned_tracks
+WHERE captured_at >= sqlc.arg(from_ts) AND captured_at < sqlc.arg(to_ts)
+  AND lat_deg BETWEEN sqlc.arg(min_lat)::float8 AND sqlc.arg(max_lat)::float8
+  AND CASE WHEN sqlc.arg(min_lon)::float8 <= sqlc.arg(max_lon)::float8
+           THEN lon_deg BETWEEN sqlc.arg(min_lon)::float8 AND sqlc.arg(max_lon)::float8
+           ELSE lon_deg >= sqlc.arg(min_lon)::float8 OR lon_deg <= sqlc.arg(max_lon)::float8 END
+ORDER BY captured_at, dedupe_key
+LIMIT sqlc.arg(row_limit);

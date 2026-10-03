@@ -246,6 +246,17 @@ func (f *fixture) telemetry() {
 		provider_unknown, flight, details)
 		VALUES ($1, 'uf-1', $2, 'https://ussp.example.test/rid/v2', 'FLIGHT-INT-1', $3, $1, false, '{"id":"FLIGHT-INT-1"}',
 		'{"operator_location":{"lat":41.49,"lng":44.59}}')`, f.ts(2), itUSSP, itTrack)
+	// The ANSP's manned traffic (WP-15): one aircraft 2 km away inside
+	// the window, one 50 km away (outside the margin), one after it.
+	manned := func(key string, s, lat, lon float64) {
+		f.exec(f.tsAdmin, `INSERT INTO manned_tracks (source_captured_at, captured_at, dedupe_key, msg_id, rx_ts, time_source,
+			backlog, icao24, lat_deg, lon_deg, alt_pressure_m, source_class, trust, source, source_instance, state)
+			VALUES ($1, $1, $2, $3, $1, 'provider', false, '4ca7b5', $4, $5, 450, 'ads_b', 'surveillance', 'ansp_feed', 'adsb-tbs', 'live')`,
+			f.ts(s), key, bus.NewULID(f.ts(s)), lat, lon)
+	}
+	manned("m-near", 2, 41.518, 44.6)
+	manned("m-far", 2, 41.95, 44.6)
+	manned("m-late", 7200, 41.5, 44.6)
 }
 
 // usspCertificate records the USSP's certificate (WP-16) with its base
@@ -343,10 +354,13 @@ func TestIntegrationEscalatedViolationToAVerifiedPack(t *testing.T) {
 		t.Fatal(err)
 	}
 	m := manifestOf(t, row.Manifest)
-	for _, s := range []string{SecViolations, SecTracks, SecFrames, SecZones, SecPolicies, SecEvents, SecWriterGaps, SecUSSPFlights, SecGround} {
+	for _, s := range []string{SecViolations, SecTracks, SecFrames, SecZones, SecPolicies, SecEvents, SecWriterGaps, SecUSSPFlights, SecGround, SecManned} {
 		if m.Sections[s].State != StateIncluded {
 			t.Errorf("%s: %+v", s, m.Sections[s])
 		}
+	}
+	if m.Sections[SecManned].Count != 1 {
+		t.Errorf("manned traffic around the evidence: %+v", m.Sections[SecManned])
 	}
 	if m.Sections[SecViolations].Count != 2 || m.Sections[SecFrames].Count != 4 || m.FramesWithheld != 1 {
 		t.Errorf("violations %d frames %d withheld %d", m.Sections[SecViolations].Count, m.Sections[SecFrames].Count, m.FramesWithheld)

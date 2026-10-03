@@ -72,6 +72,7 @@ type Telemetry interface {
 	EvidenceWriterGaps(ctx context.Context, arg reader.EvidenceWriterGapsParams) ([]reader.EvidenceWriterGapsRow, error)
 	EvidenceUSSPFlights(ctx context.Context, arg reader.EvidenceUSSPFlightsParams) ([]reader.EvidenceUSSPFlightsRow, error)
 	EvidenceOldestUSSPFlight(ctx context.Context) (time.Time, error)
+	EvidenceMannedTracks(ctx context.Context, arg reader.EvidenceMannedTracksParams) ([]reader.EvidenceMannedTracksRow, error)
 }
 
 // PersonalData resolves an operator's personal data from the registry
@@ -97,6 +98,10 @@ type Builder struct {
 	MaxRecords int
 	// MaxZones bounds the zone versions named and in force.
 	MaxZones int
+	// MannedMarginM pads the evidence's extent for the manned traffic a
+	// pack includes (WP-15; INCIDENTS_MANNED_MARGIN_M); 0 is the
+	// configuration's default.
+	MannedMarginM float64
 	// PublicPart keeps an operator registration's public part only,
 	// wherever the pack names one; nil leaves the value as stored.
 	PublicPart PublicPartFunc
@@ -328,15 +333,13 @@ func (b *Builder) Build(ctx context.Context, in BuildInput) (Manifest, []Entry, 
 			st.regs = addUnique(st.regs, *a.OperatorReg)
 		}
 	}
-	steps := []func() error{st.incident, st.violations, st.telemetry, st.zones, st.policies, st.events, st.ground, st.records,
+	steps := []func() error{st.incident, st.violations, st.telemetry, st.manned, st.zones, st.policies, st.events, st.ground, st.records,
 		st.personal}
 	for _, step := range steps {
 		if err := step(); err != nil {
 			return Manifest{}, nil, err
 		}
 	}
-	st.section(SecManned, Section{State: StateUnavailable, Basis: BasisObserved,
-		Reason: "not recorded by this build: the manned traffic store (WP-15) is not part of it"})
 	st.m.Inferred = append(st.m.Inferred,
 		"a hole's writer_gap cause is attributed by time: a recorded gap of the tracks or frames table inside the hole, not necessarily of this aircraft",
 		"a sample without a position is attributed to a track through the transmitters that broadcast the track's serial in the window",
