@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -305,8 +306,8 @@ func (m *memCache) RememberJTI(_ context.Context, issuer, jti string, ttl time.D
 	}
 	now := time.Now()
 	live := int64(0)
-	for _, exp := range m.jtis {
-		if exp.After(now) {
+	for k, exp := range m.jtis {
+		if strings.HasPrefix(k, issuer+" ") && exp.After(now) {
 			live++
 		}
 	}

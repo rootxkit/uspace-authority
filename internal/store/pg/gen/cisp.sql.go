@@ -452,7 +452,7 @@ func (q *Queries) NextPublicationVersion(ctx context.Context, dataset string) (i
 
 const rememberDeliveryJTI = `-- name: RememberDeliveryJTI :one
 WITH live AS (
-    SELECT count(*) AS n FROM cis_delivery_jtis WHERE expires_at > now()
+    SELECT count(*) AS n FROM cis_delivery_jtis WHERE issuer = $1::text AND expires_at > now()
 ), ins AS (
     INSERT INTO cis_delivery_jtis (issuer, jti, expires_at)
     SELECT $1::text, $2::text, now() + make_interval(secs => $3::double precision)
@@ -478,7 +478,8 @@ type RememberDeliveryJTIRow struct {
 
 // Records a verified delivery id for ttl_s seconds. inserted is 1 for a
 // fresh id; 0 with seen for a replay; 0 without seen when max_live ids
-// were already live (nothing written).
+// of this issuer were already live (nothing written). The bound is per
+// issuer, so one issuer's flood never refuses another's deliveries.
 func (q *Queries) RememberDeliveryJTI(ctx context.Context, arg RememberDeliveryJTIParams) (RememberDeliveryJTIRow, error) {
 	row := q.db.QueryRow(ctx, rememberDeliveryJTI,
 		arg.Issuer,

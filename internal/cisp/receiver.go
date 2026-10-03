@@ -38,8 +38,9 @@ const (
 	// five minutes during which core's CompactVerifier accepts its iat,
 	// plus the skew, so a replay inside that time is always caught.
 	JTITTL = 10 * time.Minute
-	// DefaultMaxLiveJTIs bounds the remembered delivery ids; beyond it
-	// the receiver answers 503 (the CISP retries) and counts it.
+	// DefaultMaxLiveJTIs bounds the remembered delivery ids of one
+	// issuer (each has its own bound); beyond it the receiver answers
+	// 503 (the CISP retries) and counts it.
 	DefaultMaxLiveJTIs = 100_000
 )
 

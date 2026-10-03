@@ -125,9 +125,10 @@ FROM cis_cache ORDER BY dataset;
 -- name: RememberDeliveryJTI :one
 -- Records a verified delivery id for ttl_s seconds. inserted is 1 for a
 -- fresh id; 0 with seen for a replay; 0 without seen when max_live ids
--- were already live (nothing written).
+-- of this issuer were already live (nothing written). The bound is per
+-- issuer, so one issuer's flood never refuses another's deliveries.
 WITH live AS (
-    SELECT count(*) AS n FROM cis_delivery_jtis WHERE expires_at > now()
+    SELECT count(*) AS n FROM cis_delivery_jtis WHERE issuer = sqlc.arg(issuer)::text AND expires_at > now()
 ), ins AS (
     INSERT INTO cis_delivery_jtis (issuer, jti, expires_at)
     SELECT sqlc.arg(issuer)::text, sqlc.arg(jti)::text, now() + make_interval(secs => sqlc.arg(ttl_s)::double precision)
