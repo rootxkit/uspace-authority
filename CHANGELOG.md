@@ -275,3 +275,19 @@ Unreleased; the format follows Keep a Changelog.
   aged-sample replacement; evidence packs' `manned_tracks` section around
   the evidence (replacing WP-17's "unavailable"); the fake ANSP of
   `internal/ltest`; the manned-ingest runbook.
+- WP-21: the console (`web/`): Next.js App Router on uspace-ui
+  0.1.0-rc.1 (pnpm, frozen lockfile); the BFF's three routes on the
+  kit's `bffHandlers` (two-step sign-in against `/v1/auth/login` and
+  `/v1/auth/mfa`, the `uspace_session` and `uspace_csrf` cookies, a
+  GET-only proxy to an anchored allow-list, logout); ka/en catalogues
+  with a lint rule against JSX literals; branding and the map's first
+  view from the environment; the shell with the navigation by role; the
+  inspector map on `/v1/picture/ws` (viewport subscription, tracks with
+  trust, identification, "as broadcast and unverified", ages and source
+  state, the zone layer, the sources, the active violations, every
+  degraded slug in words with the bus's `nats_since`, `dropped_frames`
+  and what was not shown); the operator position dropped before
+  anything is stored; generated API and frame types verified in CI; the
+  CI job `web` with a Playwright smoke against a stub api and picture-ws
+  serving the lab's examples; `web/Dockerfile` and the signed web image
+  on main; the web runbook.
