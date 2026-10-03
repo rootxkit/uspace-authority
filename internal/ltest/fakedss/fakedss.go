@@ -200,6 +200,14 @@ func (d *DSS) Subscriptions() map[string][3]string {
 	return out
 }
 
+// DropSubscriptions forgets every subscription, as a DSS that lost them
+// would: a renewal with the held version is then refused.
+func (d *DSS) DropSubscriptions() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.subs = map[string]*sub{}
+}
+
 // PutISA stores an ISA over box, owned by owner, for spURL, from start
 // to end; the subscribers whose area meets it are returned, as F3411's
 // PutIdentificationServiceAreaResponse lists them.

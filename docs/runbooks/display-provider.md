@@ -42,6 +42,9 @@ Per tile: `GET /rid/v2/dss/identification_service_areas?area=` and one
 DSS subscription (`PUT /rid/v2/dss/subscriptions/{id}`, 24 h, renewed
 once 75 % has run, deleted when the tile is no longer viewed) whose
 `uss_base_url` is `DP_USS_BASE_URL` (default `AUTHORITY_PUBLIC_URL`).
+A renewal the DSS refuses with 404 or 409 (it no longer holds the
+subscription) forgets it and the next sync makes a new one
+(`subscriptions_lost_remade`).
 Tokens: `rid.display_provider` with `aud` = the DSS's host, from this
 system's own client (`DP_CLIENT_ID`, `DP_CLIENT_SECRET_FILE`).
 
