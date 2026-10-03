@@ -70,8 +70,16 @@ func TestIntegrationTokenServiceOnPostgres(t *testing.T) {
 		Audiences: []string{cispHost}, AuthMethod: MethodSecretPost}, admin); err != nil {
 		t.Fatal(err)
 	}
+	// certificate_id names a certificate (WP-16's foreign key): one that
+	// does not exist is refused; without one the client is registered
+	// (a certificate's own client is written by internal/certs).
+	if _, _, err := parts.Registry.Create(ctx, ClientInput{ID: "cisp-01", Scopes: []string{"cis.read"},
+		Audiences: []string{cispHost}, AuthMethod: MethodSecretPost, CertificateID: "cert-1"}, admin); err == nil ||
+		store.Constraint(err) != "oauth_clients_certificate_fk" {
+		t.Fatalf("a dangling certificate_id: %v", err)
+	}
 	_, secret, err := parts.Registry.Create(ctx, ClientInput{ID: "cisp-01", Scopes: []string{"cis.read"},
-		Audiences: []string{cispHost}, AuthMethod: MethodSecretPost, CertificateID: "cert-1", MTLSSubject: "CN=cisp"}, admin)
+		Audiences: []string{cispHost}, AuthMethod: MethodSecretPost, MTLSSubject: "CN=cisp"}, admin)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +88,7 @@ func TestIntegrationTokenServiceOnPostgres(t *testing.T) {
 		t.Fatal(err)
 	}
 	cs, err := parts.Registry.List(ctx)
-	if err != nil || len(cs) != 3 || cs[0].ID != "cisp-01" || cs[0].CertificateID != "cert-1" {
+	if err != nil || len(cs) != 3 || cs[0].ID != "cisp-01" || cs[0].MTLSSubject != "CN=cisp" {
 		t.Fatalf("list %v %v", cs, err)
 	}
 	resp, oerr := parts.Service.Token(ctx, secretReq("cisp-01", secret, "cis.read", cispHost))
