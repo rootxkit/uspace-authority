@@ -18,7 +18,7 @@ func mannedRow(t *testing.T, sourceAt, placed time.Time, state string, wgs84 any
 	raw, _ := json.Marshal(map[string]any{
 		"source_captured_at": sourceAt, "captured_at": placed,
 		"dedupe_key": "ansp_feed:adsb-tbs:4ca7b5:" + sourceAt.Format(time.RFC3339Nano) + ":" + state,
-		"msg_id": "01K6N5SXS5AA819X9YP981068V", "source_msg_id": nil, "ts": nil, "rx_ts": placed, "time_source": "provider",
+		"msg_id":     "01K6N5SXS5AA819X9YP981068V", "source_msg_id": nil, "ts": nil, "rx_ts": placed, "time_source": "provider",
 		"backlog": false, "icao24": "4ca7b5", "callsign": "TST123", "lat_deg": 41.721, "lon_deg": 44.793,
 		"alt_pressure_m": 1524, "alt_wgs84_m": wgs84, "gs_ms": 72.5, "track_deg": 134, "vrate_ms": -2.5,
 		"emergency": false, "spi": nil, "squawk": "4521", "source_class": "ads_b", "quality": map[string]any{"nic": 8},
