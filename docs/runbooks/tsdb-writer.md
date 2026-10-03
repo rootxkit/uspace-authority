@@ -199,5 +199,5 @@ and their defaults:
 | `TSDB_WRITER_QUEUE_MAX_AGE_S` | 10 |
 | `TSDB_WRITER_QUEUE_MAX_ROWS` | 30000 |
 | `TSDB_WRITER_MAX_ACK_PENDING` | 1000 |
-| `TSDB_WRITER_ACK_WAIT_S` | 60 (must exceed the queue's age bound) |
+| `TSDB_WRITER_ACK_WAIT_S` | 60 (must exceed twice the queue's age bound `TSDB_WRITER_QUEUE_MAX_AGE_S`) |
 | `TSDB_WRITER_RETENTION_CHECK_S` | 3600 |

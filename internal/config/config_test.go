@@ -463,3 +463,22 @@ func TestPictureWSConfigDefaultsAndRefusals(t *testing.T) {
 		t.Fatalf("ipv6 origin %q", o)
 	}
 }
+
+// Audit B-N3, E-01: a queued message is kept alive only on the failure
+// paths, so the queue's age must stay under half the ack wait or healthy
+// queued messages are redelivered: half or more is refused naming the
+// variable, under half accepted.
+func TestTSDBWriterQueueAgeUnderHalfTheAckWait(t *testing.T) {
+	for _, c := range []struct {
+		age string
+		ok  bool
+	}{{"29", true}, {"30", false}, {"59", false}} {
+		m := validAPI()
+		m["TSDB_WRITER_ACK_WAIT_S"], m["TSDB_WRITER_QUEUE_MAX_AGE_S"] = "60", c.age
+		var cfg TSDBWriter
+		err := Load(&cfg, env(m))
+		if c.ok != (err == nil) || (err != nil && !strings.Contains(err.Error(), "TSDB_WRITER_QUEUE_MAX_AGE_S")) {
+			t.Errorf("queue age %s with ack wait 60: %v", c.age, err)
+		}
+	}
+}

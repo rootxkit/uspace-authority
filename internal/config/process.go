@@ -833,8 +833,12 @@ func (c *TSDBWriter) Validate() error {
 	if c.RetryMaxMS < c.RetryMinMS {
 		errs = append(errs, &core.FieldError{Field: "TSDB_WRITER_RETRY_MAX_MS", Reason: "must be at least TSDB_WRITER_RETRY_MIN_MS"})
 	}
-	if c.AckWaitS <= c.QueueMaxAgeS {
-		errs = append(errs, &core.FieldError{Field: "TSDB_WRITER_ACK_WAIT_S", Reason: "must exceed TSDB_WRITER_QUEUE_MAX_AGE_S, or queued messages are redelivered while held"})
+	if 2*c.QueueMaxAgeS >= c.AckWaitS {
+		// A queued message is kept alive (in progress) only on the
+		// failure paths: a healthy queue older than half the ack wait
+		// is redelivered while held (audit B-N3).
+		errs = append(errs, &core.FieldError{Field: "TSDB_WRITER_QUEUE_MAX_AGE_S",
+			Reason: "must be under half of TSDB_WRITER_ACK_WAIT_S, or queued messages are redelivered while held"})
 	}
 	return errors.Join(errs...)
 }
