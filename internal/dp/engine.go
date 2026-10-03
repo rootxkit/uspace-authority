@@ -367,7 +367,14 @@ func (e *Engine) providerLocked(isa *f3411.IdentificationServiceArea, now time.T
 	base := isa.UssBaseUrl
 	if p, ok := e.providers[base]; ok {
 		if p.USSID != isa.Owner {
+			// Polling it under p would attribute its flights, its
+			// source control and its register state to another USSP
+			// (audit A-S6): refused, counted, logged.
 			e.Counters.Inc(CounterProviderOwnerClash)
+			e.Limiter.Limited("dp_owner_clash:"+isa.Owner).Warn("an ISA names a uss_base_url another owner's Service Provider holds; it is not polled",
+				slog.String("isa_id", isa.Id), slog.String("uss_id", isa.Owner), slog.String("held_by", p.USSID),
+				slog.String("uss_base_url", base))
+			return nil
 		}
 		return p
 	}

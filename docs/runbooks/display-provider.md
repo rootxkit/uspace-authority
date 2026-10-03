@@ -71,7 +71,10 @@ held ISA names for `DP_PROVIDER_FORGET_AFTER_S` (10 min) is forgotten
 **The Service Providers polled come only from the ISAs** (`00 §7`):
 never from a configured USSP address. Each is identified by the ISA's
 `owner` (its client id at the DSS), which is the `source_instance` of
-its tracks and its source-control instance.
+its tracks and its source-control instance. An ISA naming a
+`uss_base_url` that another owner's Service Provider already holds is
+not polled (its flights would carry the wrong USSP), counted
+`providers_owner_conflict` and logged once a minute.
 
 **`provider_unknown`**: the owner matches no operating certificate.
 The certified owners are the client ids (`ussp-<code>-01`) of the USSP

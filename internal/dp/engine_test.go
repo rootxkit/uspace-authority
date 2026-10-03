@@ -286,3 +286,37 @@ func TestPolicyDiagonalIsBoundedByF3411(t *testing.T) {
 		t.Fatalf("diagonal %v", d)
 	}
 }
+
+// Audit A-S6, E-01: an ISA that names a base URL another owner's
+// provider already holds is not polled under that owner (its flights
+// would be attributed to the wrong USSP): refused, counted; an ISA of
+// the same owner at the same base URL is polled.
+func TestISAOfAnotherOwnerAtAHeldBaseURLIsRefused(t *testing.T) {
+	sp := &fakeSP{respTS: t0}
+	e := engine(t, sp, &recorder{}, &clock{t: t0})
+	wide := Box{MinLat: 41.6, MinLon: 44.7, MaxLat: 41.7, MaxLon: 44.8}
+	e.Views = func(context.Context) []Box { return []Box{wide} }
+	tiles, _ := TilesOf(wide, f3411.NetMaxDisplayAreaDiagonalKm, 100)
+	if len(tiles) < 3 {
+		t.Fatalf("%d tiles", len(tiles))
+	}
+	e.ISAs.FromSearch(tiles[0].Key(), []f3411.IdentificationServiceArea{isa("isa-a", "ussp-a-01", spBase)})
+	e.ISAs.FromSearch(tiles[1].Key(), []f3411.IdentificationServiceArea{isa("isa-b", "ussp-b-01", spBase)})
+	e.ISAs.FromSearch(tiles[2].Key(), []f3411.IdentificationServiceArea{isa("isa-a2", "ussp-a-01", spBase)})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer func() { cancel(); e.wg.Wait() }()
+	e.Reconcile(ctx)
+	if e.Pollers() != 2 || len(e.Providers()) != 1 || e.Providers()[0].USSID != "ussp-a-01" {
+		t.Fatalf("pollers %d providers %d", e.Pollers(), len(e.Providers()))
+	}
+	e.mu.Lock()
+	for k, r := range e.pollers {
+		if r.isaID == "isa-b" {
+			t.Errorf("another owner's ISA is polled as ussp-a-01: %v", k)
+		}
+	}
+	e.mu.Unlock()
+	if e.Counters.Snapshot()[CounterProviderOwnerClash] == 0 {
+		t.Fatal("the clash is not counted")
+	}
+}
