@@ -206,9 +206,11 @@ Commit the regenerated files with the change that caused them.
 The job `web` runs on a change to `web/**`, `api/openapi.yaml`,
 `schemas/picture/**`, `schemas/violation/**` or the lab examples, and on
 every push to main: frozen install, both generated-type checks (and a
-stale file shown to fail), lint, a grep backstop for forbidden packages
-and imports (shown to find the lint fixtures), types, vitest, the
-build, the bundle check (no database, NATS or key variable named in
+stale file shown to fail), lint, the backstops of the restricted
+imports (`scripts/check-lockfile.mjs`: every package `pnpm-lock.yaml`
+installs, transitive ones included, against the lint rule's own list in
+`eslint-rules/restricted.mjs`; and a grep for the imports in `app/` and
+`src/`; each shown to find its fixture), types, vitest, the build, the bundle check (no database, NATS or key variable named in
 the server bundle), the Playwright smoke (zero passed, a skip or a
 flaky test fails the job), and the image build. On main and tags the
 `image` job pushes and signs `ghcr.io/rootxkit/uspace-authority-web`.

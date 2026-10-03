@@ -325,15 +325,18 @@ jobs:
           git checkout -- src/picture/generated/status.d.ts
       - name: pnpm lint (the kit's config, the restricted imports, the project rules)
         run: pnpm lint
-      # The backstop of the lint rule: no forbidden package in the
-      # manifest, and no import of one anywhere in app/ or src/. The grep
-      # is shown to find the lint fixture that imports one.
+      # The backstop of the lint rule: no forbidden package installed at
+      # all, direct or transitive (every package of pnpm-lock.yaml against
+      # eslint-rules/restricted.mjs, the rule's own list), and no import of
+      # one anywhere in app/ or src/. Both are shown to find their
+      # fixtures: a lockfile with transitive forbidden packages, and the
+      # lint fixtures that import one.
       - name: no geometry, JWT, database or bus package in web/
         run: |
           set -o pipefail
-          forbidden='^(@turf/.*|turf|h3|h3-js|proj4|jose|jsonwebtoken|pg|postgres|nats|nats\.ws|@nats-io/.*)$'
-          if node -e 'const p=require("./package.json");console.log(Object.keys({...p.dependencies,...p.devDependencies}).join("\n"))' | grep -E "$forbidden"; then
-            echo "a forbidden package is a dependency of web/"; exit 1
+          node scripts/check-lockfile.mjs pnpm-lock.yaml
+          if node scripts/check-lockfile.mjs test/fixtures/forbidden-lock.yaml; then
+            echo "the lockfile check passes a lockfile with forbidden transitive packages"; exit 1
           fi
           pattern="from ['\"](@turf/[^'\"]*|turf|h3|h3-js|proj4|jose|pg|nats)['\"]"
           if grep -rnE "$pattern" app src; then echo "a forbidden import in web/"; exit 1; fi

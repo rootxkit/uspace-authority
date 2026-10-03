@@ -1,0 +1,33 @@
+lockfileVersion: '9.0'
+
+importers:
+
+  .:
+    dependencies:
+      next:
+        specifier: 16.3.8
+        version: 16.3.8
+
+packages:
+
+  '@nats-io/nkeys@2.0.3':
+    resolution: {integrity: sha512-test}
+
+  '@rootxkit/uspace-ui@https://github.com/rootxkit/uspace-ui/releases/download/v0.1.0-rc.1/rootxkit-uspace-ui-0.1.0-rc.1.tgz':
+    resolution: {tarball: https://github.com/rootxkit/uspace-ui/releases/download/v0.1.0-rc.1/rootxkit-uspace-ui-0.1.0-rc.1.tgz}
+
+  jose@5.9.6:
+    resolution: {integrity: sha512-test}
+
+  josephus@1.0.0:
+    resolution: {integrity: sha512-test}
+
+  next@16.3.8:
+    resolution: {integrity: sha512-test}
+
+  pg-protocol@1.7.0:
+    resolution: {integrity: sha512-test}
+
+snapshots:
+
+  jose@5.9.6: {}
