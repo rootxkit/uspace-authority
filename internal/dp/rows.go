@@ -82,6 +82,10 @@ const rowsPerMessage = 100
 // QueueSize bounds the hand-over queue in poll batches (E-10).
 const QueueSize = 1024
 
+// shedFlushEvery is how often the drain worker records the rows the full
+// queue shed, as one gap per table.
+const shedFlushEvery = time.Second
+
 // BusSink publishes tracks and identification changes over core NATS
 // and hands rows to tsdb-writer (ts.Writer) through a bounded queue
 // drained by one worker, so a slow JetStream never holds a poll: each
@@ -103,6 +107,15 @@ type BusSink struct {
 	queue chan batch
 	mu    sync.Mutex
 	seq   uint64
+	// shed are the rows the full queue shed since the last flush, with
+	// the time of the first: recorded by the drain worker, never on the
+	// poll's path (audit A-S5).
+	shed shedRows
+}
+
+type shedRows struct {
+	tracks, flights int
+	at              time.Time
 }
 
 type batch struct {
@@ -138,14 +151,34 @@ func (s *BusSink) Track(m *Message) error { return m.Publish(s.NC) }
 // Ident implements Sink.
 func (s *BusSink) Ident(c *track.IdentChange) error { return track.PublishIdent(s.NC, c) }
 
-// Rows implements Sink: queued, never blocking a poll.
+// Rows implements Sink: queued, never blocking a poll. Rows the full
+// queue sheds are counted here and recorded as a gap by the drain
+// worker: JetStream is never called from a poll.
 func (s *BusSink) Rows(tracks []track.Row, flights []FlightRow) {
 	s.init()
 	select {
 	case s.queue <- batch{tracks: tracks, flights: flights, at: time.Now()}:
 	default:
 		s.Counters.Add(CounterRowsShed, uint64(len(tracks)+len(flights)))
-		s.lost(context.Background(), "queue full", len(tracks), len(flights), time.Now())
+		s.mu.Lock()
+		if s.shed.tracks+s.shed.flights == 0 {
+			s.shed.at = time.Now()
+		}
+		s.shed.tracks += len(tracks)
+		s.shed.flights += len(flights)
+		s.mu.Unlock()
+	}
+}
+
+// flushShed records the rows shed since the last flush as one gap per
+// table.
+func (s *BusSink) flushShed(ctx context.Context) {
+	s.mu.Lock()
+	shed := s.shed
+	s.shed = shedRows{}
+	s.mu.Unlock()
+	if shed.tracks+shed.flights > 0 {
+		s.lost(ctx, "queue full", shed.tracks, shed.flights, shed.at)
 	}
 }
 
@@ -155,15 +188,21 @@ func (s *BusSink) Depth() int {
 	return len(s.queue)
 }
 
-// Run drains the queue until ctx ends.
+// Run drains the queue until ctx ends, and records what the full queue
+// shed.
 func (s *BusSink) Run(ctx context.Context) {
 	s.init()
+	t := time.NewTicker(shedFlushEvery)
+	defer t.Stop()
 	for {
 		select {
 		case <-ctx.Done():
+			s.flushShed(context.WithoutCancel(ctx))
 			return
 		case b := <-s.queue:
 			s.write(ctx, b)
+		case <-t.C:
+			s.flushShed(ctx)
 		}
 	}
 }
