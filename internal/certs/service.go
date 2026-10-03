@@ -781,6 +781,9 @@ func (s *Service) RecordNotice(ctx context.Context, id string, in NoticeInput, s
 		if err := CheckNoticeTime(in.At, row.IssuedAt, now); err != nil {
 			return err
 		}
+		if err := CheckNoticeOrder(in.State, in.At, row.OperationsStartedAt, row.OperationsCeasedAt); err != nil {
+			return err
+		}
 		after, err := Notice(factsOf(&row), in.State)
 		if err != nil {
 			return conflict(err)

@@ -380,3 +380,17 @@ func CheckNoticeTime(at, issued, now time.Time) error {
 	}
 	return nil
 }
+
+// CheckNoticeOrder refuses a notice whose at precedes the history it
+// follows (audit A-S7): a cease before the recorded start, a restart
+// before the recorded cease. The lapse clock runs from these times, so a
+// backdated one would contradict the register and its audit trail.
+func CheckNoticeOrder(state string, at time.Time, started, ceased *time.Time) error {
+	switch {
+	case state == NoticeCeased && started != nil && at.Before(*started):
+		return core.Fieldf("at", "before operations started (%s)", started.UTC().Format(time.RFC3339))
+	case state == NoticeRestarted && ceased != nil && at.Before(*ceased):
+		return core.Fieldf("at", "before operations ceased (%s)", ceased.UTC().Format(time.RFC3339))
+	}
+	return nil
+}
