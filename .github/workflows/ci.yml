@@ -53,6 +53,7 @@ jobs:
               - 'go.mod'
               - 'go.sum'
               - 'api/**'
+              - 'schemas/**'
               - 'migrations/**'
               - 'sqlc.yaml'
               - 'internal/store/**/*.sql'
