@@ -141,7 +141,13 @@ func (r *Records) Fetch(ctx context.Context, baseURL, flightID string) (json.Raw
 	if err != nil {
 		return nil, fmt.Errorf("read record: %w", err)
 	}
-	if resp.StatusCode != http.StatusOK {
+	switch {
+	case resp.StatusCode == http.StatusNotFound:
+		// The route is this system's reading of spec 02 F7; no USSP
+		// contract pins it yet (system audit F-4), so a 404 most likely
+		// means the USSP serves no such route: said in the hole's reason.
+		return nil, fmt.Errorf("the USSP answered 404 at GET %s{id}: no contract pins the service-record route yet (spec gap), so the USSP may serve none", recordsPath)
+	case resp.StatusCode != http.StatusOK:
 		return nil, fmt.Errorf("the USSP answered %d", resp.StatusCode)
 	}
 	return ParseRecord(body, maxBytes)

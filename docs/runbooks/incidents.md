@@ -214,11 +214,17 @@ logged with its reference; remove it by hand), `evidence_packs_downloaded`, `evi
 
 ## Known gaps
 
-- The USSP service-record body has no contract yet (`uspace-ussp` at
-  `8c64876` names the `records` tag but no operation). The record is kept
-  verbatim as an opaque JSON object with its hash; it is withheld from
-  oversight packs because its shape, and so its personal data, is not
-  known.
+- The USSP service-record route and body have no contract yet
+  (`uspace-ussp` at `db1df01` still names the `records` tag but no
+  operation; system audit F-4). `GET {base_url}/v1/records/flights/{id}`
+  is this system's reading of 02 F7, so a USSP answers it 404 today:
+  each record is then `unavailable` with that reason ("no contract pins
+  the service-record route yet"). When `uspace-ussp` publishes the
+  route (`/v1/records/flights/{id}`, `/v1/records/daily/{date}`), pin it
+  under `api/clients/` and read it through the generated client. The
+  record is kept verbatim as an opaque JSON object with its hash; an
+  oversight pack does not fetch it because its shape, and so its
+  personal data, is not known.
 - Storage is a directory (`EVIDENCE_DIR`); the S3-compatible bucket the
   brief names is not implemented (no object-storage dependency in this
   release). Point `EVIDENCE_DIR` at a mounted, backed-up volume.

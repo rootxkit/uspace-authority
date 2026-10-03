@@ -693,3 +693,33 @@ func TestNoteBodiesHeldToTheLegalPack(t *testing.T) {
 		t.Fatalf("legal notes %v", doc.Notes)
 	}
 }
+
+// System audit F-4, E-01: the service-record route is pinned by no
+// USSP contract yet, so a 404 from it says that, in the hole's reason,
+// rather than a bare status (the pack shows why every record is
+// missing); any other refusal names its status; a 200 is read.
+func TestFetchNamesTheUnpinnedRecordsRoute(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/GONE"):
+			http.NotFound(w, r)
+		case strings.HasSuffix(r.URL.Path, "/DOWN"):
+			http.Error(w, "down", http.StatusServiceUnavailable)
+		default:
+			_, _ = w.Write([]byte(`{"flight_id":"F1"}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	r := &Records{Tokens: fakeTokens{}, MaxBytes: 4096}
+	if _, err := r.Fetch(context.Background(), srv.URL, "GONE"); err == nil || !strings.Contains(err.Error(), "no contract") ||
+		!strings.Contains(err.Error(), "404") {
+		t.Fatalf("404: %v", err)
+	}
+	if _, err := r.Fetch(context.Background(), srv.URL, "DOWN"); err == nil || !strings.Contains(err.Error(), "answered 503") ||
+		strings.Contains(err.Error(), "no contract") {
+		t.Fatalf("503: %v", err)
+	}
+	if _, err := r.Fetch(context.Background(), srv.URL, "F1"); err != nil {
+		t.Fatal(err)
+	}
+}
