@@ -17,32 +17,92 @@ type AssertionJti struct {
 }
 
 type AuthorityPolicy struct {
-	Version                   int64
-	HeightLimitAglM           float64
-	PressureUncertaintyM      float64
-	ZoneConditionalSeverity   string
-	MismatchSeverity          string
-	IdentificationSeverity    string
-	SpoofDistanceM            float64
-	IdentityTtlS              float64
-	MaxGapS                   float64
-	IdentifyWithinS           float64
-	BroadcastToleranceS       float64
-	MaxLatencyS               float64
-	LiveMaxAgeS               float64
-	ClearAfterS               float64
-	StaleAfterS               float64
-	DpViewDiagonalKm          float64
-	DpPollHz                  float64
-	CisStaleBoundS            float64
-	HeightLimitInUspace       string
-	Note                      string
-	Active                    bool
-	CreatedAt                 time.Time
-	CreatedBy                 string
-	ActivatedAt               *time.Time
-	ActivatedBy               *string
-	RegistrationNumberPattern string
+	Version                      int64
+	HeightLimitAglM              float64
+	PressureUncertaintyM         float64
+	ZoneConditionalSeverity      string
+	MismatchSeverity             string
+	IdentificationSeverity       string
+	SpoofDistanceM               float64
+	IdentityTtlS                 float64
+	MaxGapS                      float64
+	IdentifyWithinS              float64
+	BroadcastToleranceS          float64
+	MaxLatencyS                  float64
+	LiveMaxAgeS                  float64
+	ClearAfterS                  float64
+	StaleAfterS                  float64
+	DpViewDiagonalKm             float64
+	DpPollHz                     float64
+	CisStaleBoundS               float64
+	HeightLimitInUspace          string
+	Note                         string
+	Active                       bool
+	CreatedAt                    time.Time
+	CreatedBy                    string
+	ActivatedAt                  *time.Time
+	ActivatedBy                  *string
+	RegistrationNumberPattern    string
+	CertificateLapseUnusedMonths int32
+	CertificateLapseCeasedMonths int32
+}
+
+type Certificate struct {
+	ID                     string
+	Holder                 string
+	HolderName             string
+	HolderAddress          string
+	HolderEmail            string
+	HolderPhone            string
+	HolderUrl              string
+	Code                   string
+	ClientID               string
+	BaseUrl                string
+	Services               []string
+	Conditions             string
+	Limitations            []string
+	TermsUrl               string
+	IssuedAt               time.Time
+	ValidUntil             time.Time
+	Operations             string
+	OperationsStartedAt    *time.Time
+	OperationsCeasedAt     *time.Time
+	Limited                bool
+	Suspended              bool
+	Ended                  *string
+	EndedAt                *time.Time
+	Status                 string
+	StatusReason           string
+	StatusChangedAt        time.Time
+	StatusChangedBy        string
+	LapseUnusedAfterMonths int32
+	LapseCeasedAfterMonths int32
+	RowVersion             int64
+	CreatedAt              time.Time
+	CreatedBy              string
+	UpdatedAt              time.Time
+	UpdatedBy              string
+}
+
+type CertificateListState struct {
+	ID            bool
+	Wanted        int64
+	Enqueued      int64
+	EnqueuedAt    *time.Time
+	ListedDigest  string
+	LastAttemptAt *time.Time
+	LastError     string
+}
+
+type CertificateNotice struct {
+	ID            int64
+	CertificateID string
+	State         string
+	At            time.Time
+	Reference     *string
+	Source        string
+	RecordedBy    string
+	ReceivedAt    time.Time
 }
 
 type CisCache struct {

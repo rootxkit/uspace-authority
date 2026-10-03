@@ -69,6 +69,270 @@ func (e CISCacheStateDataset) Valid() bool {
 	}
 }
 
+// Defines values for CertificateOperations.
+const (
+	CertificateOperationsCeased     CertificateOperations = "ceased"
+	CertificateOperationsNotStarted CertificateOperations = "not_started"
+	CertificateOperationsOperating  CertificateOperations = "operating"
+)
+
+// Valid indicates whether the value is a known member of the CertificateOperations enum.
+func (e CertificateOperations) Valid() bool {
+	switch e {
+	case CertificateOperationsCeased:
+		return true
+	case CertificateOperationsNotStarted:
+		return true
+	case CertificateOperationsOperating:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CertificateChangeClientStatus.
+const (
+	CertificateChangeClientStatusActive    CertificateChangeClientStatus = "active"
+	CertificateChangeClientStatusRevoked   CertificateChangeClientStatus = "revoked"
+	CertificateChangeClientStatusSuspended CertificateChangeClientStatus = "suspended"
+)
+
+// Valid indicates whether the value is a known member of the CertificateChangeClientStatus enum.
+func (e CertificateChangeClientStatus) Valid() bool {
+	switch e {
+	case CertificateChangeClientStatusActive:
+		return true
+	case CertificateChangeClientStatusRevoked:
+		return true
+	case CertificateChangeClientStatusSuspended:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CertificateClientAuthMethod.
+const (
+	CertificateClientAuthMethodClientSecretPost CertificateClientAuthMethod = "client_secret_post"
+	CertificateClientAuthMethodPrivateKeyJwt    CertificateClientAuthMethod = "private_key_jwt"
+)
+
+// Valid indicates whether the value is a known member of the CertificateClientAuthMethod enum.
+func (e CertificateClientAuthMethod) Valid() bool {
+	switch e {
+	case CertificateClientAuthMethodClientSecretPost:
+		return true
+	case CertificateClientAuthMethodPrivateKeyJwt:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CertificateClientStatus.
+const (
+	CertificateClientStatusActive    CertificateClientStatus = "active"
+	CertificateClientStatusRevoked   CertificateClientStatus = "revoked"
+	CertificateClientStatusSuspended CertificateClientStatus = "suspended"
+)
+
+// Valid indicates whether the value is a known member of the CertificateClientStatus enum.
+func (e CertificateClientStatus) Valid() bool {
+	switch e {
+	case CertificateClientStatusActive:
+		return true
+	case CertificateClientStatusRevoked:
+		return true
+	case CertificateClientStatusSuspended:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CertificateDetailClientStatus.
+const (
+	CertificateDetailClientStatusActive    CertificateDetailClientStatus = "active"
+	CertificateDetailClientStatusRevoked   CertificateDetailClientStatus = "revoked"
+	CertificateDetailClientStatusSuspended CertificateDetailClientStatus = "suspended"
+)
+
+// Valid indicates whether the value is a known member of the CertificateDetailClientStatus enum.
+func (e CertificateDetailClientStatus) Valid() bool {
+	switch e {
+	case CertificateDetailClientStatusActive:
+		return true
+	case CertificateDetailClientStatusRevoked:
+		return true
+	case CertificateDetailClientStatusSuspended:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CertificateHolder.
+const (
+	CertificateHolderCisp CertificateHolder = "cisp"
+	CertificateHolderUssp CertificateHolder = "ussp"
+)
+
+// Valid indicates whether the value is a known member of the CertificateHolder enum.
+func (e CertificateHolder) Valid() bool {
+	switch e {
+	case CertificateHolderCisp:
+		return true
+	case CertificateHolderUssp:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CertificateInputAuthMethod.
+const (
+	CertificateInputAuthMethodClientSecretPost CertificateInputAuthMethod = "client_secret_post"
+	CertificateInputAuthMethodPrivateKeyJwt    CertificateInputAuthMethod = "private_key_jwt"
+)
+
+// Valid indicates whether the value is a known member of the CertificateInputAuthMethod enum.
+func (e CertificateInputAuthMethod) Valid() bool {
+	switch e {
+	case CertificateInputAuthMethodClientSecretPost:
+		return true
+	case CertificateInputAuthMethodPrivateKeyJwt:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CertificateNoticeSource.
+const (
+	CertificateNoticeSourceMachine CertificateNoticeSource = "machine"
+	CertificateNoticeSourceManual  CertificateNoticeSource = "manual"
+)
+
+// Valid indicates whether the value is a known member of the CertificateNoticeSource enum.
+func (e CertificateNoticeSource) Valid() bool {
+	switch e {
+	case CertificateNoticeSourceMachine:
+		return true
+	case CertificateNoticeSourceManual:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CertificateNoticeState.
+const (
+	CertificateNoticeStateCeased    CertificateNoticeState = "ceased"
+	CertificateNoticeStateRestarted CertificateNoticeState = "restarted"
+	CertificateNoticeStateStarted   CertificateNoticeState = "started"
+)
+
+// Valid indicates whether the value is a known member of the CertificateNoticeState enum.
+func (e CertificateNoticeState) Valid() bool {
+	switch e {
+	case CertificateNoticeStateCeased:
+		return true
+	case CertificateNoticeStateRestarted:
+		return true
+	case CertificateNoticeStateStarted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CertificateService.
+const (
+	CertificateServiceCommonInformation     CertificateService = "common_information"
+	CertificateServiceConformanceMonitoring CertificateService = "conformance_monitoring"
+	CertificateServiceFlightAuthorisation   CertificateService = "flight_authorisation"
+	CertificateServiceGeoAwareness          CertificateService = "geo_awareness"
+	CertificateServiceNetworkIdentification CertificateService = "network_identification"
+	CertificateServiceTrafficInformation    CertificateService = "traffic_information"
+	CertificateServiceWeather               CertificateService = "weather"
+)
+
+// Valid indicates whether the value is a known member of the CertificateService enum.
+func (e CertificateService) Valid() bool {
+	switch e {
+	case CertificateServiceCommonInformation:
+		return true
+	case CertificateServiceConformanceMonitoring:
+		return true
+	case CertificateServiceFlightAuthorisation:
+		return true
+	case CertificateServiceGeoAwareness:
+		return true
+	case CertificateServiceNetworkIdentification:
+		return true
+	case CertificateServiceTrafficInformation:
+		return true
+	case CertificateServiceWeather:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CertificateStatus.
+const (
+	CertificateStatusCeased    CertificateStatus = "ceased"
+	CertificateStatusIssued    CertificateStatus = "issued"
+	CertificateStatusLapsed    CertificateStatus = "lapsed"
+	CertificateStatusLimited   CertificateStatus = "limited"
+	CertificateStatusOperating CertificateStatus = "operating"
+	CertificateStatusRevoked   CertificateStatus = "revoked"
+	CertificateStatusSuspended CertificateStatus = "suspended"
+)
+
+// Valid indicates whether the value is a known member of the CertificateStatus enum.
+func (e CertificateStatus) Valid() bool {
+	switch e {
+	case CertificateStatusCeased:
+		return true
+	case CertificateStatusIssued:
+		return true
+	case CertificateStatusLapsed:
+		return true
+	case CertificateStatusLimited:
+		return true
+	case CertificateStatusOperating:
+		return true
+	case CertificateStatusRevoked:
+		return true
+	case CertificateStatusSuspended:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CertificateStatusNoticeState.
+const (
+	CertificateStatusNoticeStateCeased    CertificateStatusNoticeState = "ceased"
+	CertificateStatusNoticeStateRestarted CertificateStatusNoticeState = "restarted"
+	CertificateStatusNoticeStateStarted   CertificateStatusNoticeState = "started"
+)
+
+// Valid indicates whether the value is a known member of the CertificateStatusNoticeState enum.
+func (e CertificateStatusNoticeState) Valid() bool {
+	switch e {
+	case CertificateStatusNoticeStateCeased:
+		return true
+	case CertificateStatusNoticeStateRestarted:
+		return true
+	case CertificateStatusNoticeStateStarted:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ClassLabel.
 const (
 	ClassLabelC0 ClassLabel = "C0"
@@ -441,6 +705,27 @@ func (e KeyRotationState) Valid() bool {
 	case KeyRotationStateActivated:
 		return true
 	case KeyRotationStateRequested:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListPublicationState.
+const (
+	ListPublicationStateNotNeeded ListPublicationState = "not_needed"
+	ListPublicationStatePending   ListPublicationState = "pending"
+	ListPublicationStateQueued    ListPublicationState = "queued"
+)
+
+// Valid indicates whether the value is a known member of the ListPublicationState enum.
+func (e ListPublicationState) Valid() bool {
+	switch e {
+	case ListPublicationStateNotNeeded:
+		return true
+	case ListPublicationStatePending:
+		return true
+	case ListPublicationStateQueued:
 		return true
 	default:
 		return false
@@ -1755,6 +2040,248 @@ type CellOwnershipInput struct {
 	Reason      string            `json:"reason"`
 }
 
+// Certificate defines model for Certificate.
+type Certificate struct {
+	BaseUrl       string            `json:"base_url"`
+	ClientId      string            `json:"client_id"`
+	Code          string            `json:"code"`
+	Conditions    string            `json:"conditions"`
+	CreatedAt     time.Time         `json:"created_at"`
+	CreatedBy     string            `json:"created_by"`
+	EndedAt       *time.Time        `json:"ended_at,omitempty"`
+	Holder        CertificateHolder `json:"holder"`
+	HolderAddress string            `json:"holder_address"`
+	HolderEmail   string            `json:"holder_email"`
+	HolderName    string            `json:"holder_name"`
+	HolderPhone   string            `json:"holder_phone"`
+	HolderUrl     string            `json:"holder_url"`
+	Id            CertificateID     `json:"id"`
+	IssuedAt      time.Time         `json:"issued_at"`
+
+	// LapseCeasedAfterMonths Art. 16(2): lapses when ceased for this many months.
+	LapseCeasedAfterMonths int `json:"lapse_ceased_after_months"`
+
+	// LapseUnusedAfterMonths Art. 16(2): lapses when not used within this many months of issue.
+	LapseUnusedAfterMonths int `json:"lapse_unused_after_months"`
+
+	// LapsesAt When the lapse job will lapse it unless it starts or restarts; absent while operating.
+	LapsesAt            *time.Time            `json:"lapses_at,omitempty"`
+	Limitations         []string              `json:"limitations"`
+	Limited             bool                  `json:"limited"`
+	Operations          CertificateOperations `json:"operations"`
+	OperationsCeasedAt  *time.Time            `json:"operations_ceased_at,omitempty"`
+	OperationsStartedAt *time.Time            `json:"operations_started_at,omitempty"`
+	Services            []CertificateService  `json:"services"`
+
+	// Status Derived from the operating status, the limitation, the
+	// suspension and the end: revoked or lapsed, else suspended, else
+	// ceased, else limited, else operating, else issued.
+	Status          CertificateStatus `json:"status"`
+	StatusChangedAt time.Time         `json:"status_changed_at"`
+	StatusChangedBy string            `json:"status_changed_by"`
+	StatusReason    string            `json:"status_reason"`
+	Suspended       bool              `json:"suspended"`
+	TermsUrl        string            `json:"terms_url"`
+	UpdatedAt       time.Time         `json:"updated_at"`
+	UpdatedBy       string            `json:"updated_by"`
+	ValidUntil      time.Time         `json:"valid_until"`
+}
+
+// CertificateOperations defines model for Certificate.Operations.
+type CertificateOperations string
+
+// CertificateChange defines model for CertificateChange.
+type CertificateChange struct {
+	Certificate     Certificate                    `json:"certificate"`
+	ClientStatus    *CertificateChangeClientStatus `json:"client_status,omitempty"`
+	ListPublication ListPublication                `json:"list_publication"`
+
+	// TokensValidUntil The client was suspended or revoked: tokens issued before
+	// stay valid until this time (the token TTL), and no new one
+	// is issued.
+	TokensValidUntil *time.Time `json:"tokens_valid_until,omitempty"`
+}
+
+// CertificateChangeClientStatus defines model for CertificateChange.ClientStatus.
+type CertificateChangeClientStatus string
+
+// CertificateClient defines model for CertificateClient.
+type CertificateClient struct {
+	Audiences  []string                    `json:"audiences"`
+	AuthMethod CertificateClientAuthMethod `json:"auth_method"`
+	ClientId   string                      `json:"client_id"`
+	Scopes     []string                    `json:"scopes"`
+	Status     CertificateClientStatus     `json:"status"`
+}
+
+// CertificateClientAuthMethod defines model for CertificateClient.AuthMethod.
+type CertificateClientAuthMethod string
+
+// CertificateClientStatus defines model for CertificateClient.Status.
+type CertificateClientStatus string
+
+// CertificateDetail defines model for CertificateDetail.
+type CertificateDetail struct {
+	Certificate  Certificate                    `json:"certificate"`
+	ClientStatus *CertificateDetailClientStatus `json:"client_status,omitempty"`
+	Notices      []CertificateNotice            `json:"notices"`
+}
+
+// CertificateDetailClientStatus defines model for CertificateDetail.ClientStatus.
+type CertificateDetailClientStatus string
+
+// CertificateHolder defines model for CertificateHolder.
+type CertificateHolder string
+
+// CertificateID defines model for CertificateID.
+type CertificateID = string
+
+// CertificateInput defines model for CertificateInput.
+type CertificateInput struct {
+	AuthMethod CertificateInputAuthMethod `json:"auth_method"`
+
+	// BaseUrl The national API base URL (https); required of a USSP.
+	BaseUrl *string `json:"base_url,omitempty"`
+
+	// Code The holder's code (M8); unique, never changed.
+	Code       string            `json:"code"`
+	Conditions *string           `json:"conditions,omitempty"`
+	Holder     CertificateHolder `json:"holder"`
+
+	// HolderAddress The organisation's registered address.
+	HolderAddress *string `json:"holder_address,omitempty"`
+
+	// HolderEmail The organisation's published contact (the USSP list's contact.email); no person.
+	HolderEmail *string `json:"holder_email,omitempty"`
+	HolderName  string  `json:"holder_name"`
+	HolderPhone *string `json:"holder_phone,omitempty"`
+	HolderUrl   *string `json:"holder_url,omitempty"`
+
+	// Jwks The holder's public key set (private_key_jwt only).
+	Jwks        *map[string]interface{} `json:"jwks,omitempty"`
+	Limitations *[]string               `json:"limitations,omitempty"`
+	Services    []CertificateService    `json:"services"`
+
+	// TermsUrl The holder's terms and conditions (Art. 5(3), https); required of a USSP.
+	TermsUrl *string `json:"terms_url,omitempty"`
+
+	// ValidFrom The issue time; default the database's now.
+	ValidFrom  *time.Time `json:"valid_from,omitempty"`
+	ValidUntil time.Time  `json:"valid_until"`
+}
+
+// CertificateInputAuthMethod defines model for CertificateInput.AuthMethod.
+type CertificateInputAuthMethod string
+
+// CertificateIssued defines model for CertificateIssued.
+type CertificateIssued struct {
+	Certificate Certificate       `json:"certificate"`
+	Client      CertificateClient `json:"client"`
+
+	// ClientSecret client_secret_post only: shown once, handed over out of band.
+	ClientSecret *string `json:"client_secret,omitempty"`
+}
+
+// CertificateLimit defines model for CertificateLimit.
+type CertificateLimit struct {
+	Limitations []string `json:"limitations"`
+	Reason      string   `json:"reason"`
+}
+
+// CertificateList defines model for CertificateList.
+type CertificateList struct {
+	Certificates []Certificate `json:"certificates"`
+}
+
+// CertificateNotice defines model for CertificateNotice.
+type CertificateNotice struct {
+	At         time.Time               `json:"at"`
+	Id         int64                   `json:"id"`
+	ReceivedAt time.Time               `json:"received_at"`
+	RecordedBy string                  `json:"recorded_by"`
+	Reference  *string                 `json:"reference,omitempty"`
+	Source     CertificateNoticeSource `json:"source"`
+	State      CertificateNoticeState  `json:"state"`
+}
+
+// CertificateNoticeSource defines model for CertificateNotice.Source.
+type CertificateNoticeSource string
+
+// CertificateNoticeState defines model for CertificateNotice.State.
+type CertificateNoticeState string
+
+// CertificateNoticeResult defines model for CertificateNoticeResult.
+type CertificateNoticeResult struct {
+	Certificate     Certificate       `json:"certificate"`
+	ListPublication ListPublication   `json:"list_publication"`
+	Notice          CertificateNotice `json:"notice"`
+
+	// Replayed The same notice had been recorded; nothing changed.
+	Replayed bool `json:"replayed"`
+}
+
+// CertificatePatch defines model for CertificatePatch.
+type CertificatePatch struct {
+	BaseUrl       *string    `json:"base_url,omitempty"`
+	Conditions    *string    `json:"conditions,omitempty"`
+	HolderAddress *string    `json:"holder_address,omitempty"`
+	HolderEmail   *string    `json:"holder_email,omitempty"`
+	HolderName    *string    `json:"holder_name,omitempty"`
+	HolderPhone   *string    `json:"holder_phone,omitempty"`
+	HolderUrl     *string    `json:"holder_url,omitempty"`
+	Limitations   *[]string  `json:"limitations,omitempty"`
+	TermsUrl      *string    `json:"terms_url,omitempty"`
+	ValidUntil    *time.Time `json:"valid_until,omitempty"`
+}
+
+// CertificateReason defines model for CertificateReason.
+type CertificateReason struct {
+	Reason string `json:"reason"`
+}
+
+// CertificateRegister defines model for CertificateRegister.
+type CertificateRegister struct {
+	Certificates []CertificateRegisterEntry `json:"certificates"`
+	GeneratedAt  time.Time                  `json:"generated_at"`
+}
+
+// CertificateRegisterEntry defines model for CertificateRegisterEntry.
+type CertificateRegisterEntry struct {
+	CertificateId CertificateID        `json:"certificate_id"`
+	Code          string               `json:"code"`
+	Holder        CertificateHolder    `json:"holder"`
+	HolderName    string               `json:"holder_name"`
+	Limitations   []string             `json:"limitations"`
+	Services      []CertificateService `json:"services"`
+
+	// Status Derived from the operating status, the limitation, the
+	// suspension and the end: revoked or lapsed, else suspended, else
+	// ceased, else limited, else operating, else issued.
+	Status     CertificateStatus `json:"status"`
+	ValidFrom  time.Time         `json:"valid_from"`
+	ValidUntil time.Time         `json:"valid_until"`
+}
+
+// CertificateService The Annex VI U-space services of a USSP (the names of the CISP's
+// cis/ussp_list/v1), or the common information service of the
+// CISP (Annex V), its one service.
+type CertificateService string
+
+// CertificateStatus Derived from the operating status, the limitation, the
+// suspension and the end: revoked or lapsed, else suspended, else
+// ceased, else limited, else operating, else issued.
+type CertificateStatus string
+
+// CertificateStatusNotice defines model for CertificateStatusNotice.
+type CertificateStatusNotice struct {
+	At        time.Time                    `json:"at"`
+	Reference *string                      `json:"reference,omitempty"`
+	State     CertificateStatusNoticeState `json:"state"`
+}
+
+// CertificateStatusNoticeState defines model for CertificateStatusNotice.State.
+type CertificateStatusNoticeState string
+
 // Check defines model for Check.
 type Check struct {
 	Error *string `json:"error,omitempty"`
@@ -2165,6 +2692,22 @@ type KeyRotation struct {
 // KeyRotationState defines model for KeyRotation.State.
 type KeyRotationState string
 
+// ListPublication defines model for ListPublication.
+type ListPublication struct {
+	PublicationId *int64  `json:"publication_id,omitempty"`
+	Reason        *string `json:"reason,omitempty"`
+
+	// State queued: the list is in the F1 outbox; not_needed: the change
+	// does not touch the list; pending: it could not be queued now
+	// and the repair job will (reason says why).
+	State ListPublicationState `json:"state"`
+}
+
+// ListPublicationState queued: the list is in the F1 outbox; not_needed: the change
+// does not touch the list; pending: it could not be queued now
+// and the repair job will (reason says why).
+type ListPublicationState string
+
 // LoginChallenge defines model for LoginChallenge.
 type LoginChallenge struct {
 	// Enrolment Present only while the account has no confirmed TOTP.
@@ -2383,6 +2926,12 @@ type Policy struct {
 	// BroadcastToleranceS Default 1.
 	BroadcastToleranceS float64 `json:"broadcast_tolerance_s"`
 
+	// CertificateLapseCeasedMonths Art. 16(2): a certificate whose operations ceased this many months ago lapses (default 12). Copied onto a certificate at issue.
+	CertificateLapseCeasedMonths int `json:"certificate_lapse_ceased_months"`
+
+	// CertificateLapseUnusedMonths Art. 16(2): a certificate not used within this many months of its issue lapses (default 6). Copied onto a certificate at issue.
+	CertificateLapseUnusedMonths int `json:"certificate_lapse_unused_months"`
+
 	// CisStaleBoundS Default 300.
 	CisStaleBoundS float64 `json:"cis_stale_bound_s"`
 
@@ -2448,6 +2997,12 @@ type PolicyHeightLimitInUspace string
 type PolicyInput struct {
 	// BroadcastToleranceS Default 1.
 	BroadcastToleranceS float64 `json:"broadcast_tolerance_s"`
+
+	// CertificateLapseCeasedMonths Art. 16(2): a certificate whose operations ceased this many months ago lapses (default 12). Copied onto a certificate at issue.
+	CertificateLapseCeasedMonths *int `json:"certificate_lapse_ceased_months,omitempty"`
+
+	// CertificateLapseUnusedMonths Art. 16(2): a certificate not used within this many months of its issue lapses (default 6). Copied onto a certificate at issue.
+	CertificateLapseUnusedMonths *int `json:"certificate_lapse_unused_months,omitempty"`
 
 	// CisStaleBoundS Default 300.
 	CisStaleBoundS float64 `json:"cis_stale_bound_s"`
@@ -3340,6 +3895,17 @@ type UASValidity struct {
 	Status RegistryValidityStatus `json:"status"`
 }
 
+// USSPListPublication defines model for USSPListPublication.
+type USSPListPublication struct {
+	PublicationId int64 `json:"publication_id"`
+
+	// Ussps USSPs on the list.
+	Ussps int `json:"ussps"`
+
+	// Wanted The list version the change counter stood at.
+	Wanted int64 `json:"wanted"`
+}
+
 // USpaceDesignation The 03 §1 designation of a U-space airspace (2021/664 Art. 3 and
 // 5); `airspace_name` is the 03 §1 `name` column (the feature's
 // ED-318 name list is the published one).
@@ -3733,6 +4299,12 @@ type GetSessionParams struct {
 	Activity *bool `form:"activity,omitempty" json:"activity,omitempty"`
 }
 
+// ListCertificatesParams defines parameters for ListCertificates.
+type ListCertificatesParams struct {
+	Holder *CertificateHolder `form:"holder,omitempty" json:"holder,omitempty"`
+	Status *CertificateStatus `form:"status,omitempty" json:"status,omitempty"`
+}
+
 // ListIncidentsParams defines parameters for ListIncidents.
 type ListIncidentsParams struct {
 	Status *IncidentStatus `form:"status,omitempty" json:"status,omitempty"`
@@ -3931,6 +4503,30 @@ type VerifyMFAJSONRequestBody = MFARequest
 
 // PutCellOwnershipJSONRequestBody defines body for PutCellOwnership for application/json ContentType.
 type PutCellOwnershipJSONRequestBody = CellOwnershipInput
+
+// IssueCertificateJSONRequestBody defines body for IssueCertificate for application/json ContentType.
+type IssueCertificateJSONRequestBody = CertificateInput
+
+// UpdateCertificateJSONRequestBody defines body for UpdateCertificate for application/json ContentType.
+type UpdateCertificateJSONRequestBody = CertificatePatch
+
+// LimitCertificateJSONRequestBody defines body for LimitCertificate for application/json ContentType.
+type LimitCertificateJSONRequestBody = CertificateLimit
+
+// ReinstateCertificateJSONRequestBody defines body for ReinstateCertificate for application/json ContentType.
+type ReinstateCertificateJSONRequestBody = CertificateReason
+
+// RevokeCertificateJSONRequestBody defines body for RevokeCertificate for application/json ContentType.
+type RevokeCertificateJSONRequestBody = CertificateReason
+
+// PostCertificateStatusJSONRequestBody defines body for PostCertificateStatus for application/json ContentType.
+type PostCertificateStatusJSONRequestBody = CertificateStatusNotice
+
+// RecordCertificateStatusNoticeJSONRequestBody defines body for RecordCertificateStatusNotice for application/json ContentType.
+type RecordCertificateStatusNoticeJSONRequestBody = CertificateStatusNotice
+
+// SuspendCertificateJSONRequestBody defines body for SuspendCertificate for application/json ContentType.
+type SuspendCertificateJSONRequestBody = CertificateReason
 
 // SetDPProviderAvailabilityJSONRequestBody defines body for SetDPProviderAvailability for application/json ContentType.
 type SetDPProviderAvailabilityJSONRequestBody = DPAvailabilityInput
@@ -4479,6 +5075,286 @@ type ClientInterface interface {
 	//
 	// Corresponds with PUT /v1/cells (the `PutCellOwnership` operationId).
 	PutCellOwnership(ctx context.Context, body PutCellOwnershipJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListCertificates The certificates
+	//
+	// Newest first, at most 500, optionally of one holder kind and one status.
+	//
+	// Corresponds with GET /v1/certificates (the `ListCertificates` operationId).
+	ListCertificates(ctx context.Context, params *ListCertificatesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// IssueCertificateWithBody Issue a USSP or CISP certificate and register its client
+	//
+	// One transaction: the certificate (status `issued`), its `code`
+	// (one to eight upper-case alphanumerics, unique, never changed;
+	// 409 when taken), the holder's client in the token service
+	// (`ussp-<code>-01` or `cisp-01`, M24) with the scopes its
+	// services imply (least privilege; `scopes` in the answer) and
+	// the audiences of this system and the CISP, the Art. 16(2) lapse
+	// periods of the active policy, and the `certificate_issued` and
+	// `oauth_client_created` events rows. A `client_secret_post`
+	// client's secret is in the answer once and is handed to the
+	// holder out of band; a `private_key_jwt` client registers the
+	// holder's public JWKS. An issued certificate is not on the USSP
+	// list until its holder notifies the start of operations.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/certificates (the `IssueCertificate` operationId).
+	IssueCertificateWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// IssueCertificate Issue a USSP or CISP certificate and register its client
+	//
+	// One transaction: the certificate (status `issued`), its `code`
+	// (one to eight upper-case alphanumerics, unique, never changed;
+	// 409 when taken), the holder's client in the token service
+	// (`ussp-<code>-01` or `cisp-01`, M24) with the scopes its
+	// services imply (least privilege; `scopes` in the answer) and
+	// the audiences of this system and the CISP, the Art. 16(2) lapse
+	// periods of the active policy, and the `certificate_issued` and
+	// `oauth_client_created` events rows. A `client_secret_post`
+	// client's secret is in the answer once and is handed to the
+	// holder out of band; a `private_key_jwt` client registers the
+	// holder's public JWKS. An issued certificate is not on the USSP
+	// list until its holder notifies the start of operations.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/certificates (the `IssueCertificate` operationId).
+	IssueCertificate(ctx context.Context, body IssueCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PublishUSSPList Publish the USSP list now (F1 ussp_list)
+	//
+	// Builds `cis/ussp_list/v1` from the USSP certificates operating
+	// or limited whose holder operates, within their validity
+	// (`ussp_id` = `code`), holds it to the CISP's pinned schema and
+	// queues it, signed, in WP-6's outbox (`publication_queued`). The
+	// list is also queued after every transition that changes it, and
+	// a job repairs one that was not queued (the durable
+	// `certificate_list_state`). 503 when no publication key is
+	// configured; 400 when the list does not pass the schema.
+	//
+	// Corresponds with POST /v1/certificates/publish-list (the `PublishUSSPList` operationId).
+	PublishUSSPList(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetCertificateRegister The public register of certified providers (Art. 18(a))
+	//
+	// Every certificate not revoked or lapsed, and one that was for a
+	// year after: holder kind and name, code, services, status,
+	// validity and limitations. No address, contact, conditions or
+	// client id: the response schema has no such property and a test
+	// fails if one appears. Unauthenticated, cacheable for 60 s and
+	// rate-limited per client address (429 with Retry-After).
+	//
+	// Corresponds with GET /v1/certificates/register (the `GetCertificateRegister` operationId).
+	GetCertificateRegister(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetCertificate One certificate with its operating-status notices
+	//
+	// Corresponds with GET /v1/certificates/{id} (the `GetCertificate` operationId).
+	GetCertificate(ctx context.Context, id CertificateID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateCertificateWithBody Correct a certificate's details
+	//
+	// The holder's name, address and contact, the base URL, the
+	// conditions, the limitations, the terms URL and the end of
+	// validity. The holder kind, code, client and issue time never
+	// change; the status changes only through its operations. One
+	// `certificate_updated` events row with the fields before and
+	// after; the USSP list is queued again when the certificate is on
+	// it.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /v1/certificates/{id} (the `UpdateCertificate` operationId).
+	UpdateCertificateWithBody(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateCertificate Correct a certificate's details
+	//
+	// The holder's name, address and contact, the base URL, the
+	// conditions, the limitations, the terms URL and the end of
+	// validity. The holder kind, code, client and issue time never
+	// change; the status changes only through its operations. One
+	// `certificate_updated` events row with the fields before and
+	// after; the USSP list is queued again when the certificate is on
+	// it.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /v1/certificates/{id} (the `UpdateCertificate` operationId).
+	UpdateCertificate(ctx context.Context, id CertificateID, body UpdateCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// LimitCertificateWithBody Limit a certificate
+	//
+	// The certificate is limited with the `limitations` given (they
+	// replace the ones held and travel on the USSP list as
+	// `certification_limitations`). The client stays active. 409 when
+	// limited, revoked or lapsed already.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/certificates/{id}/limit (the `LimitCertificate` operationId).
+	LimitCertificateWithBody(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// LimitCertificate Limit a certificate
+	//
+	// The certificate is limited with the `limitations` given (they
+	// replace the ones held and travel on the USSP list as
+	// `certification_limitations`). The client stays active. 409 when
+	// limited, revoked or lapsed already.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/certificates/{id}/limit (the `LimitCertificate` operationId).
+	LimitCertificate(ctx context.Context, id CertificateID, body LimitCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReinstateCertificateWithBody Lift a suspension, or else a limitation
+	//
+	// A suspended certificate is reinstated (its client active again;
+	// a limitation held stays); a limited one that is not suspended
+	// has its limitation lifted (the limitations cleared). 409 when
+	// neither suspended nor limited, or revoked or lapsed.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/certificates/{id}/reinstate (the `ReinstateCertificate` operationId).
+	ReinstateCertificateWithBody(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReinstateCertificate Lift a suspension, or else a limitation
+	//
+	// A suspended certificate is reinstated (its client active again;
+	// a limitation held stays); a limited one that is not suspended
+	// has its limitation lifted (the limitations cleared). 409 when
+	// neither suspended nor limited, or revoked or lapsed.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/certificates/{id}/reinstate (the `ReinstateCertificate` operationId).
+	ReinstateCertificate(ctx context.Context, id CertificateID, body ReinstateCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RevokeCertificateWithBody Revoke a certificate
+	//
+	// Final: the certificate is revoked and its client revoked, in one
+	// transaction with the reason. Tokens issued before stay valid to
+	// their `exp` (`tokens_valid_until`). 409 when revoked or lapsed
+	// already.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/certificates/{id}/revoke (the `RevokeCertificate` operationId).
+	RevokeCertificateWithBody(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RevokeCertificate Revoke a certificate
+	//
+	// Final: the certificate is revoked and its client revoked, in one
+	// transaction with the reason. Tokens issued before stay valid to
+	// their `exp` (`tokens_valid_until`). 409 when revoked or lapsed
+	// already.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/certificates/{id}/revoke (the `RevokeCertificate` operationId).
+	RevokeCertificate(ctx context.Context, id CertificateID, body RevokeCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostCertificateStatusWithBody The holder's operating-status notice (02 F7, Art. 7(6))
+	//
+	// `started` (the start of operations after certification),
+	// `ceased` or `restarted`, at `at`, with the holder's `reference`.
+	// Only the holder's own client: an ecosystem token of this issuer
+	// with scope `certificates.status` whose `sub` is the
+	// certificate's `client_id` (403 otherwise). A notice the status
+	// does not admit is 409 (`started` twice, `ceased` before a start,
+	// anything on a revoked or lapsed certificate, `started` or
+	// `restarted` while suspended). A retried notice with the same
+	// `reference` and state answers 200 with the notice recorded
+	// first; the same reference for another state is 409. `at` is
+	// neither before the issue nor more than 5 minutes ahead of the
+	// database clock. Recorded with a `certificate_notice_recorded`
+	// events row; the USSP list is queued again.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/certificates/{id}/status (the `PostCertificateStatus` operationId).
+	PostCertificateStatusWithBody(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostCertificateStatus The holder's operating-status notice (02 F7, Art. 7(6))
+	//
+	// `started` (the start of operations after certification),
+	// `ceased` or `restarted`, at `at`, with the holder's `reference`.
+	// Only the holder's own client: an ecosystem token of this issuer
+	// with scope `certificates.status` whose `sub` is the
+	// certificate's `client_id` (403 otherwise). A notice the status
+	// does not admit is 409 (`started` twice, `ceased` before a start,
+	// anything on a revoked or lapsed certificate, `started` or
+	// `restarted` while suspended). A retried notice with the same
+	// `reference` and state answers 200 with the notice recorded
+	// first; the same reference for another state is 409. `at` is
+	// neither before the issue nor more than 5 minutes ahead of the
+	// database clock. Recorded with a `certificate_notice_recorded`
+	// events row; the USSP list is queued again.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/certificates/{id}/status (the `PostCertificateStatus` operationId).
+	PostCertificateStatus(ctx context.Context, id CertificateID, body PostCertificateStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RecordCertificateStatusNoticeWithBody Enter an operating-status notice received by letter
+	//
+	// The paper fallback of `POST .../status` (02 F7: "manual fallback
+	// by letter is acceptable"): the same rules, the letter's
+	// `reference` required, recorded with source `manual` and the
+	// admin as the actor.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/certificates/{id}/status-notices (the `RecordCertificateStatusNotice` operationId).
+	RecordCertificateStatusNoticeWithBody(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RecordCertificateStatusNotice Enter an operating-status notice received by letter
+	//
+	// The paper fallback of `POST .../status` (02 F7: "manual fallback
+	// by letter is acceptable"): the same rules, the letter's
+	// `reference` required, recorded with source `manual` and the
+	// admin as the actor.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/certificates/{id}/status-notices (the `RecordCertificateStatusNotice` operationId).
+	RecordCertificateStatusNotice(ctx context.Context, id CertificateID, body RecordCertificateStatusNoticeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SuspendCertificateWithBody Suspend a certificate
+	//
+	// One transaction: the certificate is suspended (a limitation and
+	// the operating status are kept for the reinstatement), its client
+	// is suspended at once, so the next token request is refused
+	// (`invalid_client`), and the transition and the client change are
+	// events rows with the reason. A token issued before stays valid
+	// to its `exp` (at most the token TTL): `tokens_valid_until` in
+	// the answer says until when. The USSP list is queued again
+	// without the holder (06 §2 T9). 409 when suspended, revoked or
+	// lapsed already.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/certificates/{id}/suspend (the `SuspendCertificate` operationId).
+	SuspendCertificateWithBody(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SuspendCertificate Suspend a certificate
+	//
+	// One transaction: the certificate is suspended (a limitation and
+	// the operating status are kept for the reinstatement), its client
+	// is suspended at once, so the next token request is refused
+	// (`invalid_client`), and the transition and the client change are
+	// events rows with the reason. A token issued before stays valid
+	// to its `exp` (at most the token TTL): `tokens_valid_until` in
+	// the answer says until when. The USSP list is queued again
+	// without the holder (06 §2 T9). 409 when suspended, revoked or
+	// lapsed already.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/certificates/{id}/suspend (the `SuspendCertificate` operationId).
+	SuspendCertificate(ctx context.Context, id CertificateID, body SuspendCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListDPProviders The Service Providers the Display Provider has seen, with their state
 	//
@@ -6202,6 +7078,486 @@ func (c *Client) PutCellOwnershipWithBody(ctx context.Context, contentType strin
 // Corresponds with PUT /v1/cells (the `PutCellOwnership` operationId).
 func (c *Client) PutCellOwnership(ctx context.Context, body PutCellOwnershipJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPutCellOwnershipRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListCertificates The certificates
+//
+// Newest first, at most 500, optionally of one holder kind and one status.
+//
+// Corresponds with GET /v1/certificates (the `ListCertificates` operationId).
+func (c *Client) ListCertificates(ctx context.Context, params *ListCertificatesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListCertificatesRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// IssueCertificateWithBody Issue a USSP or CISP certificate and register its client
+//
+// One transaction: the certificate (status `issued`), its `code`
+// (one to eight upper-case alphanumerics, unique, never changed;
+// 409 when taken), the holder's client in the token service
+// (`ussp-<code>-01` or `cisp-01`, M24) with the scopes its
+// services imply (least privilege; `scopes` in the answer) and
+// the audiences of this system and the CISP, the Art. 16(2) lapse
+// periods of the active policy, and the `certificate_issued` and
+// `oauth_client_created` events rows. A `client_secret_post`
+// client's secret is in the answer once and is handed to the
+// holder out of band; a `private_key_jwt` client registers the
+// holder's public JWKS. An issued certificate is not on the USSP
+// list until its holder notifies the start of operations.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/certificates (the `IssueCertificate` operationId).
+func (c *Client) IssueCertificateWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewIssueCertificateRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// IssueCertificate Issue a USSP or CISP certificate and register its client
+//
+// One transaction: the certificate (status `issued`), its `code`
+// (one to eight upper-case alphanumerics, unique, never changed;
+// 409 when taken), the holder's client in the token service
+// (`ussp-<code>-01` or `cisp-01`, M24) with the scopes its
+// services imply (least privilege; `scopes` in the answer) and
+// the audiences of this system and the CISP, the Art. 16(2) lapse
+// periods of the active policy, and the `certificate_issued` and
+// `oauth_client_created` events rows. A `client_secret_post`
+// client's secret is in the answer once and is handed to the
+// holder out of band; a `private_key_jwt` client registers the
+// holder's public JWKS. An issued certificate is not on the USSP
+// list until its holder notifies the start of operations.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/certificates (the `IssueCertificate` operationId).
+func (c *Client) IssueCertificate(ctx context.Context, body IssueCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewIssueCertificateRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PublishUSSPList Publish the USSP list now (F1 ussp_list)
+//
+// Builds `cis/ussp_list/v1` from the USSP certificates operating
+// or limited whose holder operates, within their validity
+// (`ussp_id` = `code`), holds it to the CISP's pinned schema and
+// queues it, signed, in WP-6's outbox (`publication_queued`). The
+// list is also queued after every transition that changes it, and
+// a job repairs one that was not queued (the durable
+// `certificate_list_state`). 503 when no publication key is
+// configured; 400 when the list does not pass the schema.
+//
+// Corresponds with POST /v1/certificates/publish-list (the `PublishUSSPList` operationId).
+func (c *Client) PublishUSSPList(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPublishUSSPListRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetCertificateRegister The public register of certified providers (Art. 18(a))
+//
+// Every certificate not revoked or lapsed, and one that was for a
+// year after: holder kind and name, code, services, status,
+// validity and limitations. No address, contact, conditions or
+// client id: the response schema has no such property and a test
+// fails if one appears. Unauthenticated, cacheable for 60 s and
+// rate-limited per client address (429 with Retry-After).
+//
+// Corresponds with GET /v1/certificates/register (the `GetCertificateRegister` operationId).
+func (c *Client) GetCertificateRegister(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetCertificateRegisterRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetCertificate One certificate with its operating-status notices
+//
+// Corresponds with GET /v1/certificates/{id} (the `GetCertificate` operationId).
+func (c *Client) GetCertificate(ctx context.Context, id CertificateID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetCertificateRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateCertificateWithBody Correct a certificate's details
+//
+// The holder's name, address and contact, the base URL, the
+// conditions, the limitations, the terms URL and the end of
+// validity. The holder kind, code, client and issue time never
+// change; the status changes only through its operations. One
+// `certificate_updated` events row with the fields before and
+// after; the USSP list is queued again when the certificate is on
+// it.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /v1/certificates/{id} (the `UpdateCertificate` operationId).
+func (c *Client) UpdateCertificateWithBody(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateCertificateRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateCertificate Correct a certificate's details
+//
+// The holder's name, address and contact, the base URL, the
+// conditions, the limitations, the terms URL and the end of
+// validity. The holder kind, code, client and issue time never
+// change; the status changes only through its operations. One
+// `certificate_updated` events row with the fields before and
+// after; the USSP list is queued again when the certificate is on
+// it.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /v1/certificates/{id} (the `UpdateCertificate` operationId).
+func (c *Client) UpdateCertificate(ctx context.Context, id CertificateID, body UpdateCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateCertificateRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// LimitCertificateWithBody Limit a certificate
+//
+// The certificate is limited with the `limitations` given (they
+// replace the ones held and travel on the USSP list as
+// `certification_limitations`). The client stays active. 409 when
+// limited, revoked or lapsed already.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/certificates/{id}/limit (the `LimitCertificate` operationId).
+func (c *Client) LimitCertificateWithBody(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewLimitCertificateRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// LimitCertificate Limit a certificate
+//
+// The certificate is limited with the `limitations` given (they
+// replace the ones held and travel on the USSP list as
+// `certification_limitations`). The client stays active. 409 when
+// limited, revoked or lapsed already.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/certificates/{id}/limit (the `LimitCertificate` operationId).
+func (c *Client) LimitCertificate(ctx context.Context, id CertificateID, body LimitCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewLimitCertificateRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ReinstateCertificateWithBody Lift a suspension, or else a limitation
+//
+// A suspended certificate is reinstated (its client active again;
+// a limitation held stays); a limited one that is not suspended
+// has its limitation lifted (the limitations cleared). 409 when
+// neither suspended nor limited, or revoked or lapsed.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/certificates/{id}/reinstate (the `ReinstateCertificate` operationId).
+func (c *Client) ReinstateCertificateWithBody(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReinstateCertificateRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ReinstateCertificate Lift a suspension, or else a limitation
+//
+// A suspended certificate is reinstated (its client active again;
+// a limitation held stays); a limited one that is not suspended
+// has its limitation lifted (the limitations cleared). 409 when
+// neither suspended nor limited, or revoked or lapsed.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/certificates/{id}/reinstate (the `ReinstateCertificate` operationId).
+func (c *Client) ReinstateCertificate(ctx context.Context, id CertificateID, body ReinstateCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReinstateCertificateRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RevokeCertificateWithBody Revoke a certificate
+//
+// Final: the certificate is revoked and its client revoked, in one
+// transaction with the reason. Tokens issued before stay valid to
+// their `exp` (`tokens_valid_until`). 409 when revoked or lapsed
+// already.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/certificates/{id}/revoke (the `RevokeCertificate` operationId).
+func (c *Client) RevokeCertificateWithBody(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRevokeCertificateRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RevokeCertificate Revoke a certificate
+//
+// Final: the certificate is revoked and its client revoked, in one
+// transaction with the reason. Tokens issued before stay valid to
+// their `exp` (`tokens_valid_until`). 409 when revoked or lapsed
+// already.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/certificates/{id}/revoke (the `RevokeCertificate` operationId).
+func (c *Client) RevokeCertificate(ctx context.Context, id CertificateID, body RevokeCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRevokeCertificateRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PostCertificateStatusWithBody The holder's operating-status notice (02 F7, Art. 7(6))
+//
+// `started` (the start of operations after certification),
+// `ceased` or `restarted`, at `at`, with the holder's `reference`.
+// Only the holder's own client: an ecosystem token of this issuer
+// with scope `certificates.status` whose `sub` is the
+// certificate's `client_id` (403 otherwise). A notice the status
+// does not admit is 409 (`started` twice, `ceased` before a start,
+// anything on a revoked or lapsed certificate, `started` or
+// `restarted` while suspended). A retried notice with the same
+// `reference` and state answers 200 with the notice recorded
+// first; the same reference for another state is 409. `at` is
+// neither before the issue nor more than 5 minutes ahead of the
+// database clock. Recorded with a `certificate_notice_recorded`
+// events row; the USSP list is queued again.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/certificates/{id}/status (the `PostCertificateStatus` operationId).
+func (c *Client) PostCertificateStatusWithBody(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostCertificateStatusRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PostCertificateStatus The holder's operating-status notice (02 F7, Art. 7(6))
+//
+// `started` (the start of operations after certification),
+// `ceased` or `restarted`, at `at`, with the holder's `reference`.
+// Only the holder's own client: an ecosystem token of this issuer
+// with scope `certificates.status` whose `sub` is the
+// certificate's `client_id` (403 otherwise). A notice the status
+// does not admit is 409 (`started` twice, `ceased` before a start,
+// anything on a revoked or lapsed certificate, `started` or
+// `restarted` while suspended). A retried notice with the same
+// `reference` and state answers 200 with the notice recorded
+// first; the same reference for another state is 409. `at` is
+// neither before the issue nor more than 5 minutes ahead of the
+// database clock. Recorded with a `certificate_notice_recorded`
+// events row; the USSP list is queued again.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/certificates/{id}/status (the `PostCertificateStatus` operationId).
+func (c *Client) PostCertificateStatus(ctx context.Context, id CertificateID, body PostCertificateStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostCertificateStatusRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RecordCertificateStatusNoticeWithBody Enter an operating-status notice received by letter
+//
+// The paper fallback of `POST .../status` (02 F7: "manual fallback
+// by letter is acceptable"): the same rules, the letter's
+// `reference` required, recorded with source `manual` and the
+// admin as the actor.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/certificates/{id}/status-notices (the `RecordCertificateStatusNotice` operationId).
+func (c *Client) RecordCertificateStatusNoticeWithBody(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRecordCertificateStatusNoticeRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RecordCertificateStatusNotice Enter an operating-status notice received by letter
+//
+// The paper fallback of `POST .../status` (02 F7: "manual fallback
+// by letter is acceptable"): the same rules, the letter's
+// `reference` required, recorded with source `manual` and the
+// admin as the actor.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/certificates/{id}/status-notices (the `RecordCertificateStatusNotice` operationId).
+func (c *Client) RecordCertificateStatusNotice(ctx context.Context, id CertificateID, body RecordCertificateStatusNoticeJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRecordCertificateStatusNoticeRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SuspendCertificateWithBody Suspend a certificate
+//
+// One transaction: the certificate is suspended (a limitation and
+// the operating status are kept for the reinstatement), its client
+// is suspended at once, so the next token request is refused
+// (`invalid_client`), and the transition and the client change are
+// events rows with the reason. A token issued before stays valid
+// to its `exp` (at most the token TTL): `tokens_valid_until` in
+// the answer says until when. The USSP list is queued again
+// without the holder (06 §2 T9). 409 when suspended, revoked or
+// lapsed already.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/certificates/{id}/suspend (the `SuspendCertificate` operationId).
+func (c *Client) SuspendCertificateWithBody(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSuspendCertificateRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SuspendCertificate Suspend a certificate
+//
+// One transaction: the certificate is suspended (a limitation and
+// the operating status are kept for the reinstatement), its client
+// is suspended at once, so the next token request is refused
+// (`invalid_client`), and the transition and the client change are
+// events rows with the reason. A token issued before stays valid
+// to its `exp` (at most the token TTL): `tokens_valid_until` in
+// the answer says until when. The USSP list is queued again
+// without the holder (06 §2 T9). 409 when suspended, revoked or
+// lapsed already.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/certificates/{id}/suspend (the `SuspendCertificate` operationId).
+func (c *Client) SuspendCertificate(ctx context.Context, id CertificateID, body SuspendCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSuspendCertificateRequest(c.Server, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9314,6 +10670,529 @@ func NewPutCellOwnershipRequestWithBody(server string, contentType string, body 
 	}
 
 	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListCertificatesRequest constructs an http.Request for the ListCertificates method
+func NewListCertificatesRequest(server string, params *ListCertificatesParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/certificates")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Holder != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "holder", *params.Holder, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewIssueCertificateRequest calls the generic IssueCertificate builder with application/json body
+func NewIssueCertificateRequest(server string, body IssueCertificateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewIssueCertificateRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewIssueCertificateRequestWithBody constructs an http.Request for the IssueCertificate method, with any body, and a specified content type
+func NewIssueCertificateRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/certificates")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPublishUSSPListRequest constructs an http.Request for the PublishUSSPList method
+func NewPublishUSSPListRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/certificates/publish-list")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetCertificateRegisterRequest constructs an http.Request for the GetCertificateRegister method
+func NewGetCertificateRegisterRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/certificates/register")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetCertificateRequest constructs an http.Request for the GetCertificate method
+func NewGetCertificateRequest(server string, id CertificateID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/certificates/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateCertificateRequest calls the generic UpdateCertificate builder with application/json body
+func NewUpdateCertificateRequest(server string, id CertificateID, body UpdateCertificateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateCertificateRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewUpdateCertificateRequestWithBody constructs an http.Request for the UpdateCertificate method, with any body, and a specified content type
+func NewUpdateCertificateRequestWithBody(server string, id CertificateID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/certificates/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewLimitCertificateRequest calls the generic LimitCertificate builder with application/json body
+func NewLimitCertificateRequest(server string, id CertificateID, body LimitCertificateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewLimitCertificateRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewLimitCertificateRequestWithBody constructs an http.Request for the LimitCertificate method, with any body, and a specified content type
+func NewLimitCertificateRequestWithBody(server string, id CertificateID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/certificates/%s/limit", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewReinstateCertificateRequest calls the generic ReinstateCertificate builder with application/json body
+func NewReinstateCertificateRequest(server string, id CertificateID, body ReinstateCertificateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewReinstateCertificateRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewReinstateCertificateRequestWithBody constructs an http.Request for the ReinstateCertificate method, with any body, and a specified content type
+func NewReinstateCertificateRequestWithBody(server string, id CertificateID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/certificates/%s/reinstate", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRevokeCertificateRequest calls the generic RevokeCertificate builder with application/json body
+func NewRevokeCertificateRequest(server string, id CertificateID, body RevokeCertificateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRevokeCertificateRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewRevokeCertificateRequestWithBody constructs an http.Request for the RevokeCertificate method, with any body, and a specified content type
+func NewRevokeCertificateRequestWithBody(server string, id CertificateID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/certificates/%s/revoke", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewPostCertificateStatusRequest calls the generic PostCertificateStatus builder with application/json body
+func NewPostCertificateStatusRequest(server string, id CertificateID, body PostCertificateStatusJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostCertificateStatusRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewPostCertificateStatusRequestWithBody constructs an http.Request for the PostCertificateStatus method, with any body, and a specified content type
+func NewPostCertificateStatusRequestWithBody(server string, id CertificateID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/certificates/%s/status", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRecordCertificateStatusNoticeRequest calls the generic RecordCertificateStatusNotice builder with application/json body
+func NewRecordCertificateStatusNoticeRequest(server string, id CertificateID, body RecordCertificateStatusNoticeJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRecordCertificateStatusNoticeRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewRecordCertificateStatusNoticeRequestWithBody constructs an http.Request for the RecordCertificateStatusNotice method, with any body, and a specified content type
+func NewRecordCertificateStatusNoticeRequestWithBody(server string, id CertificateID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/certificates/%s/status-notices", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewSuspendCertificateRequest calls the generic SuspendCertificate builder with application/json body
+func NewSuspendCertificateRequest(server string, id CertificateID, body SuspendCertificateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSuspendCertificateRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewSuspendCertificateRequestWithBody constructs an http.Request for the SuspendCertificate method, with any body, and a specified content type
+func NewSuspendCertificateRequestWithBody(server string, id CertificateID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/certificates/%s/suspend", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -13848,6 +15727,294 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with PUT /v1/cells (the `PutCellOwnership` operationId).
 	PutCellOwnershipWithResponse(ctx context.Context, body PutCellOwnershipJSONRequestBody, reqEditors ...RequestEditorFn) (*PutCellOwnershipResponse, error)
 
+	// ListCertificatesWithResponse The certificates
+	//
+	// Newest first, at most 500, optionally of one holder kind and one status.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/certificates (the `ListCertificates` operationId).
+	ListCertificatesWithResponse(ctx context.Context, params *ListCertificatesParams, reqEditors ...RequestEditorFn) (*ListCertificatesResponse, error)
+
+	// IssueCertificateWithBodyWithResponse Issue a USSP or CISP certificate and register its client
+	//
+	// One transaction: the certificate (status `issued`), its `code`
+	// (one to eight upper-case alphanumerics, unique, never changed;
+	// 409 when taken), the holder's client in the token service
+	// (`ussp-<code>-01` or `cisp-01`, M24) with the scopes its
+	// services imply (least privilege; `scopes` in the answer) and
+	// the audiences of this system and the CISP, the Art. 16(2) lapse
+	// periods of the active policy, and the `certificate_issued` and
+	// `oauth_client_created` events rows. A `client_secret_post`
+	// client's secret is in the answer once and is handed to the
+	// holder out of band; a `private_key_jwt` client registers the
+	// holder's public JWKS. An issued certificate is not on the USSP
+	// list until its holder notifies the start of operations.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/certificates (the `IssueCertificate` operationId).
+	IssueCertificateWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*IssueCertificateResponse, error)
+
+	// IssueCertificateWithResponse Issue a USSP or CISP certificate and register its client
+	//
+	// One transaction: the certificate (status `issued`), its `code`
+	// (one to eight upper-case alphanumerics, unique, never changed;
+	// 409 when taken), the holder's client in the token service
+	// (`ussp-<code>-01` or `cisp-01`, M24) with the scopes its
+	// services imply (least privilege; `scopes` in the answer) and
+	// the audiences of this system and the CISP, the Art. 16(2) lapse
+	// periods of the active policy, and the `certificate_issued` and
+	// `oauth_client_created` events rows. A `client_secret_post`
+	// client's secret is in the answer once and is handed to the
+	// holder out of band; a `private_key_jwt` client registers the
+	// holder's public JWKS. An issued certificate is not on the USSP
+	// list until its holder notifies the start of operations.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/certificates (the `IssueCertificate` operationId).
+	IssueCertificateWithResponse(ctx context.Context, body IssueCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*IssueCertificateResponse, error)
+
+	// PublishUSSPListWithResponse Publish the USSP list now (F1 ussp_list)
+	//
+	// Builds `cis/ussp_list/v1` from the USSP certificates operating
+	// or limited whose holder operates, within their validity
+	// (`ussp_id` = `code`), holds it to the CISP's pinned schema and
+	// queues it, signed, in WP-6's outbox (`publication_queued`). The
+	// list is also queued after every transition that changes it, and
+	// a job repairs one that was not queued (the durable
+	// `certificate_list_state`). 503 when no publication key is
+	// configured; 400 when the list does not pass the schema.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/certificates/publish-list (the `PublishUSSPList` operationId).
+	PublishUSSPListWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*PublishUSSPListResponse, error)
+
+	// GetCertificateRegisterWithResponse The public register of certified providers (Art. 18(a))
+	//
+	// Every certificate not revoked or lapsed, and one that was for a
+	// year after: holder kind and name, code, services, status,
+	// validity and limitations. No address, contact, conditions or
+	// client id: the response schema has no such property and a test
+	// fails if one appears. Unauthenticated, cacheable for 60 s and
+	// rate-limited per client address (429 with Retry-After).
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/certificates/register (the `GetCertificateRegister` operationId).
+	GetCertificateRegisterWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetCertificateRegisterResponse, error)
+
+	// GetCertificateWithResponse One certificate with its operating-status notices
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/certificates/{id} (the `GetCertificate` operationId).
+	GetCertificateWithResponse(ctx context.Context, id CertificateID, reqEditors ...RequestEditorFn) (*GetCertificateResponse, error)
+
+	// UpdateCertificateWithBodyWithResponse Correct a certificate's details
+	//
+	// The holder's name, address and contact, the base URL, the
+	// conditions, the limitations, the terms URL and the end of
+	// validity. The holder kind, code, client and issue time never
+	// change; the status changes only through its operations. One
+	// `certificate_updated` events row with the fields before and
+	// after; the USSP list is queued again when the certificate is on
+	// it.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v1/certificates/{id} (the `UpdateCertificate` operationId).
+	UpdateCertificateWithBodyWithResponse(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateCertificateResponse, error)
+
+	// UpdateCertificateWithResponse Correct a certificate's details
+	//
+	// The holder's name, address and contact, the base URL, the
+	// conditions, the limitations, the terms URL and the end of
+	// validity. The holder kind, code, client and issue time never
+	// change; the status changes only through its operations. One
+	// `certificate_updated` events row with the fields before and
+	// after; the USSP list is queued again when the certificate is on
+	// it.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v1/certificates/{id} (the `UpdateCertificate` operationId).
+	UpdateCertificateWithResponse(ctx context.Context, id CertificateID, body UpdateCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateCertificateResponse, error)
+
+	// LimitCertificateWithBodyWithResponse Limit a certificate
+	//
+	// The certificate is limited with the `limitations` given (they
+	// replace the ones held and travel on the USSP list as
+	// `certification_limitations`). The client stays active. 409 when
+	// limited, revoked or lapsed already.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/certificates/{id}/limit (the `LimitCertificate` operationId).
+	LimitCertificateWithBodyWithResponse(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*LimitCertificateResponse, error)
+
+	// LimitCertificateWithResponse Limit a certificate
+	//
+	// The certificate is limited with the `limitations` given (they
+	// replace the ones held and travel on the USSP list as
+	// `certification_limitations`). The client stays active. 409 when
+	// limited, revoked or lapsed already.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/certificates/{id}/limit (the `LimitCertificate` operationId).
+	LimitCertificateWithResponse(ctx context.Context, id CertificateID, body LimitCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*LimitCertificateResponse, error)
+
+	// ReinstateCertificateWithBodyWithResponse Lift a suspension, or else a limitation
+	//
+	// A suspended certificate is reinstated (its client active again;
+	// a limitation held stays); a limited one that is not suspended
+	// has its limitation lifted (the limitations cleared). 409 when
+	// neither suspended nor limited, or revoked or lapsed.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/certificates/{id}/reinstate (the `ReinstateCertificate` operationId).
+	ReinstateCertificateWithBodyWithResponse(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReinstateCertificateResponse, error)
+
+	// ReinstateCertificateWithResponse Lift a suspension, or else a limitation
+	//
+	// A suspended certificate is reinstated (its client active again;
+	// a limitation held stays); a limited one that is not suspended
+	// has its limitation lifted (the limitations cleared). 409 when
+	// neither suspended nor limited, or revoked or lapsed.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/certificates/{id}/reinstate (the `ReinstateCertificate` operationId).
+	ReinstateCertificateWithResponse(ctx context.Context, id CertificateID, body ReinstateCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*ReinstateCertificateResponse, error)
+
+	// RevokeCertificateWithBodyWithResponse Revoke a certificate
+	//
+	// Final: the certificate is revoked and its client revoked, in one
+	// transaction with the reason. Tokens issued before stay valid to
+	// their `exp` (`tokens_valid_until`). 409 when revoked or lapsed
+	// already.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/certificates/{id}/revoke (the `RevokeCertificate` operationId).
+	RevokeCertificateWithBodyWithResponse(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RevokeCertificateResponse, error)
+
+	// RevokeCertificateWithResponse Revoke a certificate
+	//
+	// Final: the certificate is revoked and its client revoked, in one
+	// transaction with the reason. Tokens issued before stay valid to
+	// their `exp` (`tokens_valid_until`). 409 when revoked or lapsed
+	// already.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/certificates/{id}/revoke (the `RevokeCertificate` operationId).
+	RevokeCertificateWithResponse(ctx context.Context, id CertificateID, body RevokeCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*RevokeCertificateResponse, error)
+
+	// PostCertificateStatusWithBodyWithResponse The holder's operating-status notice (02 F7, Art. 7(6))
+	//
+	// `started` (the start of operations after certification),
+	// `ceased` or `restarted`, at `at`, with the holder's `reference`.
+	// Only the holder's own client: an ecosystem token of this issuer
+	// with scope `certificates.status` whose `sub` is the
+	// certificate's `client_id` (403 otherwise). A notice the status
+	// does not admit is 409 (`started` twice, `ceased` before a start,
+	// anything on a revoked or lapsed certificate, `started` or
+	// `restarted` while suspended). A retried notice with the same
+	// `reference` and state answers 200 with the notice recorded
+	// first; the same reference for another state is 409. `at` is
+	// neither before the issue nor more than 5 minutes ahead of the
+	// database clock. Recorded with a `certificate_notice_recorded`
+	// events row; the USSP list is queued again.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/certificates/{id}/status (the `PostCertificateStatus` operationId).
+	PostCertificateStatusWithBodyWithResponse(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostCertificateStatusResponse, error)
+
+	// PostCertificateStatusWithResponse The holder's operating-status notice (02 F7, Art. 7(6))
+	//
+	// `started` (the start of operations after certification),
+	// `ceased` or `restarted`, at `at`, with the holder's `reference`.
+	// Only the holder's own client: an ecosystem token of this issuer
+	// with scope `certificates.status` whose `sub` is the
+	// certificate's `client_id` (403 otherwise). A notice the status
+	// does not admit is 409 (`started` twice, `ceased` before a start,
+	// anything on a revoked or lapsed certificate, `started` or
+	// `restarted` while suspended). A retried notice with the same
+	// `reference` and state answers 200 with the notice recorded
+	// first; the same reference for another state is 409. `at` is
+	// neither before the issue nor more than 5 minutes ahead of the
+	// database clock. Recorded with a `certificate_notice_recorded`
+	// events row; the USSP list is queued again.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/certificates/{id}/status (the `PostCertificateStatus` operationId).
+	PostCertificateStatusWithResponse(ctx context.Context, id CertificateID, body PostCertificateStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*PostCertificateStatusResponse, error)
+
+	// RecordCertificateStatusNoticeWithBodyWithResponse Enter an operating-status notice received by letter
+	//
+	// The paper fallback of `POST .../status` (02 F7: "manual fallback
+	// by letter is acceptable"): the same rules, the letter's
+	// `reference` required, recorded with source `manual` and the
+	// admin as the actor.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/certificates/{id}/status-notices (the `RecordCertificateStatusNotice` operationId).
+	RecordCertificateStatusNoticeWithBodyWithResponse(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RecordCertificateStatusNoticeResponse, error)
+
+	// RecordCertificateStatusNoticeWithResponse Enter an operating-status notice received by letter
+	//
+	// The paper fallback of `POST .../status` (02 F7: "manual fallback
+	// by letter is acceptable"): the same rules, the letter's
+	// `reference` required, recorded with source `manual` and the
+	// admin as the actor.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/certificates/{id}/status-notices (the `RecordCertificateStatusNotice` operationId).
+	RecordCertificateStatusNoticeWithResponse(ctx context.Context, id CertificateID, body RecordCertificateStatusNoticeJSONRequestBody, reqEditors ...RequestEditorFn) (*RecordCertificateStatusNoticeResponse, error)
+
+	// SuspendCertificateWithBodyWithResponse Suspend a certificate
+	//
+	// One transaction: the certificate is suspended (a limitation and
+	// the operating status are kept for the reinstatement), its client
+	// is suspended at once, so the next token request is refused
+	// (`invalid_client`), and the transition and the client change are
+	// events rows with the reason. A token issued before stays valid
+	// to its `exp` (at most the token TTL): `tokens_valid_until` in
+	// the answer says until when. The USSP list is queued again
+	// without the holder (06 §2 T9). 409 when suspended, revoked or
+	// lapsed already.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/certificates/{id}/suspend (the `SuspendCertificate` operationId).
+	SuspendCertificateWithBodyWithResponse(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SuspendCertificateResponse, error)
+
+	// SuspendCertificateWithResponse Suspend a certificate
+	//
+	// One transaction: the certificate is suspended (a limitation and
+	// the operating status are kept for the reinstatement), its client
+	// is suspended at once, so the next token request is refused
+	// (`invalid_client`), and the transition and the client change are
+	// events rows with the reason. A token issued before stays valid
+	// to its `exp` (at most the token TTL): `tokens_valid_until` in
+	// the answer says until when. The USSP list is queued again
+	// without the holder (06 §2 T9). 409 when suspended, revoked or
+	// lapsed already.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/certificates/{id}/suspend (the `SuspendCertificate` operationId).
+	SuspendCertificateWithResponse(ctx context.Context, id CertificateID, body SuspendCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*SuspendCertificateResponse, error)
+
 	// ListDPProvidersWithResponse The Service Providers the Display Provider has seen, with their state
 	//
 	// Every Service Provider an ISA named (its owner is its id and the
@@ -15988,6 +18155,806 @@ func (r PutCellOwnershipResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r PutCellOwnershipResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListCertificatesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CertificateList
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListCertificatesResponse) GetJSON200() *CertificateList {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ListCertificatesResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListCertificatesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListCertificatesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListCertificatesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListCertificatesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// IssueCertificateResponse201Headers the declared response headers of an HTTP 201 response for IssueCertificate
+type IssueCertificateResponse201Headers struct {
+	CacheControl *string
+}
+
+type IssueCertificateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *CertificateIssued
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers201 the parsed response headers for an HTTP 201 response
+	Headers201 *IssueCertificateResponse201Headers
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r IssueCertificateResponse) GetJSON201() *CertificateIssued {
+	return r.JSON201
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r IssueCertificateResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r IssueCertificateResponse) GetApplicationproblemJSON409() *Problem {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r IssueCertificateResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r IssueCertificateResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r IssueCertificateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r IssueCertificateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r IssueCertificateResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PublishUSSPListResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *USSPListPublication
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PublishUSSPListResponse) GetJSON200() *USSPListPublication {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r PublishUSSPListResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r PublishUSSPListResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r PublishUSSPListResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r PublishUSSPListResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PublishUSSPListResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PublishUSSPListResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PublishUSSPListResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetCertificateRegisterResponse200Headers the declared response headers of an HTTP 200 response for GetCertificateRegister
+type GetCertificateRegisterResponse200Headers struct {
+	CacheControl *string
+}
+
+// GetCertificateRegisterResponse429Headers the declared response headers of an HTTP 429 response for GetCertificateRegister
+type GetCertificateRegisterResponse429Headers struct {
+	RetryAfter *int
+}
+
+type GetCertificateRegisterResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CertificateRegister
+	// ApplicationproblemJSON429 the response for an HTTP 429 `application/problem+json` response
+	ApplicationproblemJSON429 *RateLimited
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetCertificateRegisterResponse200Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *GetCertificateRegisterResponse429Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetCertificateRegisterResponse) GetJSON200() *CertificateRegister {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON429 returns the response for an HTTP 429 `application/problem+json` response
+func (r GetCertificateRegisterResponse) GetApplicationproblemJSON429() *RateLimited {
+	return r.ApplicationproblemJSON429
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetCertificateRegisterResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetCertificateRegisterResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetCertificateRegisterResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetCertificateRegisterResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetCertificateRegisterResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetCertificateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CertificateDetail
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetCertificateResponse) GetJSON200() *CertificateDetail {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r GetCertificateResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetCertificateResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetCertificateResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetCertificateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetCertificateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetCertificateResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateCertificateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CertificateChange
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateCertificateResponse) GetJSON200() *CertificateChange {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r UpdateCertificateResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r UpdateCertificateResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r UpdateCertificateResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateCertificateResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateCertificateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateCertificateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateCertificateResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type LimitCertificateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CertificateChange
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r LimitCertificateResponse) GetJSON200() *CertificateChange {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r LimitCertificateResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r LimitCertificateResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r LimitCertificateResponse) GetApplicationproblemJSON409() *Problem {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r LimitCertificateResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r LimitCertificateResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r LimitCertificateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r LimitCertificateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r LimitCertificateResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ReinstateCertificateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CertificateChange
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ReinstateCertificateResponse) GetJSON200() *CertificateChange {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r ReinstateCertificateResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r ReinstateCertificateResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r ReinstateCertificateResponse) GetApplicationproblemJSON409() *Problem {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ReinstateCertificateResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ReinstateCertificateResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ReinstateCertificateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReinstateCertificateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ReinstateCertificateResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type RevokeCertificateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CertificateChange
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r RevokeCertificateResponse) GetJSON200() *CertificateChange {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r RevokeCertificateResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r RevokeCertificateResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r RevokeCertificateResponse) GetApplicationproblemJSON409() *Problem {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r RevokeCertificateResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r RevokeCertificateResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RevokeCertificateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RevokeCertificateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RevokeCertificateResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PostCertificateStatusResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CertificateNoticeResult
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *CertificateNoticeResult
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON403 the response for an HTTP 403 `application/problem+json` response
+	ApplicationproblemJSON403 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r PostCertificateStatusResponse) GetJSON200() *CertificateNoticeResult {
+	return r.JSON200
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r PostCertificateStatusResponse) GetJSON201() *CertificateNoticeResult {
+	return r.JSON201
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r PostCertificateStatusResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON403 returns the response for an HTTP 403 `application/problem+json` response
+func (r PostCertificateStatusResponse) GetApplicationproblemJSON403() *Problem {
+	return r.ApplicationproblemJSON403
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r PostCertificateStatusResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r PostCertificateStatusResponse) GetApplicationproblemJSON409() *Problem {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r PostCertificateStatusResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r PostCertificateStatusResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PostCertificateStatusResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostCertificateStatusResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PostCertificateStatusResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type RecordCertificateStatusNoticeResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CertificateNoticeResult
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *CertificateNoticeResult
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r RecordCertificateStatusNoticeResponse) GetJSON200() *CertificateNoticeResult {
+	return r.JSON200
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r RecordCertificateStatusNoticeResponse) GetJSON201() *CertificateNoticeResult {
+	return r.JSON201
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r RecordCertificateStatusNoticeResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r RecordCertificateStatusNoticeResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r RecordCertificateStatusNoticeResponse) GetApplicationproblemJSON409() *Problem {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r RecordCertificateStatusNoticeResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r RecordCertificateStatusNoticeResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RecordCertificateStatusNoticeResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RecordCertificateStatusNoticeResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RecordCertificateStatusNoticeResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SuspendCertificateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CertificateChange
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r SuspendCertificateResponse) GetJSON200() *CertificateChange {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r SuspendCertificateResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r SuspendCertificateResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r SuspendCertificateResponse) GetApplicationproblemJSON409() *Problem {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r SuspendCertificateResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r SuspendCertificateResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SuspendCertificateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SuspendCertificateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SuspendCertificateResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -20805,6 +23772,414 @@ func (c *ClientWithResponses) PutCellOwnershipWithResponse(ctx context.Context, 
 	return ParsePutCellOwnershipResponse(rsp)
 }
 
+// ListCertificatesWithResponse The certificates
+//
+// Newest first, at most 500, optionally of one holder kind and one status.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/certificates (the `ListCertificates` operationId).
+func (c *ClientWithResponses) ListCertificatesWithResponse(ctx context.Context, params *ListCertificatesParams, reqEditors ...RequestEditorFn) (*ListCertificatesResponse, error) {
+	rsp, err := c.ListCertificates(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListCertificatesResponse(rsp)
+}
+
+// IssueCertificateWithBodyWithResponse Issue a USSP or CISP certificate and register its client
+//
+// One transaction: the certificate (status `issued`), its `code`
+// (one to eight upper-case alphanumerics, unique, never changed;
+// 409 when taken), the holder's client in the token service
+// (`ussp-<code>-01` or `cisp-01`, M24) with the scopes its
+// services imply (least privilege; `scopes` in the answer) and
+// the audiences of this system and the CISP, the Art. 16(2) lapse
+// periods of the active policy, and the `certificate_issued` and
+// `oauth_client_created` events rows. A `client_secret_post`
+// client's secret is in the answer once and is handed to the
+// holder out of band; a `private_key_jwt` client registers the
+// holder's public JWKS. An issued certificate is not on the USSP
+// list until its holder notifies the start of operations.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/certificates (the `IssueCertificate` operationId).
+func (c *ClientWithResponses) IssueCertificateWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*IssueCertificateResponse, error) {
+	rsp, err := c.IssueCertificateWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseIssueCertificateResponse(rsp)
+}
+
+// IssueCertificateWithResponse Issue a USSP or CISP certificate and register its client
+//
+// One transaction: the certificate (status `issued`), its `code`
+// (one to eight upper-case alphanumerics, unique, never changed;
+// 409 when taken), the holder's client in the token service
+// (`ussp-<code>-01` or `cisp-01`, M24) with the scopes its
+// services imply (least privilege; `scopes` in the answer) and
+// the audiences of this system and the CISP, the Art. 16(2) lapse
+// periods of the active policy, and the `certificate_issued` and
+// `oauth_client_created` events rows. A `client_secret_post`
+// client's secret is in the answer once and is handed to the
+// holder out of band; a `private_key_jwt` client registers the
+// holder's public JWKS. An issued certificate is not on the USSP
+// list until its holder notifies the start of operations.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/certificates (the `IssueCertificate` operationId).
+func (c *ClientWithResponses) IssueCertificateWithResponse(ctx context.Context, body IssueCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*IssueCertificateResponse, error) {
+	rsp, err := c.IssueCertificate(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseIssueCertificateResponse(rsp)
+}
+
+// PublishUSSPListWithResponse Publish the USSP list now (F1 ussp_list)
+//
+// Builds `cis/ussp_list/v1` from the USSP certificates operating
+// or limited whose holder operates, within their validity
+// (`ussp_id` = `code`), holds it to the CISP's pinned schema and
+// queues it, signed, in WP-6's outbox (`publication_queued`). The
+// list is also queued after every transition that changes it, and
+// a job repairs one that was not queued (the durable
+// `certificate_list_state`). 503 when no publication key is
+// configured; 400 when the list does not pass the schema.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/certificates/publish-list (the `PublishUSSPList` operationId).
+func (c *ClientWithResponses) PublishUSSPListWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*PublishUSSPListResponse, error) {
+	rsp, err := c.PublishUSSPList(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePublishUSSPListResponse(rsp)
+}
+
+// GetCertificateRegisterWithResponse The public register of certified providers (Art. 18(a))
+//
+// Every certificate not revoked or lapsed, and one that was for a
+// year after: holder kind and name, code, services, status,
+// validity and limitations. No address, contact, conditions or
+// client id: the response schema has no such property and a test
+// fails if one appears. Unauthenticated, cacheable for 60 s and
+// rate-limited per client address (429 with Retry-After).
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/certificates/register (the `GetCertificateRegister` operationId).
+func (c *ClientWithResponses) GetCertificateRegisterWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetCertificateRegisterResponse, error) {
+	rsp, err := c.GetCertificateRegister(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetCertificateRegisterResponse(rsp)
+}
+
+// GetCertificateWithResponse One certificate with its operating-status notices
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/certificates/{id} (the `GetCertificate` operationId).
+func (c *ClientWithResponses) GetCertificateWithResponse(ctx context.Context, id CertificateID, reqEditors ...RequestEditorFn) (*GetCertificateResponse, error) {
+	rsp, err := c.GetCertificate(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetCertificateResponse(rsp)
+}
+
+// UpdateCertificateWithBodyWithResponse Correct a certificate's details
+//
+// The holder's name, address and contact, the base URL, the
+// conditions, the limitations, the terms URL and the end of
+// validity. The holder kind, code, client and issue time never
+// change; the status changes only through its operations. One
+// `certificate_updated` events row with the fields before and
+// after; the USSP list is queued again when the certificate is on
+// it.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v1/certificates/{id} (the `UpdateCertificate` operationId).
+func (c *ClientWithResponses) UpdateCertificateWithBodyWithResponse(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateCertificateResponse, error) {
+	rsp, err := c.UpdateCertificateWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateCertificateResponse(rsp)
+}
+
+// UpdateCertificateWithResponse Correct a certificate's details
+//
+// The holder's name, address and contact, the base URL, the
+// conditions, the limitations, the terms URL and the end of
+// validity. The holder kind, code, client and issue time never
+// change; the status changes only through its operations. One
+// `certificate_updated` events row with the fields before and
+// after; the USSP list is queued again when the certificate is on
+// it.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v1/certificates/{id} (the `UpdateCertificate` operationId).
+func (c *ClientWithResponses) UpdateCertificateWithResponse(ctx context.Context, id CertificateID, body UpdateCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateCertificateResponse, error) {
+	rsp, err := c.UpdateCertificate(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateCertificateResponse(rsp)
+}
+
+// LimitCertificateWithBodyWithResponse Limit a certificate
+//
+// The certificate is limited with the `limitations` given (they
+// replace the ones held and travel on the USSP list as
+// `certification_limitations`). The client stays active. 409 when
+// limited, revoked or lapsed already.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/certificates/{id}/limit (the `LimitCertificate` operationId).
+func (c *ClientWithResponses) LimitCertificateWithBodyWithResponse(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*LimitCertificateResponse, error) {
+	rsp, err := c.LimitCertificateWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseLimitCertificateResponse(rsp)
+}
+
+// LimitCertificateWithResponse Limit a certificate
+//
+// The certificate is limited with the `limitations` given (they
+// replace the ones held and travel on the USSP list as
+// `certification_limitations`). The client stays active. 409 when
+// limited, revoked or lapsed already.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/certificates/{id}/limit (the `LimitCertificate` operationId).
+func (c *ClientWithResponses) LimitCertificateWithResponse(ctx context.Context, id CertificateID, body LimitCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*LimitCertificateResponse, error) {
+	rsp, err := c.LimitCertificate(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseLimitCertificateResponse(rsp)
+}
+
+// ReinstateCertificateWithBodyWithResponse Lift a suspension, or else a limitation
+//
+// A suspended certificate is reinstated (its client active again;
+// a limitation held stays); a limited one that is not suspended
+// has its limitation lifted (the limitations cleared). 409 when
+// neither suspended nor limited, or revoked or lapsed.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/certificates/{id}/reinstate (the `ReinstateCertificate` operationId).
+func (c *ClientWithResponses) ReinstateCertificateWithBodyWithResponse(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReinstateCertificateResponse, error) {
+	rsp, err := c.ReinstateCertificateWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReinstateCertificateResponse(rsp)
+}
+
+// ReinstateCertificateWithResponse Lift a suspension, or else a limitation
+//
+// A suspended certificate is reinstated (its client active again;
+// a limitation held stays); a limited one that is not suspended
+// has its limitation lifted (the limitations cleared). 409 when
+// neither suspended nor limited, or revoked or lapsed.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/certificates/{id}/reinstate (the `ReinstateCertificate` operationId).
+func (c *ClientWithResponses) ReinstateCertificateWithResponse(ctx context.Context, id CertificateID, body ReinstateCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*ReinstateCertificateResponse, error) {
+	rsp, err := c.ReinstateCertificate(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReinstateCertificateResponse(rsp)
+}
+
+// RevokeCertificateWithBodyWithResponse Revoke a certificate
+//
+// Final: the certificate is revoked and its client revoked, in one
+// transaction with the reason. Tokens issued before stay valid to
+// their `exp` (`tokens_valid_until`). 409 when revoked or lapsed
+// already.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/certificates/{id}/revoke (the `RevokeCertificate` operationId).
+func (c *ClientWithResponses) RevokeCertificateWithBodyWithResponse(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RevokeCertificateResponse, error) {
+	rsp, err := c.RevokeCertificateWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRevokeCertificateResponse(rsp)
+}
+
+// RevokeCertificateWithResponse Revoke a certificate
+//
+// Final: the certificate is revoked and its client revoked, in one
+// transaction with the reason. Tokens issued before stay valid to
+// their `exp` (`tokens_valid_until`). 409 when revoked or lapsed
+// already.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/certificates/{id}/revoke (the `RevokeCertificate` operationId).
+func (c *ClientWithResponses) RevokeCertificateWithResponse(ctx context.Context, id CertificateID, body RevokeCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*RevokeCertificateResponse, error) {
+	rsp, err := c.RevokeCertificate(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRevokeCertificateResponse(rsp)
+}
+
+// PostCertificateStatusWithBodyWithResponse The holder's operating-status notice (02 F7, Art. 7(6))
+//
+// `started` (the start of operations after certification),
+// `ceased` or `restarted`, at `at`, with the holder's `reference`.
+// Only the holder's own client: an ecosystem token of this issuer
+// with scope `certificates.status` whose `sub` is the
+// certificate's `client_id` (403 otherwise). A notice the status
+// does not admit is 409 (`started` twice, `ceased` before a start,
+// anything on a revoked or lapsed certificate, `started` or
+// `restarted` while suspended). A retried notice with the same
+// `reference` and state answers 200 with the notice recorded
+// first; the same reference for another state is 409. `at` is
+// neither before the issue nor more than 5 minutes ahead of the
+// database clock. Recorded with a `certificate_notice_recorded`
+// events row; the USSP list is queued again.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/certificates/{id}/status (the `PostCertificateStatus` operationId).
+func (c *ClientWithResponses) PostCertificateStatusWithBodyWithResponse(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostCertificateStatusResponse, error) {
+	rsp, err := c.PostCertificateStatusWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostCertificateStatusResponse(rsp)
+}
+
+// PostCertificateStatusWithResponse The holder's operating-status notice (02 F7, Art. 7(6))
+//
+// `started` (the start of operations after certification),
+// `ceased` or `restarted`, at `at`, with the holder's `reference`.
+// Only the holder's own client: an ecosystem token of this issuer
+// with scope `certificates.status` whose `sub` is the
+// certificate's `client_id` (403 otherwise). A notice the status
+// does not admit is 409 (`started` twice, `ceased` before a start,
+// anything on a revoked or lapsed certificate, `started` or
+// `restarted` while suspended). A retried notice with the same
+// `reference` and state answers 200 with the notice recorded
+// first; the same reference for another state is 409. `at` is
+// neither before the issue nor more than 5 minutes ahead of the
+// database clock. Recorded with a `certificate_notice_recorded`
+// events row; the USSP list is queued again.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/certificates/{id}/status (the `PostCertificateStatus` operationId).
+func (c *ClientWithResponses) PostCertificateStatusWithResponse(ctx context.Context, id CertificateID, body PostCertificateStatusJSONRequestBody, reqEditors ...RequestEditorFn) (*PostCertificateStatusResponse, error) {
+	rsp, err := c.PostCertificateStatus(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostCertificateStatusResponse(rsp)
+}
+
+// RecordCertificateStatusNoticeWithBodyWithResponse Enter an operating-status notice received by letter
+//
+// The paper fallback of `POST .../status` (02 F7: "manual fallback
+// by letter is acceptable"): the same rules, the letter's
+// `reference` required, recorded with source `manual` and the
+// admin as the actor.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/certificates/{id}/status-notices (the `RecordCertificateStatusNotice` operationId).
+func (c *ClientWithResponses) RecordCertificateStatusNoticeWithBodyWithResponse(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RecordCertificateStatusNoticeResponse, error) {
+	rsp, err := c.RecordCertificateStatusNoticeWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRecordCertificateStatusNoticeResponse(rsp)
+}
+
+// RecordCertificateStatusNoticeWithResponse Enter an operating-status notice received by letter
+//
+// The paper fallback of `POST .../status` (02 F7: "manual fallback
+// by letter is acceptable"): the same rules, the letter's
+// `reference` required, recorded with source `manual` and the
+// admin as the actor.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/certificates/{id}/status-notices (the `RecordCertificateStatusNotice` operationId).
+func (c *ClientWithResponses) RecordCertificateStatusNoticeWithResponse(ctx context.Context, id CertificateID, body RecordCertificateStatusNoticeJSONRequestBody, reqEditors ...RequestEditorFn) (*RecordCertificateStatusNoticeResponse, error) {
+	rsp, err := c.RecordCertificateStatusNotice(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRecordCertificateStatusNoticeResponse(rsp)
+}
+
+// SuspendCertificateWithBodyWithResponse Suspend a certificate
+//
+// One transaction: the certificate is suspended (a limitation and
+// the operating status are kept for the reinstatement), its client
+// is suspended at once, so the next token request is refused
+// (`invalid_client`), and the transition and the client change are
+// events rows with the reason. A token issued before stays valid
+// to its `exp` (at most the token TTL): `tokens_valid_until` in
+// the answer says until when. The USSP list is queued again
+// without the holder (06 §2 T9). 409 when suspended, revoked or
+// lapsed already.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/certificates/{id}/suspend (the `SuspendCertificate` operationId).
+func (c *ClientWithResponses) SuspendCertificateWithBodyWithResponse(ctx context.Context, id CertificateID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SuspendCertificateResponse, error) {
+	rsp, err := c.SuspendCertificateWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSuspendCertificateResponse(rsp)
+}
+
+// SuspendCertificateWithResponse Suspend a certificate
+//
+// One transaction: the certificate is suspended (a limitation and
+// the operating status are kept for the reinstatement), its client
+// is suspended at once, so the next token request is refused
+// (`invalid_client`), and the transition and the client change are
+// events rows with the reason. A token issued before stays valid
+// to its `exp` (at most the token TTL): `tokens_valid_until` in
+// the answer says until when. The USSP list is queued again
+// without the holder (06 §2 T9). 409 when suspended, revoked or
+// lapsed already.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/certificates/{id}/suspend (the `SuspendCertificate` operationId).
+func (c *ClientWithResponses) SuspendCertificateWithResponse(ctx context.Context, id CertificateID, body SuspendCertificateJSONRequestBody, reqEditors ...RequestEditorFn) (*SuspendCertificateResponse, error) {
+	rsp, err := c.SuspendCertificate(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSuspendCertificateResponse(rsp)
+}
+
 // ListDPProvidersWithResponse The Service Providers the Display Provider has seen, with their state
 //
 // Every Service Provider an ISA named (its owner is its id and the
@@ -23537,6 +26912,641 @@ func ParsePutCellOwnershipResponse(rsp *http.Response) (*PutCellOwnershipRespons
 			return nil, err
 		}
 		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListCertificatesResponse parses an HTTP response from a ListCertificatesWithResponse call
+func ParseListCertificatesResponse(rsp *http.Response) (*ListCertificatesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListCertificatesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CertificateList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseIssueCertificateResponse parses an HTTP response from a IssueCertificateWithResponse call
+func ParseIssueCertificateResponse(rsp *http.Response) (*IssueCertificateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &IssueCertificateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest CertificateIssued
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 201:
+		var headers IssueCertificateResponse201Headers
+		if values := rsp.Header.Values("Cache-Control"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Cache-Control", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.CacheControl = &value
+		}
+		response.Headers201 = &headers
+	}
+
+	return response, nil
+}
+
+// ParsePublishUSSPListResponse parses an HTTP response from a PublishUSSPListWithResponse call
+func ParsePublishUSSPListResponse(rsp *http.Response) (*PublishUSSPListResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PublishUSSPListResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest USSPListPublication
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetCertificateRegisterResponse parses an HTTP response from a GetCertificateRegisterWithResponse call
+func ParseGetCertificateRegisterResponse(rsp *http.Response) (*GetCertificateRegisterResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetCertificateRegisterResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CertificateRegister
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetCertificateRegisterResponse200Headers
+		if values := rsp.Header.Values("Cache-Control"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Cache-Control", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.CacheControl = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 429:
+		var headers GetCertificateRegisterResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetCertificateResponse parses an HTTP response from a GetCertificateWithResponse call
+func ParseGetCertificateResponse(rsp *http.Response) (*GetCertificateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetCertificateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CertificateDetail
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateCertificateResponse parses an HTTP response from a UpdateCertificateWithResponse call
+func ParseUpdateCertificateResponse(rsp *http.Response) (*UpdateCertificateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateCertificateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CertificateChange
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseLimitCertificateResponse parses an HTTP response from a LimitCertificateWithResponse call
+func ParseLimitCertificateResponse(rsp *http.Response) (*LimitCertificateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &LimitCertificateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CertificateChange
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReinstateCertificateResponse parses an HTTP response from a ReinstateCertificateWithResponse call
+func ParseReinstateCertificateResponse(rsp *http.Response) (*ReinstateCertificateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReinstateCertificateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CertificateChange
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRevokeCertificateResponse parses an HTTP response from a RevokeCertificateWithResponse call
+func ParseRevokeCertificateResponse(rsp *http.Response) (*RevokeCertificateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RevokeCertificateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CertificateChange
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostCertificateStatusResponse parses an HTTP response from a PostCertificateStatusWithResponse call
+func ParsePostCertificateStatusResponse(rsp *http.Response) (*PostCertificateStatusResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostCertificateStatusResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CertificateNoticeResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest CertificateNoticeResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRecordCertificateStatusNoticeResponse parses an HTTP response from a RecordCertificateStatusNoticeWithResponse call
+func ParseRecordCertificateStatusNoticeResponse(rsp *http.Response) (*RecordCertificateStatusNoticeResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RecordCertificateStatusNoticeResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CertificateNoticeResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest CertificateNoticeResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSuspendCertificateResponse parses an HTTP response from a SuspendCertificateWithResponse call
+func ParseSuspendCertificateResponse(rsp *http.Response) (*SuspendCertificateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SuspendCertificateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CertificateChange
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Problem
@@ -26842,6 +30852,42 @@ type ServerInterface interface {
 	// PutCellOwnership Replace the ownership map (an operator's rebalance)
 	// (PUT /v1/cells)
 	PutCellOwnership(w http.ResponseWriter, r *http.Request)
+	// ListCertificates The certificates
+	// (GET /v1/certificates)
+	ListCertificates(w http.ResponseWriter, r *http.Request, params ListCertificatesParams)
+	// IssueCertificate Issue a USSP or CISP certificate and register its client
+	// (POST /v1/certificates)
+	IssueCertificate(w http.ResponseWriter, r *http.Request)
+	// PublishUSSPList Publish the USSP list now (F1 ussp_list)
+	// (POST /v1/certificates/publish-list)
+	PublishUSSPList(w http.ResponseWriter, r *http.Request)
+	// GetCertificateRegister The public register of certified providers (Art. 18(a))
+	// (GET /v1/certificates/register)
+	GetCertificateRegister(w http.ResponseWriter, r *http.Request)
+	// GetCertificate One certificate with its operating-status notices
+	// (GET /v1/certificates/{id})
+	GetCertificate(w http.ResponseWriter, r *http.Request, id CertificateID)
+	// UpdateCertificate Correct a certificate's details
+	// (PATCH /v1/certificates/{id})
+	UpdateCertificate(w http.ResponseWriter, r *http.Request, id CertificateID)
+	// LimitCertificate Limit a certificate
+	// (POST /v1/certificates/{id}/limit)
+	LimitCertificate(w http.ResponseWriter, r *http.Request, id CertificateID)
+	// ReinstateCertificate Lift a suspension, or else a limitation
+	// (POST /v1/certificates/{id}/reinstate)
+	ReinstateCertificate(w http.ResponseWriter, r *http.Request, id CertificateID)
+	// RevokeCertificate Revoke a certificate
+	// (POST /v1/certificates/{id}/revoke)
+	RevokeCertificate(w http.ResponseWriter, r *http.Request, id CertificateID)
+	// PostCertificateStatus The holder's operating-status notice (02 F7, Art. 7(6))
+	// (POST /v1/certificates/{id}/status)
+	PostCertificateStatus(w http.ResponseWriter, r *http.Request, id CertificateID)
+	// RecordCertificateStatusNotice Enter an operating-status notice received by letter
+	// (POST /v1/certificates/{id}/status-notices)
+	RecordCertificateStatusNotice(w http.ResponseWriter, r *http.Request, id CertificateID)
+	// SuspendCertificate Suspend a certificate
+	// (POST /v1/certificates/{id}/suspend)
+	SuspendCertificate(w http.ResponseWriter, r *http.Request, id CertificateID)
 	// ListDPProviders The Service Providers the Display Provider has seen, with their state
 	// (GET /v1/dp/providers)
 	ListDPProviders(w http.ResponseWriter, r *http.Request)
@@ -27412,6 +31458,302 @@ func (siw *ServerInterfaceWrapper) PutCellOwnership(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PutCellOwnership(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCertificates operation middleware
+func (siw *ServerInterfaceWrapper) ListCertificates(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCertificatesParams
+
+	// ------------- Optional query parameter "holder" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "holder", r.URL.Query(), &params.Holder, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "holder"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "holder", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCertificates(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// IssueCertificate operation middleware
+func (siw *ServerInterfaceWrapper) IssueCertificate(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.IssueCertificate(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PublishUSSPList operation middleware
+func (siw *ServerInterfaceWrapper) PublishUSSPList(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PublishUSSPList(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCertificateRegister operation middleware
+func (siw *ServerInterfaceWrapper) GetCertificateRegister(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCertificateRegister(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCertificate operation middleware
+func (siw *ServerInterfaceWrapper) GetCertificate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id CertificateID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCertificate(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateCertificate operation middleware
+func (siw *ServerInterfaceWrapper) UpdateCertificate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id CertificateID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateCertificate(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// LimitCertificate operation middleware
+func (siw *ServerInterfaceWrapper) LimitCertificate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id CertificateID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.LimitCertificate(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReinstateCertificate operation middleware
+func (siw *ServerInterfaceWrapper) ReinstateCertificate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id CertificateID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReinstateCertificate(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RevokeCertificate operation middleware
+func (siw *ServerInterfaceWrapper) RevokeCertificate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id CertificateID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RevokeCertificate(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PostCertificateStatus operation middleware
+func (siw *ServerInterfaceWrapper) PostCertificateStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id CertificateID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PostCertificateStatus(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RecordCertificateStatusNotice operation middleware
+func (siw *ServerInterfaceWrapper) RecordCertificateStatusNotice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id CertificateID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RecordCertificateStatusNotice(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SuspendCertificate operation middleware
+func (siw *ServerInterfaceWrapper) SuspendCertificate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id CertificateID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SuspendCertificate(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -30443,6 +34785,18 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/incidents/{incident_id}/evidence-packs/{pack_id}", wrapper.GetEvidencePack)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/incidents/{incident_id}/evidence-packs/{pack_id}/download", wrapper.DownloadEvidencePack)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/incidents/{incident_id}/evidence-packs/{pack_id}/verify", wrapper.VerifyEvidencePack)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/certificates", wrapper.ListCertificates)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/certificates", wrapper.IssueCertificate)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/certificates/register", wrapper.GetCertificateRegister)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/certificates/publish-list", wrapper.PublishUSSPList)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/certificates/{id}", wrapper.GetCertificate)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/v1/certificates/{id}", wrapper.UpdateCertificate)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/certificates/{id}/status", wrapper.PostCertificateStatus)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/certificates/{id}/status-notices", wrapper.RecordCertificateStatusNotice)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/certificates/{id}/suspend", wrapper.SuspendCertificate)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/certificates/{id}/limit", wrapper.LimitCertificate)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/certificates/{id}/revoke", wrapper.RevokeCertificate)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/certificates/{id}/reinstate", wrapper.ReinstateCertificate)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/dp/views", wrapper.ListDPViews)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/dp/views", wrapper.CreateDPView)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/dp/providers", wrapper.ListDPProviders)
@@ -31101,6 +35455,930 @@ type PutCellOwnershipdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response PutCellOwnershipdefaultApplicationProblemPlusJSONResponse) VisitPutCellOwnershipResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCertificatesRequestObject struct {
+	Params ListCertificatesParams
+}
+
+type ListCertificatesResponseObject interface {
+	VisitListCertificatesResponse(w http.ResponseWriter) error
+}
+
+type ListCertificates200JSONResponse CertificateList
+
+func (response ListCertificates200JSONResponse) VisitListCertificatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCertificatesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListCertificatesdefaultApplicationProblemPlusJSONResponse) VisitListCertificatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueCertificateRequestObject struct {
+	Body *IssueCertificateJSONRequestBody
+}
+
+type IssueCertificateResponseObject interface {
+	VisitIssueCertificateResponse(w http.ResponseWriter) error
+}
+
+type IssueCertificate201ResponseHeaders struct {
+	CacheControl *string
+}
+
+type IssueCertificate201JSONResponse struct {
+	Body    CertificateIssued
+	Headers IssueCertificate201ResponseHeaders
+}
+
+func (response IssueCertificate201JSONResponse) VisitIssueCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueCertificate400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response IssueCertificate400ApplicationProblemPlusJSONResponse) VisitIssueCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueCertificate409ApplicationProblemPlusJSONResponse Problem
+
+func (response IssueCertificate409ApplicationProblemPlusJSONResponse) VisitIssueCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueCertificatedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response IssueCertificatedefaultApplicationProblemPlusJSONResponse) VisitIssueCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishUSSPListRequestObject struct {
+}
+
+type PublishUSSPListResponseObject interface {
+	VisitPublishUSSPListResponse(w http.ResponseWriter) error
+}
+
+type PublishUSSPList200JSONResponse USSPListPublication
+
+func (response PublishUSSPList200JSONResponse) VisitPublishUSSPListResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishUSSPList400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PublishUSSPList400ApplicationProblemPlusJSONResponse) VisitPublishUSSPListResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishUSSPList503ApplicationProblemPlusJSONResponse Problem
+
+func (response PublishUSSPList503ApplicationProblemPlusJSONResponse) VisitPublishUSSPListResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishUSSPListdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response PublishUSSPListdefaultApplicationProblemPlusJSONResponse) VisitPublishUSSPListResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCertificateRegisterRequestObject struct {
+}
+
+type GetCertificateRegisterResponseObject interface {
+	VisitGetCertificateRegisterResponse(w http.ResponseWriter) error
+}
+
+type GetCertificateRegister200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetCertificateRegister200JSONResponse struct {
+	Body    CertificateRegister
+	Headers GetCertificateRegister200ResponseHeaders
+}
+
+func (response GetCertificateRegister200JSONResponse) VisitGetCertificateRegisterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCertificateRegister429ApplicationProblemPlusJSONResponse struct {
+	RateLimitedApplicationProblemPlusJSONResponse
+}
+
+func (response GetCertificateRegister429ApplicationProblemPlusJSONResponse) VisitGetCertificateRegisterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCertificateRegisterdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetCertificateRegisterdefaultApplicationProblemPlusJSONResponse) VisitGetCertificateRegisterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCertificateRequestObject struct {
+	Id CertificateID `json:"id"`
+}
+
+type GetCertificateResponseObject interface {
+	VisitGetCertificateResponse(w http.ResponseWriter) error
+}
+
+type GetCertificate200JSONResponse CertificateDetail
+
+func (response GetCertificate200JSONResponse) VisitGetCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCertificate404ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetCertificate404ApplicationProblemPlusJSONResponse) VisitGetCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCertificatedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetCertificatedefaultApplicationProblemPlusJSONResponse) VisitGetCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCertificateRequestObject struct {
+	Id   CertificateID `json:"id"`
+	Body *UpdateCertificateJSONRequestBody
+}
+
+type UpdateCertificateResponseObject interface {
+	VisitUpdateCertificateResponse(w http.ResponseWriter) error
+}
+
+type UpdateCertificate200JSONResponse CertificateChange
+
+func (response UpdateCertificate200JSONResponse) VisitUpdateCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCertificate400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response UpdateCertificate400ApplicationProblemPlusJSONResponse) VisitUpdateCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCertificate404ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateCertificate404ApplicationProblemPlusJSONResponse) VisitUpdateCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCertificatedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpdateCertificatedefaultApplicationProblemPlusJSONResponse) VisitUpdateCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LimitCertificateRequestObject struct {
+	Id   CertificateID `json:"id"`
+	Body *LimitCertificateJSONRequestBody
+}
+
+type LimitCertificateResponseObject interface {
+	VisitLimitCertificateResponse(w http.ResponseWriter) error
+}
+
+type LimitCertificate200JSONResponse CertificateChange
+
+func (response LimitCertificate200JSONResponse) VisitLimitCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LimitCertificate400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response LimitCertificate400ApplicationProblemPlusJSONResponse) VisitLimitCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LimitCertificate404ApplicationProblemPlusJSONResponse Problem
+
+func (response LimitCertificate404ApplicationProblemPlusJSONResponse) VisitLimitCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LimitCertificate409ApplicationProblemPlusJSONResponse Problem
+
+func (response LimitCertificate409ApplicationProblemPlusJSONResponse) VisitLimitCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LimitCertificatedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response LimitCertificatedefaultApplicationProblemPlusJSONResponse) VisitLimitCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReinstateCertificateRequestObject struct {
+	Id   CertificateID `json:"id"`
+	Body *ReinstateCertificateJSONRequestBody
+}
+
+type ReinstateCertificateResponseObject interface {
+	VisitReinstateCertificateResponse(w http.ResponseWriter) error
+}
+
+type ReinstateCertificate200JSONResponse CertificateChange
+
+func (response ReinstateCertificate200JSONResponse) VisitReinstateCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReinstateCertificate400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response ReinstateCertificate400ApplicationProblemPlusJSONResponse) VisitReinstateCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReinstateCertificate404ApplicationProblemPlusJSONResponse Problem
+
+func (response ReinstateCertificate404ApplicationProblemPlusJSONResponse) VisitReinstateCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReinstateCertificate409ApplicationProblemPlusJSONResponse Problem
+
+func (response ReinstateCertificate409ApplicationProblemPlusJSONResponse) VisitReinstateCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReinstateCertificatedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ReinstateCertificatedefaultApplicationProblemPlusJSONResponse) VisitReinstateCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeCertificateRequestObject struct {
+	Id   CertificateID `json:"id"`
+	Body *RevokeCertificateJSONRequestBody
+}
+
+type RevokeCertificateResponseObject interface {
+	VisitRevokeCertificateResponse(w http.ResponseWriter) error
+}
+
+type RevokeCertificate200JSONResponse CertificateChange
+
+func (response RevokeCertificate200JSONResponse) VisitRevokeCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeCertificate400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response RevokeCertificate400ApplicationProblemPlusJSONResponse) VisitRevokeCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeCertificate404ApplicationProblemPlusJSONResponse Problem
+
+func (response RevokeCertificate404ApplicationProblemPlusJSONResponse) VisitRevokeCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeCertificate409ApplicationProblemPlusJSONResponse Problem
+
+func (response RevokeCertificate409ApplicationProblemPlusJSONResponse) VisitRevokeCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeCertificatedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response RevokeCertificatedefaultApplicationProblemPlusJSONResponse) VisitRevokeCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostCertificateStatusRequestObject struct {
+	Id   CertificateID `json:"id"`
+	Body *PostCertificateStatusJSONRequestBody
+}
+
+type PostCertificateStatusResponseObject interface {
+	VisitPostCertificateStatusResponse(w http.ResponseWriter) error
+}
+
+type PostCertificateStatus200JSONResponse CertificateNoticeResult
+
+func (response PostCertificateStatus200JSONResponse) VisitPostCertificateStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostCertificateStatus201JSONResponse CertificateNoticeResult
+
+func (response PostCertificateStatus201JSONResponse) VisitPostCertificateStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostCertificateStatus400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PostCertificateStatus400ApplicationProblemPlusJSONResponse) VisitPostCertificateStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostCertificateStatus403ApplicationProblemPlusJSONResponse Problem
+
+func (response PostCertificateStatus403ApplicationProblemPlusJSONResponse) VisitPostCertificateStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostCertificateStatus404ApplicationProblemPlusJSONResponse Problem
+
+func (response PostCertificateStatus404ApplicationProblemPlusJSONResponse) VisitPostCertificateStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostCertificateStatus409ApplicationProblemPlusJSONResponse Problem
+
+func (response PostCertificateStatus409ApplicationProblemPlusJSONResponse) VisitPostCertificateStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PostCertificateStatusdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response PostCertificateStatusdefaultApplicationProblemPlusJSONResponse) VisitPostCertificateStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecordCertificateStatusNoticeRequestObject struct {
+	Id   CertificateID `json:"id"`
+	Body *RecordCertificateStatusNoticeJSONRequestBody
+}
+
+type RecordCertificateStatusNoticeResponseObject interface {
+	VisitRecordCertificateStatusNoticeResponse(w http.ResponseWriter) error
+}
+
+type RecordCertificateStatusNotice200JSONResponse CertificateNoticeResult
+
+func (response RecordCertificateStatusNotice200JSONResponse) VisitRecordCertificateStatusNoticeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecordCertificateStatusNotice201JSONResponse CertificateNoticeResult
+
+func (response RecordCertificateStatusNotice201JSONResponse) VisitRecordCertificateStatusNoticeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecordCertificateStatusNotice400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response RecordCertificateStatusNotice400ApplicationProblemPlusJSONResponse) VisitRecordCertificateStatusNoticeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecordCertificateStatusNotice404ApplicationProblemPlusJSONResponse Problem
+
+func (response RecordCertificateStatusNotice404ApplicationProblemPlusJSONResponse) VisitRecordCertificateStatusNoticeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecordCertificateStatusNotice409ApplicationProblemPlusJSONResponse Problem
+
+func (response RecordCertificateStatusNotice409ApplicationProblemPlusJSONResponse) VisitRecordCertificateStatusNoticeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecordCertificateStatusNoticedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response RecordCertificateStatusNoticedefaultApplicationProblemPlusJSONResponse) VisitRecordCertificateStatusNoticeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SuspendCertificateRequestObject struct {
+	Id   CertificateID `json:"id"`
+	Body *SuspendCertificateJSONRequestBody
+}
+
+type SuspendCertificateResponseObject interface {
+	VisitSuspendCertificateResponse(w http.ResponseWriter) error
+}
+
+type SuspendCertificate200JSONResponse CertificateChange
+
+func (response SuspendCertificate200JSONResponse) VisitSuspendCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SuspendCertificate400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response SuspendCertificate400ApplicationProblemPlusJSONResponse) VisitSuspendCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SuspendCertificate404ApplicationProblemPlusJSONResponse Problem
+
+func (response SuspendCertificate404ApplicationProblemPlusJSONResponse) VisitSuspendCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SuspendCertificate409ApplicationProblemPlusJSONResponse Problem
+
+func (response SuspendCertificate409ApplicationProblemPlusJSONResponse) VisitSuspendCertificateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SuspendCertificatedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response SuspendCertificatedefaultApplicationProblemPlusJSONResponse) VisitSuspendCertificateResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -35327,6 +40605,42 @@ type StrictServerInterface interface {
 	// PutCellOwnership Replace the ownership map (an operator's rebalance)
 	// (PUT /v1/cells)
 	PutCellOwnership(ctx context.Context, request PutCellOwnershipRequestObject) (PutCellOwnershipResponseObject, error)
+	// ListCertificates The certificates
+	// (GET /v1/certificates)
+	ListCertificates(ctx context.Context, request ListCertificatesRequestObject) (ListCertificatesResponseObject, error)
+	// IssueCertificate Issue a USSP or CISP certificate and register its client
+	// (POST /v1/certificates)
+	IssueCertificate(ctx context.Context, request IssueCertificateRequestObject) (IssueCertificateResponseObject, error)
+	// PublishUSSPList Publish the USSP list now (F1 ussp_list)
+	// (POST /v1/certificates/publish-list)
+	PublishUSSPList(ctx context.Context, request PublishUSSPListRequestObject) (PublishUSSPListResponseObject, error)
+	// GetCertificateRegister The public register of certified providers (Art. 18(a))
+	// (GET /v1/certificates/register)
+	GetCertificateRegister(ctx context.Context, request GetCertificateRegisterRequestObject) (GetCertificateRegisterResponseObject, error)
+	// GetCertificate One certificate with its operating-status notices
+	// (GET /v1/certificates/{id})
+	GetCertificate(ctx context.Context, request GetCertificateRequestObject) (GetCertificateResponseObject, error)
+	// UpdateCertificate Correct a certificate's details
+	// (PATCH /v1/certificates/{id})
+	UpdateCertificate(ctx context.Context, request UpdateCertificateRequestObject) (UpdateCertificateResponseObject, error)
+	// LimitCertificate Limit a certificate
+	// (POST /v1/certificates/{id}/limit)
+	LimitCertificate(ctx context.Context, request LimitCertificateRequestObject) (LimitCertificateResponseObject, error)
+	// ReinstateCertificate Lift a suspension, or else a limitation
+	// (POST /v1/certificates/{id}/reinstate)
+	ReinstateCertificate(ctx context.Context, request ReinstateCertificateRequestObject) (ReinstateCertificateResponseObject, error)
+	// RevokeCertificate Revoke a certificate
+	// (POST /v1/certificates/{id}/revoke)
+	RevokeCertificate(ctx context.Context, request RevokeCertificateRequestObject) (RevokeCertificateResponseObject, error)
+	// PostCertificateStatus The holder's operating-status notice (02 F7, Art. 7(6))
+	// (POST /v1/certificates/{id}/status)
+	PostCertificateStatus(ctx context.Context, request PostCertificateStatusRequestObject) (PostCertificateStatusResponseObject, error)
+	// RecordCertificateStatusNotice Enter an operating-status notice received by letter
+	// (POST /v1/certificates/{id}/status-notices)
+	RecordCertificateStatusNotice(ctx context.Context, request RecordCertificateStatusNoticeRequestObject) (RecordCertificateStatusNoticeResponseObject, error)
+	// SuspendCertificate Suspend a certificate
+	// (POST /v1/certificates/{id}/suspend)
+	SuspendCertificate(ctx context.Context, request SuspendCertificateRequestObject) (SuspendCertificateResponseObject, error)
 	// ListDPProviders The Service Providers the Display Provider has seen, with their state
 	// (GET /v1/dp/providers)
 	ListDPProviders(ctx context.Context, request ListDPProvidersRequestObject) (ListDPProvidersResponseObject, error)
@@ -35943,6 +41257,368 @@ func (sh *strictHandler) PutCellOwnership(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PutCellOwnershipResponseObject); ok {
 		if err := validResponse.VisitPutCellOwnershipResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCertificates operation middleware
+func (sh *strictHandler) ListCertificates(w http.ResponseWriter, r *http.Request, params ListCertificatesParams) {
+	var request ListCertificatesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCertificates(ctx, request.(ListCertificatesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCertificates")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCertificatesResponseObject); ok {
+		if err := validResponse.VisitListCertificatesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// IssueCertificate operation middleware
+func (sh *strictHandler) IssueCertificate(w http.ResponseWriter, r *http.Request) {
+	var request IssueCertificateRequestObject
+
+	var body IssueCertificateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.IssueCertificate(ctx, request.(IssueCertificateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "IssueCertificate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(IssueCertificateResponseObject); ok {
+		if err := validResponse.VisitIssueCertificateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PublishUSSPList operation middleware
+func (sh *strictHandler) PublishUSSPList(w http.ResponseWriter, r *http.Request) {
+	var request PublishUSSPListRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PublishUSSPList(ctx, request.(PublishUSSPListRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PublishUSSPList")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PublishUSSPListResponseObject); ok {
+		if err := validResponse.VisitPublishUSSPListResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCertificateRegister operation middleware
+func (sh *strictHandler) GetCertificateRegister(w http.ResponseWriter, r *http.Request) {
+	var request GetCertificateRegisterRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCertificateRegister(ctx, request.(GetCertificateRegisterRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCertificateRegister")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCertificateRegisterResponseObject); ok {
+		if err := validResponse.VisitGetCertificateRegisterResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCertificate operation middleware
+func (sh *strictHandler) GetCertificate(w http.ResponseWriter, r *http.Request, id CertificateID) {
+	var request GetCertificateRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCertificate(ctx, request.(GetCertificateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCertificate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCertificateResponseObject); ok {
+		if err := validResponse.VisitGetCertificateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateCertificate operation middleware
+func (sh *strictHandler) UpdateCertificate(w http.ResponseWriter, r *http.Request, id CertificateID) {
+	var request UpdateCertificateRequestObject
+
+	request.Id = id
+
+	var body UpdateCertificateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateCertificate(ctx, request.(UpdateCertificateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateCertificate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateCertificateResponseObject); ok {
+		if err := validResponse.VisitUpdateCertificateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// LimitCertificate operation middleware
+func (sh *strictHandler) LimitCertificate(w http.ResponseWriter, r *http.Request, id CertificateID) {
+	var request LimitCertificateRequestObject
+
+	request.Id = id
+
+	var body LimitCertificateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.LimitCertificate(ctx, request.(LimitCertificateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "LimitCertificate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(LimitCertificateResponseObject); ok {
+		if err := validResponse.VisitLimitCertificateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReinstateCertificate operation middleware
+func (sh *strictHandler) ReinstateCertificate(w http.ResponseWriter, r *http.Request, id CertificateID) {
+	var request ReinstateCertificateRequestObject
+
+	request.Id = id
+
+	var body ReinstateCertificateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReinstateCertificate(ctx, request.(ReinstateCertificateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReinstateCertificate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReinstateCertificateResponseObject); ok {
+		if err := validResponse.VisitReinstateCertificateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RevokeCertificate operation middleware
+func (sh *strictHandler) RevokeCertificate(w http.ResponseWriter, r *http.Request, id CertificateID) {
+	var request RevokeCertificateRequestObject
+
+	request.Id = id
+
+	var body RevokeCertificateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RevokeCertificate(ctx, request.(RevokeCertificateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RevokeCertificate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RevokeCertificateResponseObject); ok {
+		if err := validResponse.VisitRevokeCertificateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PostCertificateStatus operation middleware
+func (sh *strictHandler) PostCertificateStatus(w http.ResponseWriter, r *http.Request, id CertificateID) {
+	var request PostCertificateStatusRequestObject
+
+	request.Id = id
+
+	var body PostCertificateStatusJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PostCertificateStatus(ctx, request.(PostCertificateStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PostCertificateStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PostCertificateStatusResponseObject); ok {
+		if err := validResponse.VisitPostCertificateStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RecordCertificateStatusNotice operation middleware
+func (sh *strictHandler) RecordCertificateStatusNotice(w http.ResponseWriter, r *http.Request, id CertificateID) {
+	var request RecordCertificateStatusNoticeRequestObject
+
+	request.Id = id
+
+	var body RecordCertificateStatusNoticeJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RecordCertificateStatusNotice(ctx, request.(RecordCertificateStatusNoticeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RecordCertificateStatusNotice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RecordCertificateStatusNoticeResponseObject); ok {
+		if err := validResponse.VisitRecordCertificateStatusNoticeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SuspendCertificate operation middleware
+func (sh *strictHandler) SuspendCertificate(w http.ResponseWriter, r *http.Request, id CertificateID) {
+	var request SuspendCertificateRequestObject
+
+	request.Id = id
+
+	var body SuspendCertificateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SuspendCertificate(ctx, request.(SuspendCertificateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SuspendCertificate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SuspendCertificateResponseObject); ok {
+		if err := validResponse.VisitSuspendCertificateResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

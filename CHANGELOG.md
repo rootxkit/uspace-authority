@@ -244,3 +244,17 @@ Unreleased; the format follows Keep a Changelog.
   and gated to personal-data roles; downloads and verifications that
   re-check the hash first and are audited with the purpose; the
   incidents runbook.
+- WP-16: USSP and CISP certificates (`internal/certs`, migration
+  `00018_certificates`): issue with the holder's code and its client in
+  the token service with least-privilege scopes in one transaction;
+  status derived from operations, limitation, suspension and end;
+  suspend (client suspended, next token refused, `tokens_valid_until`),
+  limit, revoke, reinstate, each audited with the reason; the holder's
+  operating-status notices from its own client (`POST
+  /v1/certificates/{id}/status`) or by letter; the Art. 16(2) lapse job
+  on policy periods (`certificate_lapse_*_months`); the public register;
+  the `cis/ussp_list/v1` dataset queued in WP-6's outbox inside each
+  change, with a durable repair; the certified USSPs in KV for
+  dp-poller (replacing `DP_CERTIFIED_USSPS`) and USSP base URLs for
+  evidence packs from the register (replacing the CIS list); the
+  certificates runbook.

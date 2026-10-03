@@ -100,6 +100,19 @@ type API struct {
 	Violations
 	Incidents
 	DPAdmin
+	Certificates
+}
+
+// Certificates are api's USSP and CISP certificates (WP-16): the lapse
+// job, the repair of the USSP list and of the KV register dp-poller
+// follows, and the public register's rate limit.
+type Certificates struct {
+	CertificatesLapseEveryS    int    `env:"CERTIFICATES_LAPSE_EVERY_S" default:"86400" min:"60" max:"604800" help:"period of the Art. 16(2) lapse job (daily; one replica at a time under an advisory lock, idempotent); the lapse periods themselves are authority_policy columns"`
+	CertificatesRepairS        int    `env:"CERTIFICATES_REPAIR_S" default:"60" min:"1" max:"3600" help:"period of the repair of the USSP list (queued again when a change could not queue it or a certificate left it by expiry) and of the KV register dp-poller follows"`
+	CertificatesBucket         string `env:"CERTIFICATES_BUCKET" default:"certificates" help:"KV bucket of the certified USSPs dp-poller follows (the same variable there)"`
+	CertificatesRegisterPerMin int    `env:"CERTIFICATES_REGISTER_PER_MIN" default:"60" min:"1" max:"100000" help:"public register requests per minute per client address (behind the trusted proxies); past it 429 with Retry-After"`
+	CertificatesRegisterBurst  int    `env:"CERTIFICATES_REGISTER_BURST" default:"20" min:"1" max:"100000" help:"burst of the public register's per-address budget"`
+	CertificatesRegisterMaxIPs int    `env:"CERTIFICATES_REGISTER_MAX_IPS" default:"10000" min:"1" max:"10000000" help:"client addresses the register's limiter remembers; past it the one seen longest ago is forgotten and counted (E-10)"`
 }
 
 // Incidents are api's case files and evidence packs (WP-17).
@@ -498,30 +511,31 @@ type DPClient struct {
 // constants; dp_poll_hz and dp_view_diagonal_km are authority_policy
 // columns followed from KV policy (INV-03).
 type DPPollerTuning struct {
-	RequestTimeoutMS     int      `env:"DP_REQUEST_TIMEOUT_MS" default:"5000" min:"100" max:"60000" help:"deadline of one poll of a Service Provider; a poll past it keeps the flights already shown, which age on the picture (R-14)"`
-	MaxBodyBytes         int      `env:"DP_MAX_BODY_BYTES" default:"1048576" min:"1024" max:"4194304" help:"largest response read from a Service Provider or the DSS; a larger one is refused and counted (R-14: 1 MiB)"`
-	MaxFlights           int      `env:"DP_MAX_FLIGHTS_PER_RESPONSE" default:"500" min:"1" max:"100000" help:"flights taken from one response; the rest are counted and logged (R-14: 500)"`
-	MaxTilesPerSP        int      `env:"DP_MAX_TILES_PER_SP" default:"64" min:"1" max:"10000" help:"tiles one Service Provider is polled for; past it the tiles are counted and not polled (R-14: 64)"`
-	MaxDetailsPerPoll    int      `env:"DP_MAX_DETAILS_PER_POLL" default:"20" min:"0" max:"1000" help:"details fetches after one poll at most (R-14: 20)"`
-	DetailsConcurrency   int      `env:"DP_DETAILS_CONCURRENCY" default:"4" min:"1" max:"64" help:"details fetches in flight at once per poll (R-14: 4)"`
-	UnavailableAfterS    int      `env:"DP_UNAVAILABLE_AFTER_S" default:"10" min:"1" max:"3600" help:"a Service Provider whose polls fail for this long is shown unavailable since T, never removed (R-14: 10 s)"`
-	SlowPollHz           float64  `env:"DP_SLOW_POLL_HZ" default:"0.5" min:"0.01" max:"10" help:"poll rate of a Service Provider slower than the F3411 p99 of 3 s (05 §5: 0.5 Hz)"`
-	MaxSplitDepth        int      `env:"DP_MAX_SPLIT_DEPTH" default:"3" min:"0" max:"8" help:"a 413 from a Service Provider splits the tile into four, at most this many times (R-14: 3)"`
-	MaxViews             int      `env:"DP_MAX_VIEWS" default:"64" min:"1" max:"10000" help:"views (oversight areas and console viewports) followed; past it the rest are counted and logged"`
-	MaxTiles             int      `env:"DP_MAX_TILES" default:"512" min:"1" max:"100000" help:"tiles discovered and subscribed in all; past it the rest are counted and logged"`
-	MaxISAs              int      `env:"DP_MAX_ISAS" default:"10000" min:"1" max:"1000000" help:"identification service areas held; past it a new one is refused and counted"`
-	MaxProviders         int      `env:"DP_MAX_PROVIDERS" default:"256" min:"1" max:"100000" help:"Service Providers held; past it a new one is counted and not polled"`
-	MaxFlightsHeld       int      `env:"DP_MAX_FLIGHTS_HELD" default:"50000" min:"1" max:"10000000" help:"flights whose last published state, details and identification are remembered; past it the one seen longest ago is forgotten and counted (E-10)"`
-	DiscoveryRereadS     int      `env:"DP_DISCOVERY_REREAD_S" default:"30" min:"1" max:"3600" help:"seconds between ISA searches per tile besides the notifications (repair, G-08)"`
-	ViewsRereadS         int      `env:"DP_VIEWS_REREAD_S" default:"5" min:"1" max:"3600" help:"seconds between reads of the oversight areas and the console viewports"`
-	StatusIntervalMS     int      `env:"DP_STATUS_INTERVAL_MS" default:"2000" min:"100" max:"60000" help:"interval of src.v1.network_rid.<uss_id> status messages (04 §3.6: every 2 s)"`
-	MaxNotificationBytes int      `env:"DP_MAX_NOTIFICATION_BYTES" default:"262144" min:"1024" max:"4194304" help:"largest ISA change notification accepted"`
-	CertifiedUSSPs       []string `env:"DP_CERTIFIED_USSPS" help:"until the certificate register (WP-16) is followed: the client ids (ISA owners) of USSPs holding an operating certificate, comma-separated; a Service Provider not on it is still polled and shown provider_unknown"`
-	OversightBucket      string   `env:"DP_OVERSIGHT_BUCKET" default:"dp_oversight" help:"KV bucket of the oversight areas api publishes (POST /v1/dp/views)"`
-	ViewsBucket          string   `env:"DP_VIEWS_BUCKET" default:"dp_views" help:"KV bucket of the console viewports picture-ws reports, with a TTL so an idle console stops polling"`
-	ProjectionRefreshS   int      `env:"DP_PROJECTION_REFRESH_S" default:"5" min:"1" max:"3600" help:"period of the registry projection re-read besides registry.v1.changed (G-08)"`
-	PolicyRereadS        int      `env:"DP_POLICY_REREAD_S" default:"60" min:"1" max:"3600" help:"period of the KV policy re-read besides its watch and ctl.policy (G-08)"`
-	NATSTimeoutMS        int      `env:"DP_NATS_TIMEOUT_MS" default:"2000" min:"50" max:"60000" help:"bound on one row hand-over to tsdb-writer or one KV read"`
+	RequestTimeoutMS     int     `env:"DP_REQUEST_TIMEOUT_MS" default:"5000" min:"100" max:"60000" help:"deadline of one poll of a Service Provider; a poll past it keeps the flights already shown, which age on the picture (R-14)"`
+	MaxBodyBytes         int     `env:"DP_MAX_BODY_BYTES" default:"1048576" min:"1024" max:"4194304" help:"largest response read from a Service Provider or the DSS; a larger one is refused and counted (R-14: 1 MiB)"`
+	MaxFlights           int     `env:"DP_MAX_FLIGHTS_PER_RESPONSE" default:"500" min:"1" max:"100000" help:"flights taken from one response; the rest are counted and logged (R-14: 500)"`
+	MaxTilesPerSP        int     `env:"DP_MAX_TILES_PER_SP" default:"64" min:"1" max:"10000" help:"tiles one Service Provider is polled for; past it the tiles are counted and not polled (R-14: 64)"`
+	MaxDetailsPerPoll    int     `env:"DP_MAX_DETAILS_PER_POLL" default:"20" min:"0" max:"1000" help:"details fetches after one poll at most (R-14: 20)"`
+	DetailsConcurrency   int     `env:"DP_DETAILS_CONCURRENCY" default:"4" min:"1" max:"64" help:"details fetches in flight at once per poll (R-14: 4)"`
+	UnavailableAfterS    int     `env:"DP_UNAVAILABLE_AFTER_S" default:"10" min:"1" max:"3600" help:"a Service Provider whose polls fail for this long is shown unavailable since T, never removed (R-14: 10 s)"`
+	SlowPollHz           float64 `env:"DP_SLOW_POLL_HZ" default:"0.5" min:"0.01" max:"10" help:"poll rate of a Service Provider slower than the F3411 p99 of 3 s (05 §5: 0.5 Hz)"`
+	MaxSplitDepth        int     `env:"DP_MAX_SPLIT_DEPTH" default:"3" min:"0" max:"8" help:"a 413 from a Service Provider splits the tile into four, at most this many times (R-14: 3)"`
+	MaxViews             int     `env:"DP_MAX_VIEWS" default:"64" min:"1" max:"10000" help:"views (oversight areas and console viewports) followed; past it the rest are counted and logged"`
+	MaxTiles             int     `env:"DP_MAX_TILES" default:"512" min:"1" max:"100000" help:"tiles discovered and subscribed in all; past it the rest are counted and logged"`
+	MaxISAs              int     `env:"DP_MAX_ISAS" default:"10000" min:"1" max:"1000000" help:"identification service areas held; past it a new one is refused and counted"`
+	MaxProviders         int     `env:"DP_MAX_PROVIDERS" default:"256" min:"1" max:"100000" help:"Service Providers held; past it a new one is counted and not polled"`
+	MaxFlightsHeld       int     `env:"DP_MAX_FLIGHTS_HELD" default:"50000" min:"1" max:"10000000" help:"flights whose last published state, details and identification are remembered; past it the one seen longest ago is forgotten and counted (E-10)"`
+	DiscoveryRereadS     int     `env:"DP_DISCOVERY_REREAD_S" default:"30" min:"1" max:"3600" help:"seconds between ISA searches per tile besides the notifications (repair, G-08)"`
+	ViewsRereadS         int     `env:"DP_VIEWS_REREAD_S" default:"5" min:"1" max:"3600" help:"seconds between reads of the oversight areas and the console viewports"`
+	StatusIntervalMS     int     `env:"DP_STATUS_INTERVAL_MS" default:"2000" min:"100" max:"60000" help:"interval of src.v1.network_rid.<uss_id> status messages (04 §3.6: every 2 s)"`
+	MaxNotificationBytes int     `env:"DP_MAX_NOTIFICATION_BYTES" default:"262144" min:"1024" max:"4194304" help:"largest ISA change notification accepted"`
+	CertificatesBucket   string  `env:"CERTIFICATES_BUCKET" default:"certificates" help:"KV bucket of the certified USSPs api publishes (WP-16); a Service Provider whose ISA owner is not on it is still polled and shown provider_unknown"`
+	CertificatesRereadS  int     `env:"DP_CERTIFICATES_REREAD_S" default:"10" min:"1" max:"3600" help:"seconds between reads of the certified USSPs"`
+	OversightBucket      string  `env:"DP_OVERSIGHT_BUCKET" default:"dp_oversight" help:"KV bucket of the oversight areas api publishes (POST /v1/dp/views)"`
+	ViewsBucket          string  `env:"DP_VIEWS_BUCKET" default:"dp_views" help:"KV bucket of the console viewports picture-ws reports, with a TTL so an idle console stops polling"`
+	ProjectionRefreshS   int     `env:"DP_PROJECTION_REFRESH_S" default:"5" min:"1" max:"3600" help:"period of the registry projection re-read besides registry.v1.changed (G-08)"`
+	PolicyRereadS        int     `env:"DP_POLICY_REREAD_S" default:"60" min:"1" max:"3600" help:"period of the KV policy re-read besides its watch and ctl.policy (G-08)"`
+	NATSTimeoutMS        int     `env:"DP_NATS_TIMEOUT_MS" default:"2000" min:"50" max:"60000" help:"bound on one row hand-over to tsdb-writer or one KV read"`
 }
 
 // String redacts secrets.

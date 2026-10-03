@@ -190,6 +190,27 @@ func validateClient(c *ClientRecord) error {
 // Create registers a client. For client_secret_post it generates the
 // secret, stores its argon2id hash and returns the secret once.
 func (g *Registry) Create(ctx context.Context, in ClientInput, actor audit.Actor) (ClientRecord, string, error) {
+	c, secret, err := g.Prepare(in, actor)
+	if err != nil {
+		return ClientRecord{}, "", err
+	}
+	var out ClientRecord
+	err = g.Store.InTx(ctx, func(tx Tx) error {
+		var err error
+		out, err = InsertPrepared(ctx, tx, c, actor)
+		return err
+	})
+	if err != nil {
+		return ClientRecord{}, "", err
+	}
+	return out, secret, nil
+}
+
+// Prepare validates a registration as Create does and returns the row
+// Create would write and the secret it shows once, without writing:
+// another package writes the client inside its own transaction with
+// InsertPrepared (WP-16: a certificate and its client commit together).
+func (g *Registry) Prepare(in ClientInput, actor audit.Actor) (ClientRecord, string, error) {
 	now := g.now()
 	c := ClientRecord{
 		ID: in.ID, Scopes: slices.Clone(in.Scopes), Audiences: slices.Clone(in.Audiences), AuthMethod: in.AuthMethod,
@@ -229,30 +250,30 @@ func (g *Registry) Create(ctx context.Context, in ClientInput, actor audit.Actor
 		}
 		c.SecretHash = h
 	}
-	var out ClientRecord
-	err := g.Store.InTx(ctx, func(tx Tx) error {
-		if _, err := tx.ClientRecord(ctx, c.ID); err == nil {
-			return httpx.Refuse(http.StatusConflict, httpx.SlugConflict, "the client exists",
-				core.Fieldf("client_id", "%s is registered already", quote(c.ID)))
-		} else if !errors.Is(err, ErrNotFound) {
-			return err
-		}
-		var err error
-		if out, err = tx.InsertClient(ctx, c); err != nil {
-			return err
-		}
-		return tx.Record(ctx, audit.Event{
-			Actor: actor, EntityType: "oauth_client", EntityID: c.ID, EventType: audit.EventOAuthClientCreated,
-			Payload: map[string]any{
-				"client_id": c.ID, "system": c.System, "scopes": c.Scopes, "audiences": c.Audiences,
-				"auth_method": c.AuthMethod, "certificate_id": c.CertificateID, "mtls_subject": c.MTLSSubject,
-			},
-		})
-	})
-	if err != nil {
-		return ClientRecord{}, "", err
+	return c, secret, nil
+}
+
+// InsertPrepared writes a client Prepare returned inside tx, refusing an
+// id registered already (409), and records oauth_client_created.
+func InsertPrepared(ctx context.Context, tx Tx, c ClientRecord, actor audit.Actor) (ClientRecord, error) {
+	if _, err := tx.ClientRecord(ctx, c.ID); err == nil {
+		return ClientRecord{}, httpx.Refuse(http.StatusConflict, httpx.SlugConflict, "the client exists",
+			core.Fieldf("client_id", "%s is registered already", quote(c.ID)))
+	} else if !errors.Is(err, ErrNotFound) {
+		return ClientRecord{}, err
 	}
-	return out, secret, nil
+	out, err := tx.InsertClient(ctx, c)
+	if err != nil {
+		return ClientRecord{}, err
+	}
+	err = tx.Record(ctx, audit.Event{
+		Actor: actor, EntityType: "oauth_client", EntityID: c.ID, EventType: audit.EventOAuthClientCreated,
+		Payload: map[string]any{
+			"client_id": c.ID, "system": c.System, "scopes": c.Scopes, "audiences": c.Audiences,
+			"auth_method": c.AuthMethod, "certificate_id": c.CertificateID, "mtls_subject": c.MTLSSubject,
+		},
+	})
+	return out, err
 }
 
 // Update applies p. A status change takes effect on the next token

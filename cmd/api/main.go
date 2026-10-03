@@ -19,6 +19,7 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/bus"
 	"github.com/rootxkit/uspace-authority/internal/cell"
 	"github.com/rootxkit/uspace-authority/internal/cell/assign"
+	"github.com/rootxkit/uspace-authority/internal/certs"
 	"github.com/rootxkit/uspace-authority/internal/config"
 	"github.com/rootxkit/uspace-authority/internal/dpadmin"
 	"github.com/rootxkit/uspace-authority/internal/incidents"
@@ -301,6 +302,27 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 		wg.Go(func() { dpa.Providers.Run(ctx, bp.NC, rt.Logger) })
 		wg.Go(func() { dpa.RunRepublish(ctx, time.Duration(cfg.DPViewsRepublishS)*time.Second) })
 
+		// Certificates (WP-16): issued with their clients, the operating
+		// status, the lapse job, the USSP list through WP-6's outbox and
+		// the certified USSPs in KV for dp-poller.
+		cispHost := ""
+		if cfg.CISPBaseURL != "" {
+			if cispHost, err = tokens.AudienceOf(cfg.CISPBaseURL); err != nil {
+				return err
+			}
+		}
+		crt := certs.Assemble(certs.Setup{
+			DB: db, Audit: auditWriter, Clients: tok.Registry, Outbox: cis.Outbox, JS: bp.JS, Bucket: cfg.CertificatesBucket,
+			KVTimeout: time.Duration(cfg.NATSTimeoutMS) * time.Millisecond, Policy: follower.Current, Issuer: cfg.Issuer(),
+			OwnHost: cfg.OwnHost(), CISPHost: cispHost, TokenTTL: time.Duration(cfg.TokenTTLS) * time.Second,
+			RegisterPerMin: cfg.CertificatesRegisterPerMin, RegisterBurst: cfg.CertificatesRegisterBurst,
+			RegisterMaxIPs: cfg.CertificatesRegisterMaxIPs, Logger: rt.Logger, Limiter: rt.Limiter,
+		})
+		rt.AddCounters("certificates", crt.Counters)
+		wg.Go(func() {
+			crt.Service.RunJobs(ctx, time.Duration(cfg.CertificatesLapseEveryS)*time.Second, time.Duration(cfg.CertificatesRepairS)*time.Second)
+		})
+
 		mux := http.NewServeMux()
 		apiserver.Mount(mux, apiserver.Server{
 			PolicyHandler:       policy.Handler{Service: svc},
@@ -321,6 +343,8 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 			ViolationsHandler: vio.Handler,
 			IncidentsHandler:  inc.Handler,
 			DPHandler:         dpa,
+
+			CertificatesHandler: crt.Handler,
 		}, apiserver.Options{
 			Logger:      rt.Logger,
 			Middlewares: []apiserver.Middleware{tok.Handler.FormGuard(), apiserver.Authorize(identify, apiserver.DefaultRules())},

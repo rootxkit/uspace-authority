@@ -4,6 +4,7 @@ import (
 	"math"
 	"slices"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/rootxkit/uspace-core/core"
@@ -54,9 +55,10 @@ const slowAfter = f3411.NetSpDataResponseTime99thPercentileSeconds * time.Second
 type Provider struct {
 	USSID   string
 	BaseURL string
-	// Known is false when the owner matches no operating certificate:
-	// still polled, shown provider_unknown (nothing hidden).
-	Known bool
+	// known is false when the owner matches no operating certificate:
+	// still polled, shown provider_unknown (nothing hidden). It follows
+	// the certificate register (Engine.Certified) on every reconcile.
+	known atomic.Bool
 
 	Counters core.Counters
 
@@ -76,8 +78,18 @@ type Provider struct {
 
 // NewProvider returns a provider first seen at now.
 func NewProvider(ussID, baseURL string, known bool, now time.Time) *Provider {
-	return &Provider{USSID: ussID, BaseURL: baseURL, Known: known, splits: map[string]bool{}, firstSeen: now}
+	p := &Provider{USSID: ussID, BaseURL: baseURL, splits: map[string]bool{}, firstSeen: now}
+	p.known.Store(known)
+	return p
 }
+
+// Known reports whether the owner holds an operating or limited
+// certificate.
+func (p *Provider) Known() bool { return p.known.Load() }
+
+// SetKnown records whether the owner is certified and reports whether
+// that changed.
+func (p *Provider) SetKnown(known bool) bool { return p.known.Swap(known) != known }
 
 // OK records a successful poll answered in took at now with n flights.
 func (p *Provider) OK(took time.Duration, now time.Time, n int) {

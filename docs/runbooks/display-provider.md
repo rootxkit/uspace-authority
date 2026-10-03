@@ -59,8 +59,15 @@ never from a configured USSP address. Each is identified by the ISA's
 its tracks and its source-control instance.
 
 **`provider_unknown`**: the owner matches no operating certificate.
-Until WP-16's certificate register is followed, the certified owners are
-`DP_CERTIFIED_USSPS`. An unknown provider is **still polled and shown**
+The certified owners are the client ids (`ussp-<code>-01`) of the USSP
+certificates operating or limited whose holder operates, which api
+publishes to KV bucket `certificates` (`CERTIFICATES_BUCKET`, WP-16)
+after every change and every `CERTIFICATES_REPAIR_S`; dp-poller reads it
+every `DP_CERTIFICATES_REREAD_S` (10 s) and moves a provider at the next
+reconcile, so a suspension makes its provider `provider_unknown` within
+seconds. Until the bucket is read every provider is `provider_unknown`,
+and the status line says `certificate_register_read: false`. An unknown
+provider is **still polled and shown**
 (nothing is hidden), counted `provider_unknown`, and its status and its
 `ussp_flights` rows say `provider_unknown: true`. Investigate: a USSP
 operating without a certificate, or a register not yet updated.

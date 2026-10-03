@@ -64,6 +64,14 @@ func (h Handler) CreatePolicy(ctx context.Context, req gen.CreatePolicyRequestOb
 	if b.RegistrationNumberPattern != nil {
 		t.RegistrationNumberPattern = *b.RegistrationNumberPattern
 	}
+	// The Art. 16(2) periods unless the version names others (WP-16).
+	t.CertificateLapseUnusedMonths, t.CertificateLapseCeasedMonths = DefaultLapseUnusedMonths, DefaultLapseCeasedMonths
+	if b.CertificateLapseUnusedMonths != nil {
+		t.CertificateLapseUnusedMonths = *b.CertificateLapseUnusedMonths
+	}
+	if b.CertificateLapseCeasedMonths != nil {
+		t.CertificateLapseCeasedMonths = *b.CertificateLapseCeasedMonths
+	}
 	note := ""
 	if b.Note != nil {
 		note = *b.Note
@@ -116,6 +124,7 @@ func toAPI(p Policy) gen.Policy {
 
 		RegistrationNumberPattern: p.RegistrationNumberPattern,
 	}
+	out.CertificateLapseUnusedMonths, out.CertificateLapseCeasedMonths = p.CertificateLapseUnusedMonths, p.CertificateLapseCeasedMonths
 	if p.ActivatedAt != nil {
 		at := p.ActivatedAt.UTC()
 		out.ActivatedAt = &at

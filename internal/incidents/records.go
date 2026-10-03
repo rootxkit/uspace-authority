@@ -63,31 +63,9 @@ func CheckBaseURL(raw string) (*url.URL, error) {
 	return u, nil
 }
 
-// ParseUSSPList reads the USSP list as cis/ussp_list/v1 carries it (the
-// CISP's schema: ussps[].ussp_id, ussps[].base_url) into ussp_id ->
-// base_url. Entries without either are skipped; the first of a repeated
-// id wins (the CIS validated the list as unique).
-func ParseUSSPList(payload []byte) (map[string]string, error) {
-	var doc struct {
-		USSPs []struct {
-			USSPID  string `json:"ussp_id"`
-			BaseURL string `json:"base_url"`
-		} `json:"ussps"`
-	}
-	if err := json.Unmarshal(payload, &doc); err != nil {
-		return nil, fmt.Errorf("ussp list: %w", err)
-	}
-	out := make(map[string]string, len(doc.USSPs))
-	for _, u := range doc.USSPs {
-		if u.USSPID == "" || u.BaseURL == "" {
-			continue
-		}
-		if _, dup := out[u.USSPID]; !dup {
-			out[u.USSPID] = u.BaseURL
-		}
-	}
-	return out, nil
-}
+// MaxCertificates bounds the USSP certificates a pack reads base URLs
+// from (E-10).
+const MaxCertificates = 1000
 
 // ParseRecord accepts a service record body: one JSON object of at most
 // maxBytes. It is returned compacted, so the pack holds it in one form.

@@ -38,8 +38,8 @@ type fakeSources struct {
 	inForce       []gen.PackZonesInForceRow
 	policyErr     error
 	events        []gen.Event
-	usspList      []byte
-	usspListErr   error
+	usspBases     []gen.PackUSSPBaseURLsRow
+	usspBasesErr  error
 }
 
 func (f *fakeSources) PackViolations(context.Context, gen.PackViolationsParams) ([]gen.PackViolationsRow, error) {
@@ -73,11 +73,11 @@ func (f *fakeSources) PackEvents(context.Context, gen.PackEventsParams) ([]gen.E
 	return f.events, nil
 }
 
-func (f *fakeSources) PackUSSPList(context.Context) (gen.PackUSSPListRow, error) {
-	if f.usspListErr != nil {
-		return gen.PackUSSPListRow{}, f.usspListErr
+func (f *fakeSources) PackUSSPBaseURLs(context.Context, int32) ([]gen.PackUSSPBaseURLsRow, error) {
+	if f.usspBasesErr != nil {
+		return nil, f.usspBasesErr
 	}
-	return gen.PackUSSPListRow{Payload: f.usspList, Version: 1, FetchedAt: t0}, nil
+	return f.usspBases, nil
 }
 
 // fakeTelemetry is the telemetry side of a pack.
@@ -228,7 +228,6 @@ func richSources() (*fakeSources, *fakeTelemetry) {
 			Type: "PROHIBITED", Feature: []byte(`{"type":"Feature"}`), ValidFrom: at(-3600), ValidTo: at(86400)}},
 		events: []gen.Event{{ID: 1, Ts: at(1), ActorType: "system", ActorID: "detect", EntityType: "violation",
 			EntityID: sp(testVioID), EventType: "violation_raised", Payload: []byte(`{}`), PrevHash: "0", Hash: "1"}},
-		usspList: []byte(`{"ussps":[]}`),
 	}
 	tel := &fakeTelemetry{
 		trackIDs: []string{testTrack},

@@ -107,6 +107,13 @@ tags:
       authority's own case files, opened from escalated violations, its
       own observations and notices, and hash-sealed evidence packs
       whose creation and every download are audited with the purpose.
+  - name: certificates
+    description: |
+      USSP and CISP certificates (WP-16, spec 01 A5, 02 F1 and F7):
+      issue with the holder's client, suspension, limitation,
+      revocation and reinstatement, the holder's operating-status
+      notices, the Art. 16(2) lapse job, the public register (Art.
+      18(a)) and the USSP list published to the CISP.
   - name: dp
     description: |
       The ASTM F3411-22a Display Provider (WP-14, spec 02 F7):
@@ -3057,6 +3064,444 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  # WP-16: USSP and CISP certificates (spec 01 A5, 02 F1 and F7, 03 §1;
+  # Reg. 2021/664 Art. 7(6), 14-16, 18(a)). Issuing a certificate creates
+  # its holder's client in the token service (06 §3, least privilege);
+  # suspending it suspends the client and takes the USSP off the CIS
+  # USSP list; the holder's own client records its operating status; a
+  # daily job lapses what Art. 16(2) lapses; the public register is open.
+  /v1/certificates:
+    get:
+      operationId: listCertificates
+      tags: [certificates]
+      summary: The certificates
+      description: Newest first, at most 500, optionally of one holder kind and one status.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: none
+      parameters:
+        - {name: holder, in: query, schema: {$ref: "#/components/schemas/CertificateHolder"}}
+        - {name: status, in: query, schema: {$ref: "#/components/schemas/CertificateStatus"}}
+      responses:
+        "200":
+          description: The certificates.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CertificateList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: issueCertificate
+      tags: [certificates]
+      summary: Issue a USSP or CISP certificate and register its client
+      description: |
+        One transaction: the certificate (status `issued`), its `code`
+        (one to eight upper-case alphanumerics, unique, never changed;
+        409 when taken), the holder's client in the token service
+        (`ussp-<code>-01` or `cisp-01`, M24) with the scopes its
+        services imply (least privilege; `scopes` in the answer) and
+        the audiences of this system and the CISP, the Art. 16(2) lapse
+        periods of the active policy, and the `certificate_issued` and
+        `oauth_client_created` events rows. A `client_secret_post`
+        client's secret is in the answer once and is handed to the
+        holder out of band; a `private_key_jwt` client registers the
+        holder's public JWKS. An issued certificate is not on the USSP
+        list until its holder notifies the start of operations.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: certificate_issued, entity_type: certificate, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CertificateInput"
+      responses:
+        "201":
+          description: The certificate and its client.
+          headers:
+            Cache-Control:
+              schema: {type: string, enum: [no-store]}
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CertificateIssued"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/certificates/register:
+    get:
+      operationId: getCertificateRegister
+      tags: [certificates]
+      summary: The public register of certified providers (Art. 18(a))
+      description: |
+        Every certificate not revoked or lapsed, and one that was for a
+        year after: holder kind and name, code, services, status,
+        validity and limitations. No address, contact, conditions or
+        client id: the response schema has no such property and a test
+        fails if one appears. Unauthenticated, cacheable for 60 s and
+        rate-limited per client address (429 with Retry-After).
+      security: []
+      x-audit: none
+      responses:
+        "200":
+          description: The register.
+          headers:
+            Cache-Control:
+              schema: {type: string}
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CertificateRegister"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/certificates/publish-list:
+    post:
+      operationId: publishUSSPList
+      tags: [certificates]
+      summary: Publish the USSP list now (F1 ussp_list)
+      description: |
+        Builds `cis/ussp_list/v1` from the USSP certificates operating
+        or limited whose holder operates, within their validity
+        (`ussp_id` = `code`), holds it to the CISP's pinned schema and
+        queues it, signed, in WP-6's outbox (`publication_queued`). The
+        list is also queued after every transition that changes it, and
+        a job repairs one that was not queued (the durable
+        `certificate_list_state`). 503 when no publication key is
+        configured; 400 when the list does not pass the schema.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: publication_queued, entity_type: publication, purpose: none}
+      responses:
+        "200":
+          description: The list as queued.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/USSPListPublication"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "503":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/certificates/{id}:
+    parameters:
+      - {name: id, in: path, required: true, schema: {$ref: "#/components/schemas/CertificateID"}}
+    get:
+      operationId: getCertificate
+      tags: [certificates]
+      summary: One certificate with its operating-status notices
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: none
+      responses:
+        "200":
+          description: The certificate.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CertificateDetail"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: updateCertificate
+      tags: [certificates]
+      summary: Correct a certificate's details
+      description: |
+        The holder's name, address and contact, the base URL, the
+        conditions, the limitations, the terms URL and the end of
+        validity. The holder kind, code, client and issue time never
+        change; the status changes only through its operations. One
+        `certificate_updated` events row with the fields before and
+        after; the USSP list is queued again when the certificate is on
+        it.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: certificate_updated, entity_type: certificate, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CertificatePatch"
+      responses:
+        "200":
+          description: The certificate as stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CertificateChange"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/certificates/{id}/status:
+    parameters:
+      - {name: id, in: path, required: true, schema: {$ref: "#/components/schemas/CertificateID"}}
+    post:
+      operationId: postCertificateStatus
+      tags: [certificates]
+      summary: The holder's operating-status notice (02 F7, Art. 7(6))
+      description: |
+        `started` (the start of operations after certification),
+        `ceased` or `restarted`, at `at`, with the holder's `reference`.
+        Only the holder's own client: an ecosystem token of this issuer
+        with scope `certificates.status` whose `sub` is the
+        certificate's `client_id` (403 otherwise). A notice the status
+        does not admit is 409 (`started` twice, `ceased` before a start,
+        anything on a revoked or lapsed certificate, `started` or
+        `restarted` while suspended). A retried notice with the same
+        `reference` and state answers 200 with the notice recorded
+        first; the same reference for another state is 409. `at` is
+        neither before the issue nor more than 5 minutes ahead of the
+        database clock. Recorded with a `certificate_notice_recorded`
+        events row; the USSP list is queued again.
+      security:
+        - ecosystemToken: []
+      x-scope: certificates.status
+      x-audit: {event_type: certificate_notice_recorded, entity_type: certificate, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CertificateStatusNotice"
+      responses:
+        "200":
+          description: The same notice was recorded before.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CertificateNoticeResult"
+        "201":
+          description: The notice as recorded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CertificateNoticeResult"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/certificates/{id}/status-notices:
+    parameters:
+      - {name: id, in: path, required: true, schema: {$ref: "#/components/schemas/CertificateID"}}
+    post:
+      operationId: recordCertificateStatusNotice
+      tags: [certificates]
+      summary: Enter an operating-status notice received by letter
+      description: |
+        The paper fallback of `POST .../status` (02 F7: "manual fallback
+        by letter is acceptable"): the same rules, the letter's
+        `reference` required, recorded with source `manual` and the
+        admin as the actor.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: certificate_notice_recorded, entity_type: certificate, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CertificateStatusNotice"
+      responses:
+        "200":
+          description: The same notice was recorded before.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CertificateNoticeResult"
+        "201":
+          description: The notice as recorded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CertificateNoticeResult"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/certificates/{id}/suspend:
+    parameters:
+      - {name: id, in: path, required: true, schema: {$ref: "#/components/schemas/CertificateID"}}
+    post:
+      operationId: suspendCertificate
+      tags: [certificates]
+      summary: Suspend a certificate
+      description: |
+        One transaction: the certificate is suspended (a limitation and
+        the operating status are kept for the reinstatement), its client
+        is suspended at once, so the next token request is refused
+        (`invalid_client`), and the transition and the client change are
+        events rows with the reason. A token issued before stays valid
+        to its `exp` (at most the token TTL): `tokens_valid_until` in
+        the answer says until when. The USSP list is queued again
+        without the holder (06 §2 T9). 409 when suspended, revoked or
+        lapsed already.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: certificate_status_changed, entity_type: certificate, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CertificateReason"
+      responses:
+        "200":
+          description: The transition.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CertificateChange"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/certificates/{id}/limit:
+    parameters:
+      - {name: id, in: path, required: true, schema: {$ref: "#/components/schemas/CertificateID"}}
+    post:
+      operationId: limitCertificate
+      tags: [certificates]
+      summary: Limit a certificate
+      description: |
+        The certificate is limited with the `limitations` given (they
+        replace the ones held and travel on the USSP list as
+        `certification_limitations`). The client stays active. 409 when
+        limited, revoked or lapsed already.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: certificate_status_changed, entity_type: certificate, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CertificateLimit"
+      responses:
+        "200":
+          description: The transition.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CertificateChange"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/certificates/{id}/revoke:
+    parameters:
+      - {name: id, in: path, required: true, schema: {$ref: "#/components/schemas/CertificateID"}}
+    post:
+      operationId: revokeCertificate
+      tags: [certificates]
+      summary: Revoke a certificate
+      description: |
+        Final: the certificate is revoked and its client revoked, in one
+        transaction with the reason. Tokens issued before stay valid to
+        their `exp` (`tokens_valid_until`). 409 when revoked or lapsed
+        already.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: certificate_status_changed, entity_type: certificate, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CertificateReason"
+      responses:
+        "200":
+          description: The transition.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CertificateChange"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/certificates/{id}/reinstate:
+    parameters:
+      - {name: id, in: path, required: true, schema: {$ref: "#/components/schemas/CertificateID"}}
+    post:
+      operationId: reinstateCertificate
+      tags: [certificates]
+      summary: Lift a suspension, or else a limitation
+      description: |
+        A suspended certificate is reinstated (its client active again;
+        a limitation held stays); a limited one that is not suspended
+        has its limitation lifted (the limitations cleared). 409 when
+        neither suspended nor limited, or revoked or lapsed.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: certificate_status_changed, entity_type: certificate, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CertificateReason"
+      responses:
+        "200":
+          description: The transition.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CertificateChange"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+
   # WP-13: the picture, served by picture-ws (x-picture: Caddy routes
   # /v1/picture/* there; the operations are excluded from api's
   # generated server and served by internal/picture, and a test holds
@@ -3596,6 +4041,16 @@ components:
             validates against (uspace-core regnum, G-07; the Georgian
             format is open, spec Q5). Default the EU shape
             `^[A-Z]{3}[A-Za-z0-9]{8,16}$`.
+        certificate_lapse_unused_months:
+          type: integer
+          minimum: 1
+          maximum: 120
+          description: "Art. 16(2): a certificate not used within this many months of its issue lapses (default 6). Copied onto a certificate at issue."
+        certificate_lapse_ceased_months:
+          type: integer
+          minimum: 1
+          maximum: 120
+          description: "Art. 16(2): a certificate whose operations ceased this many months ago lapses (default 12). Copied onto a certificate at issue."
         note:
           type: string
           maxLength: 1000
@@ -3603,7 +4058,7 @@ components:
       allOf:
         - $ref: "#/components/schemas/PolicyInput"
         - type: object
-          required: [version, active, created_at, created_by, note, registration_number_pattern]
+          required: [version, active, created_at, created_by, note, registration_number_pattern, certificate_lapse_unused_months, certificate_lapse_ceased_months]
           properties:
             version:
               type: integer
@@ -5319,3 +5774,249 @@ components:
         uss_id: {type: string}
         availability: {type: string, enum: [Unknown, Normal, Down]}
         version: {type: string, description: The DSS's version of the USS's availability.}
+    CertificateID:
+      type: string
+      pattern: "^[0-9a-f]{32}$"
+    CertificateHolder:
+      type: string
+      enum: [ussp, cisp]
+    CertificateStatus:
+      type: string
+      enum: [issued, operating, ceased, suspended, limited, revoked, lapsed]
+      description: |
+        Derived from the operating status, the limitation, the
+        suspension and the end: revoked or lapsed, else suspended, else
+        ceased, else limited, else operating, else issued.
+    CertificateService:
+      type: string
+      enum: [network_identification, geo_awareness, flight_authorisation, traffic_information, weather, conformance_monitoring, common_information]
+      description: |
+        The Annex VI U-space services of a USSP (the names of the CISP's
+        cis/ussp_list/v1), or the common information service of the
+        CISP (Annex V), its one service.
+    CertificateInput:
+      type: object
+      required: [holder, holder_name, code, services, valid_until, auth_method]
+      properties:
+        holder: {$ref: "#/components/schemas/CertificateHolder"}
+        holder_name: {type: string, minLength: 1, maxLength: 200}
+        holder_address: {type: string, maxLength: 500, description: "The organisation's registered address."}
+        holder_email: {type: string, maxLength: 254, description: "The organisation's published contact (the USSP list's contact.email); no person."}
+        holder_phone: {type: string, maxLength: 50}
+        holder_url: {type: string, maxLength: 2048}
+        code: {type: string, minLength: 1, maxLength: 8, pattern: "^[A-Z0-9]{1,8}$", description: "The holder's code (M8); unique, never changed."}
+        base_url: {type: string, maxLength: 2048, description: "The national API base URL (https); required of a USSP."}
+        services:
+          type: array
+          minItems: 1
+          maxItems: 7
+          items: {$ref: "#/components/schemas/CertificateService"}
+        conditions: {type: string, maxLength: 4000}
+        limitations:
+          type: array
+          maxItems: 50
+          items: {type: string, minLength: 1, maxLength: 1000}
+        terms_url: {type: string, maxLength: 2048, description: "The holder's terms and conditions (Art. 5(3), https); required of a USSP."}
+        valid_from: {type: string, format: date-time, description: "The issue time; default the database's now."}
+        valid_until: {type: string, format: date-time}
+        auth_method: {type: string, enum: [client_secret_post, private_key_jwt]}
+        jwks:
+          type: object
+          additionalProperties: true
+          description: The holder's public key set (private_key_jwt only).
+    CertificatePatch:
+      type: object
+      properties:
+        holder_name: {type: string, minLength: 1, maxLength: 200}
+        holder_address: {type: string, maxLength: 500}
+        holder_email: {type: string, maxLength: 254}
+        holder_phone: {type: string, maxLength: 50}
+        holder_url: {type: string, maxLength: 2048}
+        base_url: {type: string, maxLength: 2048}
+        conditions: {type: string, maxLength: 4000}
+        limitations:
+          type: array
+          maxItems: 50
+          items: {type: string, minLength: 1, maxLength: 1000}
+        terms_url: {type: string, maxLength: 2048}
+        valid_until: {type: string, format: date-time}
+    CertificateReason:
+      type: object
+      required: [reason]
+      properties:
+        reason: {type: string, minLength: 1, maxLength: 1000}
+    CertificateLimit:
+      type: object
+      required: [reason, limitations]
+      properties:
+        reason: {type: string, minLength: 1, maxLength: 1000}
+        limitations:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items: {type: string, minLength: 1, maxLength: 1000}
+    Certificate:
+      type: object
+      required: [id, holder, holder_name, holder_address, holder_email, holder_phone, holder_url, code, client_id, base_url,
+                 services, conditions, limitations, terms_url, issued_at, valid_until, status, operations, limited, suspended,
+                 status_reason, status_changed_at, status_changed_by, lapse_unused_after_months, lapse_ceased_after_months,
+                 created_at, created_by, updated_at, updated_by]
+      properties:
+        id: {$ref: "#/components/schemas/CertificateID"}
+        holder: {$ref: "#/components/schemas/CertificateHolder"}
+        holder_name: {type: string}
+        holder_address: {type: string}
+        holder_email: {type: string}
+        holder_phone: {type: string}
+        holder_url: {type: string}
+        code: {type: string}
+        client_id: {type: string}
+        base_url: {type: string}
+        services:
+          type: array
+          items: {$ref: "#/components/schemas/CertificateService"}
+        conditions: {type: string}
+        limitations:
+          type: array
+          items: {type: string}
+        terms_url: {type: string}
+        issued_at: {type: string, format: date-time}
+        valid_until: {type: string, format: date-time}
+        status: {$ref: "#/components/schemas/CertificateStatus"}
+        operations: {type: string, enum: [not_started, operating, ceased]}
+        operations_started_at: {type: string, format: date-time}
+        operations_ceased_at: {type: string, format: date-time}
+        limited: {type: boolean}
+        suspended: {type: boolean}
+        ended_at: {type: string, format: date-time}
+        status_reason: {type: string}
+        status_changed_at: {type: string, format: date-time}
+        status_changed_by: {type: string}
+        lapse_unused_after_months: {type: integer, description: "Art. 16(2): lapses when not used within this many months of issue."}
+        lapse_ceased_after_months: {type: integer, description: "Art. 16(2): lapses when ceased for this many months."}
+        lapses_at: {type: string, format: date-time, description: "When the lapse job will lapse it unless it starts or restarts; absent while operating."}
+        created_at: {type: string, format: date-time}
+        created_by: {type: string}
+        updated_at: {type: string, format: date-time}
+        updated_by: {type: string}
+    CertificateList:
+      type: object
+      required: [certificates]
+      properties:
+        certificates:
+          type: array
+          items: {$ref: "#/components/schemas/Certificate"}
+    CertificateClient:
+      type: object
+      required: [client_id, status, scopes, audiences, auth_method]
+      properties:
+        client_id: {type: string}
+        status: {type: string, enum: [active, suspended, revoked]}
+        scopes:
+          type: array
+          items: {type: string}
+        audiences:
+          type: array
+          items: {type: string}
+        auth_method: {type: string, enum: [client_secret_post, private_key_jwt]}
+    CertificateIssued:
+      type: object
+      required: [certificate, client]
+      properties:
+        certificate: {$ref: "#/components/schemas/Certificate"}
+        client: {$ref: "#/components/schemas/CertificateClient"}
+        client_secret: {type: string, description: "client_secret_post only: shown once, handed over out of band."}
+    ListPublication:
+      type: object
+      required: [state]
+      properties:
+        state:
+          type: string
+          enum: [queued, not_needed, pending]
+          description: |
+            queued: the list is in the F1 outbox; not_needed: the change
+            does not touch the list; pending: it could not be queued now
+            and the repair job will (reason says why).
+        reason: {type: string}
+        publication_id: {type: integer, format: int64}
+    CertificateChange:
+      type: object
+      required: [certificate, list_publication]
+      properties:
+        certificate: {$ref: "#/components/schemas/Certificate"}
+        client_status: {type: string, enum: [active, suspended, revoked]}
+        tokens_valid_until:
+          type: string
+          format: date-time
+          description: |
+            The client was suspended or revoked: tokens issued before
+            stay valid until this time (the token TTL), and no new one
+            is issued.
+        list_publication: {$ref: "#/components/schemas/ListPublication"}
+    CertificateStatusNotice:
+      type: object
+      required: [state, at]
+      properties:
+        state: {type: string, enum: [started, ceased, restarted]}
+        at: {type: string, format: date-time}
+        reference: {type: string, minLength: 1, maxLength: 200}
+    CertificateNotice:
+      type: object
+      required: [id, state, at, source, recorded_by, received_at]
+      properties:
+        id: {type: integer, format: int64}
+        state: {type: string, enum: [started, ceased, restarted]}
+        at: {type: string, format: date-time}
+        reference: {type: string}
+        source: {type: string, enum: [machine, manual]}
+        recorded_by: {type: string}
+        received_at: {type: string, format: date-time}
+    CertificateNoticeResult:
+      type: object
+      required: [notice, certificate, replayed, list_publication]
+      properties:
+        notice: {$ref: "#/components/schemas/CertificateNotice"}
+        certificate: {$ref: "#/components/schemas/Certificate"}
+        replayed: {type: boolean, description: The same notice had been recorded; nothing changed.}
+        list_publication: {$ref: "#/components/schemas/ListPublication"}
+    CertificateDetail:
+      type: object
+      required: [certificate, notices]
+      properties:
+        certificate: {$ref: "#/components/schemas/Certificate"}
+        client_status: {type: string, enum: [active, suspended, revoked]}
+        notices:
+          type: array
+          items: {$ref: "#/components/schemas/CertificateNotice"}
+    CertificateRegisterEntry:
+      type: object
+      required: [certificate_id, holder, holder_name, code, services, status, valid_from, valid_until, limitations]
+      properties:
+        certificate_id: {$ref: "#/components/schemas/CertificateID"}
+        holder: {$ref: "#/components/schemas/CertificateHolder"}
+        holder_name: {type: string}
+        code: {type: string}
+        services:
+          type: array
+          items: {$ref: "#/components/schemas/CertificateService"}
+        status: {$ref: "#/components/schemas/CertificateStatus"}
+        valid_from: {type: string, format: date-time}
+        valid_until: {type: string, format: date-time}
+        limitations:
+          type: array
+          items: {type: string}
+    CertificateRegister:
+      type: object
+      required: [generated_at, certificates]
+      properties:
+        generated_at: {type: string, format: date-time}
+        certificates:
+          type: array
+          items: {$ref: "#/components/schemas/CertificateRegisterEntry"}
+    USSPListPublication:
+      type: object
+      required: [publication_id, ussps, wanted]
+      properties:
+        publication_id: {type: integer, format: int64}
+        ussps: {type: integer, description: USSPs on the list.}
+        wanted: {type: integer, format: int64, description: The list version the change counter stood at.}

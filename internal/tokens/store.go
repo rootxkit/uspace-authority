@@ -118,6 +118,11 @@ func (p PG) SigningKeys(ctx context.Context) ([]KeyRow, error) {
 	return signingKeys(ctx, p.DB.Queries())
 }
 
+// PGTx is Tx on the caller's transaction q, recording events through w
+// in it (WP-16 writes a certificate's client in the certificate's
+// transaction).
+func PGTx(q *gen.Queries, w *audit.Writer) Tx { return pgTx{q: q, audit: w} }
+
 type pgTx struct {
 	q     *gen.Queries
 	audit *audit.Writer

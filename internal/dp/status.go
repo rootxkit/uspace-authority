@@ -94,7 +94,7 @@ func (s *Status) Snapshot(p *Provider, now time.Time) StatusBody {
 	b := StatusBody{
 		Source: SourceType, SourceInstance: &inst, Counters: p.Counters.Snapshot(), USSBaseURL: p.BaseURL,
 		ISAs: isas, Tiles: tiles, Flights: flights, P95S: secondsOf(p95), P99S: secondsOf(p99), Slow: p.Slow(),
-		ProviderUnknown: !p.Known,
+		ProviderUnknown: !p.Known(),
 	}
 	if e.Discovery != nil {
 		st, since := e.Discovery.State()

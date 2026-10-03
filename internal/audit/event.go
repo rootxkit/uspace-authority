@@ -210,6 +210,18 @@ const (
 	EventDPAvailabilityFailed    = "dp_availability_failed"
 )
 
+// Event types of WP-16's certificates (internal/certs): a certificate
+// issued (its client is oauth_client_created in the same transaction),
+// its details corrected, every status transition (suspend, limit,
+// revoke, reinstate, lapse; with the actor, the reason and, for a
+// lapse, the Art. 16(2) rule) and every operating-status notice.
+const (
+	EventCertificateIssued        = "certificate_issued"
+	EventCertificateUpdated       = "certificate_updated"
+	EventCertificateStatusChanged = "certificate_status_changed"
+	EventCertificateNotice        = "certificate_notice_recorded"
+)
+
 // DefaultCatalogue is the catalogue of this build.
 func DefaultCatalogue() Catalogue {
 	return Catalogue{
@@ -304,6 +316,11 @@ func DefaultCatalogue() Catalogue {
 		EventDPAvailabilityRequested: {},
 		EventDPAvailabilitySet:       {},
 		EventDPAvailabilityFailed:    {},
+
+		EventCertificateIssued:        {},
+		EventCertificateUpdated:       {},
+		EventCertificateStatusChanged: {},
+		EventCertificateNotice:        {},
 	}
 }
 

@@ -375,6 +375,7 @@ NATS (`02 §1`). Subjects follow `05 §3` with `<cell3>.<cell5>` from
 | `ctl.sources` + KV `source_control` | KV + push | api → every adapter and detect | B-09 |
 | `ctl.policy` + KV `policy` | KV + push | api → detect, ingest | INV-03 |
 | KV `cells` | KV | api → detect workers (ownership map) | `05 §3` |
+| KV `certificates` | KV | api → dp-poller (the certified USSPs, WP-16; version-ordered, republished every `CERTIFICATES_REPAIR_S`) | — |
 | `src.v1.<type>.<instance>` | core | every adapter → picture-ws, api (status) | every 2 s |
 | `ingest.v1.<cell3>` | JetStream work queue `INGEST` | rid-ingest → tsdb-writer (and shedding under backpressure) | 10 min |
 | `tsw.v1.<table>` | JetStream `TSW` | adapters → tsdb-writer | 10 min (spill) |

@@ -71,9 +71,7 @@ type Settings struct {
 	// DetailsTTL is how long fetched details are used before they are
 	// fetched again.
 	DetailsTTL time.Duration
-	// Certified are the ISA owners holding an operating certificate.
-	Certified map[string]bool
-	Network   timeplace.NetworkPolicy
+	Network    timeplace.NetworkPolicy
 }
 
 // DefaultSettings are the documented defaults (R-14).
@@ -103,9 +101,13 @@ type Engine struct {
 	Gate     Gate
 	Policy   PolicyValues
 	Registry func() identify.Lookup
-	Geoid    geoid.Undulator
-	Sink     Sink
-	Memory   *Memory
+	// Certified is the set of ISA owners (client ids) holding an
+	// operating or limited certificate (WP-16, internal/certkv), and
+	// whether the register was read at all; nil: none is certified.
+	Certified func() (owners map[string]bool, read bool)
+	Geoid     geoid.Undulator
+	Sink      Sink
+	Memory    *Memory
 	// Counters are the engine's; MapCounters the mapping's.
 	Counters    *core.Counters
 	MapCounters *core.Counters
@@ -294,8 +296,10 @@ func (e *Engine) Reconcile(ctx context.Context) {
 			}
 		}
 	}
+	certified := e.certified()
 	for _, p := range e.providers {
 		p.SetShape(perSP[p], len(isasPerSP[p]))
+		e.follow(p, certified)
 	}
 	for k, r := range e.pollers {
 		if _, ok := desired[k]; !ok {
@@ -361,7 +365,7 @@ func (e *Engine) providerLocked(isa *f3411.IdentificationServiceArea, now time.T
 			slog.String("uss_id", isa.Owner))
 		return nil
 	}
-	known := e.S.Certified[isa.Owner]
+	known := e.certified()[isa.Owner]
 	p := NewProvider(isa.Owner, base, known, now)
 	if !known {
 		p.Counters.Inc(CounterProviderUnknown)
@@ -372,6 +376,33 @@ func (e *Engine) providerLocked(isa *f3411.IdentificationServiceArea, now time.T
 	}
 	e.providers[base] = p
 	return p
+}
+
+// certified is the register's set of certified owners (empty when none
+// is read).
+func (e *Engine) certified() map[string]bool {
+	if e.Certified == nil {
+		return nil
+	}
+	set, _ := e.Certified()
+	return set
+}
+
+// follow moves p to the register: a provider whose certificate was
+// suspended, revoked or lapsed becomes provider_unknown at once (still
+// polled and shown), counted and logged; one certified since is known.
+func (e *Engine) follow(p *Provider, certified map[string]bool) {
+	known := certified[p.USSID]
+	if !p.SetKnown(known) {
+		return
+	}
+	if known {
+		e.Logger.Info("Service Provider now matches an operating certificate", slog.String("uss_id", p.USSID))
+		return
+	}
+	p.Counters.Inc(CounterProviderUnknown)
+	e.Logger.Warn("Service Provider no longer matches an operating certificate: polled and shown provider_unknown",
+		slog.String("uss_id", p.USSID), slog.String("uss_base_url", p.BaseURL))
 }
 
 // Run reconciles every second, and at once when source control changes

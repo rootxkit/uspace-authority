@@ -162,7 +162,9 @@ WHERE (entity_type = 'incident' AND entity_id = sqlc.arg(incident_id))
 ORDER BY id
 LIMIT sqlc.arg(lim);
 
--- name: PackUSSPList :one
--- The USSP list as the CIS last served it (WP-6): where a USSP's
--- national API (its base_url) is.
-SELECT payload, version, fetched_at FROM cis_cache WHERE dataset = 'ussp_list';
+-- name: PackUSSPBaseURLs :many
+-- Where each USSP's national API is (02 F7: the base URL of its
+-- certificate, WP-16), whatever the certificate's status now: a record
+-- of a past flight is still the USSP's. A USSP is named by its code or
+-- by its client id (the owner of its ISAs).
+SELECT code, client_id, base_url FROM certificates WHERE holder = 'ussp' ORDER BY code LIMIT sqlc.arg(max_rows);

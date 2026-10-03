@@ -187,10 +187,11 @@ case reference (a court order, a prosecutor's request):
 | `RECORDS_CLIENT_ID`, `RECORDS_CLIENT_SECRET_FILE` | `authority-01`, unset | The client asking this issuer for `ussp.records` tokens. Unset: every record is `unavailable` with that reason, said at start. |
 | `RECORDS_TIMEOUT_MS`, `RECORDS_MAX_BYTES`, `RECORDS_MAX_PER_PACK` | 5000, 1048576, 16 | One record fetch; past the bounds a record is `unavailable` with the reason. |
 
-A USSP's `base_url` comes from the CIS USSP list (`cis_cache`, WP-6);
-until WP-16's certificate register is followed it is the only source. A
-USSP absent from the list is `unavailable: the USSP is not in the CIS
-USSP list`.
+A USSP's `base_url` comes from its certificate (WP-16), found by its
+code or its client id (the owner of its ISAs), whatever the
+certificate's status now: a record of a past flight is still the
+USSP's. A USSP without a certificate is `unavailable: the USSP holds no
+certificate in the register`.
 
 Counters (`/metrics`, status line `incidents`): `incidents_opened`,
 `incidents_opened_from_violation`, `incidents_updated`,

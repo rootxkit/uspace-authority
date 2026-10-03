@@ -19,6 +19,7 @@ import (
 	"github.com/rootxkit/uspace-core/timeplace"
 
 	"github.com/rootxkit/uspace-authority/internal/bus"
+	"github.com/rootxkit/uspace-authority/internal/certkv"
 	"github.com/rootxkit/uspace-authority/internal/config"
 	"github.com/rootxkit/uspace-authority/internal/dpviews"
 	"github.com/rootxkit/uspace-authority/internal/ground"
@@ -56,12 +57,6 @@ func SettingsOf(t config.DPPollerTuning) Settings {
 	s.UnavailableAfter = time.Duration(t.UnavailableAfterS) * time.Second
 	s.SlowPollHz, s.MaxSplitDepth = t.SlowPollHz, t.MaxSplitDepth
 	s.MaxViews, s.MaxTiles, s.MaxProviders = t.MaxViews, t.MaxTiles, t.MaxProviders
-	s.Certified = map[string]bool{}
-	for _, c := range t.CertifiedUSSPs {
-		if c = strings.TrimSpace(c); c != "" {
-			s.Certified[c] = true
-		}
-	}
 	return s
 }
 
@@ -212,6 +207,15 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.DPPoller, o Options)
 		MaxConsoles: t.MaxViews, Timeout: natsTimeout, Counters: viewCounters, Limiter: limiter,
 	}
 
+	certCounters := &core.Counters{}
+	rt.AddCounters("dp_certificates", certCounters)
+	certCfg := certkv.BucketConfig(t.CertificatesBucket)
+	certs := &CertificateReader{
+		Open:    func(ctx context.Context) (jetstream.KeyValue, error) { return bus.OpenBucket(ctx, bp.JS, certCfg) },
+		Timeout: natsTimeout, Counters: certCounters, Limiter: limiter,
+	}
+	rt.AddStatus(certs.StatusAttrs)
+
 	sinkCounters := &core.Counters{}
 	rt.AddCounters("dp_rows", sinkCounters)
 	sink := &BusSink{NC: bp.NC, Writer: ts.BusWriter{JS: bp.JS, Timeout: natsTimeout}, Counters: sinkCounters,
@@ -222,7 +226,7 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.DPPoller, o Options)
 	s.Network = timeplace.DefaultNetworkPolicy()
 	e := &Engine{
 		S: s, SP: client, ISAs: isas, Discovery: disc, Views: func(context.Context) []Box { return views.Boxes() },
-		Gate: follower, Policy: policyValues, Registry: reader.Lookup, Geoid: geo, Sink: sink,
+		Gate: follower, Policy: policyValues, Registry: reader.Lookup, Certified: certs.Certified, Geoid: geo, Sink: sink,
 		Memory: NewMemory(t.MaxFlightsHeld, memCounters), Counters: counters, MapCounters: mapCounters,
 		Logger: rt.Logger, Limiter: limiter,
 	}
@@ -287,10 +291,7 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.DPPoller, o Options)
 		slog.Int("max_flights_per_response", s.MaxFlights), slog.Int("max_tiles_per_sp", s.MaxTilesPerSP),
 		slog.Int("max_details_per_poll", s.MaxDetailsPerPoll), slog.Int("details_concurrency", s.DetailsConcurrency),
 		slog.Float64("slow_poll_hz", s.SlowPollHz), slog.Duration("unavailable_after", s.UnavailableAfter),
-		slog.Int("max_split_depth", s.MaxSplitDepth), slog.Int("certified_ussps", len(s.Certified)))
-	if len(s.Certified) == 0 {
-		rt.Logger.Warn("no certified USSP listed (DP_CERTIFIED_USSPS; WP-16's register is not followed yet): every Service Provider is shown provider_unknown")
-	}
+		slog.Int("max_split_depth", s.MaxSplitDepth), slog.String("certificates_bucket", certCfg.Bucket))
 
 	runCtx, cancel := context.WithCancel(ctx)
 	var wg sync.WaitGroup
@@ -301,6 +302,7 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.DPPoller, o Options)
 	wg.Go(func() { reader.Run(runCtx, time.Duration(t.ProjectionRefreshS)*time.Second) })
 	wg.Go(func() { followRegistry(runCtx, bp.NC, reader, rt.Logger) })
 	wg.Go(func() { views.Run(runCtx, time.Duration(t.ViewsRereadS)*time.Second) })
+	wg.Go(func() { certs.Run(runCtx, time.Duration(t.CertificatesRereadS)*time.Second) })
 	wg.Go(func() { sink.Run(runCtx) })
 	wg.Go(func() { status.Run(runCtx, time.Duration(t.StatusIntervalMS)*time.Millisecond) })
 	changes := make(chan struct{}, 1)

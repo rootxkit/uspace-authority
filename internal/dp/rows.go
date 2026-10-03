@@ -40,7 +40,7 @@ type FlightRow struct {
 func NewFlightRow(p *Provider, isaID, flightID, trackID string, rx, stateTS time.Time, flight, details []byte) FlightRow {
 	r := FlightRow{
 		RxTS: rx.UTC(), DedupeKey: DedupeKey(p.USSID, flightID, stateTS), USSPID: p.USSID, USSBaseURL: p.BaseURL,
-		FlightID: flightID, TrackID: trackID, StateTS: stateTS.UTC(), ProviderUnknown: !p.Known,
+		FlightID: flightID, TrackID: trackID, StateTS: stateTS.UTC(), ProviderUnknown: !p.Known(),
 		Flight: flight, Details: details,
 	}
 	if isaID != "" {

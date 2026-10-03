@@ -261,7 +261,7 @@ func TestProviderBoundsAndRefusals(t *testing.T) {
 		t.Fatalf("pollers %d, want 2", e.Pollers())
 	}
 	ps := e.Providers()
-	if len(ps) != 1 || ps[0].Known || ps[0].Counters.Snapshot()[CounterTilesCapped] == 0 {
+	if len(ps) != 1 || ps[0].Known() || ps[0].Counters.Snapshot()[CounterTilesCapped] == 0 {
 		t.Fatalf("providers %+v", ps)
 	}
 	s := e.Counters.Snapshot()
