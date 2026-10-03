@@ -1,7 +1,8 @@
 // What leaves the browser and what it draws with: every request of a
 // whole session stays on the origin (M38: the kit's CSP, self-hosted
 // fonts, no third-party tile), a request to another origin is refused by
-// the CSP, and the Georgian catalogue renders in Noto Sans Georgian.
+// the CSP, the Georgian catalogue renders in Noto Sans Georgian, and the
+// language choice is kept in a Secure cookie.
 import { expect, test } from "@playwright/test";
 import { BROADCAST_TRACK, INSPECTOR, resetMock, signIn } from "./helpers";
 
@@ -72,4 +73,15 @@ test("the Georgian catalogue renders in Noto Sans Georgian", async ({ page }) =>
   const fallbackShot = await title.screenshot();
   expect(kitShot.equals(fallbackShot)).toBe(false);
   await test.info().attach("georgian-title", { body: kitShot, contentType: "image/png" });
+});
+
+test("the language switch remembers the choice in a Secure cookie", async ({ page, context }) => {
+  await signIn(page, "en", INSPECTOR);
+  await page.getByRole("link", { name: "ქართული" }).click();
+  await expect(page).toHaveURL(/\/ka$/);
+  const lang = (await context.cookies()).find((c) => c.name === "uspace_lang");
+  expect(lang?.value).toBe("ka");
+  expect(lang?.secure).toBe(true);
+  expect(lang?.sameSite).toBe("Lax");
+  expect(lang?.httpOnly).toBe(false);
 });
