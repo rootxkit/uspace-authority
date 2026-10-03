@@ -9,7 +9,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/rootxkit/uspace-authority/internal/httpx"
 	"github.com/rootxkit/uspace-authority/internal/store/pg/gen"
@@ -504,5 +506,40 @@ func TestOperatorIDPayloadWithheldFromOversight(t *testing.T) {
 	}
 	if last := frames[len(frames)-1]; last["payload_b64"] != base64.StdEncoding.EncodeToString(secret) {
 		t.Fatalf("legal frame %v", last)
+	}
+}
+
+// Audit B-S3, E-01: a USSP that answers a record read with a redirect is
+// not followed (the request would reach wherever it points, inside the
+// authority's network, and the answer would be sealed as the USSP's
+// record): the fetch fails naming the status, nothing is requested at the
+// target, with the default client and with a configured one alike; a 200
+// at the USSP is read.
+func TestFetchFollowsNoRedirect(t *testing.T) {
+	var hits atomic.Int32
+	inside := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		hits.Add(1)
+		_, _ = w.Write([]byte(`{"internal":true}`))
+	}))
+	t.Cleanup(inside.Close)
+	ussp := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/OK") {
+			_, _ = w.Write([]byte(`{"flight_id":"OK"}`))
+			return
+		}
+		http.Redirect(w, r, inside.URL+"/admin", http.StatusFound)
+	}))
+	t.Cleanup(ussp.Close)
+	for _, hc := range []*http.Client{nil, {Timeout: 5 * time.Second}} {
+		r := &Records{Tokens: fakeTokens{}, MaxBytes: 4096, HTTP: hc}
+		if _, err := r.Fetch(context.Background(), ussp.URL, "F1"); err == nil || !strings.Contains(err.Error(), "302") {
+			t.Fatalf("a redirect: %v", err)
+		}
+		if hits.Load() != 0 {
+			t.Fatal("the redirect was followed")
+		}
+		if _, err := r.Fetch(context.Background(), ussp.URL, "OK"); err != nil {
+			t.Fatal(err)
+		}
 	}
 }
