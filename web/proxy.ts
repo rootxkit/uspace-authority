@@ -33,6 +33,7 @@ export function proxy(req: NextRequest): NextResponse {
 
 export const config = {
   // Pages only: not Next's assets, the BFF, the paths Caddy routes to api
-  // and picture-ws, the basemap, or the static health file.
-  matcher: ["/((?!_next/|_bff/|v1/|oauth/|basemap/|\.well-known/|healthz|favicon\.ico).*)"],
+  // and picture-ws, the basemap, or the static health file. The string is
+  // a pattern: a literal "." is written "\\." (proxy.test.ts).
+  matcher: ["/((?!_next/|_bff/|v1/|oauth/|basemap/|\\.well-known/|healthz|favicon\\.ico).*)"],
 };
