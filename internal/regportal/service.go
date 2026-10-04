@@ -69,11 +69,12 @@ const (
 	applicationTableName = "registry_applications"
 )
 
-// Registry is what the portal needs of internal/registry.
+// Registry is what the portal needs of internal/registry. What an
+// application's step asks while it holds the application's row lock is
+// asked through Read or Change, on the connection holding the lock:
+// there is no method here that would take a second one.
 type Registry interface {
 	CheckNumber(ctx context.Context, number string) (registry.PublicCheck, error)
-	NumberFree(ctx context.Context, number string) (public string, free bool, err error)
-	OperatorBySource(ctx context.Context, source, ref string) (registry.Operator, bool, error)
 	ContactForLink(ctx context.Context, number string) (registry.OperatorContact, bool, error)
 	// Read runs fn in one relational transaction with a registry reader
 	// over it: what the portal asks of the registry while it holds an

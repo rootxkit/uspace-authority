@@ -533,7 +533,8 @@ func (s *Service) registerOperator(ctx context.Context, reg registry.Within, app
 }
 
 // Refuse refuses a submitted or reviewed application with a reason,
-// mailed to the applicant.
+// mailed to the applicant. Whether an operator is registered for it is
+// asked of the registry on the transaction that holds its row lock.
 func (s *Service) Refuse(ctx context.Context, id, reason string, actor audit.Actor) (Application, error) {
 	if err := s.needApplications(); err != nil {
 		return Application{}, err
@@ -543,7 +544,7 @@ func (s *Service) Refuse(ctx context.Context, id, reason string, actor audit.Act
 		return Application{}, core.Fieldf("reason", "required, at most %d characters", maxReasonRunes)
 	}
 	var out Application
-	err := s.DB.WithTx(ctx, func(q *gen.Queries) error {
+	err := s.Registry.Read(ctx, func(q *gen.Queries, reg registry.Reader) error {
 		cur, err := q.ApplicationForUpdate(ctx, id)
 		if store.IsNoRows(err) {
 			return notFoundApplication()
@@ -558,7 +559,7 @@ func (s *Service) Refuse(ctx context.Context, id, reason string, actor audit.Act
 		// decision is finished by approving again, never refused: the
 		// registry would keep an operator for a refused application.
 		if cur.IssuedNumber != nil {
-			_, found, err := s.Registry.OperatorBySource(ctx, registry.SourcePortal, id)
+			_, found, err := reg.OperatorBySource(ctx, registry.SourcePortal, id)
 			if err != nil {
 				return err
 			}

@@ -21,7 +21,6 @@ import (
 
 	"github.com/rootxkit/uspace-authority/api/gen"
 	"github.com/rootxkit/uspace-authority/internal/apiserver"
-	"github.com/rootxkit/uspace-authority/internal/audit"
 	"github.com/rootxkit/uspace-authority/internal/httpx"
 	"github.com/rootxkit/uspace-authority/internal/registry"
 )
@@ -118,14 +117,6 @@ func (n *numbers) NumberFree(_ context.Context, number string) (string, bool, er
 
 func (n *numbers) CheckNumber(context.Context, string) (registry.PublicCheck, error) {
 	return registry.PublicCheck{}, nil
-}
-
-func (n *numbers) CreateOperator(context.Context, registry.NewOperator, audit.Actor) (registry.Operator, error) {
-	return registry.Operator{}, nil
-}
-
-func (n *numbers) OperatorBySource(context.Context, string, string) (registry.Operator, bool, error) {
-	return registry.Operator{}, false, nil
 }
 
 func (n *numbers) ContactForLink(context.Context, string) (registry.OperatorContact, bool, error) {
