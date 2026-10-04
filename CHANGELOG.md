@@ -383,3 +383,21 @@ Unreleased; the format follows Keep a Changelog.
   monthly evidence-pack re-verification; the daily USSP records pull
   with the missing-day alarm; the `job_runs` ledger on the database
   clock; `GET /v1/retention/status`; the retention runbook.
+- WP-22: the console's registry, zone, U-space and certificate pages
+  on uspace-ui 0.1.0: operators, UAS and pilots with the look-up by
+  number and serial, the Art. 14(2) forms and status transitions with a
+  reason; personal data only behind a configured purpose
+  (`WEB_PII_PURPOSES`, defaults pending GCAA) sent with the request;
+  the import's dry run by record and field; the applications queue;
+  the ED-318 zone editor on the map (every property by its standard
+  name, polygons and circles sent as centre and radius, schedules by
+  daylight event, WGS84 flagged), versions with their difference,
+  approval, the applicability check, export, the ED-318 and ED-269
+  import with every problem by path; U-space designation with the Art.
+  3(4) block; publication with its exact effect and the outbox state;
+  certificates (issue with the secret once, suspend, limit, revoke,
+  reinstate, the operating-status timeline, the public register
+  preview, the USSP list); the BFF's writes on an anchored allow-list
+  with a body bound; the editor's bodies validated by the zone service
+  in Go; Playwright and axe on every page; the runbook section and the
+  A-M1 console run against the fake CISP.

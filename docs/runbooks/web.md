@@ -7,7 +7,9 @@ GitHub Release tarball. It renders what `api` and `picture-ws` say and
 judges nothing: no database, no NATS, no geometry or geodesy, no JWT
 library, no key (CLAUDE.md rule 10). Its only server code is the BFF's
 three routes. This WP ships the sign-in, the app shell with the
-navigation by role, and the inspector map; WP-22 to WP-24 add pages.
+navigation by role, and the inspector map; WP-22 adds the registry,
+zone, U-space and certificate pages (below), and WP-23 and WP-24 add
+theirs.
 
 ```
 web/app/[locale]/login/           the sign-in (password, then the TOTP code)
@@ -15,7 +17,13 @@ web/app/[locale]/(signed-in)/     the shell and the inspector map
 web/app/%5Fbff/                   the BFF: /_bff/login, /_bff/logout, /_bff/api/*
 web/src/lib/bff/handlers.ts       the BFF on the kit's auth/server helpers
 web/src/picture/                  the feed, the adapter, the panels, the map
-web/src/zones/                    the published zones for the zone layer
+web/src/zones/                    the published zones for the zone layer; the zone
+                                  and U-space pages and the editor (WP-22)
+web/src/registry/                 operators, UAS, pilots, import, applications (WP-22)
+web/src/certificates/             certificates and the register preview (WP-22)
+web/src/publications/             the F1 outbox state (WP-22)
+web/src/authoring/                what the WP-22 pages share (loads, refusals, acts, PII)
+web/src/i18n/authoring.{en,ka}.json  the WP-22 pages' words
 web/src/api/generated/            api/openapi.yaml's types (uspace-ui-gen-api)
 web/src/picture/generated/        schemas/picture/* and violation/v1 types (json-schema-to-typescript)
 web/src/i18n/{ka,en}.json         every display string
@@ -170,7 +178,10 @@ once in CI and configured by its environment.
 |---|---|
 | `WEB_API_INTERNAL_URL` | api as the web container reaches it; unset, every `/_bff/*` route answers 503 naming it |
 | `WEB_MFA_CHALLENGE_SECRET` | seals the MFA challenge between the two sign-in steps (the kit's `mfaChallengeSecret`), at least 32 bytes from the deployment's secret store; unset or shorter, every `/_bff/*` route answers 503 naming it |
-| `WEB_TRUSTED_PROXY_HOPS` | reverse proxies in front of Next.js that append to `X-Forwarded-For` (1 behind Caddy); the BFF sends api exactly the address they recorded |
+| `WEB_TRUSTED_PROXY_HOPS` | reverse proxies in front of Next.js that append to `X-Forwarded-For` (1 behind Caddy); the BFF sends api exactly the address they recorded. Unset: no forwarded header is believed and api gets no client address (the kit's `noTrustedProxy`) |
+| `WEB_PROXY_MAX_BODY_BYTES` | the largest write the proxy forwards (8388608, api's registry import default); a larger one, or one that does not announce its length, is the BFF's 413 or 411 |
+| `WEB_PII_PURPOSES` | the purposes a person may state to read registry personal data, comma-separated lower-case codes, at most 20; unset or invalid: `registration_review,oversight_inspection,data_subject_request`, **pending GCAA** and the DPO, and the panel says it is the default |
+| `WEB_ZONE_COUNTRY` | the ED-318 `country` a new zone starts with (three upper-case letters); unset: the author types it |
 | `WEB_SESSION_MAX_AGE_S` | ceiling of the session cookie's `Max-Age` (43200); api's `expires_at` shortens it |
 | `WEB_UPSTREAM_TIMEOUT_MS` | timeout of each BFF call to api (10000) |
 | `WEB_MAP_CENTER`, `WEB_MAP_ZOOM` | the inspector map's first view, `"lng,lat"` and a zoom; unset, the map names the variable instead of choosing a place (INV-03) |
@@ -194,9 +205,13 @@ the kit's `bffHandlers` configured in `web/src/lib/bff/handlers.ts`.
   the token. Sign-in requires a same-origin `Origin`.
 - `/_bff/api/<path>` is forwarded to api with the cookie as
   `Authorization: Bearer`, for the paths of `PROXY_ALLOW_PATHS` only:
-  `/v1/auth/session` and `/v1/zones` in this WP. Any other path is the
-  BFF's 404 and never reaches api; only `GET` is routed. An unsafe
-  method (a later WP) needs `X-CSRF-Token` equal to `uspace_csrf`. A 401
+  `/v1/auth/session`, `/v1/zones` and, since WP-22, the registry, zone,
+  U-space, publication and certificate operations of the console (each
+  pattern anchored; the registry's machine and public operations are
+  not among them). Any other path is the BFF's 404 and never reaches
+  api. `GET`, `POST`, `PUT` and `PATCH` are routed, `DELETE` is not. An
+  unsafe method needs `X-CSRF-Token` equal to `uspace_csrf` and a body
+  that announces its length, within `WEB_PROXY_MAX_BODY_BYTES`. A 401
   from api clears both cookies.
 - `POST /_bff/logout` checks the CSRF pair, tells api
   (`POST /v1/auth/logout`) and clears both cookies whatever api answers.
@@ -257,6 +272,111 @@ stored, and a registration number is shown through the kit's formatter,
 which keeps an EU secret part off the screen (picture-ws sends only the
 public part; G-04).
 
+## The registry, zone, U-space and certificate pages (WP-22)
+
+Every page reads and writes api through the BFF and judges nothing:
+api validates, decides and records. A read that api refuses or fails
+to answer is said with its status and problem, never shown as an empty
+list (E-02). Every act that changes something confirms its exact
+effect first ("This publishes 1 approved versions and sends the CISP
+every geo-zone in force, 2 zones, as the next zones version"), takes a
+reason where the operation records one, and shows api's refusal with
+every field problem by path. The edit controls follow the operations'
+`x-roles`; they are a courtesy, api refuses whatever they show.
+
+| Page | Roles (`x-roles`) | What it does |
+|---|---|---|
+| `/registry/operators`, `/uas`, `/pilots` and their `/<id>`, `/new` | read: registrar, inspector, viewer; write: registrar | Lists a page at a time with api's cursor; look-up by registration number (operators) and serial (UAS); the Art. 14(2) form; status transitions, each with a reason; pilot competencies. |
+| personal-data panels | registrar, inspector (applications: registrar) | Nothing is read until a purpose of `WEB_PII_PURPOSES` is chosen; the purpose is the request's `purpose`, api records the view before it answers, and the panel keeps nothing after it closes. |
+| `/registry/import` | registrar | The dry run first, its report by record and field; the import is offered only for the file a dry run read without a problem, and confirms the counts. |
+| `/registry/applications` | registrar | The queue by state; off (`REGISTRY_APPLICATIONS`, pending GCAA) api answers 404 and the page says the portal is off. |
+| `/zones`, `/zones/<id>` | read: inspector, admin, viewer; author: inspector; approve, publish: admin | The versions in a state on a list and a map; history with the difference between two versions; approval; the applicability check (`unknown` is never shown as applies); the ED-318 export at a time; publication with the outbox state. |
+| `/zones/new`, `/zones/<id>/edit` | inspector | The editor (below). |
+| `/zones/import` | inspector | ED-318 or ED-269, at most 4 MiB (refused before sending past it); every problem by path; nothing imported on any problem. |
+| `/uspace/*` | admin | The editor in U-space mode with the designation and its Art. 3(4) block; designation; publication. |
+| `/certificates`, `/new`, `/<id>`, `/register` | admin | The list; issuing (the client's secret shown once, on request); suspend, limit, revoke, reinstate with reasons, then what api did to the tokens (`tokens_valid_until`) and the USSP list; the operating-status timeline and a notice by letter; the public register as the public sees it; the USSP list's publication. |
+
+The publication panel is `GET /v1/publications?dataset=` (WP-6): each
+row's state, the CISP's status and version, and while it is pending or
+sent api's `age_s` as "not yet published for N"; it reads again every
+5 s while a row is in flight and not otherwise. Without
+`CISP_BASE_URL` it says first that nothing is sent.
+
+### The zone editor
+
+- Every ED-318 property has a field under its standard name
+  (`identifier`, `country`, `name`, `type`, `variant`,
+  `restrictionConditions`, `region`, `reason`, `otherReasonInfo`,
+  `regulationExemption`, `message`, `extendedProperties`,
+  `limitedApplicability` with `startDateTime`, `endDateTime` and
+  `schedule` (`day`, `startTime` or `startEvent`, `endTime` or
+  `endEvent`), `zoneAuthority` (`name`, `service`, `contactName`,
+  `siteURL`, `email`, `phone`, `purpose`, `intervalBefore`), and
+  `dataSource`), as uspace-core v1.4.0 `ed318` reads them. The form's
+  field names are api's JSON paths, so a refusal lands on its field.
+- The geometry is a polygon (clicked on the map or typed as
+  `longitude latitude` lines; the ring is closed by repeating its first
+  position; a blank line starts a hole) or a circle, sent as a `Point`
+  with a `Circle` extent: its centre and its radius in metres (Z-11).
+  The circle's edge is not drawn, only its centre: drawing it is
+  geodesy (CLAUDE.md rule 3), and the page says so. A version whose
+  geometry is a collection of layers is not editable here; revise it by
+  import.
+- The vertical limits name their reference and unit; `WGS84` is flagged
+  as this project's extension (Z-05), and the UNVERIFIED readings of
+  `docs/runbooks/zones.md` are shown as such, not as the standard's.
+- In U-space mode the type is `USPACE`, the period is
+  `designated_from`/`designated_to`, and the designation carries the
+  services required (at least four), the Art. 3(4) block (UAS
+  requirements, operational conditions, service performance with its
+  three required rates, airspace constraints with the height ceiling),
+  adjacency, the controlled-airspace flag and the references. api, not
+  the editor, writes `extendedProperties.uspace_requirements`; a
+  revision leaves it out.
+- The bodies the editor builds are pinned in
+  `web/test/fixtures/zone-editor/` by its unit tests, and
+  `internal/zonesvc/webeditor_test.go` runs them through the zone
+  service's own validation (core's `ed318.Parse`), beside a misnamed
+  member it refuses (E-03).
+
+### Run against the development stack: A-M1's console clause
+
+Recorded on 2026-10-05 (Windows, Go 1.27.1, Node 22.13, this branch).
+No stub: `deploy/compose.dev.yaml` under its own project name and
+ports (`docker compose -p wp22-demo`, 57632, 57633, 57622, 57822),
+`uspace-authority migrate` (relational 25, timeseries 13), `api` with
+`PUBLICATION_KEY_FILE`, `CISP_BASE_URL` on the repository's fake CISP
+(`internal/ltest/fakecisp`, served over loopback http by a local
+harness, verifying each publication's detached JWS against api's
+JWKS), and the `authority-01` client with `cis.publish:zones`;
+`next start` and `scripts/dev-origin.mjs` in front. Keys, passwords
+and TOTP secrets were throwaway values outside the repository.
+
+Chromium (Playwright) through the console's own forms:
+
+```
+inspector1  signs in (password, TOTP), /zones/new: TSTD024, PROHIBITED, a polygon,
+            0 AGL to 120 AGL (m), 2026-10-01 to 2027-10-01 UTC -> draft, version 1
+admin1      /zones/TSTD024: "This approves version 1 of TSTD024. It is published
+            to the CISP with the next publication." -> approved
+admin1      /zones: "1 approved versions wait; with them 3 are in force now."
+            "This publishes 1 approved versions and sends the CISP every geo-zone
+            in force, 3 zones, as the next zones version." -> "Published as zones
+            version 3: 1 versions, 3 features in the publication, which was Pending
+            when the API answered."
+console     Version 3, 3 features: Acknowledged; Attempts: 1, CISP answered 201,
+            CISP version 3
+fake CISP   {"dataset":"zones","version":3,"identifiers":["TSTD022","TSTD023","TSTD024"]}
+            (PUT /v1/publications/zones 201, its signature verified)
+```
+
+The two zones before TSTD024 were the same run's two earlier passes.
+
+![A zone authored in the console, published and acknowledged by the fake CISP](img/web-wp22-zone-published.png)
+
+Afterwards every process was stopped and the stack removed
+(`docker compose -p wp22-demo ... down -v`).
+
 ## Generated types
 
 - API: `pnpm gen:api` runs the kit's `uspace-ui-gen-api` on
@@ -304,3 +424,7 @@ installs, transitive ones included, against the lint rule's own list in
 the server bundle), the Playwright smoke (zero passed, a skip or a
 flaky test fails the job), and the image build. On main and tags the
 `image` job pushes and signs `ghcr.io/rootxkit/uspace-authority-web`.
+
+Every WP-22 page also runs the axe check in the smoke
+(`test/e2e/authoring.ts`, `@axe-core/playwright`, WCAG 2.x A and AA,
+the target pending GCAA); MapLibre's canvas is left out of it.
