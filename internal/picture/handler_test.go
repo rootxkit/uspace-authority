@@ -48,14 +48,16 @@ func dial(t *testing.T, wsURL, origin, cookie string) (*websocket.Conn, *http.Re
 	return c, resp, err
 }
 
-// closeOf reads until the connection closes and returns the close code.
-func closeOf(t *testing.T, c *websocket.Conn) websocket.StatusCode {
+// closeOf reads until the connection ends and returns the close code
+// with the read error that ended it: a connection dropped without a
+// close frame is -1, and its error says how it ended.
+func closeOf(t *testing.T, c *websocket.Conn) (websocket.StatusCode, error) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	for {
 		if _, _, err := c.Read(ctx); err != nil {
-			return websocket.CloseStatus(err)
+			return websocket.CloseStatus(err), err
 		}
 	}
 }
@@ -105,8 +107,8 @@ func TestUpgradeRefusedBesideTheAcceptedOne(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: upgrade failed: %v", name, err)
 		}
-		if code := closeOf(t, c); code != CloseRelogin {
-			t.Errorf("%s: closed %d, want 4401", name, code)
+		if code, err := closeOf(t, c); code != CloseRelogin {
+			t.Errorf("%s: closed %d, want %d: %v", name, code, CloseRelogin, err)
 		}
 	}
 	// A ticket in the query string is not a session (M22).
@@ -114,8 +116,8 @@ func TestUpgradeRefusedBesideTheAcceptedOne(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if code := closeOf(t, c); code != CloseRelogin {
-		t.Fatalf("query-string token: closed %d", code)
+	if code, err := closeOf(t, c); code != CloseRelogin {
+		t.Fatalf("query-string token: closed %d, want %d: %v", code, CloseRelogin, err)
 	}
 	for name, origin := range map[string]string{"wrong origin": "https://evil.example.test", "no origin": "", "port differs": consoleOrigin + ":8443"} {
 		_, resp, err := dial(t, wsURL, origin, ti.session(t, RealmConsole, "live-1", time.Hour))
@@ -141,8 +143,8 @@ func TestUpgradeUnavailableNotUpgradeAndFull(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if code := closeOf(t, c); code != CloseTryAgainLater {
-		t.Fatalf("api down: closed %d", code)
+	if code, err := closeOf(t, c); code != CloseTryAgainLater {
+		t.Fatalf("api down: closed %d, want %d: %v", code, CloseTryAgainLater, err)
 	}
 	api.broken.Store(false)
 
@@ -290,8 +292,8 @@ func TestBinaryFrameRefused(t *testing.T) {
 	if err := c.Write(context.Background(), websocket.MessageBinary, []byte{1, 2, 3}); err != nil {
 		t.Fatal(err)
 	}
-	if code := closeOf(t, c); code != CloseInvalid {
-		t.Fatalf("closed %d", code)
+	if code, err := closeOf(t, c); code != CloseInvalid {
+		t.Fatalf("binary frame: closed %d, want %d: %v", code, CloseInvalid, err)
 	}
 	// And an oversized frame is closed by the read limit (1009).
 	c, _, err = dial(t, wsURL, consoleOrigin, ti.session(t, RealmConsole, "live-1", time.Hour))
@@ -301,7 +303,7 @@ func TestBinaryFrameRefused(t *testing.T) {
 	readFrame(t, c)
 	readFrame(t, c)
 	_ = c.Write(context.Background(), websocket.MessageText, []byte(strings.Repeat(" ", 10000)))
-	if code := closeOf(t, c); code != CloseTooBig {
-		t.Fatalf("closed %d", code)
+	if code, err := closeOf(t, c); code != CloseTooBig {
+		t.Fatalf("oversized frame: closed %d, want %d: %v", code, CloseTooBig, err)
 	}
 }
