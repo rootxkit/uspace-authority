@@ -10,6 +10,7 @@ import (
 
 	"github.com/rootxkit/uspace-authority/internal/audit"
 	"github.com/rootxkit/uspace-authority/internal/logging"
+	"github.com/rootxkit/uspace-authority/internal/store"
 	"github.com/rootxkit/uspace-authority/internal/store/pg/gen"
 )
 
@@ -48,71 +49,76 @@ func retryIn(base time.Duration, attempts int) time.Duration {
 }
 
 // SendDue delivers the messages due now (database clock), at most a
-// batch, each row locked (SKIP LOCKED) so two replicas never send one
-// twice. A delivered message is marked sent and its content cleared; a
-// failed one waits for its retry, doubling, until its attempts are
-// spent or the relay refuses it for good (5xx), when it is failed and
-// its content cleared. Every delivery and every give-up is an events
-// row. A message is sent at least once: a crash between the delivery
-// and the commit sends it again.
+// batch, one at a time and with nothing slow inside a transaction: each
+// message is claimed by a statement that commits on its own and leases
+// it (another replica skips it meanwhile), delivered outside any
+// transaction, and its outcome committed in a transaction of its own
+// with its events row. A delivered message is marked sent and its
+// content cleared; a failed one waits for its retry, doubling, until its
+// attempts are spent or the relay refuses it for good (5xx), when it is
+// failed and its content cleared. A message is sent at least once: a
+// crash between the delivery and the commit sends it again when its
+// lease ends.
 func (s *Service) SendDue(ctx context.Context) (Sent, error) {
 	var out Sent
-	err := s.DB.WithTx(ctx, func(q *gen.Queries) error {
-		rows, err := q.DuePortalMail(ctx, int32(max(1, s.Config.MailBatch)))
+	lease := 2 * s.mailTimeout()
+	for range max(1, s.Config.MailBatch) {
+		r, err := s.DB.Queries().ClaimPortalMail(ctx, lease.Seconds())
+		if store.IsNoRows(err) {
+			break
+		}
 		if err != nil {
-			return err
+			return out, err
 		}
-		for i := range rows {
-			r := &rows[i]
-			sendErr := s.deliver(ctx, r)
-			if sendErr == nil {
-				if err := q.PortalMailSent(ctx, r.ID); err != nil {
-					return err
-				}
-				if err := s.mailEvent(ctx, q, r, audit.EventRegistryPortalMailSent, nil); err != nil {
-					return err
-				}
-				out.Sent++
-				continue
-			}
-			attempts := int(r.Attempts) + 1
-			var perm *PermanentError
-			if errors.As(sendErr, &perm) || attempts >= s.Config.MailMaxAttempts {
-				if err := q.PortalMailFailed(ctx, gen.PortalMailFailedParams{ID: r.ID, LastError: ptr(lastError(sendErr))}); err != nil {
-					return err
-				}
-				if err := s.mailEvent(ctx, q, r, audit.EventRegistryPortalMailFailed, sendErr); err != nil {
-					return err
-				}
-				out.Failed++
-				s.limited("regportal_mail_failed").Error("a portal e-mail was given up; its content is cleared",
-					slog.Int64("mail_id", r.ID), slog.String("kind", r.Kind), slog.Int("attempts", attempts), slog.String("error", lastError(sendErr)))
-				continue
-			}
-			if err := q.PortalMailRetry(ctx, gen.PortalMailRetryParams{ID: r.ID, LastError: ptr(lastError(sendErr)),
-				RetryInS: retryIn(s.Config.MailRetry, attempts).Seconds()}); err != nil {
-				return err
-			}
-			out.Retried++
-			s.limited("regportal_mail_retry").Warn("a portal e-mail was not delivered; it is retried",
-				slog.Int64("mail_id", r.ID), slog.String("kind", r.Kind), slog.Int("attempts", attempts), slog.String("error", lastError(sendErr)))
+		sendErr := s.deliver(ctx, &r)
+		if err := s.DB.WithTx(ctx, func(q *gen.Queries) error { return s.settle(ctx, q, &r, sendErr, &out) }); err != nil {
+			return out, err
 		}
-		return nil
-	})
-	if err != nil {
-		return Sent{}, err
-	}
-	for range out.Sent {
-		s.count(CounterMailSent)
-	}
-	for range out.Retried {
-		s.count(CounterMailRetried)
-	}
-	for range out.Failed {
-		s.count(CounterMailFailed)
 	}
 	return out, nil
 }
+
+// settle records one delivery's outcome, counting it in out.
+func (s *Service) settle(ctx context.Context, q *gen.Queries, r *gen.RegistryPortalMail, sendErr error, out *Sent) error {
+	if sendErr == nil {
+		if err := q.PortalMailSent(ctx, r.ID); err != nil {
+			return err
+		}
+		if err := s.mailEvent(ctx, q, r, audit.EventRegistryPortalMailSent, nil); err != nil {
+			return err
+		}
+		out.Sent++
+		s.count(CounterMailSent)
+		return nil
+	}
+	attempts := int(r.Attempts) + 1
+	var perm *PermanentError
+	if errors.As(sendErr, &perm) || attempts >= s.Config.MailMaxAttempts {
+		if err := q.PortalMailFailed(ctx, gen.PortalMailFailedParams{ID: r.ID, LastError: ptr(lastError(sendErr))}); err != nil {
+			return err
+		}
+		if err := s.mailEvent(ctx, q, r, audit.EventRegistryPortalMailFailed, sendErr); err != nil {
+			return err
+		}
+		out.Failed++
+		s.count(CounterMailFailed)
+		s.limited("regportal_mail_failed").Error("a portal e-mail was given up; its content is cleared",
+			slog.Int64("mail_id", r.ID), slog.String("kind", r.Kind), slog.Int("attempts", attempts), slog.String("error", lastError(sendErr)))
+		return nil
+	}
+	if err := q.PortalMailRetry(ctx, gen.PortalMailRetryParams{ID: r.ID, LastError: ptr(lastError(sendErr)),
+		RetryInS: retryIn(s.Config.MailRetry, attempts).Seconds()}); err != nil {
+		return err
+	}
+	out.Retried++
+	s.count(CounterMailRetried)
+	s.limited("regportal_mail_retry").Warn("a portal e-mail was not delivered; it is retried",
+		slog.Int64("mail_id", r.ID), slog.String("kind", r.Kind), slog.Int("attempts", attempts), slog.String("error", lastError(sendErr)))
+	return nil
+}
+
+// mailTimeout bounds one delivery.
+func (s *Service) mailTimeout() time.Duration { return max(time.Second, s.Config.MailTimeout) }
 
 func ptr[T any](v T) *T { return &v }
 
@@ -128,7 +134,7 @@ func (s *Service) deliver(ctx context.Context, r *gen.RegistryPortalMail) error 
 	if err != nil {
 		return &PermanentError{Err: err}
 	}
-	ctx, cancel := context.WithTimeout(ctx, max(time.Second, s.Config.MailTimeout))
+	ctx, cancel := context.WithTimeout(ctx, s.mailTimeout())
 	defer cancel()
 	return s.Mailer.Send(ctx, m.To, subject, body)
 }

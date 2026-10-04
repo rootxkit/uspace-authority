@@ -102,27 +102,34 @@ INSERT INTO registry_portal_mail (kind, application_id, lang, pii_key_id, messag
 VALUES (sqlc.arg(kind), sqlc.narg(application_id), sqlc.arg(lang), sqlc.arg(pii_key_id), sqlc.arg(message_enc))
 RETURNING id;
 
--- name: DuePortalMail :many
--- Messages due now (database clock), oldest first, locked so two
--- replicas never send one twice.
-SELECT * FROM registry_portal_mail
-WHERE sent_at IS NULL AND failed_at IS NULL AND next_attempt_at <= now()
-ORDER BY next_attempt_at, id
-LIMIT sqlc.arg(batch)
-FOR UPDATE SKIP LOCKED;
+-- name: ClaimPortalMail :one
+-- Takes the oldest message due now (database clock) and moves its next
+-- attempt lease_s ahead in the same statement, which commits on its own:
+-- the delivery runs outside any transaction, and another replica skips
+-- the message until the lease ends (a crash during the delivery sends it
+-- again then). No row when nothing is due.
+UPDATE registry_portal_mail SET next_attempt_at = now() + make_interval(secs => sqlc.arg(lease_s)::float8)
+WHERE id = (
+    SELECT d.id FROM registry_portal_mail d
+    WHERE d.sent_at IS NULL AND d.failed_at IS NULL AND d.next_attempt_at <= now()
+    ORDER BY d.next_attempt_at, d.id
+    LIMIT 1
+    FOR UPDATE SKIP LOCKED
+)
+RETURNING *;
 
 -- name: PortalMailSent :exec
 UPDATE registry_portal_mail SET sent_at = now(), message_enc = NULL, attempts = attempts + 1, last_error = NULL
-WHERE id = sqlc.arg(id);
+WHERE id = sqlc.arg(id) AND sent_at IS NULL AND failed_at IS NULL;
 
 -- name: PortalMailRetry :exec
 UPDATE registry_portal_mail SET attempts = attempts + 1, last_error = sqlc.arg(last_error),
     next_attempt_at = now() + make_interval(secs => sqlc.arg(retry_in_s)::float8)
-WHERE id = sqlc.arg(id);
+WHERE id = sqlc.arg(id) AND sent_at IS NULL AND failed_at IS NULL;
 
 -- name: PortalMailFailed :exec
 UPDATE registry_portal_mail SET failed_at = now(), message_enc = NULL, attempts = attempts + 1, last_error = sqlc.arg(last_error)
-WHERE id = sqlc.arg(id);
+WHERE id = sqlc.arg(id) AND sent_at IS NULL AND failed_at IS NULL;
 
 -- name: PurgePortalMail :execrows
 -- Delivered or failed messages without an application, older than the

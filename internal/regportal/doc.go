@@ -50,8 +50,10 @@
 // mandatory channel. Nothing here reads or joins the occurrence reports.
 //
 // Mail: every e-mail is an outbox row written in the transaction of the
-// change it reports and sent after the commit (SendDue, SKIP LOCKED, at
-// least once), its content sealed until delivered or given up and then
+// change it reports and sent after the commit (SendDue: each message
+// claimed and leased by a statement of its own, delivered outside any
+// transaction and its outcome committed on its own; at least once), its
+// content sealed until delivered or given up and then
 // cleared; attempts are bounded, a permanent SMTP refusal (5xx) is not
 // retried, and every delivery and give-up is an events row. Texts come
 // from the en and ka catalogues (catalogue/*.json); a value never

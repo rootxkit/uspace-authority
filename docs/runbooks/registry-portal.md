@@ -101,7 +101,11 @@ an account:
 Every e-mail is written to the outbox (`registry_portal_mail`) in the
 transaction of the change it reports and sent after the commit, every
 `REGISTRY_MAIL_EVERY_S`, at most `REGISTRY_MAIL_BATCH` a run, at least
-once. Its content (recipient, link, number, secret part) is sealed until
+once. Messages are sent one at a time and no transaction is open while
+the relay is talked to: a message is claimed and leased for twice
+`REGISTRY_MAIL_TIMEOUT_S` (another replica skips it meanwhile; after a
+crash it is sent again when the lease ends), and each outcome commits
+on its own. Its content (recipient, link, number, secret part) is sealed until
 it is delivered or given up, then cleared. A failed delivery is retried
 after `REGISTRY_MAIL_RETRY_S`, doubling up to an hour, at most
 `REGISTRY_MAIL_MAX_ATTEMPTS` times; a permanent refusal (SMTP 5xx) is

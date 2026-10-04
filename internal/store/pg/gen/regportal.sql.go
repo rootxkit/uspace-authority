@@ -112,6 +112,43 @@ func (q *Queries) ApproveApplication(ctx context.Context, arg ApproveApplication
 	return i, err
 }
 
+const claimPortalMail = `-- name: ClaimPortalMail :one
+UPDATE registry_portal_mail SET next_attempt_at = now() + make_interval(secs => $1::float8)
+WHERE id = (
+    SELECT d.id FROM registry_portal_mail d
+    WHERE d.sent_at IS NULL AND d.failed_at IS NULL AND d.next_attempt_at <= now()
+    ORDER BY d.next_attempt_at, d.id
+    LIMIT 1
+    FOR UPDATE SKIP LOCKED
+)
+RETURNING id, kind, application_id, lang, pii_key_id, message_enc, created_at, attempts, next_attempt_at, sent_at, failed_at, last_error
+`
+
+// Takes the oldest message due now (database clock) and moves its next
+// attempt lease_s ahead in the same statement, which commits on its own:
+// the delivery runs outside any transaction, and another replica skips
+// the message until the lease ends (a crash during the delivery sends it
+// again then). No row when nothing is due.
+func (q *Queries) ClaimPortalMail(ctx context.Context, leaseS float64) (RegistryPortalMail, error) {
+	row := q.db.QueryRow(ctx, claimPortalMail, leaseS)
+	var i RegistryPortalMail
+	err := row.Scan(
+		&i.ID,
+		&i.Kind,
+		&i.ApplicationID,
+		&i.Lang,
+		&i.PiiKeyID,
+		&i.MessageEnc,
+		&i.CreatedAt,
+		&i.Attempts,
+		&i.NextAttemptAt,
+		&i.SentAt,
+		&i.FailedAt,
+		&i.LastError,
+	)
+	return i, err
+}
+
 const clearApplicationIssuedNumber = `-- name: ClearApplicationIssuedNumber :exec
 UPDATE registry_applications SET issued_number = NULL, secret_enc = NULL, valid_until = NULL
 WHERE id = $1 AND state = 'under_review' AND operator_id IS NULL
@@ -122,49 +159,6 @@ WHERE id = $1 AND state = 'under_review' AND operator_id IS NULL
 func (q *Queries) ClearApplicationIssuedNumber(ctx context.Context, id string) error {
 	_, err := q.db.Exec(ctx, clearApplicationIssuedNumber, id)
 	return err
-}
-
-const duePortalMail = `-- name: DuePortalMail :many
-SELECT id, kind, application_id, lang, pii_key_id, message_enc, created_at, attempts, next_attempt_at, sent_at, failed_at, last_error FROM registry_portal_mail
-WHERE sent_at IS NULL AND failed_at IS NULL AND next_attempt_at <= now()
-ORDER BY next_attempt_at, id
-LIMIT $1
-FOR UPDATE SKIP LOCKED
-`
-
-// Messages due now (database clock), oldest first, locked so two
-// replicas never send one twice.
-func (q *Queries) DuePortalMail(ctx context.Context, batch int32) ([]RegistryPortalMail, error) {
-	rows, err := q.db.Query(ctx, duePortalMail, batch)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []RegistryPortalMail{}
-	for rows.Next() {
-		var i RegistryPortalMail
-		if err := rows.Scan(
-			&i.ID,
-			&i.Kind,
-			&i.ApplicationID,
-			&i.Lang,
-			&i.PiiKeyID,
-			&i.MessageEnc,
-			&i.CreatedAt,
-			&i.Attempts,
-			&i.NextAttemptAt,
-			&i.SentAt,
-			&i.FailedAt,
-			&i.LastError,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const insertApplication = `-- name: InsertApplication :one
@@ -390,7 +384,7 @@ func (q *Queries) PortalMailBacklog(ctx context.Context) (PortalMailBacklogRow, 
 
 const portalMailFailed = `-- name: PortalMailFailed :exec
 UPDATE registry_portal_mail SET failed_at = now(), message_enc = NULL, attempts = attempts + 1, last_error = $1
-WHERE id = $2
+WHERE id = $2 AND sent_at IS NULL AND failed_at IS NULL
 `
 
 type PortalMailFailedParams struct {
@@ -406,7 +400,7 @@ func (q *Queries) PortalMailFailed(ctx context.Context, arg PortalMailFailedPara
 const portalMailRetry = `-- name: PortalMailRetry :exec
 UPDATE registry_portal_mail SET attempts = attempts + 1, last_error = $1,
     next_attempt_at = now() + make_interval(secs => $2::float8)
-WHERE id = $3
+WHERE id = $3 AND sent_at IS NULL AND failed_at IS NULL
 `
 
 type PortalMailRetryParams struct {
@@ -422,7 +416,7 @@ func (q *Queries) PortalMailRetry(ctx context.Context, arg PortalMailRetryParams
 
 const portalMailSent = `-- name: PortalMailSent :exec
 UPDATE registry_portal_mail SET sent_at = now(), message_enc = NULL, attempts = attempts + 1, last_error = NULL
-WHERE id = $1
+WHERE id = $1 AND sent_at IS NULL AND failed_at IS NULL
 `
 
 func (q *Queries) PortalMailSent(ctx context.Context, id int64) error {

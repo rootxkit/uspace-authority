@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"os"
@@ -36,6 +37,8 @@ type sentMail struct {
 	mu   sync.Mutex
 	msgs []mailed
 	err  error
+	// during runs inside each delivery, before it is kept.
+	during func()
 }
 
 type mailed struct{ to, subject, body string }
@@ -43,6 +46,9 @@ type mailed struct{ to, subject, body string }
 func (m *sentMail) Send(_ context.Context, to, subject, body string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	if m.during != nil {
+		m.during()
+	}
 	if m.err != nil {
 		return m.err
 	}
@@ -494,5 +500,52 @@ func TestIntegrationOperatorLink(t *testing.T) {
 	}
 	if n := it.count(t, `SELECT count(*) FROM events WHERE event_type = 'registry_operator_link_used'`); n != 1 {
 		t.Fatalf("%d link uses", n)
+	}
+}
+
+// Nothing slow inside a transaction: while a message is being handed to
+// the relay the sender holds no transaction open and no row locked, and
+// every message delivered before it is committed as sent already.
+func TestIntegrationMailCommitsPerMessage(t *testing.T) {
+	it := newIntegration(t)
+	ctx := context.Background()
+	for i := range 3 {
+		if _, err := it.svc.Submit(ctx, applicant(), "en", fmt.Sprintf("192.0.2.%d", 80+i)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	delivering := 0
+	it.mail.during = func() {
+		delivering++
+		if n := it.count(t, `SELECT count(*) FROM pg_stat_activity WHERE datname = current_database()
+			AND application_name = 'uspace-authority-test' AND state LIKE 'idle in transaction%'`); n != 0 {
+			t.Errorf("delivery %d: %d transactions open", delivering, n)
+		}
+		if _, err := it.admin.ExecContext(ctx, `SELECT id FROM registry_portal_mail FOR UPDATE NOWAIT`); err != nil {
+			t.Errorf("delivery %d: a mail row is locked: %v", delivering, err)
+		}
+		if n := it.count(t, `SELECT count(*) FROM registry_portal_mail WHERE sent_at IS NOT NULL`); n != delivering-1 {
+			t.Errorf("delivery %d: %d messages committed as sent, want %d", delivering, n, delivering-1)
+		}
+	}
+	if s := it.send(t); s.Sent != 3 || delivering != 3 {
+		t.Fatalf("sent %+v in %d deliveries", s, delivering)
+	}
+	// A claimed message is leased: another sender does not take it until
+	// its lease ends; past it, it is due again.
+	if _, err := it.svc.Submit(ctx, applicant(), "en", "192.0.2.84"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := it.svc.DB.Queries().ClaimPortalMail(ctx, 60); err != nil {
+		t.Fatal(err)
+	}
+	if s := it.send(t); s.Sent != 0 {
+		t.Fatalf("a leased message was sent again: %+v", s)
+	}
+	if _, err := it.admin.ExecContext(ctx, `UPDATE registry_portal_mail SET next_attempt_at = now() WHERE sent_at IS NULL`); err != nil {
+		t.Fatal(err)
+	}
+	if s := it.send(t); s.Sent != 1 {
+		t.Fatalf("past its lease: %+v", s)
 	}
 }
