@@ -1,0 +1,54 @@
+{
+  "rules_version": "synthetic-1",
+  "format": "csv",
+  "csv": {"delimiter": ";"},
+  "registration_number_pattern": "GEOTEST[0-9]{8}",
+  "secret_suffix": true,
+  "date_formats": ["DD.MM.YYYY", "YYYY-MM-DD", "RFC3339"],
+  "utc_offset": "+04:00",
+  "mtom_unit": "kg",
+  "operators": {
+    "columns": {
+      "source_id": "Record ID",
+      "registration_number": "Reg No",
+      "operator_type": "Type",
+      "full_name": "Name",
+      "legal_name": "Company",
+      "date_of_birth": "Born",
+      "legal_identification_number": "Company ID",
+      "postal_address": "Address",
+      "contact_email": "E-mail",
+      "contact_phone": "Phone",
+      "insurance_policy_number": "Insurance",
+      "competency_confirmation": "Competency",
+      "valid_from": "Issued",
+      "valid_until": "Expires",
+      "status": "Status"
+    },
+    "values": {
+      "operator_type": {"Physical person": "natural", "Legal person": "legal"},
+      "status": {"Active": "active", "Suspended": "suspended", "Cancelled": "revoked"},
+      "competency_confirmation": {"yes": "true", "no": "false"}
+    },
+    "defaults": {"status": "active"}
+  },
+  "uas": {
+    "columns": {
+      "source_id": "Record ID",
+      "serial": "Serial",
+      "operator_registration_number": "Operator",
+      "class_label": "Class",
+      "mtom": "Mass kg",
+      "manufacturer": "Maker",
+      "model": "Model",
+      "rid_capability": "Remote ID",
+      "status": "Status"
+    },
+    "values": {
+      "class_label": {"C0": "C0", "C1": "C1", "C2": "C2", "none": ""},
+      "rid_capability": {"broadcast": "direct", "network": "network", "both": "both", "no": "none"},
+      "status": {"Active": "active", "Suspended": "suspended", "Cancelled": "revoked"}
+    },
+    "defaults": {"rid_capability": "none", "status": "active"}
+  }
+}

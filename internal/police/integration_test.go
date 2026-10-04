@@ -329,12 +329,12 @@ func TestIntegrationPoliceMigrationNamesAnAccountWithoutAgency(t *testing.T) {
 	if _, err := db.Exec(`UPDATE users SET agency = 'TEST-POLICE' WHERE id = $1`, early); err != nil {
 		t.Fatal(err)
 	}
-	// Up applies 00021 and every later migration (WP-26's 00022 on).
+	// Up runs 00021 and every later migration (WP-20 added 00022 and 00023).
 	latest, err := migrate.Latest(migrate.Relational)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if v, err := migrate.Up(ctx, db, migrate.Relational, nil); err != nil || v != latest || v < 21 {
+	if v, err := migrate.Up(ctx, db, migrate.Relational, nil); err != nil || v != latest || latest < 21 {
 		t.Fatalf("00021 once the agency is set: %d (latest %d) %v", v, latest, err)
 	}
 }

@@ -132,6 +132,9 @@ type Store interface {
 	InTx(ctx context.Context, fn func(Tx) error) error
 	Operator(ctx context.Context, id string) (OperatorRecord, error)
 	OperatorByKey(ctx context.Context, key string) (OperatorRecord, error)
+	// OperatorBySourceRef reads the operator a source made under its own
+	// id (WP-20: a portal approval retried finds the operator it made).
+	OperatorBySourceRef(ctx context.Context, source, ref string) (OperatorRecord, error)
 	Operators(ctx context.Context, f OperatorFilter) ([]OperatorRecord, error)
 	UAS(ctx context.Context, id string) (UAS, error)
 	UASByFold(ctx context.Context, fold string) ([]UAS, error)
@@ -156,6 +159,9 @@ type Tx interface {
 	InsertOperator(ctx context.Context, r OperatorRecord) (OperatorRecord, error)
 	OperatorForUpdate(ctx context.Context, id string) (OperatorRecord, error)
 	OperatorByKey(ctx context.Context, key string) (OperatorRecord, error)
+	// OperatorBySourceRef reads the operator a source made under its own
+	// id (WP-20).
+	OperatorBySourceRef(ctx context.Context, source, ref string) (OperatorRecord, error)
 	UpdateOperator(ctx context.Context, r OperatorRecord) (OperatorRecord, error)
 	SetOperatorStatus(ctx context.Context, u StatusUpdate) (OperatorRecord, error)
 	ExpiredOperatorIDs(ctx context.Context, now time.Time, limit int) ([]string, error)
@@ -163,6 +169,9 @@ type Tx interface {
 	InsertUAS(ctx context.Context, u UAS) (UAS, error)
 	UASForUpdate(ctx context.Context, id string) (UAS, error)
 	UASByFold(ctx context.Context, fold string) ([]UAS, error)
+	// UASBySourceRef reads the aircraft a source made under its own id
+	// (WP-20).
+	UASBySourceRef(ctx context.Context, source, ref string) (UAS, error)
 	UpdateUAS(ctx context.Context, u UAS) (UAS, error)
 	SetUASStatus(ctx context.Context, u StatusUpdate) (UAS, error)
 

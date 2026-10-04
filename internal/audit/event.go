@@ -248,6 +248,29 @@ const (
 	EventDPOReportViewed        = "dpo_report_viewed"
 )
 
+// Event types of WP-20's import and portal (internal/regimport,
+// internal/regportal): every import with its counts (applied, refused
+// whole, or a dry run), every step of a registration application, every
+// read of an application's personal data (with the purpose), every
+// purge, every portal e-mail delivered or given up, and every operator
+// link requested and spent.
+const (
+	EventRegistryImported              = "registry_imported"
+	EventRegistryImportRefused         = "registry_import_refused"
+	EventRegistryImportDryRun          = "registry_import_dry_run"
+	EventRegistryApplicationSubmitted  = "registry_application_submitted"
+	EventRegistryApplicationVerified   = "registry_application_verified"
+	EventRegistryApplicationReview     = "registry_application_review_started"
+	EventRegistryApplicationApproved   = "registry_application_approved"
+	EventRegistryApplicationRefused    = "registry_application_refused"
+	EventRegistryApplicationPIIViewed  = "registry_application_pii_viewed"
+	EventRegistryApplicationsPurged    = "registry_applications_purged"
+	EventRegistryPortalMailSent        = "registry_portal_mail_sent"
+	EventRegistryPortalMailFailed      = "registry_portal_mail_failed"
+	EventRegistryOperatorLinkRequested = "registry_operator_link_requested"
+	EventRegistryOperatorLinkUsed      = "registry_operator_link_used"
+)
+
 // DefaultCatalogue is the catalogue of this build.
 func DefaultCatalogue() Catalogue {
 	return Catalogue{
@@ -359,6 +382,21 @@ func DefaultCatalogue() Catalogue {
 		EventPoliceQueryRefused:     {},
 		EventUserPoliceAccessChange: {},
 		EventDPOReportViewed:        {},
+
+		EventRegistryImported:              {},
+		EventRegistryImportRefused:         {},
+		EventRegistryImportDryRun:          {},
+		EventRegistryApplicationSubmitted:  {},
+		EventRegistryApplicationVerified:   {},
+		EventRegistryApplicationReview:     {},
+		EventRegistryApplicationApproved:   {},
+		EventRegistryApplicationRefused:    {},
+		EventRegistryApplicationPIIViewed:  {PIIView: true},
+		EventRegistryApplicationsPurged:    {},
+		EventRegistryPortalMailSent:        {},
+		EventRegistryPortalMailFailed:      {},
+		EventRegistryOperatorLinkRequested: {},
+		EventRegistryOperatorLinkUsed:      {},
 	}
 }
 

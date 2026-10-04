@@ -69,6 +69,12 @@ tags:
       has its own purpose-logged operations.
   - name: registry-f8
     description: Status-only validity lookups and the change feed for USSPs (F8, scope registry.validate).
+  - name: registry-portal
+    description: |
+      The public registration portal (WP-20, plan Q-A11, Q-A17):
+      applications verified by an e-mailed link, the registrars' review
+      and approval (the number issued through the registry), and an
+      operator's occurrence-report link. Off unless configured.
   - name: rid-receivers
     description: |
       The Remote ID receiver registry (WP-7, spec 02 F9): keys shown
@@ -1579,6 +1585,449 @@ paths:
           headers:
             ETag:
               schema: {type: string}
+        default:
+          $ref: "#/components/responses/Problem"
+
+  # WP-20: the uas.gov.ge import under a rules file, the public status
+  # check, the registration applications of the public portal (behind
+  # REGISTRY_APPLICATIONS=on; plan Q-A11, Q-A17) and an operator's
+  # occurrence report through an e-mailed link (behind
+  # REGISTRY_OPERATOR_REPORTS=on). The portal operations have
+  # `security: []`: the applicant and the operator hold no account
+  # (Q-A17); a link token (X-Application-Token, X-Operator-Token),
+  # signed with REGISTRY_PORTAL_KEY_FILE and mailed to the address given,
+  # is their credential, checked by internal/regportal. With its flag off
+  # every portal operation is 404. docs/runbooks/registry-import.md and
+  # docs/runbooks/registry-portal.md are the procedures.
+  /v1/registry/import:
+    post:
+      operationId: importRegistry
+      tags: [registry]
+      summary: Import a uas.gov.ge export under the rules file, all or nothing
+      description: |
+        The body is one export file of one `kind` (operators first, then
+        uas): CSV (`text/csv`, UTF-8, a header row) or a JSON array of
+        flat objects (`application/json`). The rules file
+        (`REGISTRY_IMPORT_RULES_FILE`, configuration, never in the
+        repository) maps its columns and values onto the registry's
+        fields, names its date formats and the registration-number
+        pattern its numbers follow. Idempotent on the record's source
+        id: a record imported before is updated where it differs and
+        left alone where it matches; rows are marked `source =
+        uas_gov_ge_import`. All or nothing: with any problem nothing is
+        written and the answer is 422 listing every problem by record
+        and field (`records[<n>].<field>`, n counting from 1 after the
+        header), at most 100 with `truncated`. `dry_run=true` runs the
+        same checks inside a transaction that is rolled back and
+        answers the report (200, problems listed, nothing written but
+        its events row). The file is at most `REGISTRY_IMPORT_MAX_BYTES`
+        (413 beyond) and `REGISTRY_IMPORT_MAX_ROWS` records (400 beyond).
+        503 `import_not_configured` without a rules file. Every import,
+        refused and dry run included, is an events row with the counts.
+      security:
+        - sessionCookie: []
+      x-roles: [registrar]
+      x-audit: {event_type: registry_imported, entity_type: registry_import, purpose: none}
+      parameters:
+        - {name: kind, in: query, required: true, schema: {$ref: "#/components/schemas/RegistryImportKind"}}
+        - {name: dry_run, in: query, schema: {type: boolean, default: false}}
+      requestBody:
+        required: true
+        content:
+          text/csv:
+            schema: {type: string}
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistryImportJSON"
+      responses:
+        "200":
+          description: The import applied, or the dry run's report.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryImportReport"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "413":
+          $ref: "#/components/responses/Problem"
+        "415":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "503":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/registry/check:
+    get:
+      operationId: checkRegistration
+      tags: [registry]
+      summary: Public check of an operator registration number, status only
+      description: |
+        `valid`, `suspended`, `revoked` or `unknown`, and the end of
+        validity of a registered number; nothing else (no name, type or
+        id: the response schema has no such property, and a test fails
+        if one appears). The number is compared on its public part
+        ignoring case (G-04); a secret part sent with it is removed and
+        never echoed. An expired registration answers `revoked` with its
+        `valid_until`. Unauthenticated and rate-limited per client
+        address behind the trusted proxies (429 with Retry-After).
+      security: []
+      x-audit: none
+      parameters:
+        - {name: number, in: query, required: true, schema: {type: string, minLength: 1, maxLength: 64}}
+      responses:
+        "200":
+          description: The status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryCheck"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/registry/applications:
+    post:
+      operationId: submitRegistryApplication
+      tags: [registry-portal]
+      summary: Apply for an operator registration (public portal)
+      description: |
+        The 2019/947 Art. 14(2) field set, as a registrar enters it,
+        without a number (the authority issues it). Checked whole before
+        anything is stored (400 naming every field); stored sealed; an
+        e-mail with the verification link is queued to `contact_email`
+        and sent after the commit. The application waits for the link
+        (`unverified`) for `REGISTRY_APPLICATION_VERIFY_TTL_S`. At most
+        `REGISTRY_APPLICATIONS_PER_IP` applications per client address
+        per `REGISTRY_APPLICATIONS_WINDOW_S`, counted in the database
+        (429 with Retry-After). 404 when `REGISTRY_APPLICATIONS` is off.
+      security: []
+      x-audit: {event_type: registry_application_submitted, entity_type: registry_application, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistryApplicationInput"
+      responses:
+        "202":
+          description: Received; follow the e-mailed link to submit it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryApplicationStatus"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "503":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    get:
+      operationId: listRegistryApplications
+      tags: [registry-portal]
+      summary: Applications, oldest first, without personal data (registrars)
+      security:
+        - sessionCookie: []
+      x-roles: [registrar]
+      x-audit: none
+      parameters:
+        - {name: state, in: query, schema: {$ref: "#/components/schemas/RegistryApplicationState"}}
+        - {name: cursor, in: query, schema: {type: string, maxLength: 128}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 200, default: 50}}
+      responses:
+        "200":
+          description: One page.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryApplicationPage"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/registry/applications/{application_id}:
+    get:
+      operationId: getRegistryApplicationStatus
+      tags: [registry-portal]
+      summary: An application's state, by its e-mailed link (applicant)
+      description: |
+        The token of the application's link in `X-Application-Token`
+        (any link of this application that has not expired). Answers the
+        state, the decision and, once approved, the public part of the
+        number issued; never the application's content. An unknown id
+        and a token that does not verify are both 404.
+      security: []
+      x-audit: none
+      parameters:
+        - {name: application_id, in: path, required: true, schema: {type: string, pattern: "^[0-9a-f]{32}$"}}
+        - {name: X-Application-Token, in: header, description: "The link's token; without it the answer is 404.", schema: {type: string, maxLength: 512}}
+      responses:
+        "200":
+          description: The state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryApplicationStatus"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/registry/applications/{application_id}/verify:
+    post:
+      operationId: verifyRegistryApplication
+      tags: [registry-portal]
+      summary: Follow the e-mailed verification link (applicant)
+      description: |
+        The verification link's token in `X-Application-Token`, within
+        its lifetime by the database clock: `unverified` becomes
+        `submitted` and reaches the registrars. Again on a submitted
+        application it answers its state unchanged. An expired link is
+        409 `link_expired` (apply again); an unknown id or a token that
+        does not verify is 404.
+      security: []
+      x-audit: {event_type: registry_application_verified, entity_type: registry_application, purpose: none}
+      parameters:
+        - {name: application_id, in: path, required: true, schema: {type: string, pattern: "^[0-9a-f]{32}$"}}
+        - {name: X-Application-Token, in: header, description: "The link's token; without it the answer is 404.", schema: {type: string, maxLength: 512}}
+      responses:
+        "200":
+          description: Submitted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryApplicationStatus"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/registry/applications/{application_id}/personal-data:
+    get:
+      operationId: getRegistryApplicationPersonalData
+      tags: [registry-portal]
+      summary: An application's content, with a purpose (registrars)
+      description: |
+        Recorded as registry_application_pii_viewed with the purpose,
+        committed before anything is opened; no purpose, no read.
+      security:
+        - sessionCookie: []
+      x-roles: [registrar]
+      x-audit: {event_type: registry_application_pii_viewed, entity_type: registry_application, purpose: required}
+      parameters:
+        - {name: application_id, in: path, required: true, schema: {type: string, pattern: "^[0-9a-f]{32}$"}}
+        - {name: purpose, in: query, required: true, schema: {type: string, minLength: 1, maxLength: 200}}
+      responses:
+        "200":
+          description: The content.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryApplicationPersonalData"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/registry/applications/{application_id}/review:
+    post:
+      operationId: startRegistryApplicationReview
+      tags: [registry-portal]
+      summary: Take a submitted application for review (registrars)
+      description: "`submitted` becomes `under_review` under the registrar; 409 from any other state."
+      security:
+        - sessionCookie: []
+      x-roles: [registrar]
+      x-audit: {event_type: registry_application_review_started, entity_type: registry_application, purpose: none}
+      parameters:
+        - {name: application_id, in: path, required: true, schema: {type: string, pattern: "^[0-9a-f]{32}$"}}
+      responses:
+        "200":
+          description: Under review.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryApplication"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/registry/applications/{application_id}/approve:
+    post:
+      operationId: approveRegistryApplication
+      tags: [registry-portal]
+      summary: "Approve an application under review: register the operator (registrars)"
+      description: |
+        Issues the registration number (the policy's
+        `registration_number_pattern`; the public part from
+        `REGISTRY_ISSUE_PREFIX` and `REGISTRY_ISSUE_RANDOM_LEN` random
+        letters and digits, never repeating; plan Q-A10, pending GCAA)
+        and a three-character secret part, registers the operator
+        through the registry (`source = portal`, valid until
+        `valid_until`, default `REGISTRY_APPLICATION_VALIDITY_S` from
+        now) and queues the approval e-mail, which carries the secret
+        part once: it is stored only as the registry's keyed hash and is
+        in no response. A retried approval registers nobody twice and
+        approves what the first attempt chose: 409 when it names another
+        `valid_until`. 409 unless `under_review`; 409
+        `issuance_pattern_mismatch` when the issued shape does not match
+        the policy's pattern.
+      security:
+        - sessionCookie: []
+      x-roles: [registrar]
+      x-audit: {event_type: registry_application_approved, entity_type: registry_application, purpose: none}
+      parameters:
+        - {name: application_id, in: path, required: true, schema: {type: string, pattern: "^[0-9a-f]{32}$"}}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistryApplicationApproval"
+      responses:
+        "200":
+          description: Approved; the operator is registered.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryApplication"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "503":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/registry/applications/{application_id}/refuse:
+    post:
+      operationId: refuseRegistryApplication
+      tags: [registry-portal]
+      summary: Refuse a submitted application with a reason (registrars)
+      description: The reason is mailed to the applicant; 409 unless submitted or under review.
+      security:
+        - sessionCookie: []
+      x-roles: [registrar]
+      x-audit: {event_type: registry_application_refused, entity_type: registry_application, purpose: none}
+      parameters:
+        - {name: application_id, in: path, required: true, schema: {type: string, pattern: "^[0-9a-f]{32}$"}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistryApplicationRefusal"
+      responses:
+        "200":
+          description: Refused.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistryApplication"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/registry/operator-links:
+    post:
+      operationId: requestOperatorLink
+      tags: [registry-portal]
+      summary: Ask for an occurrence-report link, mailed to the operator's registered address
+      description: |
+        For a registration in good standing a single-use link (lifetime
+        `REGISTRY_OPERATOR_LINK_TTL_S`) is mailed to the e-mail address
+        the registry holds for it; the answer is 202 whatever the number,
+        so it tells nobody whether a number is registered or where its
+        mail goes. Budgets per client address and per operator, counted
+        in the database (429 with Retry-After). 404 when
+        `REGISTRY_OPERATOR_REPORTS` is off.
+      security: []
+      x-audit: {event_type: registry_operator_link_requested, entity_type: uas_operator, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OperatorLinkRequest"
+      responses:
+        "202":
+          description: Accepted.
+        "400":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/occurrences/operator:
+    post:
+      operationId: createOperatorOccurrence
+      tags: [occurrences]
+      summary: An operator's occurrence report through its e-mailed link (2019/947 Art. 19(2))
+      description: |
+        WP-18's intake (POST /v1/occurrences, the same `occurrence/v1`
+        body and checks) for an operator: the link's token in
+        `X-Operator-Token`, single use, within its lifetime by the
+        database clock. Recorded with `reporter_org =
+        operator:<registration public part>` on the mandatory channel.
+        The body is checked before the link is spent; a link spent
+        already or expired is 401 `link_spent`; a token that does not
+        verify is 401. 404 when `REGISTRY_OPERATOR_REPORTS` is off.
+      security: []
+      x-audit: {event_type: occurrence_received, entity_type: occurrence, purpose: none}
+      parameters:
+        - {name: X-Operator-Token, in: header, description: "The link's token; without it the answer is 401.", schema: {type: string, maxLength: 512}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OccurrenceReport"
+      responses:
+        "200":
+          description: The same report was received before; the id given then.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OccurrenceReceipt"
+        "201":
+          description: The report as received.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OccurrenceReceipt"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "401":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "413":
+          $ref: "#/components/responses/Problem"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "503":
+          $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
 
@@ -5365,6 +5814,164 @@ components:
           type: array
           items: {$ref: "#/components/schemas/RegistryChange"}
         next_since: {type: integer, format: int64, description: Pass as since for the next page.}
+    # WP-20: the import report, the public check and the portal. The
+    # check, the applicant's status and the import report carry no
+    # personal data (internal/registry's contract test); only
+    # RegistryApplicationPersonalData does, for registrars.
+    RegistryImportKind:
+      type: string
+      enum: [operators, uas]
+    RegistryImportJSON:
+      type: array
+      description: A JSON export, an array of flat objects, kept as given and read by the rules file.
+      items: {type: object, additionalProperties: true}
+      x-go-type: json.RawMessage
+    RegistryImportOutcome:
+      type: object
+      required: [record, source_id, action, status]
+      properties:
+        record: {type: integer, minimum: 1, description: The record's number in the file, 1 being the first after the header.}
+        source_id: {type: string, description: The source's id of the record.}
+        action: {type: string, enum: [created, updated, unchanged]}
+        entity_id: {type: string, description: The registry id; absent in a dry run's create.}
+        fields:
+          type: array
+          description: The fields an update changes (names only; the values are personal).
+          items: {type: string}
+        status: {$ref: "#/components/schemas/RegistryStatus"}
+    RegistryImportReport:
+      type: object
+      required: [kind, dry_run, applied, records, created, updated, unchanged, rules_version, content_sha256, problems, outcomes]
+      properties:
+        kind: {$ref: "#/components/schemas/RegistryImportKind"}
+        dry_run: {type: boolean}
+        applied: {type: boolean, description: True when the import committed (never in a dry run).}
+        records: {type: integer, minimum: 0}
+        created: {type: integer, minimum: 0}
+        updated: {type: integer, minimum: 0}
+        unchanged: {type: integer, minimum: 0}
+        registry_version: {type: integer, format: int64, description: The registry version the import committed as.}
+        rules_version: {type: string}
+        content_sha256: {type: string, description: SHA-256 of the exact bytes read.}
+        problems:
+          type: array
+          maxItems: 100
+          description: Every problem by record and field (records[<n>].<field>); with any, nothing is written.
+          items: {$ref: "#/components/schemas/FieldProblem"}
+        problems_truncated: {type: boolean}
+        outcomes:
+          type: array
+          maxItems: 1000
+          description: What was (or would be) done with each record, at most 1000; outcomes_truncated beyond.
+          items: {$ref: "#/components/schemas/RegistryImportOutcome"}
+        outcomes_truncated: {type: boolean}
+    RegistryCheck:
+      type: object
+      description: The public answer for a registration number. Status only.
+      required: [status]
+      properties:
+        status: {type: string, enum: [valid, suspended, revoked, unknown]}
+        valid_until: {type: string, format: date-time, description: The end of validity of a registered number; absent for unknown.}
+    RegistryApplicationState:
+      type: string
+      enum: [unverified, submitted, under_review, approved, refused]
+    RegistryApplicationInput:
+      type: object
+      description: |
+        A registration application: the 2019/947 Art. 14(2) field set of
+        RegistryOperatorInput without the number (the authority issues
+        it), the validity (set at approval) and the source. lang is the
+        language of the e-mails (`en` or `ka`).
+      required: [operator_type, postal_address, contact_email, contact_phone, lang]
+      properties:
+        operator_type: {$ref: "#/components/schemas/OperatorType"}
+        full_name: {type: string, maxLength: 200}
+        legal_name: {type: string, maxLength: 200}
+        date_of_birth: {type: string, format: date}
+        legal_identification_number: {type: string, maxLength: 64}
+        postal_address: {type: string, maxLength: 500}
+        contact_email: {type: string, maxLength: 254}
+        contact_phone: {type: string, maxLength: 32}
+        insurance_policy_number: {type: string, maxLength: 64}
+        competency_confirmation: {type: boolean}
+        authorisations:
+          type: array
+          maxItems: 100
+          items: {type: object, additionalProperties: true}
+        lang: {type: string, enum: [en, ka]}
+    RegistryApplicationStatus:
+      type: object
+      description: What the applicant's link shows. No personal data.
+      required: [application_id, state, submitted_at]
+      properties:
+        application_id: {type: string}
+        state: {$ref: "#/components/schemas/RegistryApplicationState"}
+        submitted_at: {type: string, format: date-time}
+        verify_expires_at: {type: string, format: date-time, description: While unverified, when the verification link expires.}
+        decided_at: {type: string, format: date-time}
+        refusal_reason: {type: string}
+        registration_number: {type: string, description: Once approved, the public part of the number issued.}
+    RegistryApplication:
+      type: object
+      description: An application as registrars list it, without personal data.
+      required: [application_id, kind, state, operator_type, lang, submitted_at]
+      properties:
+        application_id: {type: string}
+        kind: {type: string, enum: [operator_registration]}
+        state: {$ref: "#/components/schemas/RegistryApplicationState"}
+        operator_type: {$ref: "#/components/schemas/OperatorType"}
+        lang: {type: string, enum: [en, ka]}
+        submitted_at: {type: string, format: date-time}
+        verified_at: {type: string, format: date-time}
+        registrar_id: {type: string}
+        review_started_at: {type: string, format: date-time}
+        decided_at: {type: string, format: date-time}
+        refusal_reason: {type: string}
+        registration_number: {type: string, description: The public part issued at approval.}
+        operator_id: {type: string, description: The operator registered at approval.}
+        valid_until: {type: string, format: date-time}
+    RegistryApplicationPage:
+      type: object
+      required: [applications]
+      properties:
+        applications:
+          type: array
+          items: {$ref: "#/components/schemas/RegistryApplication"}
+        next_cursor: {type: string}
+    RegistryApplicationPersonalData:
+      type: object
+      description: An application's content (registrars, with a purpose).
+      required: [application_id, operator_type]
+      properties:
+        application_id: {type: string}
+        operator_type: {$ref: "#/components/schemas/OperatorType"}
+        full_name: {type: string}
+        legal_name: {type: string}
+        date_of_birth: {type: string}
+        legal_identification_number: {type: string}
+        postal_address: {type: string}
+        contact_email: {type: string}
+        contact_phone: {type: string}
+        insurance_policy_number: {type: string}
+        competency_confirmation: {type: boolean}
+        authorisations:
+          type: array
+          items: {type: object, additionalProperties: true}
+    RegistryApplicationApproval:
+      type: object
+      properties:
+        valid_until: {type: string, format: date-time, description: "Default: REGISTRY_APPLICATION_VALIDITY_S from now."}
+    RegistryApplicationRefusal:
+      type: object
+      required: [reason]
+      properties:
+        reason: {type: string, minLength: 1, maxLength: 500}
+    OperatorLinkRequest:
+      type: object
+      required: [registration_number]
+      properties:
+        registration_number: {type: string, minLength: 1, maxLength: 64}
+        lang: {type: string, enum: [en, ka], default: en}
     # WP-7: Remote ID receivers, observations and raw frames.
     RIDReceiverOwner:
       type: string

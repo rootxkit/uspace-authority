@@ -560,3 +560,21 @@ func TestDetectNeedsATokenEndpointForItsDSSSecret(t *testing.T) {
 		t.Fatalf("no DSS: %v", err)
 	}
 }
+
+// REGISTRY_IMPORT_MAX_ROWS defaults to 2000 records, well inside
+// REGISTRY_IMPORT_WRITE_TIMEOUT_S (a first import of 5000 took about 18 s
+// against its 25 s); a larger value is accepted up to 50000.
+func TestRegistryImportMaxRowsDefault(t *testing.T) {
+	var c API
+	if err := Load(&c, env(validAPI())); err != nil || c.RegistryImportMaxRows != 2000 {
+		t.Fatalf("default: %v %d", err, c.RegistryImportMaxRows)
+	}
+	for v, ok := range map[string]bool{"0": false, "1": true, "5000": true, "50000": true, "50001": false} {
+		m := validAPI()
+		m["REGISTRY_IMPORT_MAX_ROWS"] = v
+		var cfg API
+		if err := Load(&cfg, env(m)); ok != (err == nil) {
+			t.Errorf("REGISTRY_IMPORT_MAX_ROWS=%s: %v", v, err)
+		}
+	}
+}

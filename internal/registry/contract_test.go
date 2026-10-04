@@ -192,6 +192,24 @@ func TestPersonalDataReachesNoPublicViewerOrMachineResponse(t *testing.T) {
 			t.Errorf("%s: no personal property found; the check is blind", op)
 		}
 	}
+	// WP-20: the public check, the applicant's status, the import report
+	// and the registrars' list carry none; the application's content
+	// does, to the registrars only (E-01 for the check above).
+	for _, op := range []string{"CheckRegistration", "SubmitRegistryApplication", "GetRegistryApplicationStatus", "VerifyRegistryApplication",
+		"ListRegistryApplications", "StartRegistryApplicationReview", "ApproveRegistryApplication", "RefuseRegistryApplication",
+		"RequestOperatorLink", "CreateOperatorOccurrence", "ImportRegistry"} {
+		if piiOps[op] {
+			t.Errorf("%s returns personal data", op)
+		}
+	}
+	if !piiOps["GetRegistryApplicationPersonalData"] {
+		t.Error("GetRegistryApplicationPersonalData: no personal property found; the check is blind")
+	}
+	for _, s := range []string{"RegistryCheck", "RegistryApplicationStatus", "RegistryApplication", "RegistryImportReport"} {
+		if schemaBlock(spec, s) == "" {
+			t.Errorf("schema %s not found", s)
+		}
+	}
 	// The F8 responses, by name, carry none.
 	for _, s := range []string{"RegistryValidity", "RegistryValidityList", "RegistryChangePage", "RegistryOperator", "RegistryUAS", "RegistryPilot"} {
 		if found := piiIn(spec, s, map[string]bool{}); len(found) != 0 {

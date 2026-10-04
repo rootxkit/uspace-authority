@@ -999,6 +999,24 @@ func (e OccurrenceSummaryOrigin) Valid() bool {
 	}
 }
 
+// Defines values for OperatorLinkRequestLang.
+const (
+	OperatorLinkRequestLangEn OperatorLinkRequestLang = "en"
+	OperatorLinkRequestLangKa OperatorLinkRequestLang = "ka"
+)
+
+// Valid indicates whether the value is a known member of the OperatorLinkRequestLang enum.
+func (e OperatorLinkRequestLang) Valid() bool {
+	switch e {
+	case OperatorLinkRequestLangEn:
+		return true
+	case OperatorLinkRequestLangKa:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OperatorType.
 const (
 	OperatorTypeLegal   OperatorType = "legal"
@@ -1398,6 +1416,84 @@ func (e Realm) Valid() bool {
 	}
 }
 
+// Defines values for RegistryApplicationKind.
+const (
+	RegistryApplicationKindOperatorRegistration RegistryApplicationKind = "operator_registration"
+)
+
+// Valid indicates whether the value is a known member of the RegistryApplicationKind enum.
+func (e RegistryApplicationKind) Valid() bool {
+	switch e {
+	case RegistryApplicationKindOperatorRegistration:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RegistryApplicationLang.
+const (
+	RegistryApplicationLangEn RegistryApplicationLang = "en"
+	RegistryApplicationLangKa RegistryApplicationLang = "ka"
+)
+
+// Valid indicates whether the value is a known member of the RegistryApplicationLang enum.
+func (e RegistryApplicationLang) Valid() bool {
+	switch e {
+	case RegistryApplicationLangEn:
+		return true
+	case RegistryApplicationLangKa:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RegistryApplicationInputLang.
+const (
+	RegistryApplicationInputLangEn RegistryApplicationInputLang = "en"
+	RegistryApplicationInputLangKa RegistryApplicationInputLang = "ka"
+)
+
+// Valid indicates whether the value is a known member of the RegistryApplicationInputLang enum.
+func (e RegistryApplicationInputLang) Valid() bool {
+	switch e {
+	case RegistryApplicationInputLangEn:
+		return true
+	case RegistryApplicationInputLangKa:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RegistryApplicationState.
+const (
+	RegistryApplicationStateApproved    RegistryApplicationState = "approved"
+	RegistryApplicationStateRefused     RegistryApplicationState = "refused"
+	RegistryApplicationStateSubmitted   RegistryApplicationState = "submitted"
+	RegistryApplicationStateUnderReview RegistryApplicationState = "under_review"
+	RegistryApplicationStateUnverified  RegistryApplicationState = "unverified"
+)
+
+// Valid indicates whether the value is a known member of the RegistryApplicationState enum.
+func (e RegistryApplicationState) Valid() bool {
+	switch e {
+	case RegistryApplicationStateApproved:
+		return true
+	case RegistryApplicationStateRefused:
+		return true
+	case RegistryApplicationStateSubmitted:
+		return true
+	case RegistryApplicationStateUnderReview:
+		return true
+	case RegistryApplicationStateUnverified:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RegistryChangeEntityType.
 const (
 	RegistryChangeEntityTypeOperator RegistryChangeEntityType = "operator"
@@ -1413,6 +1509,69 @@ func (e RegistryChangeEntityType) Valid() bool {
 	case RegistryChangeEntityTypePilot:
 		return true
 	case RegistryChangeEntityTypeUas:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RegistryCheckStatus.
+const (
+	RegistryCheckStatusRevoked   RegistryCheckStatus = "revoked"
+	RegistryCheckStatusSuspended RegistryCheckStatus = "suspended"
+	RegistryCheckStatusUnknown   RegistryCheckStatus = "unknown"
+	RegistryCheckStatusValid     RegistryCheckStatus = "valid"
+)
+
+// Valid indicates whether the value is a known member of the RegistryCheckStatus enum.
+func (e RegistryCheckStatus) Valid() bool {
+	switch e {
+	case RegistryCheckStatusRevoked:
+		return true
+	case RegistryCheckStatusSuspended:
+		return true
+	case RegistryCheckStatusUnknown:
+		return true
+	case RegistryCheckStatusValid:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RegistryImportKind.
+const (
+	RegistryImportKindOperators RegistryImportKind = "operators"
+	RegistryImportKindUas       RegistryImportKind = "uas"
+)
+
+// Valid indicates whether the value is a known member of the RegistryImportKind enum.
+func (e RegistryImportKind) Valid() bool {
+	switch e {
+	case RegistryImportKindOperators:
+		return true
+	case RegistryImportKindUas:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RegistryImportOutcomeAction.
+const (
+	RegistryImportOutcomeActionCreated   RegistryImportOutcomeAction = "created"
+	RegistryImportOutcomeActionUnchanged RegistryImportOutcomeAction = "unchanged"
+	RegistryImportOutcomeActionUpdated   RegistryImportOutcomeAction = "updated"
+)
+
+// Valid indicates whether the value is a known member of the RegistryImportOutcomeAction enum.
+func (e RegistryImportOutcomeAction) Valid() bool {
+	switch e {
+	case RegistryImportOutcomeActionCreated:
+		return true
+	case RegistryImportOutcomeActionUnchanged:
+		return true
+	case RegistryImportOutcomeActionUpdated:
 		return true
 	default:
 		return false
@@ -3335,6 +3494,15 @@ type OccurrenceSummary struct {
 // OccurrenceSummaryOrigin client: a USSP or the ANSP through its token; operator: an operator's report (2019/947 Art. 19(2)).
 type OccurrenceSummaryOrigin string
 
+// OperatorLinkRequest defines model for OperatorLinkRequest.
+type OperatorLinkRequest struct {
+	Lang               *OperatorLinkRequestLang `json:"lang,omitempty"`
+	RegistrationNumber string                   `json:"registration_number"`
+}
+
+// OperatorLinkRequestLang defines model for OperatorLinkRequest.Lang.
+type OperatorLinkRequestLang string
+
 // OperatorType defines model for OperatorType.
 type OperatorType string
 
@@ -4170,6 +4338,107 @@ type ReadinessStatus string
 // Realm defines model for Realm.
 type Realm string
 
+// RegistryApplication An application as registrars list it, without personal data.
+type RegistryApplication struct {
+	ApplicationId string                  `json:"application_id"`
+	DecidedAt     *time.Time              `json:"decided_at,omitempty"`
+	Kind          RegistryApplicationKind `json:"kind"`
+	Lang          RegistryApplicationLang `json:"lang"`
+
+	// OperatorId The operator registered at approval.
+	OperatorId    *string      `json:"operator_id,omitempty"`
+	OperatorType  OperatorType `json:"operator_type"`
+	RefusalReason *string      `json:"refusal_reason,omitempty"`
+	RegistrarId   *string      `json:"registrar_id,omitempty"`
+
+	// RegistrationNumber The public part issued at approval.
+	RegistrationNumber *string                  `json:"registration_number,omitempty"`
+	ReviewStartedAt    *time.Time               `json:"review_started_at,omitempty"`
+	State              RegistryApplicationState `json:"state"`
+	SubmittedAt        time.Time                `json:"submitted_at"`
+	ValidUntil         *time.Time               `json:"valid_until,omitempty"`
+	VerifiedAt         *time.Time               `json:"verified_at,omitempty"`
+}
+
+// RegistryApplicationKind defines model for RegistryApplication.Kind.
+type RegistryApplicationKind string
+
+// RegistryApplicationLang defines model for RegistryApplication.Lang.
+type RegistryApplicationLang string
+
+// RegistryApplicationApproval defines model for RegistryApplicationApproval.
+type RegistryApplicationApproval struct {
+	// ValidUntil Default: REGISTRY_APPLICATION_VALIDITY_S from now.
+	ValidUntil *time.Time `json:"valid_until,omitempty"`
+}
+
+// RegistryApplicationInput A registration application: the 2019/947 Art. 14(2) field set of
+// RegistryOperatorInput without the number (the authority issues
+// it), the validity (set at approval) and the source. lang is the
+// language of the e-mails (`en` or `ka`).
+type RegistryApplicationInput struct {
+	Authorisations            *[]map[string]interface{}    `json:"authorisations,omitempty"`
+	CompetencyConfirmation    *bool                        `json:"competency_confirmation,omitempty"`
+	ContactEmail              string                       `json:"contact_email"`
+	ContactPhone              string                       `json:"contact_phone"`
+	DateOfBirth               *openapi_types.Date          `json:"date_of_birth,omitempty"`
+	FullName                  *string                      `json:"full_name,omitempty"`
+	InsurancePolicyNumber     *string                      `json:"insurance_policy_number,omitempty"`
+	Lang                      RegistryApplicationInputLang `json:"lang"`
+	LegalIdentificationNumber *string                      `json:"legal_identification_number,omitempty"`
+	LegalName                 *string                      `json:"legal_name,omitempty"`
+	OperatorType              OperatorType                 `json:"operator_type"`
+	PostalAddress             string                       `json:"postal_address"`
+}
+
+// RegistryApplicationInputLang defines model for RegistryApplicationInput.Lang.
+type RegistryApplicationInputLang string
+
+// RegistryApplicationPage defines model for RegistryApplicationPage.
+type RegistryApplicationPage struct {
+	Applications []RegistryApplication `json:"applications"`
+	NextCursor   *string               `json:"next_cursor,omitempty"`
+}
+
+// RegistryApplicationPersonalData An application's content (registrars, with a purpose).
+type RegistryApplicationPersonalData struct {
+	ApplicationId             string                    `json:"application_id"`
+	Authorisations            *[]map[string]interface{} `json:"authorisations,omitempty"`
+	CompetencyConfirmation    *bool                     `json:"competency_confirmation,omitempty"`
+	ContactEmail              *string                   `json:"contact_email,omitempty"`
+	ContactPhone              *string                   `json:"contact_phone,omitempty"`
+	DateOfBirth               *string                   `json:"date_of_birth,omitempty"`
+	FullName                  *string                   `json:"full_name,omitempty"`
+	InsurancePolicyNumber     *string                   `json:"insurance_policy_number,omitempty"`
+	LegalIdentificationNumber *string                   `json:"legal_identification_number,omitempty"`
+	LegalName                 *string                   `json:"legal_name,omitempty"`
+	OperatorType              OperatorType              `json:"operator_type"`
+	PostalAddress             *string                   `json:"postal_address,omitempty"`
+}
+
+// RegistryApplicationRefusal defines model for RegistryApplicationRefusal.
+type RegistryApplicationRefusal struct {
+	Reason string `json:"reason"`
+}
+
+// RegistryApplicationState defines model for RegistryApplicationState.
+type RegistryApplicationState string
+
+// RegistryApplicationStatus What the applicant's link shows. No personal data.
+type RegistryApplicationStatus struct {
+	ApplicationId string     `json:"application_id"`
+	DecidedAt     *time.Time `json:"decided_at,omitempty"`
+	RefusalReason *string    `json:"refusal_reason,omitempty"`
+
+	// RegistrationNumber Once approved
+	RegistrationNumber *string                  `json:"registration_number,omitempty"`
+	State              RegistryApplicationState `json:"state"`
+	SubmittedAt        time.Time                `json:"submitted_at"`
+
+	// VerifyExpiresAt While unverified
+	VerifyExpiresAt *time.Time `json:"verify_expires_at,omitempty"`
+}
+
 // RegistryChange defines model for RegistryChange.
 type RegistryChange struct {
 	At         time.Time                `json:"at"`
@@ -4191,6 +4460,71 @@ type RegistryChangePage struct {
 
 	// NextSince Pass as since for the next page.
 	NextSince int64 `json:"next_since"`
+}
+
+// RegistryCheck The public answer for a registration number. Status only.
+type RegistryCheck struct {
+	Status RegistryCheckStatus `json:"status"`
+
+	// ValidUntil The end of validity of a registered number; absent for unknown.
+	ValidUntil *time.Time `json:"valid_until,omitempty"`
+}
+
+// RegistryCheckStatus defines model for RegistryCheck.Status.
+type RegistryCheckStatus string
+
+// RegistryImportJSON A JSON export, an array of flat objects, kept as given and read by the rules file.
+type RegistryImportJSON = json.RawMessage
+
+// RegistryImportKind defines model for RegistryImportKind.
+type RegistryImportKind string
+
+// RegistryImportOutcome defines model for RegistryImportOutcome.
+type RegistryImportOutcome struct {
+	Action RegistryImportOutcomeAction `json:"action"`
+
+	// EntityId The registry id; absent in a dry run's create.
+	EntityId *string `json:"entity_id,omitempty"`
+
+	// Fields The fields an update changes (names only; the values are personal).
+	Fields *[]string `json:"fields,omitempty"`
+
+	// Record The record's number in the file
+	Record int `json:"record"`
+
+	// SourceId The source's id of the record.
+	SourceId string         `json:"source_id"`
+	Status   RegistryStatus `json:"status"`
+}
+
+// RegistryImportOutcomeAction defines model for RegistryImportOutcome.Action.
+type RegistryImportOutcomeAction string
+
+// RegistryImportReport defines model for RegistryImportReport.
+type RegistryImportReport struct {
+	// Applied True when the import committed (never in a dry run).
+	Applied bool `json:"applied"`
+
+	// ContentSha256 SHA-256 of the exact bytes read.
+	ContentSha256 string             `json:"content_sha256"`
+	Created       int                `json:"created"`
+	DryRun        bool               `json:"dry_run"`
+	Kind          RegistryImportKind `json:"kind"`
+
+	// Outcomes What was (or would be) done with each record, at most 1000; outcomes_truncated beyond.
+	Outcomes          []RegistryImportOutcome `json:"outcomes"`
+	OutcomesTruncated *bool                   `json:"outcomes_truncated,omitempty"`
+
+	// Problems Every problem by record and field (records[<n>].<field>); with any, nothing is written.
+	Problems          []FieldProblem `json:"problems"`
+	ProblemsTruncated *bool          `json:"problems_truncated,omitempty"`
+	Records           int            `json:"records"`
+
+	// RegistryVersion The registry version the import committed as.
+	RegistryVersion *int64 `json:"registry_version,omitempty"`
+	RulesVersion    string `json:"rules_version"`
+	Unchanged       int    `json:"unchanged"`
+	Updated         int    `json:"updated"`
 }
 
 // RegistryOperator An operator without personal data.
@@ -5084,6 +5418,12 @@ type ListOccurrencesParams struct {
 	Limit  *int       `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// CreateOperatorOccurrenceParams defines parameters for CreateOperatorOccurrence.
+type CreateOperatorOccurrenceParams struct {
+	// XOperatorToken The link's token; without it the answer is 401.
+	XOperatorToken *string `json:"X-Operator-Token,omitempty"`
+}
+
 // GetOccurrenceReporterParams defines parameters for GetOccurrenceReporter.
 type GetOccurrenceReporterParams struct {
 	Purpose string `form:"purpose" json:"purpose"`
@@ -5129,11 +5469,46 @@ type ListPublicationsParamsDataset string
 // ListPublicationsParamsState defines parameters for ListPublications.
 type ListPublicationsParamsState string
 
+// ListRegistryApplicationsParams defines parameters for ListRegistryApplications.
+type ListRegistryApplicationsParams struct {
+	State  *RegistryApplicationState `form:"state,omitempty" json:"state,omitempty"`
+	Cursor *string                   `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int                      `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// GetRegistryApplicationStatusParams defines parameters for GetRegistryApplicationStatus.
+type GetRegistryApplicationStatusParams struct {
+	// XApplicationToken The link's token; without it the answer is 404.
+	XApplicationToken *string `json:"X-Application-Token,omitempty"`
+}
+
+// GetRegistryApplicationPersonalDataParams defines parameters for GetRegistryApplicationPersonalData.
+type GetRegistryApplicationPersonalDataParams struct {
+	Purpose string `form:"purpose" json:"purpose"`
+}
+
+// VerifyRegistryApplicationParams defines parameters for VerifyRegistryApplication.
+type VerifyRegistryApplicationParams struct {
+	// XApplicationToken The link's token; without it the answer is 404.
+	XApplicationToken *string `json:"X-Application-Token,omitempty"`
+}
+
 // ListRegistryChangesParams defines parameters for ListRegistryChanges.
 type ListRegistryChangesParams struct {
 	Since       *int64  `form:"since,omitempty" json:"since,omitempty"`
 	Limit       *int    `form:"limit,omitempty" json:"limit,omitempty"`
 	IfNoneMatch *string `json:"If-None-Match,omitempty"`
+}
+
+// CheckRegistrationParams defines parameters for CheckRegistration.
+type CheckRegistrationParams struct {
+	Number string `form:"number" json:"number"`
+}
+
+// ImportRegistryParams defines parameters for ImportRegistry.
+type ImportRegistryParams struct {
+	Kind   RegistryImportKind `form:"kind" json:"kind"`
+	DryRun *bool              `form:"dry_run,omitempty" json:"dry_run,omitempty"`
 }
 
 // ListRegistryOperatorsParams defines parameters for ListRegistryOperators.
@@ -5348,6 +5723,9 @@ type CreateOccurrenceJSONRequestBody = OccurrenceReport
 // ExportOccurrencesJSONRequestBody defines body for ExportOccurrences for application/json ContentType.
 type ExportOccurrencesJSONRequestBody = OccurrenceExportInput
 
+// CreateOperatorOccurrenceJSONRequestBody defines body for CreateOperatorOccurrence for application/json ContentType.
+type CreateOperatorOccurrenceJSONRequestBody = OccurrenceReport
+
 // UpdateOccurrenceAnalysisJSONRequestBody defines body for UpdateOccurrenceAnalysis for application/json ContentType.
 type UpdateOccurrenceAnalysisJSONRequestBody = OccurrenceAnalysisPatch
 
@@ -5359,6 +5737,21 @@ type CreatePoliceExportJSONRequestBody = PoliceExportInput
 
 // CreatePolicyJSONRequestBody defines body for CreatePolicy for application/json ContentType.
 type CreatePolicyJSONRequestBody = PolicyInput
+
+// SubmitRegistryApplicationJSONRequestBody defines body for SubmitRegistryApplication for application/json ContentType.
+type SubmitRegistryApplicationJSONRequestBody = RegistryApplicationInput
+
+// ApproveRegistryApplicationJSONRequestBody defines body for ApproveRegistryApplication for application/json ContentType.
+type ApproveRegistryApplicationJSONRequestBody = RegistryApplicationApproval
+
+// RefuseRegistryApplicationJSONRequestBody defines body for RefuseRegistryApplication for application/json ContentType.
+type RefuseRegistryApplicationJSONRequestBody = RegistryApplicationRefusal
+
+// ImportRegistryJSONRequestBody defines body for ImportRegistry for application/json ContentType.
+type ImportRegistryJSONRequestBody = RegistryImportJSON
+
+// RequestOperatorLinkJSONRequestBody defines body for RequestOperatorLink for application/json ContentType.
+type RequestOperatorLinkJSONRequestBody = OperatorLinkRequest
 
 // CreateRegistryOperatorJSONRequestBody defines body for CreateRegistryOperator for application/json ContentType.
 type CreateRegistryOperatorJSONRequestBody = RegistryOperatorInput
@@ -6655,6 +7048,38 @@ type ClientInterface interface {
 	// Corresponds with POST /v1/occurrences/export (the `ExportOccurrences` operationId).
 	ExportOccurrences(ctx context.Context, body ExportOccurrencesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// CreateOperatorOccurrenceWithBody An operator's occurrence report through its e-mailed link (2019/947 Art. 19(2))
+	//
+	// WP-18's intake (POST /v1/occurrences, the same `occurrence/v1`
+	// body and checks) for an operator: the link's token in
+	// `X-Operator-Token`, single use, within its lifetime by the
+	// database clock. Recorded with `reporter_org =
+	// operator:<registration public part>` on the mandatory channel.
+	// The body is checked before the link is spent; a link spent
+	// already or expired is 401 `link_spent`; a token that does not
+	// verify is 401. 404 when `REGISTRY_OPERATOR_REPORTS` is off.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/occurrences/operator (the `CreateOperatorOccurrence` operationId).
+	CreateOperatorOccurrenceWithBody(ctx context.Context, params *CreateOperatorOccurrenceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateOperatorOccurrence An operator's occurrence report through its e-mailed link (2019/947 Art. 19(2))
+	//
+	// WP-18's intake (POST /v1/occurrences, the same `occurrence/v1`
+	// body and checks) for an operator: the link's token in
+	// `X-Operator-Token`, single use, within its lifetime by the
+	// database clock. Recorded with `reporter_org =
+	// operator:<registration public part>` on the mandatory channel.
+	// The body is checked before the link is spent; a link spent
+	// already or expired is 401 `link_spent`; a token that does not
+	// verify is 401. 404 when `REGISTRY_OPERATOR_REPORTS` is off.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/occurrences/operator (the `CreateOperatorOccurrence` operationId).
+	CreateOperatorOccurrence(ctx context.Context, params *CreateOperatorOccurrenceParams, body CreateOperatorOccurrenceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetOccurrence One occurrence report (no reporter identity)
 	//
 	// Corresponds with GET /v1/occurrences/{occurrence_id} (the `GetOccurrence` operationId).
@@ -6880,6 +7305,145 @@ type ClientInterface interface {
 	// Corresponds with GET /v1/publications (the `ListPublications` operationId).
 	ListPublications(ctx context.Context, params *ListPublicationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListRegistryApplications Applications, oldest first, without personal data (registrars)
+	//
+	// Corresponds with GET /v1/registry/applications (the `ListRegistryApplications` operationId).
+	ListRegistryApplications(ctx context.Context, params *ListRegistryApplicationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SubmitRegistryApplicationWithBody Apply for an operator registration (public portal)
+	//
+	// The 2019/947 Art. 14(2) field set, as a registrar enters it,
+	// without a number (the authority issues it). Checked whole before
+	// anything is stored (400 naming every field); stored sealed; an
+	// e-mail with the verification link is queued to `contact_email`
+	// and sent after the commit. The application waits for the link
+	// (`unverified`) for `REGISTRY_APPLICATION_VERIFY_TTL_S`. At most
+	// `REGISTRY_APPLICATIONS_PER_IP` applications per client address
+	// per `REGISTRY_APPLICATIONS_WINDOW_S`, counted in the database
+	// (429 with Retry-After). 404 when `REGISTRY_APPLICATIONS` is off.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/registry/applications (the `SubmitRegistryApplication` operationId).
+	SubmitRegistryApplicationWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SubmitRegistryApplication Apply for an operator registration (public portal)
+	//
+	// The 2019/947 Art. 14(2) field set, as a registrar enters it,
+	// without a number (the authority issues it). Checked whole before
+	// anything is stored (400 naming every field); stored sealed; an
+	// e-mail with the verification link is queued to `contact_email`
+	// and sent after the commit. The application waits for the link
+	// (`unverified`) for `REGISTRY_APPLICATION_VERIFY_TTL_S`. At most
+	// `REGISTRY_APPLICATIONS_PER_IP` applications per client address
+	// per `REGISTRY_APPLICATIONS_WINDOW_S`, counted in the database
+	// (429 with Retry-After). 404 when `REGISTRY_APPLICATIONS` is off.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/registry/applications (the `SubmitRegistryApplication` operationId).
+	SubmitRegistryApplication(ctx context.Context, body SubmitRegistryApplicationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetRegistryApplicationStatus An application's state, by its e-mailed link (applicant)
+	//
+	// The token of the application's link in `X-Application-Token`
+	// (any link of this application that has not expired). Answers the
+	// state, the decision and, once approved, the public part of the
+	// number issued; never the application's content. An unknown id
+	// and a token that does not verify are both 404.
+	//
+	// Corresponds with GET /v1/registry/applications/{application_id} (the `GetRegistryApplicationStatus` operationId).
+	GetRegistryApplicationStatus(ctx context.Context, applicationId string, params *GetRegistryApplicationStatusParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ApproveRegistryApplicationWithBody Approve an application under review: register the operator (registrars)
+	//
+	// Issues the registration number (the policy's
+	// `registration_number_pattern`; the public part from
+	// `REGISTRY_ISSUE_PREFIX` and `REGISTRY_ISSUE_RANDOM_LEN` random
+	// letters and digits, never repeating; plan Q-A10, pending GCAA)
+	// and a three-character secret part, registers the operator
+	// through the registry (`source = portal`, valid until
+	// `valid_until`, default `REGISTRY_APPLICATION_VALIDITY_S` from
+	// now) and queues the approval e-mail, which carries the secret
+	// part once: it is stored only as the registry's keyed hash and is
+	// in no response. A retried approval registers nobody twice and
+	// approves what the first attempt chose: 409 when it names another
+	// `valid_until`. 409 unless `under_review`; 409
+	// `issuance_pattern_mismatch` when the issued shape does not match
+	// the policy's pattern.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/registry/applications/{application_id}/approve (the `ApproveRegistryApplication` operationId).
+	ApproveRegistryApplicationWithBody(ctx context.Context, applicationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ApproveRegistryApplication Approve an application under review: register the operator (registrars)
+	//
+	// Issues the registration number (the policy's
+	// `registration_number_pattern`; the public part from
+	// `REGISTRY_ISSUE_PREFIX` and `REGISTRY_ISSUE_RANDOM_LEN` random
+	// letters and digits, never repeating; plan Q-A10, pending GCAA)
+	// and a three-character secret part, registers the operator
+	// through the registry (`source = portal`, valid until
+	// `valid_until`, default `REGISTRY_APPLICATION_VALIDITY_S` from
+	// now) and queues the approval e-mail, which carries the secret
+	// part once: it is stored only as the registry's keyed hash and is
+	// in no response. A retried approval registers nobody twice and
+	// approves what the first attempt chose: 409 when it names another
+	// `valid_until`. 409 unless `under_review`; 409
+	// `issuance_pattern_mismatch` when the issued shape does not match
+	// the policy's pattern.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/registry/applications/{application_id}/approve (the `ApproveRegistryApplication` operationId).
+	ApproveRegistryApplication(ctx context.Context, applicationId string, body ApproveRegistryApplicationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetRegistryApplicationPersonalData An application's content, with a purpose (registrars)
+	//
+	// Recorded as registry_application_pii_viewed with the purpose,
+	// committed before anything is opened; no purpose, no read.
+	//
+	// Corresponds with GET /v1/registry/applications/{application_id}/personal-data (the `GetRegistryApplicationPersonalData` operationId).
+	GetRegistryApplicationPersonalData(ctx context.Context, applicationId string, params *GetRegistryApplicationPersonalDataParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RefuseRegistryApplicationWithBody Refuse a submitted application with a reason (registrars)
+	//
+	// The reason is mailed to the applicant; 409 unless submitted or under review.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/registry/applications/{application_id}/refuse (the `RefuseRegistryApplication` operationId).
+	RefuseRegistryApplicationWithBody(ctx context.Context, applicationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RefuseRegistryApplication Refuse a submitted application with a reason (registrars)
+	//
+	// The reason is mailed to the applicant; 409 unless submitted or under review.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/registry/applications/{application_id}/refuse (the `RefuseRegistryApplication` operationId).
+	RefuseRegistryApplication(ctx context.Context, applicationId string, body RefuseRegistryApplicationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// StartRegistryApplicationReview Take a submitted application for review (registrars)
+	//
+	// `submitted` becomes `under_review` under the registrar; 409 from any other state.
+	//
+	// Corresponds with POST /v1/registry/applications/{application_id}/review (the `StartRegistryApplicationReview` operationId).
+	StartRegistryApplicationReview(ctx context.Context, applicationId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// VerifyRegistryApplication Follow the e-mailed verification link (applicant)
+	//
+	// The verification link's token in `X-Application-Token`, within
+	// its lifetime by the database clock: `unverified` becomes
+	// `submitted` and reaches the registrars. Again on a submitted
+	// application it answers its state unchanged. An expired link is
+	// 409 `link_expired` (apply again); an unknown id or a token that
+	// does not verify is 404.
+	//
+	// Corresponds with POST /v1/registry/applications/{application_id}/verify (the `VerifyRegistryApplication` operationId).
+	VerifyRegistryApplication(ctx context.Context, applicationId string, params *VerifyRegistryApplicationParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListRegistryChanges The status change feed (F8), ids and statuses only
 	//
 	// Changes after `since` in sequence order, for cache
@@ -6889,6 +7453,104 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /v1/registry/changes (the `ListRegistryChanges` operationId).
 	ListRegistryChanges(ctx context.Context, params *ListRegistryChangesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CheckRegistration Public check of an operator registration number, status only
+	//
+	// `valid`, `suspended`, `revoked` or `unknown`, and the end of
+	// validity of a registered number; nothing else (no name, type or
+	// id: the response schema has no such property, and a test fails
+	// if one appears). The number is compared on its public part
+	// ignoring case (G-04); a secret part sent with it is removed and
+	// never echoed. An expired registration answers `revoked` with its
+	// `valid_until`. Unauthenticated and rate-limited per client
+	// address behind the trusted proxies (429 with Retry-After).
+	//
+	// Corresponds with GET /v1/registry/check (the `CheckRegistration` operationId).
+	CheckRegistration(ctx context.Context, params *CheckRegistrationParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ImportRegistryWithBody Import a uas.gov.ge export under the rules file, all or nothing
+	//
+	// The body is one export file of one `kind` (operators first, then
+	// uas): CSV (`text/csv`, UTF-8, a header row) or a JSON array of
+	// flat objects (`application/json`). The rules file
+	// (`REGISTRY_IMPORT_RULES_FILE`, configuration, never in the
+	// repository) maps its columns and values onto the registry's
+	// fields, names its date formats and the registration-number
+	// pattern its numbers follow. Idempotent on the record's source
+	// id: a record imported before is updated where it differs and
+	// left alone where it matches; rows are marked `source =
+	// uas_gov_ge_import`. All or nothing: with any problem nothing is
+	// written and the answer is 422 listing every problem by record
+	// and field (`records[<n>].<field>`, n counting from 1 after the
+	// header), at most 100 with `truncated`. `dry_run=true` runs the
+	// same checks inside a transaction that is rolled back and
+	// answers the report (200, problems listed, nothing written but
+	// its events row). The file is at most `REGISTRY_IMPORT_MAX_BYTES`
+	// (413 beyond) and `REGISTRY_IMPORT_MAX_ROWS` records (400 beyond).
+	// 503 `import_not_configured` without a rules file. Every import,
+	// refused and dry run included, is an events row with the counts.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/registry/import (the `ImportRegistry` operationId).
+	ImportRegistryWithBody(ctx context.Context, params *ImportRegistryParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ImportRegistry Import a uas.gov.ge export under the rules file, all or nothing
+	//
+	// The body is one export file of one `kind` (operators first, then
+	// uas): CSV (`text/csv`, UTF-8, a header row) or a JSON array of
+	// flat objects (`application/json`). The rules file
+	// (`REGISTRY_IMPORT_RULES_FILE`, configuration, never in the
+	// repository) maps its columns and values onto the registry's
+	// fields, names its date formats and the registration-number
+	// pattern its numbers follow. Idempotent on the record's source
+	// id: a record imported before is updated where it differs and
+	// left alone where it matches; rows are marked `source =
+	// uas_gov_ge_import`. All or nothing: with any problem nothing is
+	// written and the answer is 422 listing every problem by record
+	// and field (`records[<n>].<field>`, n counting from 1 after the
+	// header), at most 100 with `truncated`. `dry_run=true` runs the
+	// same checks inside a transaction that is rolled back and
+	// answers the report (200, problems listed, nothing written but
+	// its events row). The file is at most `REGISTRY_IMPORT_MAX_BYTES`
+	// (413 beyond) and `REGISTRY_IMPORT_MAX_ROWS` records (400 beyond).
+	// 503 `import_not_configured` without a rules file. Every import,
+	// refused and dry run included, is an events row with the counts.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/registry/import (the `ImportRegistry` operationId).
+	ImportRegistry(ctx context.Context, params *ImportRegistryParams, body ImportRegistryJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RequestOperatorLinkWithBody Ask for an occurrence-report link, mailed to the operator's registered address
+	//
+	// For a registration in good standing a single-use link (lifetime
+	// `REGISTRY_OPERATOR_LINK_TTL_S`) is mailed to the e-mail address
+	// the registry holds for it; the answer is 202 whatever the number,
+	// so it tells nobody whether a number is registered or where its
+	// mail goes. Budgets per client address and per operator, counted
+	// in the database (429 with Retry-After). 404 when
+	// `REGISTRY_OPERATOR_REPORTS` is off.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/registry/operator-links (the `RequestOperatorLink` operationId).
+	RequestOperatorLinkWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RequestOperatorLink Ask for an occurrence-report link, mailed to the operator's registered address
+	//
+	// For a registration in good standing a single-use link (lifetime
+	// `REGISTRY_OPERATOR_LINK_TTL_S`) is mailed to the e-mail address
+	// the registry holds for it; the answer is 202 whatever the number,
+	// so it tells nobody whether a number is registered or where its
+	// mail goes. Budgets per client address and per operator, counted
+	// in the database (429 with Retry-After). 404 when
+	// `REGISTRY_OPERATOR_REPORTS` is off.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/registry/operator-links (the `RequestOperatorLink` operationId).
+	RequestOperatorLink(ctx context.Context, body RequestOperatorLinkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListRegistryOperators UAS operators, in id order
 	//
@@ -9499,6 +10161,58 @@ func (c *Client) ExportOccurrences(ctx context.Context, body ExportOccurrencesJS
 	return c.Client.Do(req)
 }
 
+// CreateOperatorOccurrenceWithBody An operator's occurrence report through its e-mailed link (2019/947 Art. 19(2))
+//
+// WP-18's intake (POST /v1/occurrences, the same `occurrence/v1`
+// body and checks) for an operator: the link's token in
+// `X-Operator-Token`, single use, within its lifetime by the
+// database clock. Recorded with `reporter_org =
+// operator:<registration public part>` on the mandatory channel.
+// The body is checked before the link is spent; a link spent
+// already or expired is 401 `link_spent`; a token that does not
+// verify is 401. 404 when `REGISTRY_OPERATOR_REPORTS` is off.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/occurrences/operator (the `CreateOperatorOccurrence` operationId).
+func (c *Client) CreateOperatorOccurrenceWithBody(ctx context.Context, params *CreateOperatorOccurrenceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateOperatorOccurrenceRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateOperatorOccurrence An operator's occurrence report through its e-mailed link (2019/947 Art. 19(2))
+//
+// WP-18's intake (POST /v1/occurrences, the same `occurrence/v1`
+// body and checks) for an operator: the link's token in
+// `X-Operator-Token`, single use, within its lifetime by the
+// database clock. Recorded with `reporter_org =
+// operator:<registration public part>` on the mandatory channel.
+// The body is checked before the link is spent; a link spent
+// already or expired is 401 `link_spent`; a token that does not
+// verify is 401. 404 when `REGISTRY_OPERATOR_REPORTS` is off.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/occurrences/operator (the `CreateOperatorOccurrence` operationId).
+func (c *Client) CreateOperatorOccurrence(ctx context.Context, params *CreateOperatorOccurrenceParams, body CreateOperatorOccurrenceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateOperatorOccurrenceRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // GetOccurrence One occurrence report (no reporter identity)
 //
 // Corresponds with GET /v1/occurrences/{occurrence_id} (the `GetOccurrence` operationId).
@@ -9894,6 +10608,255 @@ func (c *Client) ListPublications(ctx context.Context, params *ListPublicationsP
 	return c.Client.Do(req)
 }
 
+// ListRegistryApplications Applications, oldest first, without personal data (registrars)
+//
+// Corresponds with GET /v1/registry/applications (the `ListRegistryApplications` operationId).
+func (c *Client) ListRegistryApplications(ctx context.Context, params *ListRegistryApplicationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRegistryApplicationsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SubmitRegistryApplicationWithBody Apply for an operator registration (public portal)
+//
+// The 2019/947 Art. 14(2) field set, as a registrar enters it,
+// without a number (the authority issues it). Checked whole before
+// anything is stored (400 naming every field); stored sealed; an
+// e-mail with the verification link is queued to `contact_email`
+// and sent after the commit. The application waits for the link
+// (`unverified`) for `REGISTRY_APPLICATION_VERIFY_TTL_S`. At most
+// `REGISTRY_APPLICATIONS_PER_IP` applications per client address
+// per `REGISTRY_APPLICATIONS_WINDOW_S`, counted in the database
+// (429 with Retry-After). 404 when `REGISTRY_APPLICATIONS` is off.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/registry/applications (the `SubmitRegistryApplication` operationId).
+func (c *Client) SubmitRegistryApplicationWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSubmitRegistryApplicationRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SubmitRegistryApplication Apply for an operator registration (public portal)
+//
+// The 2019/947 Art. 14(2) field set, as a registrar enters it,
+// without a number (the authority issues it). Checked whole before
+// anything is stored (400 naming every field); stored sealed; an
+// e-mail with the verification link is queued to `contact_email`
+// and sent after the commit. The application waits for the link
+// (`unverified`) for `REGISTRY_APPLICATION_VERIFY_TTL_S`. At most
+// `REGISTRY_APPLICATIONS_PER_IP` applications per client address
+// per `REGISTRY_APPLICATIONS_WINDOW_S`, counted in the database
+// (429 with Retry-After). 404 when `REGISTRY_APPLICATIONS` is off.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/registry/applications (the `SubmitRegistryApplication` operationId).
+func (c *Client) SubmitRegistryApplication(ctx context.Context, body SubmitRegistryApplicationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSubmitRegistryApplicationRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetRegistryApplicationStatus An application's state, by its e-mailed link (applicant)
+//
+// The token of the application's link in `X-Application-Token`
+// (any link of this application that has not expired). Answers the
+// state, the decision and, once approved, the public part of the
+// number issued; never the application's content. An unknown id
+// and a token that does not verify are both 404.
+//
+// Corresponds with GET /v1/registry/applications/{application_id} (the `GetRegistryApplicationStatus` operationId).
+func (c *Client) GetRegistryApplicationStatus(ctx context.Context, applicationId string, params *GetRegistryApplicationStatusParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetRegistryApplicationStatusRequest(c.Server, applicationId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ApproveRegistryApplicationWithBody Approve an application under review: register the operator (registrars)
+//
+// Issues the registration number (the policy's
+// `registration_number_pattern`; the public part from
+// `REGISTRY_ISSUE_PREFIX` and `REGISTRY_ISSUE_RANDOM_LEN` random
+// letters and digits, never repeating; plan Q-A10, pending GCAA)
+// and a three-character secret part, registers the operator
+// through the registry (`source = portal`, valid until
+// `valid_until`, default `REGISTRY_APPLICATION_VALIDITY_S` from
+// now) and queues the approval e-mail, which carries the secret
+// part once: it is stored only as the registry's keyed hash and is
+// in no response. A retried approval registers nobody twice and
+// approves what the first attempt chose: 409 when it names another
+// `valid_until`. 409 unless `under_review`; 409
+// `issuance_pattern_mismatch` when the issued shape does not match
+// the policy's pattern.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/registry/applications/{application_id}/approve (the `ApproveRegistryApplication` operationId).
+func (c *Client) ApproveRegistryApplicationWithBody(ctx context.Context, applicationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewApproveRegistryApplicationRequestWithBody(c.Server, applicationId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ApproveRegistryApplication Approve an application under review: register the operator (registrars)
+//
+// Issues the registration number (the policy's
+// `registration_number_pattern`; the public part from
+// `REGISTRY_ISSUE_PREFIX` and `REGISTRY_ISSUE_RANDOM_LEN` random
+// letters and digits, never repeating; plan Q-A10, pending GCAA)
+// and a three-character secret part, registers the operator
+// through the registry (`source = portal`, valid until
+// `valid_until`, default `REGISTRY_APPLICATION_VALIDITY_S` from
+// now) and queues the approval e-mail, which carries the secret
+// part once: it is stored only as the registry's keyed hash and is
+// in no response. A retried approval registers nobody twice and
+// approves what the first attempt chose: 409 when it names another
+// `valid_until`. 409 unless `under_review`; 409
+// `issuance_pattern_mismatch` when the issued shape does not match
+// the policy's pattern.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/registry/applications/{application_id}/approve (the `ApproveRegistryApplication` operationId).
+func (c *Client) ApproveRegistryApplication(ctx context.Context, applicationId string, body ApproveRegistryApplicationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewApproveRegistryApplicationRequest(c.Server, applicationId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetRegistryApplicationPersonalData An application's content, with a purpose (registrars)
+//
+// Recorded as registry_application_pii_viewed with the purpose,
+// committed before anything is opened; no purpose, no read.
+//
+// Corresponds with GET /v1/registry/applications/{application_id}/personal-data (the `GetRegistryApplicationPersonalData` operationId).
+func (c *Client) GetRegistryApplicationPersonalData(ctx context.Context, applicationId string, params *GetRegistryApplicationPersonalDataParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetRegistryApplicationPersonalDataRequest(c.Server, applicationId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RefuseRegistryApplicationWithBody Refuse a submitted application with a reason (registrars)
+//
+// The reason is mailed to the applicant; 409 unless submitted or under review.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/registry/applications/{application_id}/refuse (the `RefuseRegistryApplication` operationId).
+func (c *Client) RefuseRegistryApplicationWithBody(ctx context.Context, applicationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRefuseRegistryApplicationRequestWithBody(c.Server, applicationId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RefuseRegistryApplication Refuse a submitted application with a reason (registrars)
+//
+// The reason is mailed to the applicant; 409 unless submitted or under review.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/registry/applications/{application_id}/refuse (the `RefuseRegistryApplication` operationId).
+func (c *Client) RefuseRegistryApplication(ctx context.Context, applicationId string, body RefuseRegistryApplicationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRefuseRegistryApplicationRequest(c.Server, applicationId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// StartRegistryApplicationReview Take a submitted application for review (registrars)
+//
+// `submitted` becomes `under_review` under the registrar; 409 from any other state.
+//
+// Corresponds with POST /v1/registry/applications/{application_id}/review (the `StartRegistryApplicationReview` operationId).
+func (c *Client) StartRegistryApplicationReview(ctx context.Context, applicationId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStartRegistryApplicationReviewRequest(c.Server, applicationId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// VerifyRegistryApplication Follow the e-mailed verification link (applicant)
+//
+// The verification link's token in `X-Application-Token`, within
+// its lifetime by the database clock: `unverified` becomes
+// `submitted` and reaches the registrars. Again on a submitted
+// application it answers its state unchanged. An expired link is
+// 409 `link_expired` (apply again); an unknown id or a token that
+// does not verify is 404.
+//
+// Corresponds with POST /v1/registry/applications/{application_id}/verify (the `VerifyRegistryApplication` operationId).
+func (c *Client) VerifyRegistryApplication(ctx context.Context, applicationId string, params *VerifyRegistryApplicationParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewVerifyRegistryApplicationRequest(c.Server, applicationId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListRegistryChanges The status change feed (F8), ids and statuses only
 //
 // Changes after `since` in sequence order, for cache
@@ -9904,6 +10867,154 @@ func (c *Client) ListPublications(ctx context.Context, params *ListPublicationsP
 // Corresponds with GET /v1/registry/changes (the `ListRegistryChanges` operationId).
 func (c *Client) ListRegistryChanges(ctx context.Context, params *ListRegistryChangesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListRegistryChangesRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CheckRegistration Public check of an operator registration number, status only
+//
+// `valid`, `suspended`, `revoked` or `unknown`, and the end of
+// validity of a registered number; nothing else (no name, type or
+// id: the response schema has no such property, and a test fails
+// if one appears). The number is compared on its public part
+// ignoring case (G-04); a secret part sent with it is removed and
+// never echoed. An expired registration answers `revoked` with its
+// `valid_until`. Unauthenticated and rate-limited per client
+// address behind the trusted proxies (429 with Retry-After).
+//
+// Corresponds with GET /v1/registry/check (the `CheckRegistration` operationId).
+func (c *Client) CheckRegistration(ctx context.Context, params *CheckRegistrationParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCheckRegistrationRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ImportRegistryWithBody Import a uas.gov.ge export under the rules file, all or nothing
+//
+// The body is one export file of one `kind` (operators first, then
+// uas): CSV (`text/csv`, UTF-8, a header row) or a JSON array of
+// flat objects (`application/json`). The rules file
+// (`REGISTRY_IMPORT_RULES_FILE`, configuration, never in the
+// repository) maps its columns and values onto the registry's
+// fields, names its date formats and the registration-number
+// pattern its numbers follow. Idempotent on the record's source
+// id: a record imported before is updated where it differs and
+// left alone where it matches; rows are marked `source =
+// uas_gov_ge_import`. All or nothing: with any problem nothing is
+// written and the answer is 422 listing every problem by record
+// and field (`records[<n>].<field>`, n counting from 1 after the
+// header), at most 100 with `truncated`. `dry_run=true` runs the
+// same checks inside a transaction that is rolled back and
+// answers the report (200, problems listed, nothing written but
+// its events row). The file is at most `REGISTRY_IMPORT_MAX_BYTES`
+// (413 beyond) and `REGISTRY_IMPORT_MAX_ROWS` records (400 beyond).
+// 503 `import_not_configured` without a rules file. Every import,
+// refused and dry run included, is an events row with the counts.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/registry/import (the `ImportRegistry` operationId).
+func (c *Client) ImportRegistryWithBody(ctx context.Context, params *ImportRegistryParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewImportRegistryRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ImportRegistry Import a uas.gov.ge export under the rules file, all or nothing
+//
+// The body is one export file of one `kind` (operators first, then
+// uas): CSV (`text/csv`, UTF-8, a header row) or a JSON array of
+// flat objects (`application/json`). The rules file
+// (`REGISTRY_IMPORT_RULES_FILE`, configuration, never in the
+// repository) maps its columns and values onto the registry's
+// fields, names its date formats and the registration-number
+// pattern its numbers follow. Idempotent on the record's source
+// id: a record imported before is updated where it differs and
+// left alone where it matches; rows are marked `source =
+// uas_gov_ge_import`. All or nothing: with any problem nothing is
+// written and the answer is 422 listing every problem by record
+// and field (`records[<n>].<field>`, n counting from 1 after the
+// header), at most 100 with `truncated`. `dry_run=true` runs the
+// same checks inside a transaction that is rolled back and
+// answers the report (200, problems listed, nothing written but
+// its events row). The file is at most `REGISTRY_IMPORT_MAX_BYTES`
+// (413 beyond) and `REGISTRY_IMPORT_MAX_ROWS` records (400 beyond).
+// 503 `import_not_configured` without a rules file. Every import,
+// refused and dry run included, is an events row with the counts.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/registry/import (the `ImportRegistry` operationId).
+func (c *Client) ImportRegistry(ctx context.Context, params *ImportRegistryParams, body ImportRegistryJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewImportRegistryRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RequestOperatorLinkWithBody Ask for an occurrence-report link, mailed to the operator's registered address
+//
+// For a registration in good standing a single-use link (lifetime
+// `REGISTRY_OPERATOR_LINK_TTL_S`) is mailed to the e-mail address
+// the registry holds for it; the answer is 202 whatever the number,
+// so it tells nobody whether a number is registered or where its
+// mail goes. Budgets per client address and per operator, counted
+// in the database (429 with Retry-After). 404 when
+// `REGISTRY_OPERATOR_REPORTS` is off.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/registry/operator-links (the `RequestOperatorLink` operationId).
+func (c *Client) RequestOperatorLinkWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRequestOperatorLinkRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// RequestOperatorLink Ask for an occurrence-report link, mailed to the operator's registered address
+//
+// For a registration in good standing a single-use link (lifetime
+// `REGISTRY_OPERATOR_LINK_TTL_S`) is mailed to the e-mail address
+// the registry holds for it; the answer is 202 whatever the number,
+// so it tells nobody whether a number is registered or where its
+// mail goes. Budgets per client address and per operator, counted
+// in the database (429 with Retry-After). 404 when
+// `REGISTRY_OPERATOR_REPORTS` is off.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/registry/operator-links (the `RequestOperatorLink` operationId).
+func (c *Client) RequestOperatorLink(ctx context.Context, body RequestOperatorLinkJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRequestOperatorLinkRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -13876,6 +14987,61 @@ func NewExportOccurrencesRequestWithBody(server string, contentType string, body
 	return req, nil
 }
 
+// NewCreateOperatorOccurrenceRequest calls the generic CreateOperatorOccurrence builder with application/json body
+func NewCreateOperatorOccurrenceRequest(server string, params *CreateOperatorOccurrenceParams, body CreateOperatorOccurrenceJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateOperatorOccurrenceRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewCreateOperatorOccurrenceRequestWithBody constructs an http.Request for the CreateOperatorOccurrence method, with any body, and a specified content type
+func NewCreateOperatorOccurrenceRequestWithBody(server string, params *CreateOperatorOccurrenceParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/occurrences/operator")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XOperatorToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Operator-Token", *params.XOperatorToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-Operator-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
 // NewGetOccurrenceRequest constructs an http.Request for the GetOccurrence method
 func NewGetOccurrenceRequest(server string, occurrenceId string) (*http.Request, error) {
 	var err error
@@ -14553,6 +15719,407 @@ func NewListPublicationsRequest(server string, params *ListPublicationsParams) (
 	return req, nil
 }
 
+// NewListRegistryApplicationsRequest constructs an http.Request for the ListRegistryApplications method
+func NewListRegistryApplicationsRequest(server string, params *ListRegistryApplicationsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/registry/applications")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.State != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "state", *params.State, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSubmitRegistryApplicationRequest calls the generic SubmitRegistryApplication builder with application/json body
+func NewSubmitRegistryApplicationRequest(server string, body SubmitRegistryApplicationJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSubmitRegistryApplicationRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewSubmitRegistryApplicationRequestWithBody constructs an http.Request for the SubmitRegistryApplication method, with any body, and a specified content type
+func NewSubmitRegistryApplicationRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/registry/applications")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetRegistryApplicationStatusRequest constructs an http.Request for the GetRegistryApplicationStatus method
+func NewGetRegistryApplicationStatusRequest(server string, applicationId string, params *GetRegistryApplicationStatusParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "application_id", applicationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/registry/applications/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.XApplicationToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Application-Token", *params.XApplicationToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-Application-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewApproveRegistryApplicationRequest calls the generic ApproveRegistryApplication builder with application/json body
+func NewApproveRegistryApplicationRequest(server string, applicationId string, body ApproveRegistryApplicationJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewApproveRegistryApplicationRequestWithBody(server, applicationId, "application/json", bodyReader)
+}
+
+// NewApproveRegistryApplicationRequestWithBody constructs an http.Request for the ApproveRegistryApplication method, with any body, and a specified content type
+func NewApproveRegistryApplicationRequestWithBody(server string, applicationId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "application_id", applicationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/registry/applications/%s/approve", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetRegistryApplicationPersonalDataRequest constructs an http.Request for the GetRegistryApplicationPersonalData method
+func NewGetRegistryApplicationPersonalDataRequest(server string, applicationId string, params *GetRegistryApplicationPersonalDataParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "application_id", applicationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/registry/applications/%s/personal-data", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "purpose", params.Purpose, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewRefuseRegistryApplicationRequest calls the generic RefuseRegistryApplication builder with application/json body
+func NewRefuseRegistryApplicationRequest(server string, applicationId string, body RefuseRegistryApplicationJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRefuseRegistryApplicationRequestWithBody(server, applicationId, "application/json", bodyReader)
+}
+
+// NewRefuseRegistryApplicationRequestWithBody constructs an http.Request for the RefuseRegistryApplication method, with any body, and a specified content type
+func NewRefuseRegistryApplicationRequestWithBody(server string, applicationId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "application_id", applicationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/registry/applications/%s/refuse", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewStartRegistryApplicationReviewRequest constructs an http.Request for the StartRegistryApplicationReview method
+func NewStartRegistryApplicationReviewRequest(server string, applicationId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "application_id", applicationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/registry/applications/%s/review", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewVerifyRegistryApplicationRequest constructs an http.Request for the VerifyRegistryApplication method
+func NewVerifyRegistryApplicationRequest(server string, applicationId string, params *VerifyRegistryApplicationParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "application_id", applicationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/registry/applications/%s/verify", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.XApplicationToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Application-Token", *params.XApplicationToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-Application-Token", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
 // NewListRegistryChangesRequest constructs an http.Request for the ListRegistryChanges method
 func NewListRegistryChangesRequest(server string, params *ListRegistryChangesParams) (*http.Request, error) {
 	var err error
@@ -14630,6 +16197,171 @@ func NewListRegistryChangesRequest(server string, params *ListRegistryChangesPar
 		}
 
 	}
+
+	return req, nil
+}
+
+// NewCheckRegistrationRequest constructs an http.Request for the CheckRegistration method
+func NewCheckRegistrationRequest(server string, params *CheckRegistrationParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/registry/check")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "number", params.Number, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewImportRegistryRequest calls the generic ImportRegistry builder with application/json body
+func NewImportRegistryRequest(server string, params *ImportRegistryParams, body ImportRegistryJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewImportRegistryRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewImportRegistryRequestWithBody constructs an http.Request for the ImportRegistry method, with any body, and a specified content type
+func NewImportRegistryRequestWithBody(server string, params *ImportRegistryParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/registry/import")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "kind", params.Kind, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if params.DryRun != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "dry_run", *params.DryRun, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRequestOperatorLinkRequest calls the generic RequestOperatorLink builder with application/json body
+func NewRequestOperatorLinkRequest(server string, body RequestOperatorLinkJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRequestOperatorLinkRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewRequestOperatorLinkRequestWithBody constructs an http.Request for the RequestOperatorLink method, with any body, and a specified content type
+func NewRequestOperatorLinkRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/registry/operator-links")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -18945,6 +20677,38 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /v1/occurrences/export (the `ExportOccurrences` operationId).
 	ExportOccurrencesWithResponse(ctx context.Context, body ExportOccurrencesJSONRequestBody, reqEditors ...RequestEditorFn) (*ExportOccurrencesResponse, error)
 
+	// CreateOperatorOccurrenceWithBodyWithResponse An operator's occurrence report through its e-mailed link (2019/947 Art. 19(2))
+	//
+	// WP-18's intake (POST /v1/occurrences, the same `occurrence/v1`
+	// body and checks) for an operator: the link's token in
+	// `X-Operator-Token`, single use, within its lifetime by the
+	// database clock. Recorded with `reporter_org =
+	// operator:<registration public part>` on the mandatory channel.
+	// The body is checked before the link is spent; a link spent
+	// already or expired is 401 `link_spent`; a token that does not
+	// verify is 401. 404 when `REGISTRY_OPERATOR_REPORTS` is off.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/occurrences/operator (the `CreateOperatorOccurrence` operationId).
+	CreateOperatorOccurrenceWithBodyWithResponse(ctx context.Context, params *CreateOperatorOccurrenceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateOperatorOccurrenceResponse, error)
+
+	// CreateOperatorOccurrenceWithResponse An operator's occurrence report through its e-mailed link (2019/947 Art. 19(2))
+	//
+	// WP-18's intake (POST /v1/occurrences, the same `occurrence/v1`
+	// body and checks) for an operator: the link's token in
+	// `X-Operator-Token`, single use, within its lifetime by the
+	// database clock. Recorded with `reporter_org =
+	// operator:<registration public part>` on the mandatory channel.
+	// The body is checked before the link is spent; a link spent
+	// already or expired is 401 `link_spent`; a token that does not
+	// verify is 401. 404 when `REGISTRY_OPERATOR_REPORTS` is off.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/occurrences/operator (the `CreateOperatorOccurrence` operationId).
+	CreateOperatorOccurrenceWithResponse(ctx context.Context, params *CreateOperatorOccurrenceParams, body CreateOperatorOccurrenceJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateOperatorOccurrenceResponse, error)
+
 	// GetOccurrenceWithResponse One occurrence report (no reporter identity)
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -19188,6 +20952,155 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /v1/publications (the `ListPublications` operationId).
 	ListPublicationsWithResponse(ctx context.Context, params *ListPublicationsParams, reqEditors ...RequestEditorFn) (*ListPublicationsResponse, error)
 
+	// ListRegistryApplicationsWithResponse Applications, oldest first, without personal data (registrars)
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/registry/applications (the `ListRegistryApplications` operationId).
+	ListRegistryApplicationsWithResponse(ctx context.Context, params *ListRegistryApplicationsParams, reqEditors ...RequestEditorFn) (*ListRegistryApplicationsResponse, error)
+
+	// SubmitRegistryApplicationWithBodyWithResponse Apply for an operator registration (public portal)
+	//
+	// The 2019/947 Art. 14(2) field set, as a registrar enters it,
+	// without a number (the authority issues it). Checked whole before
+	// anything is stored (400 naming every field); stored sealed; an
+	// e-mail with the verification link is queued to `contact_email`
+	// and sent after the commit. The application waits for the link
+	// (`unverified`) for `REGISTRY_APPLICATION_VERIFY_TTL_S`. At most
+	// `REGISTRY_APPLICATIONS_PER_IP` applications per client address
+	// per `REGISTRY_APPLICATIONS_WINDOW_S`, counted in the database
+	// (429 with Retry-After). 404 when `REGISTRY_APPLICATIONS` is off.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/registry/applications (the `SubmitRegistryApplication` operationId).
+	SubmitRegistryApplicationWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SubmitRegistryApplicationResponse, error)
+
+	// SubmitRegistryApplicationWithResponse Apply for an operator registration (public portal)
+	//
+	// The 2019/947 Art. 14(2) field set, as a registrar enters it,
+	// without a number (the authority issues it). Checked whole before
+	// anything is stored (400 naming every field); stored sealed; an
+	// e-mail with the verification link is queued to `contact_email`
+	// and sent after the commit. The application waits for the link
+	// (`unverified`) for `REGISTRY_APPLICATION_VERIFY_TTL_S`. At most
+	// `REGISTRY_APPLICATIONS_PER_IP` applications per client address
+	// per `REGISTRY_APPLICATIONS_WINDOW_S`, counted in the database
+	// (429 with Retry-After). 404 when `REGISTRY_APPLICATIONS` is off.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/registry/applications (the `SubmitRegistryApplication` operationId).
+	SubmitRegistryApplicationWithResponse(ctx context.Context, body SubmitRegistryApplicationJSONRequestBody, reqEditors ...RequestEditorFn) (*SubmitRegistryApplicationResponse, error)
+
+	// GetRegistryApplicationStatusWithResponse An application's state, by its e-mailed link (applicant)
+	//
+	// The token of the application's link in `X-Application-Token`
+	// (any link of this application that has not expired). Answers the
+	// state, the decision and, once approved, the public part of the
+	// number issued; never the application's content. An unknown id
+	// and a token that does not verify are both 404.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/registry/applications/{application_id} (the `GetRegistryApplicationStatus` operationId).
+	GetRegistryApplicationStatusWithResponse(ctx context.Context, applicationId string, params *GetRegistryApplicationStatusParams, reqEditors ...RequestEditorFn) (*GetRegistryApplicationStatusResponse, error)
+
+	// ApproveRegistryApplicationWithBodyWithResponse Approve an application under review: register the operator (registrars)
+	//
+	// Issues the registration number (the policy's
+	// `registration_number_pattern`; the public part from
+	// `REGISTRY_ISSUE_PREFIX` and `REGISTRY_ISSUE_RANDOM_LEN` random
+	// letters and digits, never repeating; plan Q-A10, pending GCAA)
+	// and a three-character secret part, registers the operator
+	// through the registry (`source = portal`, valid until
+	// `valid_until`, default `REGISTRY_APPLICATION_VALIDITY_S` from
+	// now) and queues the approval e-mail, which carries the secret
+	// part once: it is stored only as the registry's keyed hash and is
+	// in no response. A retried approval registers nobody twice and
+	// approves what the first attempt chose: 409 when it names another
+	// `valid_until`. 409 unless `under_review`; 409
+	// `issuance_pattern_mismatch` when the issued shape does not match
+	// the policy's pattern.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/registry/applications/{application_id}/approve (the `ApproveRegistryApplication` operationId).
+	ApproveRegistryApplicationWithBodyWithResponse(ctx context.Context, applicationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApproveRegistryApplicationResponse, error)
+
+	// ApproveRegistryApplicationWithResponse Approve an application under review: register the operator (registrars)
+	//
+	// Issues the registration number (the policy's
+	// `registration_number_pattern`; the public part from
+	// `REGISTRY_ISSUE_PREFIX` and `REGISTRY_ISSUE_RANDOM_LEN` random
+	// letters and digits, never repeating; plan Q-A10, pending GCAA)
+	// and a three-character secret part, registers the operator
+	// through the registry (`source = portal`, valid until
+	// `valid_until`, default `REGISTRY_APPLICATION_VALIDITY_S` from
+	// now) and queues the approval e-mail, which carries the secret
+	// part once: it is stored only as the registry's keyed hash and is
+	// in no response. A retried approval registers nobody twice and
+	// approves what the first attempt chose: 409 when it names another
+	// `valid_until`. 409 unless `under_review`; 409
+	// `issuance_pattern_mismatch` when the issued shape does not match
+	// the policy's pattern.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/registry/applications/{application_id}/approve (the `ApproveRegistryApplication` operationId).
+	ApproveRegistryApplicationWithResponse(ctx context.Context, applicationId string, body ApproveRegistryApplicationJSONRequestBody, reqEditors ...RequestEditorFn) (*ApproveRegistryApplicationResponse, error)
+
+	// GetRegistryApplicationPersonalDataWithResponse An application's content, with a purpose (registrars)
+	//
+	// Recorded as registry_application_pii_viewed with the purpose,
+	// committed before anything is opened; no purpose, no read.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/registry/applications/{application_id}/personal-data (the `GetRegistryApplicationPersonalData` operationId).
+	GetRegistryApplicationPersonalDataWithResponse(ctx context.Context, applicationId string, params *GetRegistryApplicationPersonalDataParams, reqEditors ...RequestEditorFn) (*GetRegistryApplicationPersonalDataResponse, error)
+
+	// RefuseRegistryApplicationWithBodyWithResponse Refuse a submitted application with a reason (registrars)
+	//
+	// The reason is mailed to the applicant; 409 unless submitted or under review.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/registry/applications/{application_id}/refuse (the `RefuseRegistryApplication` operationId).
+	RefuseRegistryApplicationWithBodyWithResponse(ctx context.Context, applicationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RefuseRegistryApplicationResponse, error)
+
+	// RefuseRegistryApplicationWithResponse Refuse a submitted application with a reason (registrars)
+	//
+	// The reason is mailed to the applicant; 409 unless submitted or under review.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/registry/applications/{application_id}/refuse (the `RefuseRegistryApplication` operationId).
+	RefuseRegistryApplicationWithResponse(ctx context.Context, applicationId string, body RefuseRegistryApplicationJSONRequestBody, reqEditors ...RequestEditorFn) (*RefuseRegistryApplicationResponse, error)
+
+	// StartRegistryApplicationReviewWithResponse Take a submitted application for review (registrars)
+	//
+	// `submitted` becomes `under_review` under the registrar; 409 from any other state.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/registry/applications/{application_id}/review (the `StartRegistryApplicationReview` operationId).
+	StartRegistryApplicationReviewWithResponse(ctx context.Context, applicationId string, reqEditors ...RequestEditorFn) (*StartRegistryApplicationReviewResponse, error)
+
+	// VerifyRegistryApplicationWithResponse Follow the e-mailed verification link (applicant)
+	//
+	// The verification link's token in `X-Application-Token`, within
+	// its lifetime by the database clock: `unverified` becomes
+	// `submitted` and reaches the registrars. Again on a submitted
+	// application it answers its state unchanged. An expired link is
+	// 409 `link_expired` (apply again); an unknown id or a token that
+	// does not verify is 404.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/registry/applications/{application_id}/verify (the `VerifyRegistryApplication` operationId).
+	VerifyRegistryApplicationWithResponse(ctx context.Context, applicationId string, params *VerifyRegistryApplicationParams, reqEditors ...RequestEditorFn) (*VerifyRegistryApplicationResponse, error)
+
 	// ListRegistryChangesWithResponse The status change feed (F8), ids and statuses only
 	//
 	// Changes after `since` in sequence order, for cache
@@ -19199,6 +21112,106 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /v1/registry/changes (the `ListRegistryChanges` operationId).
 	ListRegistryChangesWithResponse(ctx context.Context, params *ListRegistryChangesParams, reqEditors ...RequestEditorFn) (*ListRegistryChangesResponse, error)
+
+	// CheckRegistrationWithResponse Public check of an operator registration number, status only
+	//
+	// `valid`, `suspended`, `revoked` or `unknown`, and the end of
+	// validity of a registered number; nothing else (no name, type or
+	// id: the response schema has no such property, and a test fails
+	// if one appears). The number is compared on its public part
+	// ignoring case (G-04); a secret part sent with it is removed and
+	// never echoed. An expired registration answers `revoked` with its
+	// `valid_until`. Unauthenticated and rate-limited per client
+	// address behind the trusted proxies (429 with Retry-After).
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/registry/check (the `CheckRegistration` operationId).
+	CheckRegistrationWithResponse(ctx context.Context, params *CheckRegistrationParams, reqEditors ...RequestEditorFn) (*CheckRegistrationResponse, error)
+
+	// ImportRegistryWithBodyWithResponse Import a uas.gov.ge export under the rules file, all or nothing
+	//
+	// The body is one export file of one `kind` (operators first, then
+	// uas): CSV (`text/csv`, UTF-8, a header row) or a JSON array of
+	// flat objects (`application/json`). The rules file
+	// (`REGISTRY_IMPORT_RULES_FILE`, configuration, never in the
+	// repository) maps its columns and values onto the registry's
+	// fields, names its date formats and the registration-number
+	// pattern its numbers follow. Idempotent on the record's source
+	// id: a record imported before is updated where it differs and
+	// left alone where it matches; rows are marked `source =
+	// uas_gov_ge_import`. All or nothing: with any problem nothing is
+	// written and the answer is 422 listing every problem by record
+	// and field (`records[<n>].<field>`, n counting from 1 after the
+	// header), at most 100 with `truncated`. `dry_run=true` runs the
+	// same checks inside a transaction that is rolled back and
+	// answers the report (200, problems listed, nothing written but
+	// its events row). The file is at most `REGISTRY_IMPORT_MAX_BYTES`
+	// (413 beyond) and `REGISTRY_IMPORT_MAX_ROWS` records (400 beyond).
+	// 503 `import_not_configured` without a rules file. Every import,
+	// refused and dry run included, is an events row with the counts.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/registry/import (the `ImportRegistry` operationId).
+	ImportRegistryWithBodyWithResponse(ctx context.Context, params *ImportRegistryParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ImportRegistryResponse, error)
+
+	// ImportRegistryWithResponse Import a uas.gov.ge export under the rules file, all or nothing
+	//
+	// The body is one export file of one `kind` (operators first, then
+	// uas): CSV (`text/csv`, UTF-8, a header row) or a JSON array of
+	// flat objects (`application/json`). The rules file
+	// (`REGISTRY_IMPORT_RULES_FILE`, configuration, never in the
+	// repository) maps its columns and values onto the registry's
+	// fields, names its date formats and the registration-number
+	// pattern its numbers follow. Idempotent on the record's source
+	// id: a record imported before is updated where it differs and
+	// left alone where it matches; rows are marked `source =
+	// uas_gov_ge_import`. All or nothing: with any problem nothing is
+	// written and the answer is 422 listing every problem by record
+	// and field (`records[<n>].<field>`, n counting from 1 after the
+	// header), at most 100 with `truncated`. `dry_run=true` runs the
+	// same checks inside a transaction that is rolled back and
+	// answers the report (200, problems listed, nothing written but
+	// its events row). The file is at most `REGISTRY_IMPORT_MAX_BYTES`
+	// (413 beyond) and `REGISTRY_IMPORT_MAX_ROWS` records (400 beyond).
+	// 503 `import_not_configured` without a rules file. Every import,
+	// refused and dry run included, is an events row with the counts.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/registry/import (the `ImportRegistry` operationId).
+	ImportRegistryWithResponse(ctx context.Context, params *ImportRegistryParams, body ImportRegistryJSONRequestBody, reqEditors ...RequestEditorFn) (*ImportRegistryResponse, error)
+
+	// RequestOperatorLinkWithBodyWithResponse Ask for an occurrence-report link, mailed to the operator's registered address
+	//
+	// For a registration in good standing a single-use link (lifetime
+	// `REGISTRY_OPERATOR_LINK_TTL_S`) is mailed to the e-mail address
+	// the registry holds for it; the answer is 202 whatever the number,
+	// so it tells nobody whether a number is registered or where its
+	// mail goes. Budgets per client address and per operator, counted
+	// in the database (429 with Retry-After). 404 when
+	// `REGISTRY_OPERATOR_REPORTS` is off.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/registry/operator-links (the `RequestOperatorLink` operationId).
+	RequestOperatorLinkWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestOperatorLinkResponse, error)
+
+	// RequestOperatorLinkWithResponse Ask for an occurrence-report link, mailed to the operator's registered address
+	//
+	// For a registration in good standing a single-use link (lifetime
+	// `REGISTRY_OPERATOR_LINK_TTL_S`) is mailed to the e-mail address
+	// the registry holds for it; the answer is 202 whatever the number,
+	// so it tells nobody whether a number is registered or where its
+	// mail goes. Budgets per client address and per operator, counted
+	// in the database (429 with Retry-After). 404 when
+	// `REGISTRY_OPERATOR_REPORTS` is off.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/registry/operator-links (the `RequestOperatorLink` operationId).
+	RequestOperatorLinkWithResponse(ctx context.Context, body RequestOperatorLinkJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestOperatorLinkResponse, error)
 
 	// ListRegistryOperatorsWithResponse UAS operators, in id order
 	//
@@ -23028,6 +25041,117 @@ func (r ExportOccurrencesResponse) ContentType() string {
 	return ""
 }
 
+// CreateOperatorOccurrenceResponse429Headers the declared response headers of an HTTP 429 response for CreateOperatorOccurrence
+type CreateOperatorOccurrenceResponse429Headers struct {
+	RetryAfter *int
+}
+
+type CreateOperatorOccurrenceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *OccurrenceReceipt
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *OccurrenceReceipt
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON401 the response for an HTTP 401 `application/problem+json` response
+	ApplicationproblemJSON401 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *Problem
+	// ApplicationproblemJSON413 the response for an HTTP 413 `application/problem+json` response
+	ApplicationproblemJSON413 *Problem
+	// ApplicationproblemJSON429 the response for an HTTP 429 `application/problem+json` response
+	ApplicationproblemJSON429 *RateLimited
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *CreateOperatorOccurrenceResponse429Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CreateOperatorOccurrenceResponse) GetJSON200() *OccurrenceReceipt {
+	return r.JSON200
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateOperatorOccurrenceResponse) GetJSON201() *OccurrenceReceipt {
+	return r.JSON201
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r CreateOperatorOccurrenceResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON401 returns the response for an HTTP 401 `application/problem+json` response
+func (r CreateOperatorOccurrenceResponse) GetApplicationproblemJSON401() *Problem {
+	return r.ApplicationproblemJSON401
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r CreateOperatorOccurrenceResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r CreateOperatorOccurrenceResponse) GetApplicationproblemJSON409() *Problem {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSON413 returns the response for an HTTP 413 `application/problem+json` response
+func (r CreateOperatorOccurrenceResponse) GetApplicationproblemJSON413() *Problem {
+	return r.ApplicationproblemJSON413
+}
+
+// GetApplicationproblemJSON429 returns the response for an HTTP 429 `application/problem+json` response
+func (r CreateOperatorOccurrenceResponse) GetApplicationproblemJSON429() *RateLimited {
+	return r.ApplicationproblemJSON429
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r CreateOperatorOccurrenceResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r CreateOperatorOccurrenceResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateOperatorOccurrenceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateOperatorOccurrenceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateOperatorOccurrenceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateOperatorOccurrenceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type GetOccurrenceResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -23933,6 +26057,537 @@ func (r ListPublicationsResponse) ContentType() string {
 	return ""
 }
 
+type ListRegistryApplicationsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RegistryApplicationPage
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListRegistryApplicationsResponse) GetJSON200() *RegistryApplicationPage {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r ListRegistryApplicationsResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r ListRegistryApplicationsResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ListRegistryApplicationsResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListRegistryApplicationsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListRegistryApplicationsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListRegistryApplicationsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListRegistryApplicationsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// SubmitRegistryApplicationResponse429Headers the declared response headers of an HTTP 429 response for SubmitRegistryApplication
+type SubmitRegistryApplicationResponse429Headers struct {
+	RetryAfter *int
+}
+
+type SubmitRegistryApplicationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *RegistryApplicationStatus
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON429 the response for an HTTP 429 `application/problem+json` response
+	ApplicationproblemJSON429 *RateLimited
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *SubmitRegistryApplicationResponse429Headers
+}
+
+// GetJSON202 returns the response for an HTTP 202 `application/json` response
+func (r SubmitRegistryApplicationResponse) GetJSON202() *RegistryApplicationStatus {
+	return r.JSON202
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r SubmitRegistryApplicationResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r SubmitRegistryApplicationResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON429 returns the response for an HTTP 429 `application/problem+json` response
+func (r SubmitRegistryApplicationResponse) GetApplicationproblemJSON429() *RateLimited {
+	return r.ApplicationproblemJSON429
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r SubmitRegistryApplicationResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r SubmitRegistryApplicationResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r SubmitRegistryApplicationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SubmitRegistryApplicationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SubmitRegistryApplicationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SubmitRegistryApplicationResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetRegistryApplicationStatusResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RegistryApplicationStatus
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetRegistryApplicationStatusResponse) GetJSON200() *RegistryApplicationStatus {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r GetRegistryApplicationStatusResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetRegistryApplicationStatusResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetRegistryApplicationStatusResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetRegistryApplicationStatusResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetRegistryApplicationStatusResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetRegistryApplicationStatusResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ApproveRegistryApplicationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RegistryApplication
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *Problem
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ApproveRegistryApplicationResponse) GetJSON200() *RegistryApplication {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r ApproveRegistryApplicationResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r ApproveRegistryApplicationResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r ApproveRegistryApplicationResponse) GetApplicationproblemJSON409() *Problem {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r ApproveRegistryApplicationResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ApproveRegistryApplicationResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ApproveRegistryApplicationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ApproveRegistryApplicationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ApproveRegistryApplicationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ApproveRegistryApplicationResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetRegistryApplicationPersonalDataResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RegistryApplicationPersonalData
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetRegistryApplicationPersonalDataResponse) GetJSON200() *RegistryApplicationPersonalData {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r GetRegistryApplicationPersonalDataResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r GetRegistryApplicationPersonalDataResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetRegistryApplicationPersonalDataResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetRegistryApplicationPersonalDataResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetRegistryApplicationPersonalDataResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetRegistryApplicationPersonalDataResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetRegistryApplicationPersonalDataResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type RefuseRegistryApplicationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RegistryApplication
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r RefuseRegistryApplicationResponse) GetJSON200() *RegistryApplication {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r RefuseRegistryApplicationResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r RefuseRegistryApplicationResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r RefuseRegistryApplicationResponse) GetApplicationproblemJSON409() *Problem {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r RefuseRegistryApplicationResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r RefuseRegistryApplicationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RefuseRegistryApplicationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RefuseRegistryApplicationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RefuseRegistryApplicationResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type StartRegistryApplicationReviewResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RegistryApplication
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r StartRegistryApplicationReviewResponse) GetJSON200() *RegistryApplication {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r StartRegistryApplicationReviewResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r StartRegistryApplicationReviewResponse) GetApplicationproblemJSON409() *Problem {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r StartRegistryApplicationReviewResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r StartRegistryApplicationReviewResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r StartRegistryApplicationReviewResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r StartRegistryApplicationReviewResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r StartRegistryApplicationReviewResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type VerifyRegistryApplicationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RegistryApplicationStatus
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r VerifyRegistryApplicationResponse) GetJSON200() *RegistryApplicationStatus {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r VerifyRegistryApplicationResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r VerifyRegistryApplicationResponse) GetApplicationproblemJSON409() *Problem {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r VerifyRegistryApplicationResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r VerifyRegistryApplicationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r VerifyRegistryApplicationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r VerifyRegistryApplicationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r VerifyRegistryApplicationResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // ListRegistryChangesResponse200Headers the declared response headers of an HTTP 200 response for ListRegistryChanges
 type ListRegistryChangesResponse200Headers struct {
 	ETag *string
@@ -23989,6 +26644,227 @@ func (r ListRegistryChangesResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListRegistryChangesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// CheckRegistrationResponse429Headers the declared response headers of an HTTP 429 response for CheckRegistration
+type CheckRegistrationResponse429Headers struct {
+	RetryAfter *int
+}
+
+type CheckRegistrationResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RegistryCheck
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON429 the response for an HTTP 429 `application/problem+json` response
+	ApplicationproblemJSON429 *RateLimited
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *CheckRegistrationResponse429Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CheckRegistrationResponse) GetJSON200() *RegistryCheck {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r CheckRegistrationResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON429 returns the response for an HTTP 429 `application/problem+json` response
+func (r CheckRegistrationResponse) GetApplicationproblemJSON429() *RateLimited {
+	return r.ApplicationproblemJSON429
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r CheckRegistrationResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CheckRegistrationResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CheckRegistrationResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CheckRegistrationResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CheckRegistrationResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ImportRegistryResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RegistryImportReport
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON413 the response for an HTTP 413 `application/problem+json` response
+	ApplicationproblemJSON413 *Problem
+	// ApplicationproblemJSON415 the response for an HTTP 415 `application/problem+json` response
+	ApplicationproblemJSON415 *Problem
+	// ApplicationproblemJSON422 the response for an HTTP 422 `application/problem+json` response
+	ApplicationproblemJSON422 *Problem
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ImportRegistryResponse) GetJSON200() *RegistryImportReport {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r ImportRegistryResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON413 returns the response for an HTTP 413 `application/problem+json` response
+func (r ImportRegistryResponse) GetApplicationproblemJSON413() *Problem {
+	return r.ApplicationproblemJSON413
+}
+
+// GetApplicationproblemJSON415 returns the response for an HTTP 415 `application/problem+json` response
+func (r ImportRegistryResponse) GetApplicationproblemJSON415() *Problem {
+	return r.ApplicationproblemJSON415
+}
+
+// GetApplicationproblemJSON422 returns the response for an HTTP 422 `application/problem+json` response
+func (r ImportRegistryResponse) GetApplicationproblemJSON422() *Problem {
+	return r.ApplicationproblemJSON422
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r ImportRegistryResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ImportRegistryResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ImportRegistryResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ImportRegistryResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ImportRegistryResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ImportRegistryResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// RequestOperatorLinkResponse429Headers the declared response headers of an HTTP 429 response for RequestOperatorLink
+type RequestOperatorLinkResponse429Headers struct {
+	RetryAfter *int
+}
+
+type RequestOperatorLinkResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON429 the response for an HTTP 429 `application/problem+json` response
+	ApplicationproblemJSON429 *RateLimited
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *RequestOperatorLinkResponse429Headers
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r RequestOperatorLinkResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r RequestOperatorLinkResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON429 returns the response for an HTTP 429 `application/problem+json` response
+func (r RequestOperatorLinkResponse) GetApplicationproblemJSON429() *RateLimited {
+	return r.ApplicationproblemJSON429
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r RequestOperatorLinkResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r RequestOperatorLinkResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r RequestOperatorLinkResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RequestOperatorLinkResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RequestOperatorLinkResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -28635,6 +31511,50 @@ func (c *ClientWithResponses) ExportOccurrencesWithResponse(ctx context.Context,
 	return ParseExportOccurrencesResponse(rsp)
 }
 
+// CreateOperatorOccurrenceWithBodyWithResponse An operator's occurrence report through its e-mailed link (2019/947 Art. 19(2))
+//
+// WP-18's intake (POST /v1/occurrences, the same `occurrence/v1`
+// body and checks) for an operator: the link's token in
+// `X-Operator-Token`, single use, within its lifetime by the
+// database clock. Recorded with `reporter_org =
+// operator:<registration public part>` on the mandatory channel.
+// The body is checked before the link is spent; a link spent
+// already or expired is 401 `link_spent`; a token that does not
+// verify is 401. 404 when `REGISTRY_OPERATOR_REPORTS` is off.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/occurrences/operator (the `CreateOperatorOccurrence` operationId).
+func (c *ClientWithResponses) CreateOperatorOccurrenceWithBodyWithResponse(ctx context.Context, params *CreateOperatorOccurrenceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateOperatorOccurrenceResponse, error) {
+	rsp, err := c.CreateOperatorOccurrenceWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateOperatorOccurrenceResponse(rsp)
+}
+
+// CreateOperatorOccurrenceWithResponse An operator's occurrence report through its e-mailed link (2019/947 Art. 19(2))
+//
+// WP-18's intake (POST /v1/occurrences, the same `occurrence/v1`
+// body and checks) for an operator: the link's token in
+// `X-Operator-Token`, single use, within its lifetime by the
+// database clock. Recorded with `reporter_org =
+// operator:<registration public part>` on the mandatory channel.
+// The body is checked before the link is spent; a link spent
+// already or expired is 401 `link_spent`; a token that does not
+// verify is 401. 404 when `REGISTRY_OPERATOR_REPORTS` is off.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/occurrences/operator (the `CreateOperatorOccurrence` operationId).
+func (c *ClientWithResponses) CreateOperatorOccurrenceWithResponse(ctx context.Context, params *CreateOperatorOccurrenceParams, body CreateOperatorOccurrenceJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateOperatorOccurrenceResponse, error) {
+	rsp, err := c.CreateOperatorOccurrence(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateOperatorOccurrenceResponse(rsp)
+}
+
 // GetOccurrenceWithResponse One occurrence report (no reporter identity)
 //
 // Returns a wrapper object for the known response body format(s).
@@ -28980,6 +31900,221 @@ func (c *ClientWithResponses) ListPublicationsWithResponse(ctx context.Context, 
 	return ParseListPublicationsResponse(rsp)
 }
 
+// ListRegistryApplicationsWithResponse Applications, oldest first, without personal data (registrars)
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/registry/applications (the `ListRegistryApplications` operationId).
+func (c *ClientWithResponses) ListRegistryApplicationsWithResponse(ctx context.Context, params *ListRegistryApplicationsParams, reqEditors ...RequestEditorFn) (*ListRegistryApplicationsResponse, error) {
+	rsp, err := c.ListRegistryApplications(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListRegistryApplicationsResponse(rsp)
+}
+
+// SubmitRegistryApplicationWithBodyWithResponse Apply for an operator registration (public portal)
+//
+// The 2019/947 Art. 14(2) field set, as a registrar enters it,
+// without a number (the authority issues it). Checked whole before
+// anything is stored (400 naming every field); stored sealed; an
+// e-mail with the verification link is queued to `contact_email`
+// and sent after the commit. The application waits for the link
+// (`unverified`) for `REGISTRY_APPLICATION_VERIFY_TTL_S`. At most
+// `REGISTRY_APPLICATIONS_PER_IP` applications per client address
+// per `REGISTRY_APPLICATIONS_WINDOW_S`, counted in the database
+// (429 with Retry-After). 404 when `REGISTRY_APPLICATIONS` is off.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/registry/applications (the `SubmitRegistryApplication` operationId).
+func (c *ClientWithResponses) SubmitRegistryApplicationWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SubmitRegistryApplicationResponse, error) {
+	rsp, err := c.SubmitRegistryApplicationWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSubmitRegistryApplicationResponse(rsp)
+}
+
+// SubmitRegistryApplicationWithResponse Apply for an operator registration (public portal)
+//
+// The 2019/947 Art. 14(2) field set, as a registrar enters it,
+// without a number (the authority issues it). Checked whole before
+// anything is stored (400 naming every field); stored sealed; an
+// e-mail with the verification link is queued to `contact_email`
+// and sent after the commit. The application waits for the link
+// (`unverified`) for `REGISTRY_APPLICATION_VERIFY_TTL_S`. At most
+// `REGISTRY_APPLICATIONS_PER_IP` applications per client address
+// per `REGISTRY_APPLICATIONS_WINDOW_S`, counted in the database
+// (429 with Retry-After). 404 when `REGISTRY_APPLICATIONS` is off.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/registry/applications (the `SubmitRegistryApplication` operationId).
+func (c *ClientWithResponses) SubmitRegistryApplicationWithResponse(ctx context.Context, body SubmitRegistryApplicationJSONRequestBody, reqEditors ...RequestEditorFn) (*SubmitRegistryApplicationResponse, error) {
+	rsp, err := c.SubmitRegistryApplication(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSubmitRegistryApplicationResponse(rsp)
+}
+
+// GetRegistryApplicationStatusWithResponse An application's state, by its e-mailed link (applicant)
+//
+// The token of the application's link in `X-Application-Token`
+// (any link of this application that has not expired). Answers the
+// state, the decision and, once approved, the public part of the
+// number issued; never the application's content. An unknown id
+// and a token that does not verify are both 404.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/registry/applications/{application_id} (the `GetRegistryApplicationStatus` operationId).
+func (c *ClientWithResponses) GetRegistryApplicationStatusWithResponse(ctx context.Context, applicationId string, params *GetRegistryApplicationStatusParams, reqEditors ...RequestEditorFn) (*GetRegistryApplicationStatusResponse, error) {
+	rsp, err := c.GetRegistryApplicationStatus(ctx, applicationId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetRegistryApplicationStatusResponse(rsp)
+}
+
+// ApproveRegistryApplicationWithBodyWithResponse Approve an application under review: register the operator (registrars)
+//
+// Issues the registration number (the policy's
+// `registration_number_pattern`; the public part from
+// `REGISTRY_ISSUE_PREFIX` and `REGISTRY_ISSUE_RANDOM_LEN` random
+// letters and digits, never repeating; plan Q-A10, pending GCAA)
+// and a three-character secret part, registers the operator
+// through the registry (`source = portal`, valid until
+// `valid_until`, default `REGISTRY_APPLICATION_VALIDITY_S` from
+// now) and queues the approval e-mail, which carries the secret
+// part once: it is stored only as the registry's keyed hash and is
+// in no response. A retried approval registers nobody twice and
+// approves what the first attempt chose: 409 when it names another
+// `valid_until`. 409 unless `under_review`; 409
+// `issuance_pattern_mismatch` when the issued shape does not match
+// the policy's pattern.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/registry/applications/{application_id}/approve (the `ApproveRegistryApplication` operationId).
+func (c *ClientWithResponses) ApproveRegistryApplicationWithBodyWithResponse(ctx context.Context, applicationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApproveRegistryApplicationResponse, error) {
+	rsp, err := c.ApproveRegistryApplicationWithBody(ctx, applicationId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseApproveRegistryApplicationResponse(rsp)
+}
+
+// ApproveRegistryApplicationWithResponse Approve an application under review: register the operator (registrars)
+//
+// Issues the registration number (the policy's
+// `registration_number_pattern`; the public part from
+// `REGISTRY_ISSUE_PREFIX` and `REGISTRY_ISSUE_RANDOM_LEN` random
+// letters and digits, never repeating; plan Q-A10, pending GCAA)
+// and a three-character secret part, registers the operator
+// through the registry (`source = portal`, valid until
+// `valid_until`, default `REGISTRY_APPLICATION_VALIDITY_S` from
+// now) and queues the approval e-mail, which carries the secret
+// part once: it is stored only as the registry's keyed hash and is
+// in no response. A retried approval registers nobody twice and
+// approves what the first attempt chose: 409 when it names another
+// `valid_until`. 409 unless `under_review`; 409
+// `issuance_pattern_mismatch` when the issued shape does not match
+// the policy's pattern.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/registry/applications/{application_id}/approve (the `ApproveRegistryApplication` operationId).
+func (c *ClientWithResponses) ApproveRegistryApplicationWithResponse(ctx context.Context, applicationId string, body ApproveRegistryApplicationJSONRequestBody, reqEditors ...RequestEditorFn) (*ApproveRegistryApplicationResponse, error) {
+	rsp, err := c.ApproveRegistryApplication(ctx, applicationId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseApproveRegistryApplicationResponse(rsp)
+}
+
+// GetRegistryApplicationPersonalDataWithResponse An application's content, with a purpose (registrars)
+//
+// Recorded as registry_application_pii_viewed with the purpose,
+// committed before anything is opened; no purpose, no read.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/registry/applications/{application_id}/personal-data (the `GetRegistryApplicationPersonalData` operationId).
+func (c *ClientWithResponses) GetRegistryApplicationPersonalDataWithResponse(ctx context.Context, applicationId string, params *GetRegistryApplicationPersonalDataParams, reqEditors ...RequestEditorFn) (*GetRegistryApplicationPersonalDataResponse, error) {
+	rsp, err := c.GetRegistryApplicationPersonalData(ctx, applicationId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetRegistryApplicationPersonalDataResponse(rsp)
+}
+
+// RefuseRegistryApplicationWithBodyWithResponse Refuse a submitted application with a reason (registrars)
+//
+// The reason is mailed to the applicant; 409 unless submitted or under review.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/registry/applications/{application_id}/refuse (the `RefuseRegistryApplication` operationId).
+func (c *ClientWithResponses) RefuseRegistryApplicationWithBodyWithResponse(ctx context.Context, applicationId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RefuseRegistryApplicationResponse, error) {
+	rsp, err := c.RefuseRegistryApplicationWithBody(ctx, applicationId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRefuseRegistryApplicationResponse(rsp)
+}
+
+// RefuseRegistryApplicationWithResponse Refuse a submitted application with a reason (registrars)
+//
+// The reason is mailed to the applicant; 409 unless submitted or under review.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/registry/applications/{application_id}/refuse (the `RefuseRegistryApplication` operationId).
+func (c *ClientWithResponses) RefuseRegistryApplicationWithResponse(ctx context.Context, applicationId string, body RefuseRegistryApplicationJSONRequestBody, reqEditors ...RequestEditorFn) (*RefuseRegistryApplicationResponse, error) {
+	rsp, err := c.RefuseRegistryApplication(ctx, applicationId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRefuseRegistryApplicationResponse(rsp)
+}
+
+// StartRegistryApplicationReviewWithResponse Take a submitted application for review (registrars)
+//
+// `submitted` becomes `under_review` under the registrar; 409 from any other state.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/registry/applications/{application_id}/review (the `StartRegistryApplicationReview` operationId).
+func (c *ClientWithResponses) StartRegistryApplicationReviewWithResponse(ctx context.Context, applicationId string, reqEditors ...RequestEditorFn) (*StartRegistryApplicationReviewResponse, error) {
+	rsp, err := c.StartRegistryApplicationReview(ctx, applicationId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStartRegistryApplicationReviewResponse(rsp)
+}
+
+// VerifyRegistryApplicationWithResponse Follow the e-mailed verification link (applicant)
+//
+// The verification link's token in `X-Application-Token`, within
+// its lifetime by the database clock: `unverified` becomes
+// `submitted` and reaches the registrars. Again on a submitted
+// application it answers its state unchanged. An expired link is
+// 409 `link_expired` (apply again); an unknown id or a token that
+// does not verify is 404.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/registry/applications/{application_id}/verify (the `VerifyRegistryApplication` operationId).
+func (c *ClientWithResponses) VerifyRegistryApplicationWithResponse(ctx context.Context, applicationId string, params *VerifyRegistryApplicationParams, reqEditors ...RequestEditorFn) (*VerifyRegistryApplicationResponse, error) {
+	rsp, err := c.VerifyRegistryApplication(ctx, applicationId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseVerifyRegistryApplicationResponse(rsp)
+}
+
 // ListRegistryChangesWithResponse The status change feed (F8), ids and statuses only
 //
 // Changes after `since` in sequence order, for cache
@@ -28996,6 +32131,136 @@ func (c *ClientWithResponses) ListRegistryChangesWithResponse(ctx context.Contex
 		return nil, err
 	}
 	return ParseListRegistryChangesResponse(rsp)
+}
+
+// CheckRegistrationWithResponse Public check of an operator registration number, status only
+//
+// `valid`, `suspended`, `revoked` or `unknown`, and the end of
+// validity of a registered number; nothing else (no name, type or
+// id: the response schema has no such property, and a test fails
+// if one appears). The number is compared on its public part
+// ignoring case (G-04); a secret part sent with it is removed and
+// never echoed. An expired registration answers `revoked` with its
+// `valid_until`. Unauthenticated and rate-limited per client
+// address behind the trusted proxies (429 with Retry-After).
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/registry/check (the `CheckRegistration` operationId).
+func (c *ClientWithResponses) CheckRegistrationWithResponse(ctx context.Context, params *CheckRegistrationParams, reqEditors ...RequestEditorFn) (*CheckRegistrationResponse, error) {
+	rsp, err := c.CheckRegistration(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCheckRegistrationResponse(rsp)
+}
+
+// ImportRegistryWithBodyWithResponse Import a uas.gov.ge export under the rules file, all or nothing
+//
+// The body is one export file of one `kind` (operators first, then
+// uas): CSV (`text/csv`, UTF-8, a header row) or a JSON array of
+// flat objects (`application/json`). The rules file
+// (`REGISTRY_IMPORT_RULES_FILE`, configuration, never in the
+// repository) maps its columns and values onto the registry's
+// fields, names its date formats and the registration-number
+// pattern its numbers follow. Idempotent on the record's source
+// id: a record imported before is updated where it differs and
+// left alone where it matches; rows are marked `source =
+// uas_gov_ge_import`. All or nothing: with any problem nothing is
+// written and the answer is 422 listing every problem by record
+// and field (`records[<n>].<field>`, n counting from 1 after the
+// header), at most 100 with `truncated`. `dry_run=true` runs the
+// same checks inside a transaction that is rolled back and
+// answers the report (200, problems listed, nothing written but
+// its events row). The file is at most `REGISTRY_IMPORT_MAX_BYTES`
+// (413 beyond) and `REGISTRY_IMPORT_MAX_ROWS` records (400 beyond).
+// 503 `import_not_configured` without a rules file. Every import,
+// refused and dry run included, is an events row with the counts.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/registry/import (the `ImportRegistry` operationId).
+func (c *ClientWithResponses) ImportRegistryWithBodyWithResponse(ctx context.Context, params *ImportRegistryParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ImportRegistryResponse, error) {
+	rsp, err := c.ImportRegistryWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseImportRegistryResponse(rsp)
+}
+
+// ImportRegistryWithResponse Import a uas.gov.ge export under the rules file, all or nothing
+//
+// The body is one export file of one `kind` (operators first, then
+// uas): CSV (`text/csv`, UTF-8, a header row) or a JSON array of
+// flat objects (`application/json`). The rules file
+// (`REGISTRY_IMPORT_RULES_FILE`, configuration, never in the
+// repository) maps its columns and values onto the registry's
+// fields, names its date formats and the registration-number
+// pattern its numbers follow. Idempotent on the record's source
+// id: a record imported before is updated where it differs and
+// left alone where it matches; rows are marked `source =
+// uas_gov_ge_import`. All or nothing: with any problem nothing is
+// written and the answer is 422 listing every problem by record
+// and field (`records[<n>].<field>`, n counting from 1 after the
+// header), at most 100 with `truncated`. `dry_run=true` runs the
+// same checks inside a transaction that is rolled back and
+// answers the report (200, problems listed, nothing written but
+// its events row). The file is at most `REGISTRY_IMPORT_MAX_BYTES`
+// (413 beyond) and `REGISTRY_IMPORT_MAX_ROWS` records (400 beyond).
+// 503 `import_not_configured` without a rules file. Every import,
+// refused and dry run included, is an events row with the counts.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/registry/import (the `ImportRegistry` operationId).
+func (c *ClientWithResponses) ImportRegistryWithResponse(ctx context.Context, params *ImportRegistryParams, body ImportRegistryJSONRequestBody, reqEditors ...RequestEditorFn) (*ImportRegistryResponse, error) {
+	rsp, err := c.ImportRegistry(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseImportRegistryResponse(rsp)
+}
+
+// RequestOperatorLinkWithBodyWithResponse Ask for an occurrence-report link, mailed to the operator's registered address
+//
+// For a registration in good standing a single-use link (lifetime
+// `REGISTRY_OPERATOR_LINK_TTL_S`) is mailed to the e-mail address
+// the registry holds for it; the answer is 202 whatever the number,
+// so it tells nobody whether a number is registered or where its
+// mail goes. Budgets per client address and per operator, counted
+// in the database (429 with Retry-After). 404 when
+// `REGISTRY_OPERATOR_REPORTS` is off.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/registry/operator-links (the `RequestOperatorLink` operationId).
+func (c *ClientWithResponses) RequestOperatorLinkWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RequestOperatorLinkResponse, error) {
+	rsp, err := c.RequestOperatorLinkWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRequestOperatorLinkResponse(rsp)
+}
+
+// RequestOperatorLinkWithResponse Ask for an occurrence-report link, mailed to the operator's registered address
+//
+// For a registration in good standing a single-use link (lifetime
+// `REGISTRY_OPERATOR_LINK_TTL_S`) is mailed to the e-mail address
+// the registry holds for it; the answer is 202 whatever the number,
+// so it tells nobody whether a number is registered or where its
+// mail goes. Budgets per client address and per operator, counted
+// in the database (429 with Retry-After). 404 when
+// `REGISTRY_OPERATOR_REPORTS` is off.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/registry/operator-links (the `RequestOperatorLink` operationId).
+func (c *ClientWithResponses) RequestOperatorLinkWithResponse(ctx context.Context, body RequestOperatorLinkJSONRequestBody, reqEditors ...RequestEditorFn) (*RequestOperatorLinkResponse, error) {
+	rsp, err := c.RequestOperatorLink(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRequestOperatorLinkResponse(rsp)
 }
 
 // ListRegistryOperatorsWithResponse UAS operators, in id order
@@ -32741,6 +36006,108 @@ func ParseExportOccurrencesResponse(rsp *http.Response) (*ExportOccurrencesRespo
 	return response, nil
 }
 
+// ParseCreateOperatorOccurrenceResponse parses an HTTP response from a CreateOperatorOccurrenceWithResponse call
+func ParseCreateOperatorOccurrenceResponse(rsp *http.Response) (*CreateOperatorOccurrenceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateOperatorOccurrenceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OccurrenceReceipt
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest OccurrenceReceipt
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers CreateOperatorOccurrenceResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
 // ParseGetOccurrenceResponse parses an HTTP response from a GetOccurrenceWithResponse call
 func ParseGetOccurrenceResponse(rsp *http.Response) (*GetOccurrenceResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -33496,6 +36863,423 @@ func ParseListPublicationsResponse(rsp *http.Response) (*ListPublicationsRespons
 	return response, nil
 }
 
+// ParseListRegistryApplicationsResponse parses an HTTP response from a ListRegistryApplicationsWithResponse call
+func ParseListRegistryApplicationsResponse(rsp *http.Response) (*ListRegistryApplicationsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListRegistryApplicationsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RegistryApplicationPage
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSubmitRegistryApplicationResponse parses an HTTP response from a SubmitRegistryApplicationWithResponse call
+func ParseSubmitRegistryApplicationResponse(rsp *http.Response) (*SubmitRegistryApplicationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SubmitRegistryApplicationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest RegistryApplicationStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers SubmitRegistryApplicationResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseGetRegistryApplicationStatusResponse parses an HTTP response from a GetRegistryApplicationStatusWithResponse call
+func ParseGetRegistryApplicationStatusResponse(rsp *http.Response) (*GetRegistryApplicationStatusResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetRegistryApplicationStatusResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RegistryApplicationStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseApproveRegistryApplicationResponse parses an HTTP response from a ApproveRegistryApplicationWithResponse call
+func ParseApproveRegistryApplicationResponse(rsp *http.Response) (*ApproveRegistryApplicationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ApproveRegistryApplicationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RegistryApplication
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetRegistryApplicationPersonalDataResponse parses an HTTP response from a GetRegistryApplicationPersonalDataWithResponse call
+func ParseGetRegistryApplicationPersonalDataResponse(rsp *http.Response) (*GetRegistryApplicationPersonalDataResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetRegistryApplicationPersonalDataResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RegistryApplicationPersonalData
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRefuseRegistryApplicationResponse parses an HTTP response from a RefuseRegistryApplicationWithResponse call
+func ParseRefuseRegistryApplicationResponse(rsp *http.Response) (*RefuseRegistryApplicationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RefuseRegistryApplicationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RegistryApplication
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseStartRegistryApplicationReviewResponse parses an HTTP response from a StartRegistryApplicationReviewWithResponse call
+func ParseStartRegistryApplicationReviewResponse(rsp *http.Response) (*StartRegistryApplicationReviewResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &StartRegistryApplicationReviewResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RegistryApplication
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseVerifyRegistryApplicationResponse parses an HTTP response from a VerifyRegistryApplicationWithResponse call
+func ParseVerifyRegistryApplicationResponse(rsp *http.Response) (*VerifyRegistryApplicationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &VerifyRegistryApplicationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RegistryApplicationStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListRegistryChangesResponse parses an HTTP response from a ListRegistryChangesWithResponse call
 func ParseListRegistryChangesResponse(rsp *http.Response) (*ListRegistryChangesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -33550,6 +37334,197 @@ func ParseListRegistryChangesResponse(rsp *http.Response) (*ListRegistryChangesR
 			headers.ETag = &value
 		}
 		response.Headers304 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseCheckRegistrationResponse parses an HTTP response from a CheckRegistrationWithResponse call
+func ParseCheckRegistrationResponse(rsp *http.Response) (*CheckRegistrationResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CheckRegistrationResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RegistryCheck
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers CheckRegistrationResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseImportRegistryResponse parses an HTTP response from a ImportRegistryWithResponse call
+func ParseImportRegistryResponse(rsp *http.Response) (*ImportRegistryResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ImportRegistryResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RegistryImportReport
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON415 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRequestOperatorLinkResponse parses an HTTP response from a RequestOperatorLinkWithResponse call
+func ParseRequestOperatorLinkResponse(rsp *http.Response) (*RequestOperatorLinkResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RequestOperatorLinkResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 202:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers RequestOperatorLinkResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
 	}
 
 	return response, nil
@@ -35979,6 +39954,9 @@ type ServerInterface interface {
 	// ExportOccurrences A de-identified export of the reports received in a window (hash-sealed, audited)
 	// (POST /v1/occurrences/export)
 	ExportOccurrences(w http.ResponseWriter, r *http.Request)
+	// CreateOperatorOccurrence An operator's occurrence report through its e-mailed link (2019/947 Art. 19(2))
+	// (POST /v1/occurrences/operator)
+	CreateOperatorOccurrence(w http.ResponseWriter, r *http.Request, params CreateOperatorOccurrenceParams)
 	// GetOccurrence One occurrence report (no reporter identity)
 	// (GET /v1/occurrences/{occurrence_id})
 	GetOccurrence(w http.ResponseWriter, r *http.Request, occurrenceId string)
@@ -36018,9 +39996,42 @@ type ServerInterface interface {
 	// ListPublications The publication outbox and the CIS subscriber's state
 	// (GET /v1/publications)
 	ListPublications(w http.ResponseWriter, r *http.Request, params ListPublicationsParams)
+	// ListRegistryApplications Applications, oldest first, without personal data (registrars)
+	// (GET /v1/registry/applications)
+	ListRegistryApplications(w http.ResponseWriter, r *http.Request, params ListRegistryApplicationsParams)
+	// SubmitRegistryApplication Apply for an operator registration (public portal)
+	// (POST /v1/registry/applications)
+	SubmitRegistryApplication(w http.ResponseWriter, r *http.Request)
+	// GetRegistryApplicationStatus An application's state, by its e-mailed link (applicant)
+	// (GET /v1/registry/applications/{application_id})
+	GetRegistryApplicationStatus(w http.ResponseWriter, r *http.Request, applicationId string, params GetRegistryApplicationStatusParams)
+	// ApproveRegistryApplication Approve an application under review: register the operator (registrars)
+	// (POST /v1/registry/applications/{application_id}/approve)
+	ApproveRegistryApplication(w http.ResponseWriter, r *http.Request, applicationId string)
+	// GetRegistryApplicationPersonalData An application's content, with a purpose (registrars)
+	// (GET /v1/registry/applications/{application_id}/personal-data)
+	GetRegistryApplicationPersonalData(w http.ResponseWriter, r *http.Request, applicationId string, params GetRegistryApplicationPersonalDataParams)
+	// RefuseRegistryApplication Refuse a submitted application with a reason (registrars)
+	// (POST /v1/registry/applications/{application_id}/refuse)
+	RefuseRegistryApplication(w http.ResponseWriter, r *http.Request, applicationId string)
+	// StartRegistryApplicationReview Take a submitted application for review (registrars)
+	// (POST /v1/registry/applications/{application_id}/review)
+	StartRegistryApplicationReview(w http.ResponseWriter, r *http.Request, applicationId string)
+	// VerifyRegistryApplication Follow the e-mailed verification link (applicant)
+	// (POST /v1/registry/applications/{application_id}/verify)
+	VerifyRegistryApplication(w http.ResponseWriter, r *http.Request, applicationId string, params VerifyRegistryApplicationParams)
 	// ListRegistryChanges The status change feed (F8), ids and statuses only
 	// (GET /v1/registry/changes)
 	ListRegistryChanges(w http.ResponseWriter, r *http.Request, params ListRegistryChangesParams)
+	// CheckRegistration Public check of an operator registration number, status only
+	// (GET /v1/registry/check)
+	CheckRegistration(w http.ResponseWriter, r *http.Request, params CheckRegistrationParams)
+	// ImportRegistry Import a uas.gov.ge export under the rules file, all or nothing
+	// (POST /v1/registry/import)
+	ImportRegistry(w http.ResponseWriter, r *http.Request, params ImportRegistryParams)
+	// RequestOperatorLink Ask for an occurrence-report link, mailed to the operator's registered address
+	// (POST /v1/registry/operator-links)
+	RequestOperatorLink(w http.ResponseWriter, r *http.Request)
 	// ListRegistryOperators UAS operators, in id order
 	// (GET /v1/registry/operators)
 	ListRegistryOperators(w http.ResponseWriter, r *http.Request, params ListRegistryOperatorsParams)
@@ -37499,6 +41510,47 @@ func (siw *ServerInterfaceWrapper) ExportOccurrences(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
+// CreateOperatorOccurrence operation middleware
+func (siw *ServerInterfaceWrapper) CreateOperatorOccurrence(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateOperatorOccurrenceParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "X-Operator-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Operator-Token")]; found {
+		var XOperatorToken string
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Operator-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Operator-Token", valueList[0], &XOperatorToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Operator-Token", Err: err})
+			return
+		}
+
+		params.XOperatorToken = &XOperatorToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateOperatorOccurrence(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetOccurrence operation middleware
 func (siw *ServerInterfaceWrapper) GetOccurrence(w http.ResponseWriter, r *http.Request) {
 
@@ -37983,6 +42035,299 @@ func (siw *ServerInterfaceWrapper) ListPublications(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
+// ListRegistryApplications operation middleware
+func (siw *ServerInterfaceWrapper) ListRegistryApplications(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListRegistryApplicationsParams
+
+	// ------------- Optional query parameter "state" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRegistryApplications(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SubmitRegistryApplication operation middleware
+func (siw *ServerInterfaceWrapper) SubmitRegistryApplication(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SubmitRegistryApplication(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetRegistryApplicationStatus operation middleware
+func (siw *ServerInterfaceWrapper) GetRegistryApplicationStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "application_id" -------------
+	var applicationId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "application_id", r.PathValue("application_id"), &applicationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "application_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetRegistryApplicationStatusParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "X-Application-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Application-Token")]; found {
+		var XApplicationToken string
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Application-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Application-Token", valueList[0], &XApplicationToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Application-Token", Err: err})
+			return
+		}
+
+		params.XApplicationToken = &XApplicationToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRegistryApplicationStatus(w, r, applicationId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ApproveRegistryApplication operation middleware
+func (siw *ServerInterfaceWrapper) ApproveRegistryApplication(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "application_id" -------------
+	var applicationId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "application_id", r.PathValue("application_id"), &applicationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "application_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ApproveRegistryApplication(w, r, applicationId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetRegistryApplicationPersonalData operation middleware
+func (siw *ServerInterfaceWrapper) GetRegistryApplicationPersonalData(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "application_id" -------------
+	var applicationId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "application_id", r.PathValue("application_id"), &applicationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "application_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetRegistryApplicationPersonalDataParams
+
+	// ------------- Required query parameter "purpose" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "purpose", r.URL.Query(), &params.Purpose, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "purpose"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "purpose", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRegistryApplicationPersonalData(w, r, applicationId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RefuseRegistryApplication operation middleware
+func (siw *ServerInterfaceWrapper) RefuseRegistryApplication(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "application_id" -------------
+	var applicationId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "application_id", r.PathValue("application_id"), &applicationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "application_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RefuseRegistryApplication(w, r, applicationId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// StartRegistryApplicationReview operation middleware
+func (siw *ServerInterfaceWrapper) StartRegistryApplicationReview(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "application_id" -------------
+	var applicationId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "application_id", r.PathValue("application_id"), &applicationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "application_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StartRegistryApplicationReview(w, r, applicationId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// VerifyRegistryApplication operation middleware
+func (siw *ServerInterfaceWrapper) VerifyRegistryApplication(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "application_id" -------------
+	var applicationId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "application_id", r.PathValue("application_id"), &applicationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "application_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params VerifyRegistryApplicationParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "X-Application-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Application-Token")]; found {
+		var XApplicationToken string
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Application-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Application-Token", valueList[0], &XApplicationToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Application-Token", Err: err})
+			return
+		}
+
+		params.XApplicationToken = &XApplicationToken
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VerifyRegistryApplication(w, r, applicationId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListRegistryChanges operation middleware
 func (siw *ServerInterfaceWrapper) ListRegistryChanges(w http.ResponseWriter, r *http.Request) {
 
@@ -38041,6 +42386,99 @@ func (siw *ServerInterfaceWrapper) ListRegistryChanges(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListRegistryChanges(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CheckRegistration operation middleware
+func (siw *ServerInterfaceWrapper) CheckRegistration(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CheckRegistrationParams
+
+	// ------------- Required query parameter "number" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "number", r.URL.Query(), &params.Number, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "number"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "number", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CheckRegistration(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ImportRegistry operation middleware
+func (siw *ServerInterfaceWrapper) ImportRegistry(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ImportRegistryParams
+
+	// ------------- Required query parameter "kind" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "kind", r.URL.Query(), &params.Kind, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "kind"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "dry_run" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "dry_run", r.URL.Query(), &params.DryRun, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "dry_run"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "dry_run", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ImportRegistry(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RequestOperatorLink operation middleware
+func (siw *ServerInterfaceWrapper) RequestOperatorLink(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RequestOperatorLink(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -40376,6 +44814,18 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/registry/validate", wrapper.ValidateRegistry)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/registry/validate", wrapper.ValidateRegistryBatch)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/registry/changes", wrapper.ListRegistryChanges)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/registry/import", wrapper.ImportRegistry)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/registry/check", wrapper.CheckRegistration)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/registry/applications", wrapper.ListRegistryApplications)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/registry/applications", wrapper.SubmitRegistryApplication)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/registry/applications/{application_id}", wrapper.GetRegistryApplicationStatus)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/registry/applications/{application_id}/verify", wrapper.VerifyRegistryApplication)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/registry/applications/{application_id}/personal-data", wrapper.GetRegistryApplicationPersonalData)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/registry/applications/{application_id}/review", wrapper.StartRegistryApplicationReview)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/registry/applications/{application_id}/approve", wrapper.ApproveRegistryApplication)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/registry/applications/{application_id}/refuse", wrapper.RefuseRegistryApplication)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/registry/operator-links", wrapper.RequestOperatorLink)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/occurrences/operator", wrapper.CreateOperatorOccurrence)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/rid/receivers", wrapper.ListRIDReceivers)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/rid/receivers", wrapper.CreateRIDReceiver)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/v1/rid/receivers/{receiver_id}", wrapper.DeleteRIDReceiver)
@@ -43446,6 +47896,165 @@ func (response ExportOccurrencesdefaultApplicationProblemPlusJSONResponse) Visit
 	return err
 }
 
+type CreateOperatorOccurrenceRequestObject struct {
+	Params CreateOperatorOccurrenceParams
+	Body   *CreateOperatorOccurrenceJSONRequestBody
+}
+
+type CreateOperatorOccurrenceResponseObject interface {
+	VisitCreateOperatorOccurrenceResponse(w http.ResponseWriter) error
+}
+
+type CreateOperatorOccurrence200JSONResponse OccurrenceReceipt
+
+func (response CreateOperatorOccurrence200JSONResponse) VisitCreateOperatorOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOperatorOccurrence201JSONResponse OccurrenceReceipt
+
+func (response CreateOperatorOccurrence201JSONResponse) VisitCreateOperatorOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOperatorOccurrence400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response CreateOperatorOccurrence400ApplicationProblemPlusJSONResponse) VisitCreateOperatorOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOperatorOccurrence401ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateOperatorOccurrence401ApplicationProblemPlusJSONResponse) VisitCreateOperatorOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOperatorOccurrence404ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateOperatorOccurrence404ApplicationProblemPlusJSONResponse) VisitCreateOperatorOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOperatorOccurrence409ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateOperatorOccurrence409ApplicationProblemPlusJSONResponse) VisitCreateOperatorOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOperatorOccurrence413ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateOperatorOccurrence413ApplicationProblemPlusJSONResponse) VisitCreateOperatorOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(413)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOperatorOccurrence429ApplicationProblemPlusJSONResponse struct {
+	RateLimitedApplicationProblemPlusJSONResponse
+}
+
+func (response CreateOperatorOccurrence429ApplicationProblemPlusJSONResponse) VisitCreateOperatorOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOperatorOccurrence503ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateOperatorOccurrence503ApplicationProblemPlusJSONResponse) VisitCreateOperatorOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOperatorOccurrencedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateOperatorOccurrencedefaultApplicationProblemPlusJSONResponse) VisitCreateOperatorOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetOccurrenceRequestObject struct {
 	OccurrenceId string `json:"occurrence_id"`
 }
@@ -44505,6 +49114,624 @@ func (response ListPublicationsdefaultApplicationProblemPlusJSONResponse) VisitL
 	return err
 }
 
+type ListRegistryApplicationsRequestObject struct {
+	Params ListRegistryApplicationsParams
+}
+
+type ListRegistryApplicationsResponseObject interface {
+	VisitListRegistryApplicationsResponse(w http.ResponseWriter) error
+}
+
+type ListRegistryApplications200JSONResponse RegistryApplicationPage
+
+func (response ListRegistryApplications200JSONResponse) VisitListRegistryApplicationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRegistryApplications400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response ListRegistryApplications400ApplicationProblemPlusJSONResponse) VisitListRegistryApplicationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRegistryApplications404ApplicationProblemPlusJSONResponse Problem
+
+func (response ListRegistryApplications404ApplicationProblemPlusJSONResponse) VisitListRegistryApplicationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRegistryApplicationsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListRegistryApplicationsdefaultApplicationProblemPlusJSONResponse) VisitListRegistryApplicationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitRegistryApplicationRequestObject struct {
+	Body *SubmitRegistryApplicationJSONRequestBody
+}
+
+type SubmitRegistryApplicationResponseObject interface {
+	VisitSubmitRegistryApplicationResponse(w http.ResponseWriter) error
+}
+
+type SubmitRegistryApplication202JSONResponse RegistryApplicationStatus
+
+func (response SubmitRegistryApplication202JSONResponse) VisitSubmitRegistryApplicationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitRegistryApplication400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitRegistryApplication400ApplicationProblemPlusJSONResponse) VisitSubmitRegistryApplicationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitRegistryApplication404ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitRegistryApplication404ApplicationProblemPlusJSONResponse) VisitSubmitRegistryApplicationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitRegistryApplication429ApplicationProblemPlusJSONResponse struct {
+	RateLimitedApplicationProblemPlusJSONResponse
+}
+
+func (response SubmitRegistryApplication429ApplicationProblemPlusJSONResponse) VisitSubmitRegistryApplicationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitRegistryApplication503ApplicationProblemPlusJSONResponse Problem
+
+func (response SubmitRegistryApplication503ApplicationProblemPlusJSONResponse) VisitSubmitRegistryApplicationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitRegistryApplicationdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response SubmitRegistryApplicationdefaultApplicationProblemPlusJSONResponse) VisitSubmitRegistryApplicationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRegistryApplicationStatusRequestObject struct {
+	ApplicationId string `json:"application_id"`
+	Params        GetRegistryApplicationStatusParams
+}
+
+type GetRegistryApplicationStatusResponseObject interface {
+	VisitGetRegistryApplicationStatusResponse(w http.ResponseWriter) error
+}
+
+type GetRegistryApplicationStatus200JSONResponse RegistryApplicationStatus
+
+func (response GetRegistryApplicationStatus200JSONResponse) VisitGetRegistryApplicationStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRegistryApplicationStatus404ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetRegistryApplicationStatus404ApplicationProblemPlusJSONResponse) VisitGetRegistryApplicationStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRegistryApplicationStatusdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetRegistryApplicationStatusdefaultApplicationProblemPlusJSONResponse) VisitGetRegistryApplicationStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRegistryApplicationRequestObject struct {
+	ApplicationId string `json:"application_id"`
+	Body          *ApproveRegistryApplicationJSONRequestBody
+}
+
+type ApproveRegistryApplicationResponseObject interface {
+	VisitApproveRegistryApplicationResponse(w http.ResponseWriter) error
+}
+
+type ApproveRegistryApplication200JSONResponse RegistryApplication
+
+func (response ApproveRegistryApplication200JSONResponse) VisitApproveRegistryApplicationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRegistryApplication400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response ApproveRegistryApplication400ApplicationProblemPlusJSONResponse) VisitApproveRegistryApplicationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRegistryApplication404ApplicationProblemPlusJSONResponse Problem
+
+func (response ApproveRegistryApplication404ApplicationProblemPlusJSONResponse) VisitApproveRegistryApplicationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRegistryApplication409ApplicationProblemPlusJSONResponse Problem
+
+func (response ApproveRegistryApplication409ApplicationProblemPlusJSONResponse) VisitApproveRegistryApplicationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRegistryApplication503ApplicationProblemPlusJSONResponse Problem
+
+func (response ApproveRegistryApplication503ApplicationProblemPlusJSONResponse) VisitApproveRegistryApplicationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ApproveRegistryApplicationdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ApproveRegistryApplicationdefaultApplicationProblemPlusJSONResponse) VisitApproveRegistryApplicationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRegistryApplicationPersonalDataRequestObject struct {
+	ApplicationId string `json:"application_id"`
+	Params        GetRegistryApplicationPersonalDataParams
+}
+
+type GetRegistryApplicationPersonalDataResponseObject interface {
+	VisitGetRegistryApplicationPersonalDataResponse(w http.ResponseWriter) error
+}
+
+type GetRegistryApplicationPersonalData200JSONResponse RegistryApplicationPersonalData
+
+func (response GetRegistryApplicationPersonalData200JSONResponse) VisitGetRegistryApplicationPersonalDataResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRegistryApplicationPersonalData400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetRegistryApplicationPersonalData400ApplicationProblemPlusJSONResponse) VisitGetRegistryApplicationPersonalDataResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRegistryApplicationPersonalData404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetRegistryApplicationPersonalData404ApplicationProblemPlusJSONResponse) VisitGetRegistryApplicationPersonalDataResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRegistryApplicationPersonalDatadefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetRegistryApplicationPersonalDatadefaultApplicationProblemPlusJSONResponse) VisitGetRegistryApplicationPersonalDataResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RefuseRegistryApplicationRequestObject struct {
+	ApplicationId string `json:"application_id"`
+	Body          *RefuseRegistryApplicationJSONRequestBody
+}
+
+type RefuseRegistryApplicationResponseObject interface {
+	VisitRefuseRegistryApplicationResponse(w http.ResponseWriter) error
+}
+
+type RefuseRegistryApplication200JSONResponse RegistryApplication
+
+func (response RefuseRegistryApplication200JSONResponse) VisitRefuseRegistryApplicationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RefuseRegistryApplication400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response RefuseRegistryApplication400ApplicationProblemPlusJSONResponse) VisitRefuseRegistryApplicationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RefuseRegistryApplication404ApplicationProblemPlusJSONResponse Problem
+
+func (response RefuseRegistryApplication404ApplicationProblemPlusJSONResponse) VisitRefuseRegistryApplicationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RefuseRegistryApplication409ApplicationProblemPlusJSONResponse Problem
+
+func (response RefuseRegistryApplication409ApplicationProblemPlusJSONResponse) VisitRefuseRegistryApplicationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RefuseRegistryApplicationdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response RefuseRegistryApplicationdefaultApplicationProblemPlusJSONResponse) VisitRefuseRegistryApplicationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartRegistryApplicationReviewRequestObject struct {
+	ApplicationId string `json:"application_id"`
+}
+
+type StartRegistryApplicationReviewResponseObject interface {
+	VisitStartRegistryApplicationReviewResponse(w http.ResponseWriter) error
+}
+
+type StartRegistryApplicationReview200JSONResponse RegistryApplication
+
+func (response StartRegistryApplicationReview200JSONResponse) VisitStartRegistryApplicationReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartRegistryApplicationReview404ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response StartRegistryApplicationReview404ApplicationProblemPlusJSONResponse) VisitStartRegistryApplicationReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartRegistryApplicationReview409ApplicationProblemPlusJSONResponse Problem
+
+func (response StartRegistryApplicationReview409ApplicationProblemPlusJSONResponse) VisitStartRegistryApplicationReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartRegistryApplicationReviewdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response StartRegistryApplicationReviewdefaultApplicationProblemPlusJSONResponse) VisitStartRegistryApplicationReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyRegistryApplicationRequestObject struct {
+	ApplicationId string `json:"application_id"`
+	Params        VerifyRegistryApplicationParams
+}
+
+type VerifyRegistryApplicationResponseObject interface {
+	VisitVerifyRegistryApplicationResponse(w http.ResponseWriter) error
+}
+
+type VerifyRegistryApplication200JSONResponse RegistryApplicationStatus
+
+func (response VerifyRegistryApplication200JSONResponse) VisitVerifyRegistryApplicationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyRegistryApplication404ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response VerifyRegistryApplication404ApplicationProblemPlusJSONResponse) VisitVerifyRegistryApplicationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyRegistryApplication409ApplicationProblemPlusJSONResponse Problem
+
+func (response VerifyRegistryApplication409ApplicationProblemPlusJSONResponse) VisitVerifyRegistryApplicationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyRegistryApplicationdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response VerifyRegistryApplicationdefaultApplicationProblemPlusJSONResponse) VisitVerifyRegistryApplicationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListRegistryChangesRequestObject struct {
 	Params ListRegistryChangesParams
 }
@@ -44559,6 +49786,275 @@ type ListRegistryChangesdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response ListRegistryChangesdefaultApplicationProblemPlusJSONResponse) VisitListRegistryChangesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CheckRegistrationRequestObject struct {
+	Params CheckRegistrationParams
+}
+
+type CheckRegistrationResponseObject interface {
+	VisitCheckRegistrationResponse(w http.ResponseWriter) error
+}
+
+type CheckRegistration200JSONResponse RegistryCheck
+
+func (response CheckRegistration200JSONResponse) VisitCheckRegistrationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CheckRegistration400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response CheckRegistration400ApplicationProblemPlusJSONResponse) VisitCheckRegistrationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CheckRegistration429ApplicationProblemPlusJSONResponse struct {
+	RateLimitedApplicationProblemPlusJSONResponse
+}
+
+func (response CheckRegistration429ApplicationProblemPlusJSONResponse) VisitCheckRegistrationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CheckRegistrationdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CheckRegistrationdefaultApplicationProblemPlusJSONResponse) VisitCheckRegistrationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportRegistryRequestObject struct {
+	Params   ImportRegistryParams
+	JSONBody *ImportRegistryJSONRequestBody
+	Body     io.Reader
+}
+
+type ImportRegistryResponseObject interface {
+	VisitImportRegistryResponse(w http.ResponseWriter) error
+}
+
+type ImportRegistry200JSONResponse RegistryImportReport
+
+func (response ImportRegistry200JSONResponse) VisitImportRegistryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportRegistry400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response ImportRegistry400ApplicationProblemPlusJSONResponse) VisitImportRegistryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportRegistry413ApplicationProblemPlusJSONResponse Problem
+
+func (response ImportRegistry413ApplicationProblemPlusJSONResponse) VisitImportRegistryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(413)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportRegistry415ApplicationProblemPlusJSONResponse Problem
+
+func (response ImportRegistry415ApplicationProblemPlusJSONResponse) VisitImportRegistryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(415)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportRegistry422ApplicationProblemPlusJSONResponse Problem
+
+func (response ImportRegistry422ApplicationProblemPlusJSONResponse) VisitImportRegistryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportRegistry503ApplicationProblemPlusJSONResponse Problem
+
+func (response ImportRegistry503ApplicationProblemPlusJSONResponse) VisitImportRegistryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportRegistrydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ImportRegistrydefaultApplicationProblemPlusJSONResponse) VisitImportRegistryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestOperatorLinkRequestObject struct {
+	Body *RequestOperatorLinkJSONRequestBody
+}
+
+type RequestOperatorLinkResponseObject interface {
+	VisitRequestOperatorLinkResponse(w http.ResponseWriter) error
+}
+
+type RequestOperatorLink202Response struct {
+}
+
+func (response RequestOperatorLink202Response) VisitRequestOperatorLinkResponse(w http.ResponseWriter) error {
+	w.WriteHeader(202)
+	return nil
+}
+
+type RequestOperatorLink400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response RequestOperatorLink400ApplicationProblemPlusJSONResponse) VisitRequestOperatorLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestOperatorLink404ApplicationProblemPlusJSONResponse Problem
+
+func (response RequestOperatorLink404ApplicationProblemPlusJSONResponse) VisitRequestOperatorLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestOperatorLink429ApplicationProblemPlusJSONResponse struct {
+	RateLimitedApplicationProblemPlusJSONResponse
+}
+
+func (response RequestOperatorLink429ApplicationProblemPlusJSONResponse) VisitRequestOperatorLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestOperatorLinkdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response RequestOperatorLinkdefaultApplicationProblemPlusJSONResponse) VisitRequestOperatorLinkResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -47577,6 +53073,9 @@ type StrictServerInterface interface {
 	// ExportOccurrences A de-identified export of the reports received in a window (hash-sealed, audited)
 	// (POST /v1/occurrences/export)
 	ExportOccurrences(ctx context.Context, request ExportOccurrencesRequestObject) (ExportOccurrencesResponseObject, error)
+	// CreateOperatorOccurrence An operator's occurrence report through its e-mailed link (2019/947 Art. 19(2))
+	// (POST /v1/occurrences/operator)
+	CreateOperatorOccurrence(ctx context.Context, request CreateOperatorOccurrenceRequestObject) (CreateOperatorOccurrenceResponseObject, error)
 	// GetOccurrence One occurrence report (no reporter identity)
 	// (GET /v1/occurrences/{occurrence_id})
 	GetOccurrence(ctx context.Context, request GetOccurrenceRequestObject) (GetOccurrenceResponseObject, error)
@@ -47616,9 +53115,42 @@ type StrictServerInterface interface {
 	// ListPublications The publication outbox and the CIS subscriber's state
 	// (GET /v1/publications)
 	ListPublications(ctx context.Context, request ListPublicationsRequestObject) (ListPublicationsResponseObject, error)
+	// ListRegistryApplications Applications, oldest first, without personal data (registrars)
+	// (GET /v1/registry/applications)
+	ListRegistryApplications(ctx context.Context, request ListRegistryApplicationsRequestObject) (ListRegistryApplicationsResponseObject, error)
+	// SubmitRegistryApplication Apply for an operator registration (public portal)
+	// (POST /v1/registry/applications)
+	SubmitRegistryApplication(ctx context.Context, request SubmitRegistryApplicationRequestObject) (SubmitRegistryApplicationResponseObject, error)
+	// GetRegistryApplicationStatus An application's state, by its e-mailed link (applicant)
+	// (GET /v1/registry/applications/{application_id})
+	GetRegistryApplicationStatus(ctx context.Context, request GetRegistryApplicationStatusRequestObject) (GetRegistryApplicationStatusResponseObject, error)
+	// ApproveRegistryApplication Approve an application under review: register the operator (registrars)
+	// (POST /v1/registry/applications/{application_id}/approve)
+	ApproveRegistryApplication(ctx context.Context, request ApproveRegistryApplicationRequestObject) (ApproveRegistryApplicationResponseObject, error)
+	// GetRegistryApplicationPersonalData An application's content, with a purpose (registrars)
+	// (GET /v1/registry/applications/{application_id}/personal-data)
+	GetRegistryApplicationPersonalData(ctx context.Context, request GetRegistryApplicationPersonalDataRequestObject) (GetRegistryApplicationPersonalDataResponseObject, error)
+	// RefuseRegistryApplication Refuse a submitted application with a reason (registrars)
+	// (POST /v1/registry/applications/{application_id}/refuse)
+	RefuseRegistryApplication(ctx context.Context, request RefuseRegistryApplicationRequestObject) (RefuseRegistryApplicationResponseObject, error)
+	// StartRegistryApplicationReview Take a submitted application for review (registrars)
+	// (POST /v1/registry/applications/{application_id}/review)
+	StartRegistryApplicationReview(ctx context.Context, request StartRegistryApplicationReviewRequestObject) (StartRegistryApplicationReviewResponseObject, error)
+	// VerifyRegistryApplication Follow the e-mailed verification link (applicant)
+	// (POST /v1/registry/applications/{application_id}/verify)
+	VerifyRegistryApplication(ctx context.Context, request VerifyRegistryApplicationRequestObject) (VerifyRegistryApplicationResponseObject, error)
 	// ListRegistryChanges The status change feed (F8), ids and statuses only
 	// (GET /v1/registry/changes)
 	ListRegistryChanges(ctx context.Context, request ListRegistryChangesRequestObject) (ListRegistryChangesResponseObject, error)
+	// CheckRegistration Public check of an operator registration number, status only
+	// (GET /v1/registry/check)
+	CheckRegistration(ctx context.Context, request CheckRegistrationRequestObject) (CheckRegistrationResponseObject, error)
+	// ImportRegistry Import a uas.gov.ge export under the rules file, all or nothing
+	// (POST /v1/registry/import)
+	ImportRegistry(ctx context.Context, request ImportRegistryRequestObject) (ImportRegistryResponseObject, error)
+	// RequestOperatorLink Ask for an occurrence-report link, mailed to the operator's registered address
+	// (POST /v1/registry/operator-links)
+	RequestOperatorLink(ctx context.Context, request RequestOperatorLinkRequestObject) (RequestOperatorLinkResponseObject, error)
 	// ListRegistryOperators UAS operators, in id order
 	// (GET /v1/registry/operators)
 	ListRegistryOperators(ctx context.Context, request ListRegistryOperatorsRequestObject) (ListRegistryOperatorsResponseObject, error)
@@ -49187,6 +54719,39 @@ func (sh *strictHandler) ExportOccurrences(w http.ResponseWriter, r *http.Reques
 	}
 }
 
+// CreateOperatorOccurrence operation middleware
+func (sh *strictHandler) CreateOperatorOccurrence(w http.ResponseWriter, r *http.Request, params CreateOperatorOccurrenceParams) {
+	var request CreateOperatorOccurrenceRequestObject
+
+	request.Params = params
+
+	var body CreateOperatorOccurrenceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateOperatorOccurrence(ctx, request.(CreateOperatorOccurrenceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateOperatorOccurrence")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateOperatorOccurrenceResponseObject); ok {
+		if err := validResponse.VisitCreateOperatorOccurrenceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetOccurrence operation middleware
 func (sh *strictHandler) GetOccurrence(w http.ResponseWriter, r *http.Request, occurrenceId string) {
 	var request GetOccurrenceRequestObject
@@ -49551,6 +55116,239 @@ func (sh *strictHandler) ListPublications(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// ListRegistryApplications operation middleware
+func (sh *strictHandler) ListRegistryApplications(w http.ResponseWriter, r *http.Request, params ListRegistryApplicationsParams) {
+	var request ListRegistryApplicationsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListRegistryApplications(ctx, request.(ListRegistryApplicationsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListRegistryApplications")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListRegistryApplicationsResponseObject); ok {
+		if err := validResponse.VisitListRegistryApplicationsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SubmitRegistryApplication operation middleware
+func (sh *strictHandler) SubmitRegistryApplication(w http.ResponseWriter, r *http.Request) {
+	var request SubmitRegistryApplicationRequestObject
+
+	var body SubmitRegistryApplicationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SubmitRegistryApplication(ctx, request.(SubmitRegistryApplicationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SubmitRegistryApplication")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SubmitRegistryApplicationResponseObject); ok {
+		if err := validResponse.VisitSubmitRegistryApplicationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetRegistryApplicationStatus operation middleware
+func (sh *strictHandler) GetRegistryApplicationStatus(w http.ResponseWriter, r *http.Request, applicationId string, params GetRegistryApplicationStatusParams) {
+	var request GetRegistryApplicationStatusRequestObject
+
+	request.ApplicationId = applicationId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetRegistryApplicationStatus(ctx, request.(GetRegistryApplicationStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetRegistryApplicationStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetRegistryApplicationStatusResponseObject); ok {
+		if err := validResponse.VisitGetRegistryApplicationStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ApproveRegistryApplication operation middleware
+func (sh *strictHandler) ApproveRegistryApplication(w http.ResponseWriter, r *http.Request, applicationId string) {
+	var request ApproveRegistryApplicationRequestObject
+
+	request.ApplicationId = applicationId
+
+	var body ApproveRegistryApplicationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ApproveRegistryApplication(ctx, request.(ApproveRegistryApplicationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ApproveRegistryApplication")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ApproveRegistryApplicationResponseObject); ok {
+		if err := validResponse.VisitApproveRegistryApplicationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetRegistryApplicationPersonalData operation middleware
+func (sh *strictHandler) GetRegistryApplicationPersonalData(w http.ResponseWriter, r *http.Request, applicationId string, params GetRegistryApplicationPersonalDataParams) {
+	var request GetRegistryApplicationPersonalDataRequestObject
+
+	request.ApplicationId = applicationId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetRegistryApplicationPersonalData(ctx, request.(GetRegistryApplicationPersonalDataRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetRegistryApplicationPersonalData")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetRegistryApplicationPersonalDataResponseObject); ok {
+		if err := validResponse.VisitGetRegistryApplicationPersonalDataResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RefuseRegistryApplication operation middleware
+func (sh *strictHandler) RefuseRegistryApplication(w http.ResponseWriter, r *http.Request, applicationId string) {
+	var request RefuseRegistryApplicationRequestObject
+
+	request.ApplicationId = applicationId
+
+	var body RefuseRegistryApplicationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RefuseRegistryApplication(ctx, request.(RefuseRegistryApplicationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RefuseRegistryApplication")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RefuseRegistryApplicationResponseObject); ok {
+		if err := validResponse.VisitRefuseRegistryApplicationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StartRegistryApplicationReview operation middleware
+func (sh *strictHandler) StartRegistryApplicationReview(w http.ResponseWriter, r *http.Request, applicationId string) {
+	var request StartRegistryApplicationReviewRequestObject
+
+	request.ApplicationId = applicationId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.StartRegistryApplicationReview(ctx, request.(StartRegistryApplicationReviewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StartRegistryApplicationReview")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(StartRegistryApplicationReviewResponseObject); ok {
+		if err := validResponse.VisitStartRegistryApplicationReviewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// VerifyRegistryApplication operation middleware
+func (sh *strictHandler) VerifyRegistryApplication(w http.ResponseWriter, r *http.Request, applicationId string, params VerifyRegistryApplicationParams) {
+	var request VerifyRegistryApplicationRequestObject
+
+	request.ApplicationId = applicationId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.VerifyRegistryApplication(ctx, request.(VerifyRegistryApplicationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "VerifyRegistryApplication")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(VerifyRegistryApplicationResponseObject); ok {
+		if err := validResponse.VisitVerifyRegistryApplicationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListRegistryChanges operation middleware
 func (sh *strictHandler) ListRegistryChanges(w http.ResponseWriter, r *http.Request, params ListRegistryChangesParams) {
 	var request ListRegistryChangesRequestObject
@@ -49570,6 +55368,102 @@ func (sh *strictHandler) ListRegistryChanges(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListRegistryChangesResponseObject); ok {
 		if err := validResponse.VisitListRegistryChangesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CheckRegistration operation middleware
+func (sh *strictHandler) CheckRegistration(w http.ResponseWriter, r *http.Request, params CheckRegistrationParams) {
+	var request CheckRegistrationRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CheckRegistration(ctx, request.(CheckRegistrationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CheckRegistration")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CheckRegistrationResponseObject); ok {
+		if err := validResponse.VisitCheckRegistrationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ImportRegistry operation middleware
+func (sh *strictHandler) ImportRegistry(w http.ResponseWriter, r *http.Request, params ImportRegistryParams) {
+	var request ImportRegistryRequestObject
+
+	request.Params = params
+	if strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
+
+		var body ImportRegistryJSONRequestBody
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+		request.JSONBody = &body
+
+	}
+	if strings.HasPrefix(r.Header.Get("Content-Type"), "text/csv") {
+		request.Body = r.Body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ImportRegistry(ctx, request.(ImportRegistryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ImportRegistry")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ImportRegistryResponseObject); ok {
+		if err := validResponse.VisitImportRegistryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RequestOperatorLink operation middleware
+func (sh *strictHandler) RequestOperatorLink(w http.ResponseWriter, r *http.Request) {
+	var request RequestOperatorLinkRequestObject
+
+	var body RequestOperatorLinkJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RequestOperatorLink(ctx, request.(RequestOperatorLinkRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RequestOperatorLink")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RequestOperatorLinkResponseObject); ok {
+		if err := validResponse.VisitRequestOperatorLinkResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -82,7 +82,29 @@
 //     (apiserver.PIIRoles), with a purpose recorded as
 //     registry_pii_viewed before anything is opened.
 //
-// Later work packages: the uas.gov.ge import, the public check and the
-// portal applications (WP-20); the bus push and KV (WP-10); the
-// resolvers that read the projection (WP-8, WP-14).
+// Built by WP-20 (internal/regimport and internal/regportal call it):
+//
+//   - ImportOperators and ImportUAS: the records of one uas.gov.ge
+//     export in one transaction under LockProjection and one registry
+//     version, all or nothing. Every record is checked by the rules of a
+//     registration; a problem (a duplicate in the file, a number held by
+//     another source, a changed identity, revoked listed as anything
+//     else, or a problem the rules file's reader found) refuses the whole
+//     import and is reported by record and field. Idempotent on the
+//     source's record id (source uas_gov_ge_import, source_ref, migration
+//     00022_registry_import): a matching record is unchanged, a differing
+//     one updated and moved to its status, an expiry left to the expiry
+//     job. A dry run, and a refused import, roll back and write only
+//     their events row; an applied one writes registry_imported with the
+//     counts. Tight projection rows are written before the commit and
+//     loose ones after, as change() does (G-08).
+//   - CheckNumber (GET /v1/registry/check): status and valid_until only.
+//   - CheckApplicant, NumberFree, OperatorBySource and ContactForLink:
+//     the portal's applicant check, its number issuance check, the
+//     idempotency of an approval (source portal, source_ref the
+//     application id) and the operator's registered address for an
+//     occurrence link.
+//
+// Later work packages: the bus push and KV (WP-10); the resolvers that
+// read the projection (WP-8, WP-14).
 package registry

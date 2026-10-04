@@ -393,6 +393,72 @@ type Publication struct {
 	ResolvesConflict bool
 }
 
+type RegistryApplication struct {
+	ID              string
+	Kind            string
+	State           string
+	OperatorType    string
+	Lang            string
+	PiiKeyID        string
+	PayloadEnc      []byte
+	RemoteIpHash    string
+	SubmittedAt     time.Time
+	VerifyExpiresAt time.Time
+	VerifiedAt      *time.Time
+	RegistrarID     *string
+	ReviewStartedAt *time.Time
+	DecidedAt       *time.Time
+	RefusalReason   *string
+	IssuedNumber    *string
+	SecretEnc       []byte
+	OperatorID      *string
+	ValidUntil      *time.Time
+}
+
+type RegistryImport struct {
+	ID              string
+	At              time.Time
+	Kind            string
+	Origin          string
+	ContentSha256   string
+	RulesVersion    string
+	Outcome         string
+	RowsRead        int32
+	Created         int32
+	Updated         int32
+	Unchanged       int32
+	Problems        int32
+	RegistryVersion *int64
+	ActorID         string
+}
+
+type RegistryPortalHit struct {
+	Bucket  string
+	KeyHash string
+	At      time.Time
+}
+
+type RegistryPortalLinksUsed struct {
+	LinkID    string
+	UsedAt    time.Time
+	ExpiresAt time.Time
+}
+
+type RegistryPortalMail struct {
+	ID            int64
+	Kind          string
+	ApplicationID *string
+	Lang          string
+	PiiKeyID      string
+	MessageEnc    []byte
+	CreatedAt     time.Time
+	Attempts      int32
+	NextAttemptAt time.Time
+	SentAt        *time.Time
+	FailedAt      *time.Time
+	LastError     *string
+}
+
 type RegistryStatusChange struct {
 	Seq        int64
 	EntityType string
@@ -521,6 +587,8 @@ type UAS struct {
 	CreatedBy        string
 	UpdatedAt        time.Time
 	UpdatedBy        string
+	Source           string
+	SourceRef        *string
 }
 
 type UasOperator struct {
@@ -551,6 +619,7 @@ type UasOperator struct {
 	CreatedBy                    string
 	UpdatedAt                    time.Time
 	UpdatedBy                    string
+	SourceRef                    *string
 }
 
 type User struct {
