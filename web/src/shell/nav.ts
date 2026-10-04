@@ -34,7 +34,16 @@ export interface NavItem {
  * (the map says so when the zones are refused). Later work packages
  * (WP-22 to WP-24) add their pages here with their operations' x-roles.
  */
-export const NAV_ITEMS: readonly NavItem[] = [{ path: "", labelKey: "authority.nav.map", roles: [], realms: ["console", "police"] }];
+export const NAV_ITEMS: readonly NavItem[] = [
+  { path: "", labelKey: "authority.nav.map", roles: [], realms: ["console", "police"] },
+  // WP-22: the registry, zone and U-space authoring, certificates. The
+  // roles are each page's read operation's x-roles (listRegistryOperators,
+  // listZones, listUSpaceAirspaces, listCertificates).
+  { path: "/registry/operators", labelKey: "authority.nav.registry", roles: ["registrar", "inspector", "viewer"], realms: ["console"] },
+  { path: "/zones", labelKey: "authority.nav.zones", roles: ["inspector", "admin", "viewer"], realms: ["console"] },
+  { path: "/uspace", labelKey: "authority.nav.uspace", roles: ["admin"], realms: ["console"] },
+  { path: "/certificates", labelKey: "authority.nav.certificates", roles: ["admin"], realms: ["console"] },
+];
 
 /** The items a session with `roles` in `realm` is shown; none without a session. */
 export function navFor(session: { roles: readonly string[]; realm: string } | null): NavItem[] {
