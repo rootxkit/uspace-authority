@@ -980,10 +980,18 @@ func (h *Hub) detach(c *client, code websocket.StatusCode, reason string) {
 }
 
 // write sends c's frames, status and snapshot first, each within
-// WriteTimeout; a write that fails ends the console.
+// WriteTimeout; a write that fails ends the console. ctx stops the loop
+// between writes, never a write in flight: the WebSocket library drops
+// the connection when a write's context ends, even one already flushed
+// but not yet returned, so a write bound to ctx would lose the close
+// frame (1007, 4401, 1001) detach sends right after cancelling ctx. The
+// close handshake waits for that write, which WriteTimeout bounds.
 func (h *Hub) write(ctx context.Context, c *client) {
 	send := func(f []byte) bool {
-		wctx, cancel := context.WithTimeout(ctx, h.cfg.WriteTimeout)
+		if ctx.Err() != nil {
+			return false // detached: the close frame is next on the wire
+		}
+		wctx, cancel := context.WithTimeout(context.Background(), h.cfg.WriteTimeout)
 		err := c.conn.Write(wctx, f)
 		cancel()
 		if err != nil {
