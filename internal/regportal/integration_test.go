@@ -283,8 +283,8 @@ func TestIntegrationApplicationEndToEnd(t *testing.T) {
 	// A retried registration finds the operator the approval made.
 	a := Application{ID: app.ID, IssuedNumber: approved.IssuedNumber, ValidUntil: approved.ValidUntil}
 	in := applicant()
-	again, err := it.svc.registerOperator(ctx, &a, &in, secret[1], registrar)
-	if err != nil || again.ID != approved.OperatorID {
+	again, collided, err := it.svc.registerOperator(ctx, &a, &in, secret[1], registrar)
+	if err != nil || collided || again.ID != approved.OperatorID {
 		t.Fatalf("retried registration %+v %v", again, err)
 	}
 }

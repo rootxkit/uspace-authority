@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/rootxkit/uspace-authority/internal/audit"
 	"github.com/rootxkit/uspace-authority/internal/httpx"
@@ -94,5 +96,108 @@ func TestIntegrationRefuseAfterAHalfFailedApproval(t *testing.T) {
 				t.Fatal("an operator was registered for the refused application")
 			}
 		})
+	}
+}
+
+// A refusal racing an approval: while the approval registers the
+// operator it holds the application's row lock, so the refusal cannot
+// decide the application under it; once the approval commits, the
+// refusal finds it approved (409). Without the lock the refusal
+// committed in between and the registry kept an operator for a refused
+// application.
+func TestIntegrationRefusalWaitsForAnApprovalInFlight(t *testing.T) {
+	it := newIntegration(t)
+	ctx := context.Background()
+	reg := it.stub(t)
+	app := it.underReview(t, "192.0.2.60")
+	var refuseErr error
+	reg.create = func(ctx context.Context, in registry.NewOperator, actor audit.Actor) (registry.Operator, error) {
+		// The refusal runs to its end, or to its deadline, while the
+		// registration is still in progress.
+		rctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		done := make(chan error, 1)
+		go func() {
+			_, err := it.svc.Refuse(rctx, app.ID, "documents incomplete", registrar)
+			done <- err
+		}()
+		refuseErr = <-done
+		return reg.Registry.CreateOperator(ctx, in, actor)
+	}
+	approved, err := it.svc.Approve(ctx, app.ID, nil, registrar)
+	if refuseErr == nil {
+		t.Fatal("a refusal decided the application while its approval was registering the operator")
+	}
+	if err != nil || approved.State != StateApproved {
+		t.Fatalf("approve %+v %v", approved, err)
+	}
+	reg.create = nil
+	if _, err := it.svc.Refuse(ctx, app.ID, "documents incomplete", registrar); httpx.ProblemFromError(err).Status != http.StatusConflict {
+		t.Fatalf("refused after the approval: %v", err)
+	}
+	if n := it.count(t, `SELECT count(*) FROM registry_applications WHERE id = $1 AND state = 'approved'`, app.ID); n != 1 {
+		t.Fatal("the approval did not stand")
+	}
+}
+
+// An approval that registered the operator and then failed before its
+// decision is finished by approving again; a refusal of it is 409, so
+// the registry never keeps an operator for a refused application.
+func TestIntegrationHalfFinishedApprovalIsNotRefused(t *testing.T) {
+	it := newIntegration(t)
+	reg := it.stub(t)
+	app := it.underReview(t, "192.0.2.61")
+	actx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	reg.create = func(ctx context.Context, in registry.NewOperator, actor audit.Actor) (registry.Operator, error) {
+		op, err := reg.Registry.CreateOperator(ctx, in, actor)
+		cancel() // the decision's statements fail after the registration committed
+		return op, err
+	}
+	if _, err := it.svc.Approve(actx, app.ID, nil, registrar); err == nil {
+		t.Fatal("the approval did not fail")
+	}
+	reg.create = nil
+	ctx := context.Background()
+	if n := it.count(t, `SELECT count(*) FROM uas_operators WHERE source_ref = $1`, app.ID); n != 1 {
+		t.Fatalf("%d operators registered", n)
+	}
+	if _, err := it.svc.Refuse(ctx, app.ID, "documents incomplete", registrar); httpx.ProblemFromError(err).Status != http.StatusConflict {
+		t.Fatalf("a half-finished approval was refused: %v", err)
+	}
+	approved, err := it.svc.Approve(ctx, app.ID, nil, registrar)
+	if err != nil || approved.State != StateApproved {
+		t.Fatalf("approve again %+v %v", approved, err)
+	}
+	if n := it.count(t, `SELECT count(*) FROM uas_operators WHERE source_ref = $1`, app.ID); n != 1 {
+		t.Fatal("the retried approval registered the operator twice")
+	}
+}
+
+// Many approvals and refusals of the same applications at once: each
+// application ends approved with one operator, or refused with none.
+func TestIntegrationApproveAndRefuseRace(t *testing.T) {
+	it := newIntegration(t)
+	ctx := context.Background()
+	apps := make([]Application, 3)
+	for i := range apps {
+		apps[i] = it.underReview(t, fmt.Sprintf("192.0.2.%d", 70+i))
+	}
+	var wg sync.WaitGroup
+	for _, a := range apps {
+		for range 2 {
+			wg.Add(2)
+			go func() { defer wg.Done(); _, _ = it.svc.Approve(ctx, a.ID, nil, registrar) }()
+			go func() { defer wg.Done(); _, _ = it.svc.Refuse(ctx, a.ID, "documents incomplete", registrar) }()
+		}
+	}
+	wg.Wait()
+	for _, a := range apps {
+		approved := it.count(t, `SELECT count(*) FROM registry_applications WHERE id = $1 AND state = 'approved'`, a.ID)
+		refused := it.count(t, `SELECT count(*) FROM registry_applications WHERE id = $1 AND state = 'refused'`, a.ID)
+		ops := it.count(t, `SELECT count(*) FROM uas_operators WHERE source_ref = $1`, a.ID)
+		if approved+refused != 1 || ops != approved {
+			t.Fatalf("%s: approved %d refused %d operators %d", a.ID, approved, refused, ops)
+		}
 	}
 }

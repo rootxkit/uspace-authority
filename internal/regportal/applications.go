@@ -357,11 +357,15 @@ func (s *Service) StartReview(ctx context.Context, id string, actor audit.Actor)
 
 // Approve registers the applicant: the number and its secret part are
 // chosen once and kept on the application (the secret sealed) in their
-// own transaction; the operator is registered through the registry
-// (source portal, source_ref the application id, so a retried approval
-// finds it instead of registering it twice); then the application is
-// approved, the secret moved into the approval e-mail's outbox row and
-// the events row written together. The secret part is in no response.
+// own transaction; then, in one transaction holding the application's
+// row lock throughout, the state is checked again, the operator is
+// registered through the registry (source portal, source_ref the
+// application id, so a retried approval finds it instead of registering
+// it twice), the application approved, the secret moved into the
+// approval e-mail's outbox row and the events row written. A refusal
+// taking the same lock waits for the approval and then finds it decided,
+// so no operator is registered for a refused application. The secret
+// part is in no response.
 func (s *Service) Approve(ctx context.Context, id string, validUntil *time.Time, actor audit.Actor) (Application, error) {
 	if err := s.needApplications(); err != nil {
 		return Application{}, err
@@ -373,13 +377,13 @@ func (s *Service) Approve(ctx context.Context, id string, validUntil *time.Time,
 	if err != nil {
 		return Application{}, err
 	}
-	op, err := s.registerOperator(ctx, &app, &applicant, secret, actor)
-	if err != nil {
-		return Application{}, err
-	}
 	var out Application
+	taken := false
 	err = s.DB.WithTx(ctx, func(q *gen.Queries) error {
 		cur, err := q.ApplicationForUpdate(ctx, id)
+		if store.IsNoRows(err) {
+			return notFoundApplication()
+		}
 		if err != nil {
 			return err
 		}
@@ -389,6 +393,18 @@ func (s *Service) Approve(ctx context.Context, id string, validUntil *time.Time,
 		}
 		if cur.State != StateUnderReview {
 			return conflictState(cur.State, StateUnderReview)
+		}
+		if deref(cur.IssuedNumber) != app.IssuedNumber {
+			return httpx.Refuse(http.StatusConflict, httpx.SlugConflict,
+				"the number chosen for this application changed meanwhile; approve again")
+		}
+		op, collided, err := s.registerOperator(ctx, &app, &applicant, secret, actor)
+		if err != nil {
+			return err
+		}
+		if collided {
+			taken = true
+			return q.ClearApplicationIssuedNumber(ctx, id)
 		}
 		r, err := q.ApproveApplication(ctx, gen.ApproveApplicationParams{ID: id, OperatorID: &op.ID, RegistrarID: &actor.ID})
 		if err != nil {
@@ -414,6 +430,10 @@ func (s *Service) Approve(ctx context.Context, id string, validUntil *time.Time,
 	})
 	if err != nil {
 		return Application{}, err
+	}
+	if taken {
+		return Application{}, httpx.Refuse(http.StatusConflict, httpx.SlugConflict,
+			"the number chosen for this application was registered meanwhile; approve again to choose another")
 	}
 	s.count(CounterApproved)
 	return out, nil
@@ -474,36 +494,33 @@ func (s *Service) chooseNumber(ctx context.Context, id string, validUntil *time.
 
 // registerOperator registers the operator of an application through the
 // registry, once: a retried approval finds the operator the first one
-// registered (source portal, source_ref the application id). A number
-// another registration took meanwhile is chosen again on the next
-// approval (409 with that reason).
-func (s *Service) registerOperator(ctx context.Context, app *Application, a *Applicant, secret string, actor audit.Actor) (registry.Operator, error) {
+// registered (source portal, source_ref the application id). collided
+// is a number another registration took meanwhile: the caller clears it
+// on the application, under its row lock, and the next approval chooses
+// another.
+func (s *Service) registerOperator(ctx context.Context, app *Application, a *Applicant, secret string, actor audit.Actor) (op registry.Operator, collided bool, err error) {
 	if op, found, err := s.Registry.OperatorBySource(ctx, registry.SourcePortal, app.ID); err != nil || found {
-		return op, err
+		return op, false, err
 	}
-	op, err := s.Registry.CreateOperator(ctx, registry.NewOperator{
+	op, err = s.Registry.CreateOperator(ctx, registry.NewOperator{
 		OperatorType: a.OperatorType, RegistrationNumber: app.IssuedNumber, SecretPart: secret, PII: a.PII,
 		CompetencyConfirmation: a.CompetencyConfirmation, Authorisations: a.Authorisations, ValidUntil: *app.ValidUntil,
 		Source: registry.SourcePortal, SourceRef: app.ID,
 	}, actor)
 	if err == nil {
-		return op, nil
+		return op, false, nil
 	}
 	found, ok, ferr := s.Registry.OperatorBySource(ctx, registry.SourcePortal, app.ID)
 	switch {
 	case ferr != nil:
-		return registry.Operator{}, ferr
+		return registry.Operator{}, false, ferr
 	case ok:
-		return found, nil
+		return found, false, nil
 	case httpx.ProblemFromError(err).Status == http.StatusConflict:
 		s.count(CounterIssueCollision)
-		if cerr := s.DB.Queries().ClearApplicationIssuedNumber(ctx, app.ID); cerr != nil {
-			return registry.Operator{}, cerr
-		}
-		return registry.Operator{}, httpx.Refuse(http.StatusConflict, httpx.SlugConflict,
-			"the number chosen for this application was registered meanwhile; approve again to choose another")
+		return registry.Operator{}, true, nil
 	}
-	return registry.Operator{}, err
+	return registry.Operator{}, false, err
 }
 
 // Refuse refuses a submitted or reviewed application with a reason,
@@ -527,6 +544,20 @@ func (s *Service) Refuse(ctx context.Context, id, reason string, actor audit.Act
 		}
 		if cur.State != StateSubmitted && cur.State != StateUnderReview {
 			return conflictState(cur.State, StateSubmitted, StateUnderReview)
+		}
+		// An approval that registered the operator and failed before its
+		// decision is finished by approving again, never refused: the
+		// registry would keep an operator for a refused application.
+		if cur.IssuedNumber != nil {
+			_, found, err := s.Registry.OperatorBySource(ctx, registry.SourcePortal, id)
+			if err != nil {
+				return err
+			}
+			if found {
+				return httpx.Refuse(http.StatusConflict, httpx.SlugConflict,
+					"an operator is registered for this application already; approve it again to finish the approval",
+					core.Fieldf("state", "an approval is half-finished: approve again"))
+			}
 		}
 		var a Applicant
 		if err := s.open(cur.PiiKeyID, payloadAAD(id), cur.PayloadEnc, &a); err != nil {
