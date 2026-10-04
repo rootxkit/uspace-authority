@@ -219,8 +219,10 @@ the kit's `bffHandlers` configured in `web/src/lib/bff/handlers.ts`.
   pattern anchored; the registry's machine operations are not among
   them), and WP-23's `OVERSIGHT_PROXY_ROUTES`, each of which names the
   methods of its operations (a path of WP-23's with another method is
-  the BFF's 405 and never reaches api). Any other path is the BFF's 404
-  and never reaches api. `GET`, `POST`, `PUT` and `PATCH` are routed,
+  the BFF's 405 and never reaches api; without a session it is the
+  BFF's 401 and without the CSRF pair its 403 first, so the 405 tells
+  only a signed-in caller which methods a route takes). Any other path
+  is the BFF's 404 and never reaches api, before any other check. `GET`, `POST`, `PUT` and `PATCH` are routed,
   `DELETE` is not. An unsafe method needs `X-CSRF-Token` equal to
   `uspace_csrf` (the kit's check, before api) and a body that announces
   its length, within `WEB_PROXY_MAX_BODY_BYTES`. A 401 from api clears

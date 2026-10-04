@@ -14,14 +14,17 @@
 //   as the bearer, for the paths in PROXY_ALLOW_PATHS only (fail closed:
 //   anything else is a 404 of the BFF and never reaches api); an unsafe
 //   method needs X-CSRF-Token equal to the CSRF cookie and a body of at
-//   most WEB_PROXY_MAX_BODY_BYTES that announces its length.
+//   most WEB_PROXY_MAX_BODY_BYTES that announces its length. A method a
+//   WP-23 route does not take is a 405, but only to a signed-in caller
+//   with the CSRF pair: anyone else is refused first (401, 403), so the
+//   405 never tells an anonymous caller which methods a route takes.
 // - logout: the kit's CSRF check, POST /v1/auth/logout with the bearer,
 //   and both cookies cleared whatever api answers.
 //
 // The picture WebSocket is not proxied: the browser upgrades
 // /v1/picture/ws same-origin and the cookie rides the upgrade (M22).
 // There is no ticket route.
-import { BFF_API_PREFIX, bffHandlers, MIN_CHALLENGE_SECRET_BYTES, type BffHandlers } from "@rootxkit/uspace-ui/auth/server";
+import { BFF_API_PREFIX, bffHandlers, checkCsrf, MIN_CHALLENGE_SECRET_BYTES, readSessionToken, type BffHandlers } from "@rootxkit/uspace-ui/auth/server";
 import { NextResponse } from "next/server";
 
 /** api's sign-in steps and logout (api/openapi.yaml, WP-2). */
@@ -175,12 +178,23 @@ export function createBff(cfg: BffConfig): BffHandlers {
       // or 413.
       if (!PROXY_ALLOW_PATHS.some((re) => re.test(path))) return kit.proxy(req);
       if (methodRefused(req.method, path)) {
+        // Unauthenticated first: an anonymous caller is told only that,
+        // whatever the method (api's own 401, with api's slug).
+        if (readSessionToken(req, SESSION) === null) {
+          return Promise.resolve(problem(401, "unauthenticated", "Unauthenticated", "no session"));
+        }
+        if (!checkCsrf(req, SESSION)) {
+          return Promise.resolve(problem(403, "csrf_refused", "CSRF check failed", "send the uspace_csrf cookie's value as X-CSRF-Token"));
+        }
         return Promise.resolve(problem(405, "method_not_allowed", "Method not allowed", `${req.method} is not served on this path`));
       }
       return bounded(req);
     },
   };
 }
+
+/** The session and CSRF cookies' names: the contract's defaults, which kitHandlers keeps (it names neither). */
+const SESSION = {};
 
 function kitHandlers(cfg: BffConfig): BffHandlers {
   return bffHandlers({

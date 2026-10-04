@@ -305,6 +305,35 @@ describe("WP-23's routes", () => {
     expect(api.calls).toEqual([]);
   });
 
+  it("an anonymous caller is refused as unauthenticated, never told which methods a route takes", async () => {
+    const api = fakeApi();
+    const bff = createBff(cfg(api.fetch));
+    // Without a session, even with a CSRF pair of its own making.
+    const anon = (method: string, path: string) =>
+      new NextRequest(`${ORIGIN}/_bff/api${path}`, {
+        method,
+        headers: { cookie: "uspace_csrf=c1", "x-csrf-token": "c1", host: "console.test", ...(method === "GET" ? {} : { "content-length": "2" }) },
+        ...(method === "GET" ? {} : { body: "{}" }),
+      });
+    for (const [method, path] of [
+      ["PATCH", `/v1/violations/${ULID}/review`],
+      ["GET", "/v1/police/exports"],
+      ["PUT", "/v1/audit/events"],
+    ] as const) {
+      const res = await bff.proxy(anon(method, path));
+      expect(res.status, `${method} ${path}`).toBe(401);
+      expect(((await res.json()) as { type: string }).type).toBe("https://schemas.uspace.ge/problems/unauthenticated");
+    }
+    expect(api.calls).toEqual([]);
+  });
+
+  it("a signed-in write of another method without the CSRF pair is the CSRF refusal, not the 405", async () => {
+    const api = fakeApi();
+    const res = await createBff(cfg(api.fetch)).proxy(req("PATCH", `/v1/violations/${ULID}/review`, false));
+    expect(res.status).toBe(403);
+    expect(api.calls).toEqual([]);
+  });
+
   it("a write without the CSRF pair is refused before api", async () => {
     const api = fakeApi();
     expect((await createBff(cfg(api.fetch)).proxy(req("POST", `/v1/violations/${ULID}/review`, false))).status).toBe(403);

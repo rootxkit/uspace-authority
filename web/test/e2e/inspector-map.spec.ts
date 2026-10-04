@@ -133,11 +133,20 @@ test("the BFF proxy reaches only its allow-list; the pair reaches api", async ({
   expect(calls.some((c) => c.path === "/v1/auth/session")).toBe(true);
   expect(calls.some((c) => c.path === "/v1/users")).toBe(false);
   // DELETE is not routed at all; a write without the CSRF pair is refused
-  // by the BFF; a method a WP-23 path does not take is refused by the BFF.
-  const method = (m: string, p: string) => page.evaluate(async ([mm, pp]) => (await fetch(pp ?? "", { method: mm })).status, [m, p]);
+  // by the BFF; a method a WP-23 path does not take is refused by the BFF,
+  // as a 405 only to a session with the CSRF pair (the CSRF refusal first).
+  const method = (m: string, p: string, csrf = false) =>
+    page.evaluate(
+      async ([mm, pp, withCsrf]) => {
+        const token = /(?:^|; )uspace_csrf=([^;]*)/.exec(document.cookie)?.[1] ?? "";
+        return (await fetch(String(pp), { method: String(mm), headers: withCsrf === true ? { "X-CSRF-Token": token } : {} })).status;
+      },
+      [m, p, csrf] as const,
+    );
   expect(await method("DELETE", "/_bff/api/v1/zones")).toBe(405);
   expect(await method("POST", "/_bff/api/v1/zones")).toBe(403);
-  expect(await method("POST", "/_bff/api/v1/violations")).toBe(405);
+  expect(await method("POST", "/_bff/api/v1/violations")).toBe(403);
+  expect(await method("POST", "/_bff/api/v1/violations", true)).toBe(405);
   const after = (await (await request.get("/__mock/requests")).json()) as { method: string; path: string }[];
   expect(after.some((c) => c.method !== "GET" && (c.path === "/v1/zones" || c.path === "/v1/violations"))).toBe(false);
 });
