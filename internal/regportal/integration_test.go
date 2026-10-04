@@ -102,10 +102,17 @@ func writeKey(t *testing.T, dir, name string) string {
 
 func newIntegration(t *testing.T) *itest {
 	t.Helper()
+	return newIntegrationWith(t, func(u string) string { return u })
+}
+
+// newIntegrationWith is newIntegration with the service's database URL
+// passed through appURL first (the admin handle keeps the plain one).
+func newIntegrationWith(t *testing.T, appURL func(string) string) *itest {
+	t.Helper()
 	ctx := context.Background()
 	pgURL := storetest.Migrated(t, migrate.Relational)
 	tsURL := storetest.Migrated(t, migrate.Timeseries)
-	db, err := pg.Open(ctx, store.PoolOptions{URL: pgURL, Role: pg.AppRole, ApplicationName: "uspace-authority-test"})
+	db, err := pg.Open(ctx, store.PoolOptions{URL: appURL(pgURL), Role: pg.AppRole, ApplicationName: "uspace-authority-test"})
 	if err != nil {
 		t.Fatal(err)
 	}

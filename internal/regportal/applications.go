@@ -370,9 +370,6 @@ func (s *Service) Approve(ctx context.Context, id string, validUntil *time.Time,
 	if err := s.needApplications(); err != nil {
 		return Application{}, err
 	}
-	if validUntil != nil && !validUntil.After(time.Now()) {
-		return Application{}, core.Fieldf("valid_until", "must be in the future")
-	}
 	app, applicant, secret, err := s.chooseNumber(ctx, id, validUntil)
 	if err != nil {
 		return Application{}, err
@@ -410,7 +407,7 @@ func (s *Service) Approve(ctx context.Context, id string, validUntil *time.Time,
 		if err != nil {
 			return err
 		}
-		tok, err := s.applicationToken(id, s.statusLinkExpiry(time.Now()))
+		tok, err := s.applicationToken(id, s.statusLinkExpiry(*r.DecidedAt))
 		if err != nil {
 			return err
 		}
@@ -457,6 +454,13 @@ func (s *Service) chooseNumber(ctx context.Context, id string, validUntil *time.
 		if cur.State != StateUnderReview {
 			return conflictState(cur.State, StateUnderReview)
 		}
+		now, err := q.DBNow(ctx)
+		if err != nil {
+			return err
+		}
+		if validUntil != nil && !validUntil.After(now) {
+			return core.Fieldf("valid_until", "must be in the future")
+		}
 		if err := s.open(cur.PiiKeyID, payloadAAD(id), cur.PayloadEnc, &applicant); err != nil {
 			return err
 		}
@@ -484,7 +488,7 @@ func (s *Service) chooseNumber(ctx context.Context, id string, validUntil *time.
 		if err != nil {
 			return err
 		}
-		until := time.Now().UTC().Add(s.Config.Validity)
+		until := now.UTC().Add(s.Config.Validity)
 		if validUntil != nil {
 			until = validUntil.UTC()
 		}
@@ -573,7 +577,7 @@ func (s *Service) Refuse(ctx context.Context, id, reason string, actor audit.Act
 		if err != nil {
 			return err
 		}
-		tok, err := s.applicationToken(id, s.statusLinkExpiry(time.Now()))
+		tok, err := s.applicationToken(id, s.statusLinkExpiry(*r.DecidedAt))
 		if err != nil {
 			return err
 		}

@@ -9,9 +9,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rootxkit/uspace-core/core"
+
 	"github.com/rootxkit/uspace-authority/internal/audit"
 	"github.com/rootxkit/uspace-authority/internal/httpx"
 	"github.com/rootxkit/uspace-authority/internal/registry"
+	"github.com/rootxkit/uspace-authority/internal/store/storetest"
 )
 
 // stubRegistry is the registry with CreateOperator replaced by create
@@ -241,5 +244,43 @@ func TestIntegrationRetriedApprovalKeepsItsValidity(t *testing.T) {
 	approved, err = it.svc.Approve(ctx, app2.ID, nil, registrar)
 	if err != nil || approved.ValidUntil == nil || !approved.ValidUntil.Equal(first) {
 		t.Fatalf("retried without a valid_until %+v %v", approved, err)
+	}
+}
+
+// dbAhead is how far the shifted database clock runs ahead of the
+// process's in TestIntegrationApprovalTimesByTheDatabaseClock.
+const dbAhead = 2 * time.Hour
+
+// An approval's instants are the database's, never the replica's: with
+// the database clock dbAhead ahead (now() resolved through a schema
+// ahead of pg_catalog for the service's connections), a valid_until
+// that is future only by the replica's clock is refused, and the
+// default validity runs from the database's now.
+func TestIntegrationApprovalTimesByTheDatabaseClock(t *testing.T) {
+	it := newIntegrationWith(t, func(u string) string {
+		if _, err := storetest.Open(t, u).ExecContext(context.Background(), `CREATE SCHEMA clock;
+			CREATE FUNCTION clock.now() RETURNS timestamptz LANGUAGE sql STABLE AS $$ SELECT pg_catalog.now() + interval '2 hours' $$;
+			GRANT USAGE ON SCHEMA clock TO PUBLIC`); err != nil {
+			t.Fatal(err)
+		}
+		return u + "&search_path=clock,public,pg_catalog"
+	})
+	ctx := context.Background()
+	if now, err := it.svc.DB.Queries().DBNow(ctx); err != nil || time.Until(now) < dbAhead-time.Minute {
+		t.Fatalf("the database clock is not shifted: %v %v", now, err)
+	}
+	app := it.underReview(t, "192.0.2.95")
+	soon := time.Now().Add(dbAhead / 2)
+	_, err := it.svc.Approve(ctx, app.ID, &soon, registrar)
+	var fe *core.FieldError
+	if !errors.As(err, &fe) || fe.Field != "valid_until" {
+		t.Fatalf("a valid_until past by the database clock: %v", err)
+	}
+	approved, err := it.svc.Approve(ctx, app.ID, nil, registrar)
+	if err != nil || approved.ValidUntil == nil {
+		t.Fatalf("approve %+v %v", approved, err)
+	}
+	if early := time.Now().Add(it.svc.Config.Validity + dbAhead - time.Minute); approved.ValidUntil.Before(early) {
+		t.Fatalf("valid until %v runs from the replica's clock (want after %v)", approved.ValidUntil, early)
 	}
 }
