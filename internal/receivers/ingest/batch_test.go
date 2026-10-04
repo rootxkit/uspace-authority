@@ -147,11 +147,3 @@ func TestRowsLeaveMsgTypeEmptyForNoPayloadAndCopyThePosition(t *testing.T) {
 		t.Fatal("a type for an empty payload")
 	}
 }
-
-func TestLoopbackAddr(t *testing.T) {
-	for in, want := range map[string]string{":8081": "127.0.0.1:8081", "0.0.0.0:9": "127.0.0.1:9", "garbage": "127.0.0.1:0"} {
-		if got := LoopbackAddr(in); got != want {
-			t.Errorf("%s: %s", in, got)
-		}
-	}
-}

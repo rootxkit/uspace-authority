@@ -23,6 +23,7 @@ import (
 	"github.com/rootxkit/uspace-core/auth"
 	"github.com/rootxkit/uspace-core/sources"
 
+	"github.com/rootxkit/uspace-authority/api/gen"
 	"github.com/rootxkit/uspace-authority/internal/config"
 	"github.com/rootxkit/uspace-authority/internal/passhash"
 	"github.com/rootxkit/uspace-authority/internal/proc"
@@ -146,6 +147,7 @@ type harness struct {
 	bucket string
 	stdout *lines
 	base   string
+	admin  string
 	exit   chan int
 	cancel context.CancelFunc
 }
@@ -222,6 +224,26 @@ func (h *harness) start(extra map[string]string, o ingest.Options) {
 	})
 	listen := h.stdout.waitFor(h.t, "public listener open", nil)
 	h.base = "http://" + listen["addr"].(string)
+	started := h.stdout.waitFor(h.t, "started", nil)
+	h.admin = "http://" + started["admin_addr"].(string)
+}
+
+// readyCheck reads /readyz on the admin listener: its status code and
+// the named check (zero when absent).
+func (h *harness) readyCheck(name string) (int, gen.Check) {
+	h.t.Helper()
+	resp, err := client.Get(h.admin + "/readyz")
+	if err != nil {
+		h.t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	var body struct {
+		Checks map[string]gen.Check `json:"checks"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		h.t.Fatal(err)
+	}
+	return resp.StatusCode, body.Checks[name]
 }
 
 // createTSW stands in for WP-9/WP-10's TSW stream: the writer's input.
@@ -316,15 +338,28 @@ func waitUntil(t *testing.T, d time.Duration, cond func() bool) {
 	}
 }
 
-// E-02, R-06: with no receiver keys the ingest listens on loopback only
-// and says so, whatever address it was configured with.
-func TestIntegrationNoKeysListensOnLoopbackOnly(t *testing.T) {
+// WP-L6 finding 5 (supersedes the loopback rule of E-02/R-06): with no
+// receiver keys the ingest still listens on its configured address, never
+// on loopback where no receiver can reach it, refuses every batch, counts
+// each refusal and says so in /readyz.
+func TestIntegrationNoKeysListensOnTheConfiguredAddressAndRefuses(t *testing.T) {
 	h := newHarness(t)
 	h.start(nil, ingest.Options{})
-	if !strings.HasPrefix(h.base, "http://127.0.0.1:") {
-		t.Fatalf("listening on %s", h.base)
+	if strings.HasPrefix(h.base, "http://127.0.0.1:") {
+		t.Fatalf("RID_INGEST_ADDR=:0 but listening on loopback %s", h.base)
 	}
-	h.stdout.waitFor(t, "no receiver keys: listening on loopback only (R-06); restart once receivers are registered", nil)
+	h.stdout.waitFor(t, "no receiver keys: every batch is refused until a receiver is registered; the key set is followed, no restart needed", nil)
+	r := newTestRx(t, "rx-int-nokeys")
+	for _, nonce := range []string{"n-1", "n-2"} {
+		if code, _, _ := h.post(r, nonce, observation("AA:BB:CC:00:00:01", 1, time.Now())); code != http.StatusUnauthorized {
+			t.Fatalf("batch with no keys: %d", code)
+		}
+	}
+	code, chk := h.readyCheck("receiver_keys")
+	if code != http.StatusServiceUnavailable || chk.Ok || chk.Error == nil ||
+		!strings.Contains(*chk.Error, "no receiver keys") || !strings.Contains(*chk.Error, "2 batches refused") {
+		t.Fatalf("/readyz %d receiver_keys %+v", code, chk)
+	}
 	// SC-22, E-02: no geoid and no projection (TS_URL names nothing) are
 	// said at start and on the status line, never silence.
 	h.stdout.waitFor(t, "no geoid configured: Remote ID aircraft have no AMSL altitude and are not judged vertically (R-07)", nil)
@@ -333,6 +368,35 @@ func TestIntegrationNoKeysListensOnLoopbackOnly(t *testing.T) {
 		geo, _ := m["geoid"].(string)
 		return m["projection_loaded"] == false && strings.Contains(geo, "not judged vertically")
 	})
+}
+
+// The twin: a receiver registered while the ingest runs with no keys is
+// accepted on the same listener without a restart, and /readyz passes
+// its key check.
+func TestIntegrationKeysAddedAtRuntimeAreAcceptedWithoutRestart(t *testing.T) {
+	h := newHarness(t)
+	h.createTSW()
+	h.start(nil, ingest.Options{})
+	h.stdout.waitFor(t, "no receiver keys: every batch is refused until a receiver is registered; the key set is followed, no restart needed", nil)
+	base := h.base
+	r := newTestRx(t, "rx-int-late")
+	if code, _, _ := h.post(r, "n-1", observation("AA:BB:CC:00:00:01", 1, time.Now())); code != http.StatusUnauthorized {
+		t.Fatalf("before the key: %d", code)
+	}
+	h.put(r.entry)
+	waitUntil(t, 10*time.Second, func() bool { _, chk := h.readyCheck("receiver_keys"); return chk.Ok })
+	code, a, _ := h.post(r, "n-2", observation("AA:BB:CC:00:00:01", 2, time.Now()))
+	if code != http.StatusAccepted || a.Accepted != 1 {
+		t.Fatalf("after the key: %d %+v", code, a)
+	}
+	var rows []ridpipe.Row
+	waitUntil(t, 10*time.Second, func() bool { rows, _ = h.handedOver(); return len(rows) == 1 })
+	if rows[0].ReceiverID != r.id || h.base != base {
+		t.Fatalf("row %+v, listener %s then %s", rows[0], base, h.base)
+	}
+	if n := strings.Count(h.stdout.tail(1<<20), `"msg":"public listener open"`); n != 1 {
+		t.Fatalf("%d public listeners opened", n)
+	}
 }
 
 // E-02, R-07: a GEOID_FILE that cannot be read is said at start with its
@@ -355,7 +419,8 @@ func TestIntegrationUnreadableGeoidIsSaid(t *testing.T) {
 // E-02, B-05: the success path read end to end: a signed batch is
 // acknowledged only once queued, its rows reach the writer's stream with
 // the raw payload, and the receiver's status says live. With keys the
-// configured address is used (E-01 twin of the loopback test).
+// configured address is used and /readyz passes its key check (E-01 twin
+// of the no-keys test).
 func TestIntegrationAcceptedBatchReachesTheWriter(t *testing.T) {
 	h := newHarness(t)
 	r := newTestRx(t, "rx-int-01")
@@ -369,8 +434,11 @@ func TestIntegrationAcceptedBatchReachesTheWriter(t *testing.T) {
 	defer func() { _ = sub.Unsubscribe() }()
 	h.start(nil, ingest.Options{})
 	h.stdout.waitFor(t, "receiver key set loaded", func(m map[string]any) bool { return m["receivers"] == 1.0 })
-	if strings.HasPrefix(h.base, "http://127.0.0.1:") && h.stdout.find("no receiver keys: listening on loopback only (R-06); restart once receivers are registered", nil) != nil {
-		t.Fatal("loopback with keys present")
+	if strings.HasPrefix(h.base, "http://127.0.0.1:") || h.stdout.find("no receiver keys: every batch is refused until a receiver is registered; the key set is followed, no restart needed", nil) != nil {
+		t.Fatalf("with keys present: listening on %s, or said no keys", h.base)
+	}
+	if code, chk := h.readyCheck("receiver_keys"); !chk.Ok {
+		t.Fatalf("/readyz %d receiver_keys %+v with a key", code, chk)
 	}
 	now := time.Now()
 	code, a, _ := h.post(r, "n-1", observation("AA:BB:CC:00:00:01", 1, now), observation("AA:BB:CC:00:00:02", 2, now))

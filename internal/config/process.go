@@ -413,7 +413,7 @@ type RIDIngest struct {
 	Common
 	Bus
 	HTTP
-	Addr    string `env:"RID_INGEST_ADDR" default:":8081" help:"public listen address of /v1/rid/observations (behind Caddy); with no receiver keys the host is replaced by 127.0.0.1 (R-06)"`
+	Addr    string `env:"RID_INGEST_ADDR" default:":8081" help:"public listen address of /v1/rid/observations (behind Caddy); used with or without receiver keys: with none every batch is refused and /readyz says so"`
 	TSURL   string `env:"TS_URL" required:"true" secret:"true" kind:"url" help:"telemetry database (projections, read only)"`
 	NATSURL string `env:"NATS_URL" required:"true" secret:"true" kind:"url" help:"NATS JetStream"`
 	Geoid

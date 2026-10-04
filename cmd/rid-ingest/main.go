@@ -9,8 +9,10 @@
 // trk.v1 and ident.v1) and hands every raw frame to tsdb-writer
 // (tsw.v1.rid_observations, the tracks on tsw.v1.tracks), shedding the
 // oldest with a writer_gaps record when the queue is past its bound, and
-// publishes src.v1.direct_rid.<receiver> every 2 s. With no receiver keys it listens
-// on loopback only. It is started as `uspace-authority rid-ingest`;
+// publishes src.v1.direct_rid.<receiver> every 2 s. With no receiver keys it
+// still listens on RID_INGEST_ADDR, refuses every batch (counted, and failing
+// /readyz's receiver_keys check) and accepts a receiver registered later
+// without a restart. It is started as `uspace-authority rid-ingest`;
 // --help lists the configuration variables, and
 // docs/runbooks/receivers.md is the receiver contract.
 package main

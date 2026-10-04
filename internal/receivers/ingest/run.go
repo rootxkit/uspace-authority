@@ -3,8 +3,8 @@ package ingest
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
-	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -33,14 +33,19 @@ type Options struct {
 	Geoid geoid.Undulator
 }
 
-// LoopbackAddr replaces addr's host with 127.0.0.1 (R-06: an ingest
-// without receiver keys can authenticate nobody and listens on loopback).
-func LoopbackAddr(addr string) string {
-	_, port, err := net.SplitHostPort(addr)
-	if err != nil {
-		port = "0"
+// KeysReady is the readiness check of the receiver key set. With no
+// keys the ingest still listens on its configured address (never on a
+// loopback no receiver can reach) and refuses every batch; this check
+// fails then, naming the refusals counted since start, and passes as
+// soon as the key set follower loads a key: no restart is needed.
+func KeysReady(kr *receivers.Keyring, counters *core.Counters) func(context.Context) error {
+	return func(context.Context) error {
+		if kr.Len() > 0 {
+			return nil
+		}
+		return fmt.Errorf("no receiver keys: every batch is refused (%d batches refused with no keys since start); "+
+			"a receiver registered in api is accepted without a restart", counters.Get(CounterRefusedNoKeys))
 	}
-	return net.JoinHostPort("127.0.0.1", port)
 }
 
 // Run is rid-ingest's process body.
@@ -82,11 +87,12 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.RIDIngest, o Options
 		rt.Logger.Warn("receiver key set unreadable at start; no receiver can be authenticated until it is",
 			slog.String("bucket", t.KeysetBucket), slog.String("error", err.Error()))
 	}
-	addr := cfg.Addr
 	if n == 0 {
-		addr = LoopbackAddr(cfg.Addr)
-		rt.Logger.Warn("no receiver keys: listening on loopback only (R-06); restart once receivers are registered",
-			slog.String("configured_addr", cfg.Addr), slog.String("addr", addr))
+		// WP-L6 finding 5: the configured address always. A receiver
+		// registered later is picked up by FollowKeySet below; until
+		// then every batch is refused, counted and failing /readyz.
+		rt.Logger.Warn("no receiver keys: every batch is refused until a receiver is registered; the key set is followed, no restart needed",
+			slog.String("addr", cfg.Addr), slog.String("bucket", t.KeysetBucket))
 	} else {
 		rt.Logger.Info("receiver key set loaded", slog.Int("receivers", n))
 	}
@@ -109,6 +115,7 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.RIDIngest, o Options
 
 	counters := &core.Counters{}
 	rt.AddCounters("rid_ingest", counters)
+	rt.Ready.Add("receiver_keys", KeysReady(kr, counters))
 	dedupe, err := NewDedupe(time.Duration(t.DedupeWindowS)*time.Second, t.DedupeMaxPerRx, t.MaxReceivers, counters)
 	if err != nil {
 		return err
@@ -163,5 +170,5 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.RIDIngest, o Options
 
 	mux := http.NewServeMux()
 	h.Mount(mux)
-	return rt.ServePublic(ctx, cfg.HTTP, addr, mux)
+	return rt.ServePublic(ctx, cfg.HTTP, cfg.Addr, mux)
 }

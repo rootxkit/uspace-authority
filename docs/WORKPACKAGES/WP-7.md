@@ -97,7 +97,9 @@ Reviewed adversarially.
   replay, disabled, malformed, oversize, queue full) beside an accepted
   batch.
 - E-02: with no keys configured the ingest binds to loopback only and
-  says so (R-06); the success path acknowledges and the row reaches the
+  says so (R-06; superseded by WP-L6 finding 5: it binds its configured
+  address, refuses every batch, counts it and fails `/readyz`
+  `receiver_keys`, and accepts later keys without a restart); the success path acknowledges and the row reaches the
   writer in the integration test.
 - E-10: nonce memory bound, dedupe window bound, queue bound (SC-18 step
   3: oldest dropped and counted).
