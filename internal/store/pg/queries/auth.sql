@@ -17,9 +17,16 @@ SELECT count(*)::bigint AS n FROM users
 WHERE status = 'active' AND realm = 'console' AND 'admin' = ANY (roles);
 
 -- name: InsertUser :one
-INSERT INTO users (id, username, display_name, roles, realm, status, created_at, created_by, updated_at, updated_by)
-VALUES (sqlc.arg(id), sqlc.arg(username), sqlc.arg(display_name), sqlc.arg(roles), sqlc.arg(realm), 'active',
-        sqlc.arg(created_at), sqlc.arg(created_by), sqlc.arg(created_at), sqlc.arg(created_by))
+INSERT INTO users (id, username, display_name, roles, realm, agency, ip_allow, status, created_at, created_by, updated_at, updated_by)
+VALUES (sqlc.arg(id), sqlc.arg(username), sqlc.arg(display_name), sqlc.arg(roles), sqlc.arg(realm), sqlc.narg(agency),
+        sqlc.arg(ip_allow), 'active', sqlc.arg(created_at), sqlc.arg(created_by), sqlc.arg(created_at), sqlc.arg(created_by))
+RETURNING *;
+
+-- name: SetUserPoliceAccess :one
+-- WP-19: the agency and the IP allow-list of a police account.
+UPDATE users SET agency = sqlc.arg(agency), ip_allow = sqlc.arg(ip_allow), updated_at = sqlc.arg(updated_at),
+                 updated_by = sqlc.arg(updated_by)
+WHERE id = sqlc.arg(id) AND realm = 'police'
 RETURNING *;
 
 -- name: SetUserRoles :one

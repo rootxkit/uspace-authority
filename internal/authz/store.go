@@ -25,11 +25,15 @@ type User struct {
 	DisplayName string
 	Roles       []string
 	Realm       string
-	Status      string
-	CreatedAt   time.Time
-	CreatedBy   string
-	UpdatedAt   time.Time
-	UpdatedBy   string
+	// Agency and IPAllow are a police account's (WP-19); empty for a
+	// console account.
+	Agency    string
+	IPAllow   []string
+	Status    string
+	CreatedAt time.Time
+	CreatedBy string
+	UpdatedAt time.Time
+	UpdatedBy string
 	// The MFA failure budget of the account (migration 00006).
 	MFAFailures    int
 	MFALockedUntil *time.Time
@@ -109,6 +113,9 @@ type Tx interface {
 	InsertUser(ctx context.Context, u User) (User, error)
 	SetUserRoles(ctx context.Context, id string, roles []string, at time.Time, by string) (User, error)
 	SetUserStatus(ctx context.Context, id, status string, at time.Time, by string) (User, error)
+	// SetUserPoliceAccess replaces a police account's agency and IP
+	// allow-list (ErrNotFound for a console account).
+	SetUserPoliceAccess(ctx context.Context, id, agency string, allow []string, at time.Time, by string) (User, error)
 	SetPassword(ctx context.Context, userID, hash string, at time.Time) error
 	MFA(ctx context.Context, userID string) (MFA, error)
 	// MFAForUpdate reads the MFA row and locks it to the end of the
@@ -248,7 +255,7 @@ func (t pgTx) CountActiveAdmins(ctx context.Context) (int64, error) {
 func (t pgTx) InsertUser(ctx context.Context, u User) (User, error) {
 	r, err := t.q.InsertUser(ctx, gen.InsertUserParams{
 		ID: u.ID, Username: u.Username, DisplayName: u.DisplayName, Roles: nonNil(u.Roles), Realm: u.Realm,
-		CreatedAt: u.CreatedAt, CreatedBy: u.CreatedBy,
+		Agency: optAgency(u.Agency), IpAllow: nonNil(u.IPAllow), CreatedAt: u.CreatedAt, CreatedBy: u.CreatedBy,
 	})
 	if err != nil {
 		return User{}, err
@@ -266,6 +273,25 @@ func (t pgTx) SetUserRoles(ctx context.Context, id string, roles []string, at ti
 		return User{}, err
 	}
 	return userFrom(&r), nil
+}
+
+// SetUserPoliceAccess implements Tx.
+func (t pgTx) SetUserPoliceAccess(ctx context.Context, id, agency string, allow []string, at time.Time, by string) (User, error) {
+	r, err := t.q.SetUserPoliceAccess(ctx, gen.SetUserPoliceAccessParams{ID: id, Agency: &agency, IpAllow: nonNil(allow), UpdatedAt: at, UpdatedBy: by})
+	if store.IsNoRows(err) {
+		return User{}, ErrNotFound
+	}
+	if err != nil {
+		return User{}, err
+	}
+	return userFrom(&r), nil
+}
+
+func optAgency(a string) *string {
+	if a == "" {
+		return nil
+	}
+	return &a
 }
 
 // SetUserStatus implements Tx.
@@ -419,8 +445,12 @@ func mfaOf(ctx context.Context, q *gen.Queries, userID string) (MFA, error) {
 }
 
 func userFrom(r *gen.User) User {
+	agency := ""
+	if r.Agency != nil {
+		agency = *r.Agency
+	}
 	return User{ID: r.ID, Username: r.Username, DisplayName: r.DisplayName, Roles: slices.Clone(r.Roles), Realm: r.Realm,
-		Status: r.Status, CreatedAt: r.CreatedAt, CreatedBy: r.CreatedBy, UpdatedAt: r.UpdatedAt, UpdatedBy: r.UpdatedBy,
+		Agency: agency, IPAllow: slices.Clone(r.IpAllow), Status: r.Status, CreatedAt: r.CreatedAt, CreatedBy: r.CreatedBy, UpdatedAt: r.UpdatedAt, UpdatedBy: r.UpdatedBy,
 		MFAFailures: int(r.MfaFailures), MFALockedUntil: r.MfaLockedUntil, MFAHardLocked: r.MfaHardLocked}
 }
 

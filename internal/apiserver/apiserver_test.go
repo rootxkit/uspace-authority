@@ -345,3 +345,63 @@ func TestScopesMatchTheContract(t *testing.T) {
 		t.Error("DefaultRules does not carry the scopes")
 	}
 }
+
+// WP-19: Realms mirrors x-realm in the contract, every police operation
+// is held to the police realm's grant, and the default rules refuse a
+// console session (even an admin's) on a police operation and a police
+// session on a console one (E-01, through DefaultRules).
+func TestRealmsMatchTheContract(t *testing.T) {
+	raw, err := os.ReadFile("../../api/openapi.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	opRe := regexp.MustCompile(`^\s+operationId:\s*(\w+)`)
+	realmRe := regexp.MustCompile(`^\s+x-realm:\s*(\S+)`)
+	spec := map[string]string{}
+	op := ""
+	for line := range strings.SplitSeq(string(raw), "\n") {
+		if m := opRe.FindStringSubmatch(line); m != nil {
+			op = strings.ToUpper(m[1][:1]) + m[1][1:]
+			continue
+		}
+		if m := realmRe.FindStringSubmatch(line); m != nil && op != "" {
+			spec[op] = m[1]
+		}
+	}
+	if len(spec) == 0 {
+		t.Fatal("no x-realm in the contract")
+	}
+	for op, realm := range spec {
+		if Realms[op] != realm {
+			t.Errorf("%s: contract %q, code %q", op, realm, Realms[op])
+		}
+	}
+	for op, realm := range Realms {
+		if spec[op] != realm {
+			t.Errorf("%s: code %q, contract %q", op, realm, spec[op])
+		}
+		if realm == RealmPolice && !slices.Equal(Roles[op], PoliceRoles) {
+			t.Errorf("%s: roles %v", op, Roles[op])
+		}
+	}
+	admin := Identity{ActorType: "user", Subject: "a", Roles: []string{RoleAdmin, RolePoliceQuery}, Realm: RealmConsole, Session: true}
+	police := Identity{ActorType: "user", Subject: "p", Roles: []string{RolePoliceQuery}, Realm: RealmPolice, Session: true}
+	machine := Identity{ActorType: "client", Subject: "x-01", Scopes: []string{"police.query"}}
+	for _, c := range []struct {
+		name   string
+		id     Identity
+		op     string
+		called bool
+	}{
+		{"police on a police op", police, "QueryPoliceAircraft", true},
+		{"console admin on a police op", admin, "QueryPoliceAircraft", false},
+		{"machine with police.query on a police op", machine, "QueryPoliceOperator", false},
+		{"police on a console op", police, "ListUsers", false},
+		{"police on the DPO report", police, "GetDPOReport", false},
+		{"police without its grant", Identity{ActorType: "user", Subject: "p", Realm: RealmPolice, Session: true}, "QueryPoliceSerial", false},
+	} {
+		if _, called, _ := authorized(DefaultRules(), c.id, nil, c.op); called != c.called {
+			t.Errorf("%s: called %v", c.name, called)
+		}
+	}
+}

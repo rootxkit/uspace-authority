@@ -207,9 +207,10 @@ func TestOnlyOccurrencesImportsItsStore(t *testing.T) {
 }
 
 // enforcement are the packages whose records an occurrence report must
-// never reach (376/2014 Art. 15-16, CLAUDE.md rule 6).
+// never reach (376/2014 Art. 15-16, CLAUDE.md rule 6), and the police
+// realm, which never returns one (376/2014 Art. 15(2), 16; WP-19).
 var enforcement = []string{module + "/internal/violations", module + "/internal/incidents", module + "/internal/violation",
-	module + "/internal/detectsvc"}
+	module + "/internal/detectsvc", module + "/internal/police"}
 
 // WP-18: violations, incidents and detection never depend on the
 // occurrence reports, directly or through another package.

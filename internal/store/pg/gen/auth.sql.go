@@ -150,9 +150,9 @@ func (q *Queries) InsertSession(ctx context.Context, arg InsertSessionParams) er
 }
 
 const insertUser = `-- name: InsertUser :one
-INSERT INTO users (id, username, display_name, roles, realm, status, created_at, created_by, updated_at, updated_by)
-VALUES ($1, $2, $3, $4, $5, 'active',
-        $6, $7, $6, $7)
+INSERT INTO users (id, username, display_name, roles, realm, agency, ip_allow, status, created_at, created_by, updated_at, updated_by)
+VALUES ($1, $2, $3, $4, $5, $6,
+        $7, 'active', $8, $9, $8, $9)
 RETURNING id, username, display_name, roles, realm, agency, ip_allow, status, created_at, created_by, updated_at, updated_by, mfa_failures, mfa_locked_until, mfa_hard_locked
 `
 
@@ -162,6 +162,8 @@ type InsertUserParams struct {
 	DisplayName string
 	Roles       []string
 	Realm       string
+	Agency      *string
+	IpAllow     []string
 	CreatedAt   time.Time
 	CreatedBy   string
 }
@@ -173,6 +175,8 @@ func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (User, e
 		arg.DisplayName,
 		arg.Roles,
 		arg.Realm,
+		arg.Agency,
+		arg.IpAllow,
 		arg.CreatedAt,
 		arg.CreatedBy,
 	)
@@ -401,6 +405,51 @@ func (q *Queries) SetMFALock(ctx context.Context, arg SetMFALockParams) error {
 		arg.ID,
 	)
 	return err
+}
+
+const setUserPoliceAccess = `-- name: SetUserPoliceAccess :one
+UPDATE users SET agency = $1, ip_allow = $2, updated_at = $3,
+                 updated_by = $4
+WHERE id = $5 AND realm = 'police'
+RETURNING id, username, display_name, roles, realm, agency, ip_allow, status, created_at, created_by, updated_at, updated_by, mfa_failures, mfa_locked_until, mfa_hard_locked
+`
+
+type SetUserPoliceAccessParams struct {
+	Agency    *string
+	IpAllow   []string
+	UpdatedAt time.Time
+	UpdatedBy string
+	ID        string
+}
+
+// WP-19: the agency and the IP allow-list of a police account.
+func (q *Queries) SetUserPoliceAccess(ctx context.Context, arg SetUserPoliceAccessParams) (User, error) {
+	row := q.db.QueryRow(ctx, setUserPoliceAccess,
+		arg.Agency,
+		arg.IpAllow,
+		arg.UpdatedAt,
+		arg.UpdatedBy,
+		arg.ID,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.DisplayName,
+		&i.Roles,
+		&i.Realm,
+		&i.Agency,
+		&i.IpAllow,
+		&i.Status,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.UpdatedBy,
+		&i.MfaFailures,
+		&i.MfaLockedUntil,
+		&i.MfaHardLocked,
+	)
+	return i, err
 }
 
 const setUserRoles = `-- name: SetUserRoles :one

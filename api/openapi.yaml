@@ -128,6 +128,12 @@ tags:
       availability arbitration (F3548), the ISA change notification a
       Service Provider posts, and the conformance observation hook
       (Q-A7).
+  - name: police
+    description: |
+      The police realm (WP-19, spec 02 F10): purpose-logged aircraft,
+      operator and serial queries and legal evidence exports, for police
+      accounts of an agency signed in with MFA from its allow-listed
+      addresses. Occurrence reports are never reachable here.
   - name: picture
     description: |
       The console picture (WP-13, served by picture-ws, not api): the
@@ -312,6 +318,41 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuditEventPage"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /v1/audit/dpo-report:
+    get:
+      operationId: getDPOReport
+      tags: [audit]
+      summary: The month's personal-data views and exports, for the data protection officer
+      description: |
+        WP-19 (spec 06 §5, accountability). Every police query, export
+        and download of the month (police_queries: user, agency,
+        purpose, case reference, what was asked, how many results,
+        whether personal data was released) and every events row of a
+        personal-data read of the month (the audit catalogue's PII view
+        types: registry personal data, raw frames, evidence packs built
+        and downloaded, occurrence reporters), with the actor, the
+        purpose, the entity and, for a police read, the case reference.
+        `month` is a UTC calendar month (YYYY-MM). At most
+        `DPO_REPORT_MAX_ROWS` rows per list, `truncated` beyond. The read
+        is itself a `dpo_report_viewed` events row.
+      security:
+        - sessionCookie: []
+      x-roles: [admin, auditor]
+      x-audit: {event_type: dpo_report_viewed, entity_type: events, purpose: none}
+      parameters:
+        - {name: month, in: query, required: true, schema: {type: string, pattern: "^[0-9]{4}-[0-9]{2}$"}}
+      responses:
+        "200":
+          description: The report.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DPOReport"
+        "400":
+          $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
 
@@ -629,6 +670,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Revoked"
+        default:
+          $ref: "#/components/responses/Problem"
+
+  /v1/users/{user_id}/police-access:
+    parameters:
+      - {name: user_id, in: path, required: true, schema: {type: string, maxLength: 32}}
+    put:
+      operationId: setUserPoliceAccess
+      tags: [users]
+      summary: Replace the agency and the IP allow-list of a police account
+      description: |
+        WP-19. Police realm accounts only (409 for a console account).
+        Revokes the account's sessions, so the new allow-list applies at
+        once; every police query checks the address again.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: {event_type: user_police_access_changed, entity_type: user, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PoliceAccessInput"
+      responses:
+        "200":
+          description: The account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
         default:
           $ref: "#/components/responses/Problem"
 
@@ -4129,6 +4201,236 @@ paths:
         "503":
           description: The token cannot be verified yet (F3411 ErrorResponse).
 
+  # WP-19: the police realm (spec 02 F10). A session of the police realm
+  # holding police.query, signed in with MFA from an address of the
+  # account's allow-list; every query names a purpose from the
+  # configured list and a case reference, is one police_queries row and
+  # one police_query events row, and is rate-limited per user and per
+  # agency. Personal data only where the purpose allows it.
+  /v1/police/aircraft:
+    get:
+      operationId: queryPoliceAircraft
+      tags: [police]
+      summary: Who is flying in a box now, or was at an instant
+      description: |
+        Without `at`: the tracks of the authority's picture last seen
+        within `POLICE_LIVE_WINDOW_S` of now (the telemetry database's
+        clock). With `at`: the tracks seen within `POLICE_AT_WINDOW_S`
+        either side of it; an `at` older than `POLICE_HISTORY_MAX_AGE_S`
+        (the online retention) or in the future is refused. Each
+        aircraft: its serial and the operator registration's public part
+        as identified, the identification status, the trust, the first
+        and last time seen and its positions in the box (the newest
+        `POLICE_MAX_POSITIONS`, `positions_truncated` beyond). The remote
+        pilot position is never returned. The operator's identity is
+        added only when `purpose` is one of `POLICE_PII_PURPOSES`, each
+        read a `registry_pii_viewed` events row carrying the case
+        reference. `sources` says how fresh the picture is and which
+        recorded writer gaps fall in the window: an empty answer from a
+        stale or gapped picture is not an empty sky.
+      security:
+        - sessionCookie: []
+      x-roles: [police.query]
+      x-realm: police
+      x-audit: {event_type: police_query, entity_type: police_query, purpose: required}
+      parameters:
+        - {name: bbox, in: query, required: true, description: "min_lon,min_lat,max_lon,max_lat (WGS84 degrees), each side at most POLICE_MAX_BBOX_DEG.", schema: {type: string, maxLength: 128}}
+        - {name: at, in: query, schema: {type: string, format: date-time}}
+        - {name: purpose, in: query, required: true, schema: {type: string, maxLength: 64}}
+        - {name: case_ref, in: query, required: true, schema: {type: string, minLength: 1, maxLength: 100}}
+      responses:
+        "200":
+          description: The aircraft.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PoliceAircraftAnswer"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "503":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/police/operators/{reg}:
+    parameters:
+      - {name: reg, in: path, required: true, description: "The operator registration number (its public part; a secret part sent with it is dropped).", schema: {type: string, minLength: 1, maxLength: 64}}
+    get:
+      operationId: queryPoliceOperator
+      tags: [police]
+      summary: An operator's registry status and fleet
+      description: |
+        The registration as the registry holds it (status, validity),
+        its fleet (at most `POLICE_MAX_FLEET`, `fleet_truncated`
+        beyond), and the operator's identity only when `purpose` allows
+        personal data. An unknown number is a 404 after the query is
+        recorded with `result_count` 0.
+      security:
+        - sessionCookie: []
+      x-roles: [police.query]
+      x-realm: police
+      x-audit: {event_type: police_query, entity_type: police_query, purpose: required}
+      parameters:
+        - {name: purpose, in: query, required: true, schema: {type: string, maxLength: 64}}
+        - {name: case_ref, in: query, required: true, schema: {type: string, minLength: 1, maxLength: 100}}
+      responses:
+        "200":
+          description: The operator.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PoliceOperatorAnswer"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/police/serials/{serial}:
+    parameters:
+      - {name: serial, in: path, required: true, schema: {type: string, minLength: 1, maxLength: 64}}
+    get:
+      operationId: queryPoliceSerial
+      tags: [police]
+      summary: An aircraft's registry status and its operator
+      description: |
+        The aircraft the serial names under uspace-core's matching
+        (exact, else a unique folded match), its status and its
+        operator's registration; the operator's identity only when
+        `purpose` allows personal data. An unknown serial is a 404 after
+        the query is recorded with `result_count` 0.
+      security:
+        - sessionCookie: []
+      x-roles: [police.query]
+      x-realm: police
+      x-audit: {event_type: police_query, entity_type: police_query, purpose: required}
+      parameters:
+        - {name: purpose, in: query, required: true, schema: {type: string, maxLength: 64}}
+        - {name: case_ref, in: query, required: true, schema: {type: string, minLength: 1, maxLength: 100}}
+      responses:
+        "200":
+          description: The aircraft.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PoliceSerialAnswer"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/police/exports:
+    post:
+      operationId: createPoliceExport
+      tags: [police]
+      summary: A legal evidence pack for an incident or for an area and a window
+      description: |
+        Builds a `legal` evidence pack through WP-17's builder (hash
+        sealed, the seal statement signed by the publication key, stored
+        sealed at rest) for [from, to): of `incident_id`, or of the
+        aircraft the picture held in `query.bbox` over the window, for
+        which an incident `opened_from: police_request` is opened (at
+        most 32 aircraft, 413 beyond: narrow the query; 422 when there is
+        none). A legal pack carries personal data, so `purpose` must be
+        one of `POLICE_PII_PURPOSES` (403 otherwise). The export is a
+        police_queries row before the build, and the pack's
+        `evidence_pack_built` row carries the purpose and the case
+        reference. Only the requesting agency downloads it.
+      security:
+        - sessionCookie: []
+      x-roles: [police.query]
+      x-realm: police
+      x-audit: {event_type: police_query, entity_type: police_query, purpose: required}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PoliceExportInput"
+      responses:
+        "201":
+          description: The sealed pack.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PoliceExport"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "413":
+          $ref: "#/components/responses/Problem"
+        "422":
+          $ref: "#/components/responses/Problem"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "503":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/police/exports/{pack_id}/download:
+    parameters:
+      - {name: pack_id, in: path, required: true, schema: {type: string, pattern: "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"}}
+    get:
+      operationId: downloadPoliceExport
+      tags: [police]
+      summary: The sealed archive of an export of this agency (audited)
+      description: |
+        Only a pack exported for the caller's agency (404 otherwise).
+        The download is a police_queries row, and WP-17's download
+        checks the hash before a byte is served and records
+        `evidence_pack_downloaded` with the purpose and the case
+        reference. `purpose` must be one of `POLICE_PII_PURPOSES`.
+      security:
+        - sessionCookie: []
+      x-roles: [police.query]
+      x-realm: police
+      x-audit: {event_type: police_query, entity_type: police_query, purpose: required}
+      parameters:
+        - {name: purpose, in: query, required: true, schema: {type: string, maxLength: 64}}
+        - {name: case_ref, in: query, required: true, schema: {type: string, minLength: 1, maxLength: 100}}
+      responses:
+        "200":
+          description: The archive (a ZIP file).
+          headers:
+            X-Content-SHA256:
+              description: The archive's hash, as content_hash records it.
+              schema: {type: string}
+            X-Evidence-Signature:
+              description: The detached JWS of the seal statement; empty when the pack is unsigned.
+              schema: {type: string}
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        default:
+          $ref: "#/components/responses/Problem"
+
 components:
   securitySchemes:
     sessionCookie:
@@ -4593,7 +4895,8 @@ components:
         confirm_before: {type: string, format: date-time}
     Role:
       type: string
-      enum: [viewer, inspector, registrar, incident_officer, admin, auditor]
+      description: The console roles, and `police.query`, the one grant of the police realm (WP-19).
+      enum: [viewer, inspector, registrar, incident_officer, admin, auditor, police.query]
     Realm:
       type: string
       enum: [console, police]
@@ -4655,6 +4958,11 @@ components:
     UserInput:
       type: object
       required: [username, password, roles, realm]
+      description: |
+        A console account holds console roles only; a police account
+        (WP-19) holds `police.query` only, names its `agency` and the
+        CIDRs of `ip_allowlist` it signs in and queries from (an empty
+        list admits no address). A console account carries neither.
       properties:
         username: {type: string, maxLength: 64}
         password: {type: string, maxLength: 1024}
@@ -4666,6 +4974,21 @@ components:
             $ref: "#/components/schemas/Role"
         realm:
           $ref: "#/components/schemas/Realm"
+        agency: {type: string, maxLength: 100, description: "Police realm only: the agency, 1 to 100 of letters, digits, space . _ -."}
+        ip_allowlist:
+          type: array
+          maxItems: 32
+          description: Police realm only, required there; CIDRs or single addresses.
+          items: {type: string, maxLength: 64}
+    PoliceAccessInput:
+      type: object
+      required: [agency, ip_allowlist]
+      properties:
+        agency: {type: string, maxLength: 100}
+        ip_allowlist:
+          type: array
+          maxItems: 32
+          items: {type: string, maxLength: 64}
     RolesInput:
       type: object
       required: [roles]
@@ -4687,6 +5010,11 @@ components:
           items: {type: string}
         realm:
           $ref: "#/components/schemas/Realm"
+        agency: {type: string, description: Police realm only.}
+        ip_allowlist:
+          type: array
+          description: Police realm only; the CIDRs a sign-in and a police query may come from.
+          items: {type: string}
         status: {type: string, enum: [active, disabled]}
         mfa_enrolled: {type: boolean}
         mfa_failures: {type: integer, description: Consecutive wrong MFA codes.}
@@ -5759,7 +6087,8 @@ components:
       enum: [info, warning, critical]
     IncidentOpenedFrom:
       type: string
-      enum: [violation, own_observation, ansp_notice, ussp_notice]
+      description: police_request is set by POST /v1/police/exports only (WP-19); an incident opened by hand naming it is refused.
+      enum: [violation, own_observation, ansp_notice, ussp_notice, police_request]
     IncidentIdentification:
       type: object
       description: The identification of the aircraft as it was judged at the time (uspace-core identify), as recorded.
@@ -6510,3 +6839,224 @@ components:
         publication_id: {type: integer, format: int64}
         ussps: {type: integer, description: USSPs on the list.}
         wanted: {type: integer, format: int64, description: The list version the change counter stood at.}
+    # WP-19: the police realm's answers and the DPO report. Personal
+    # data appears in PoliceOperatorIdentity only, which a police answer
+    # carries only when the purpose allows it (registry contract test).
+    PoliceQueryMeta:
+      type: object
+      required: [query_id, purpose, case_ref, pii_released]
+      properties:
+        query_id: {type: string, description: The police_queries row of this query.}
+        purpose: {type: string}
+        case_ref: {type: string}
+        pii_released: {type: boolean, description: Whether the purpose allowed personal data and any was returned.}
+    PoliceOperatorIdentity:
+      type: object
+      required: [operator_id, operator_type]
+      description: Released only for a purpose of POLICE_PII_PURPOSES; each read is a registry_pii_viewed events row.
+      properties:
+        operator_id: {type: string}
+        operator_type: {type: string}
+        full_name: {type: string}
+        legal_name: {type: string}
+        postal_address: {type: string}
+        contact_email: {type: string}
+        contact_phone: {type: string}
+    PolicePosition:
+      type: object
+      required: [at, lat_deg, lon_deg, alt_source]
+      properties:
+        at: {type: string, format: date-time}
+        lat_deg: {type: number, format: double}
+        lon_deg: {type: number, format: double}
+        alt_amsl_m: {type: number, format: double}
+        alt_source: {type: string}
+        height_m: {type: number, format: double}
+        height_ref: {type: string}
+        speed_ms: {type: number, format: double}
+        track_deg: {type: number, format: double}
+    PoliceAircraft:
+      type: object
+      required: [track_id, identification_status, identification_basis, trust, source, first_seen, last_seen, emergency, positions, positions_truncated]
+      properties:
+        track_id: {type: string}
+        serial: {type: string}
+        registration_number: {type: string, description: "The operator registration's public part as identified (the registry's when matched)."}
+        identification_status: {type: string, enum: [registered, suspended, unknown_operator, unidentified]}
+        identification_reason: {type: string}
+        identification_basis: {type: string}
+        trust: {type: string}
+        source: {type: string}
+        first_seen: {type: string, format: date-time}
+        last_seen: {type: string, format: date-time}
+        emergency: {type: boolean}
+        positions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PolicePosition"
+        positions_truncated: {type: boolean}
+        operator:
+          $ref: "#/components/schemas/PoliceOperatorIdentity"
+        operator_unresolved: {type: string, description: "Why a personal-data purpose found no identity for this aircraft (not identified, not in the registry, ambiguous)."}
+    PolicePictureSources:
+      type: object
+      required: [newest_track_age_s, writer_gaps, writer_gap_causes, degraded]
+      properties:
+        newest_track_at: {type: [string, "null"], format: date-time, description: The newest sample of the picture anywhere (null when none within a day).}
+        newest_track_age_s: {type: [number, "null"], format: double}
+        writer_gaps: {type: integer, description: Recorded writer gaps of the tracks table in the window.}
+        writer_gap_causes:
+          type: array
+          items: {type: string}
+        degraded: {type: boolean, description: True when the picture is older than the live window or a recorded gap falls in the window.}
+    PoliceAircraftAnswer:
+      allOf:
+        - $ref: "#/components/schemas/PoliceQueryMeta"
+        - type: object
+          required: [mode, as_of, window_from, window_to, aircraft, truncated, sources]
+          properties:
+            mode: {type: string, enum: [live, at]}
+            as_of: {type: string, format: date-time}
+            window_from: {type: string, format: date-time}
+            window_to: {type: string, format: date-time}
+            aircraft:
+              type: array
+              items:
+                $ref: "#/components/schemas/PoliceAircraft"
+            truncated: {type: boolean, description: More than POLICE_MAX_AIRCRAFT aircraft; narrow the box.}
+            sources:
+              $ref: "#/components/schemas/PolicePictureSources"
+    PoliceRegistration:
+      type: object
+      required: [registration_number, operator_type, status, valid_from, valid_until]
+      properties:
+        registration_number: {type: string}
+        operator_type: {type: string}
+        status: {$ref: "#/components/schemas/RegistryStatus"}
+        valid_from: {type: string, format: date-time}
+        valid_until: {type: string, format: date-time}
+    PoliceUAS:
+      type: object
+      required: [serial, status]
+      properties:
+        serial: {type: string}
+        status: {$ref: "#/components/schemas/RegistryStatus"}
+        class_label: {type: string}
+        manufacturer: {type: string}
+        model: {type: string}
+        registration_mark: {type: string}
+    PoliceOperatorAnswer:
+      allOf:
+        - $ref: "#/components/schemas/PoliceQueryMeta"
+        - type: object
+          required: [operator, fleet, fleet_truncated]
+          properties:
+            operator:
+              $ref: "#/components/schemas/PoliceRegistration"
+            fleet:
+              type: array
+              items:
+                $ref: "#/components/schemas/PoliceUAS"
+            fleet_truncated: {type: boolean}
+            identity:
+              $ref: "#/components/schemas/PoliceOperatorIdentity"
+    PoliceSerialAnswer:
+      allOf:
+        - $ref: "#/components/schemas/PoliceQueryMeta"
+        - type: object
+          required: [uas, operator]
+          properties:
+            uas:
+              $ref: "#/components/schemas/PoliceUAS"
+            operator:
+              $ref: "#/components/schemas/PoliceRegistration"
+            identity:
+              $ref: "#/components/schemas/PoliceOperatorIdentity"
+    PoliceExportInput:
+      type: object
+      required: [purpose, case_ref, from, to]
+      description: Exactly one of incident_id and query.
+      properties:
+        purpose: {type: string, maxLength: 64}
+        case_ref: {type: string, minLength: 1, maxLength: 100}
+        from: {type: string, format: date-time}
+        to: {type: string, format: date-time}
+        incident_id: {type: string, pattern: "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"}
+        query:
+          type: object
+          required: [bbox]
+          properties:
+            bbox: {type: string, maxLength: 128, description: "min_lon,min_lat,max_lon,max_lat (WGS84 degrees)."}
+    PoliceExport:
+      allOf:
+        - $ref: "#/components/schemas/PoliceQueryMeta"
+        - type: object
+          required: [pack_id, incident_id, incident_opened, from, to, content_hash, size_bytes, created_at, download]
+          properties:
+            pack_id: {type: string}
+            incident_id: {type: string}
+            incident_opened: {type: boolean, description: True when the export opened an incident (opened_from police_request).}
+            from: {type: string, format: date-time}
+            to: {type: string, format: date-time}
+            content_hash: {type: string}
+            size_bytes: {type: integer, format: int64}
+            signature: {type: [string, "null"]}
+            signature_kid: {type: [string, "null"]}
+            created_at: {type: string, format: date-time}
+            download: {type: string, description: The path of the download operation.}
+    DPOPoliceQuery:
+      type: object
+      required: [id, at, user_id, agency, kind, purpose, case_ref, query, result_count, pii, remote_ip]
+      properties:
+        id: {type: string}
+        at: {type: string, format: date-time}
+        user_id: {type: string}
+        agency: {type: string}
+        kind: {type: string, enum: [aircraft, operator, serial, export, download]}
+        purpose: {type: string}
+        case_ref: {type: string}
+        query:
+          type: object
+          additionalProperties: true
+        result_count: {type: integer}
+        pii: {type: boolean}
+        remote_ip: {type: string}
+    DPOPIIView:
+      type: object
+      required: [event_id, ts, event_type, actor_type, actor_id, entity_type]
+      properties:
+        event_id: {type: integer, format: int64}
+        ts: {type: string, format: date-time}
+        event_type: {type: string}
+        actor_type: {type: string}
+        actor_id: {type: string}
+        realm: {type: [string, "null"]}
+        purpose: {type: [string, "null"]}
+        entity_type: {type: string}
+        entity_id: {type: [string, "null"]}
+        case_ref: {type: string}
+        agency: {type: string}
+        police_query_id: {type: string}
+    DPOReport:
+      type: object
+      required: [month, from, to, police_queries, pii_views, truncated, totals]
+      properties:
+        month: {type: string}
+        from: {type: string, format: date-time}
+        to: {type: string, format: date-time}
+        police_queries:
+          type: array
+          items:
+            $ref: "#/components/schemas/DPOPoliceQuery"
+        pii_views:
+          type: array
+          items:
+            $ref: "#/components/schemas/DPOPIIView"
+        truncated: {type: boolean}
+        totals:
+          type: object
+          required: [police_queries, police_queries_with_pii, pii_views]
+          properties:
+            police_queries: {type: integer}
+            police_queries_with_pii: {type: integer}
+            pii_views: {type: integer}

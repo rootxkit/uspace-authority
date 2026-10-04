@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strconv"
 	"time"
+	"unicode/utf8"
 
 	"github.com/rootxkit/uspace-core/core"
 
@@ -128,7 +129,37 @@ func aircraftPayload(list []Aircraft) []map[string]any {
 // Open opens an incident from the authority's own observation or a
 // notice, with its events row, in one transaction.
 func (s *Service) Open(ctx context.Context, actor audit.Actor, in NewIncident) (View, error) {
-	if err := checkNew(&in, s.PublicPart); err != nil {
+	return s.open(ctx, actor, in, false)
+}
+
+// PoliceRequest is a police export of an area and a window (WP-19): the
+// agency, its case reference, when, and the aircraft the picture held.
+type PoliceRequest struct {
+	Agency     string
+	CaseRef    string
+	OccurredAt time.Time
+	Narrative  string
+	Aircraft   []Aircraft
+}
+
+// OpenForPolice opens the authority's case file of a police export
+// (opened_from police_request, kind other, severity info): the pack's
+// chain of custody starts at an incident like every other pack's. The
+// notice reference names the agency and the case.
+func (s *Service) OpenForPolice(ctx context.Context, actor audit.Actor, r PoliceRequest) (View, error) {
+	ref := r.Agency + ": " + r.CaseRef
+	if len(ref) > MaxNoticeRefLen {
+		ref = ref[:MaxNoticeRefLen]
+		for !utf8.ValidString(ref) {
+			ref = ref[:len(ref)-1]
+		}
+	}
+	return s.open(ctx, actor, NewIncident{Kind: KindOther, OccurredAt: r.OccurredAt, OpenedFrom: FromPoliceRequest, NoticeRef: &ref,
+		Severity: string(core.SeverityInfo), Narrative: r.Narrative, Aircraft: r.Aircraft}, true)
+}
+
+func (s *Service) open(ctx context.Context, actor audit.Actor, in NewIncident, viaPolice bool) (View, error) {
+	if err := checkNew(&in, s.PublicPart, viaPolice); err != nil {
 		return View{}, err
 	}
 	refs := in.IntentRefs

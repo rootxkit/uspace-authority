@@ -185,6 +185,14 @@ func (s *Service) Login(ctx context.Context, username, password string, ri apise
 		s.refuseLogin(ctx, u.ID, norm, ri, "user_disabled")
 		return LoginResult{}, invalidCredentials()
 	}
+	// WP-19: a police account signs in only from its allow-list. The
+	// answer is the one of a wrong password, so the refusal tells an
+	// address outside the list nothing about the password; the events
+	// row says why.
+	if u.Realm == apiserver.RealmPolice && !AddressAllowed(u.IPAllow, ri.RemoteIP) {
+		s.refuseLogin(ctx, u.ID, norm, ri, ReasonAddressNotAllowed)
+		return LoginResult{}, invalidCredentials()
+	}
 
 	var out LoginResult
 	err = s.Store.InTx(ctx, func(tx Tx) error {
@@ -376,6 +384,9 @@ func (s *Service) VerifyMFA(ctx context.Context, challenge, code, recovery strin
 		actor = userActor(u)
 		if u.Status != StatusActive {
 			return refuse(actor, "user_disabled", "the challenge is not valid; sign in again")
+		}
+		if u.Realm == apiserver.RealmPolice && !AddressAllowed(u.IPAllow, ri.RemoteIP) {
+			return refuse(actor, ReasonAddressNotAllowed, "the challenge is not valid; sign in again")
 		}
 		if u.MFAHardLocked {
 			return refuse(actor, "mfa_locked_until_unlocked", "too many wrong codes: an admin must unlock this account")

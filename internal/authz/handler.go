@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 	"net/http"
+	"slices"
 
 	"github.com/rootxkit/uspace-core/core"
 
@@ -129,12 +130,20 @@ func userToAPI(u User, enrolled bool) gen.User {
 	if roles == nil {
 		roles = []string{}
 	}
-	return gen.User{
+	out := gen.User{
 		Id: u.ID, Username: u.Username, DisplayName: u.DisplayName, Roles: roles, Realm: gen.Realm(u.Realm),
 		Status: gen.UserStatus(u.Status), MfaEnrolled: enrolled, CreatedAt: u.CreatedAt.UTC(), CreatedBy: u.CreatedBy,
 		UpdatedAt: u.UpdatedAt.UTC(), UpdatedBy: u.UpdatedBy,
 		MfaFailures: &u.MFAFailures, MfaHardLocked: &u.MFAHardLocked, MfaLockedUntil: u.MFALockedUntil,
 	}
+	if u.Realm == apiserver.RealmPolice {
+		agency, allow := u.Agency, slices.Clone(u.IPAllow)
+		if allow == nil {
+			allow = []string{}
+		}
+		out.Agency, out.IpAllowlist = &agency, &allow
+	}
+	return out
 }
 
 // ListUsers lists the accounts.
@@ -164,8 +173,12 @@ func (h Handler) CreateUser(ctx context.Context, req gen.CreateUserRequestObject
 	for _, r := range b.Roles {
 		roles = append(roles, string(r))
 	}
+	var allow []string
+	if b.IpAllowlist != nil {
+		allow = *b.IpAllowlist
+	}
 	u, err := h.Service.CreateUser(ctx, NewUser{Username: b.Username, Password: b.Password, DisplayName: deref(b.DisplayName),
-		Roles: roles, Realm: string(b.Realm)}, actor)
+		Roles: roles, Realm: string(b.Realm), Agency: deref(b.Agency), IPAllow: allow}, actor)
 	if err != nil {
 		return nil, err
 	}
@@ -273,6 +286,23 @@ func (h Handler) UnlockUserMFA(ctx context.Context, req gen.UnlockUserMFARequest
 	}
 	out, err := h.changed(ctx, u)
 	return gen.UnlockUserMFA200JSONResponse(out), err
+}
+
+// SetUserPoliceAccess replaces a police account's agency and allow-list.
+func (h Handler) SetUserPoliceAccess(ctx context.Context, req gen.SetUserPoliceAccessRequestObject) (gen.SetUserPoliceAccessResponseObject, error) {
+	actor, err := audit.ActorOf(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if req.Body == nil {
+		return nil, noBody()
+	}
+	u, err := h.Service.SetPoliceAccess(ctx, req.UserId, req.Body.Agency, req.Body.IpAllowlist, actor)
+	if err != nil {
+		return nil, err
+	}
+	out, err := h.changed(ctx, u)
+	return gen.SetUserPoliceAccess200JSONResponse(out), err
 }
 
 func deref(s *string) string {

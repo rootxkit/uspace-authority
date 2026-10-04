@@ -224,6 +224,16 @@ func (t memTx) SetUserStatus(_ context.Context, id, status string, at time.Time,
 	return u, nil
 }
 
+func (t memTx) SetUserPoliceAccess(_ context.Context, id, agency string, allow []string, at time.Time, by string) (User, error) {
+	u, ok := t.m.users[id]
+	if !ok || u.Realm != "police" {
+		return User{}, ErrNotFound
+	}
+	u.Agency, u.IPAllow, u.UpdatedAt, u.UpdatedBy = agency, slices.Clone(allow), at, by
+	t.m.users[id] = u
+	return u, nil
+}
+
 func (t memTx) SetPassword(_ context.Context, id, hash string, _ time.Time) error {
 	t.m.passwords[id] = hash
 	return nil

@@ -341,6 +341,30 @@ type PilotCompetency struct {
 	RecordedBy     string
 }
 
+type PoliceExport struct {
+	PackID     string
+	IncidentID string
+	QueryID    string
+	Agency     string
+	UserID     string
+	CreatedAt  time.Time
+}
+
+type PoliceQuery struct {
+	ID          string
+	At          time.Time
+	UserID      string
+	Agency      string
+	SessionJti  string
+	Kind        string
+	Purpose     string
+	CaseRef     string
+	Query       []byte
+	ResultCount int32
+	Pii         bool
+	RemoteIp    string
+}
+
 type Publication struct {
 	ID               int64
 	Dataset          string

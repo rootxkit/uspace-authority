@@ -8,3 +8,20 @@
 # renamed in the next commit. This entry exists because that commit is
 # already pushed and is not rewritten.
 4ce276ac2d98973bc84f360ed636cc2fe3a224cc:internal/picture/hub_test.go:generic-api-key:512
+
+# 96a147c: police tests passed registry serials ("TESTA0123456789") and
+# numbers in a struct field named Key, which generic-api-key reads as a
+# credential. They are GEO-TEST/TEST fixtures, not secrets; the field was
+# renamed Term in the next commit. That commit is pushed and not rewritten.
+96a147ca96b20c2eb696a7dbee9c601b92294632:internal/police/integration_test.go:generic-api-key:168
+96a147ca96b20c2eb696a7dbee9c601b92294632:internal/police/integration_test.go:generic-api-key:208
+96a147ca96b20c2eb696a7dbee9c601b92294632:internal/police/integration_test.go:generic-api-key:296
+96a147ca96b20c2eb696a7dbee9c601b92294632:internal/police/service_test.go:generic-api-key:155
+96a147ca96b20c2eb696a7dbee9c601b92294632:internal/police/service_test.go:generic-api-key:158
+96a147ca96b20c2eb696a7dbee9c601b92294632:internal/police/service_test.go:generic-api-key:164
+96a147ca96b20c2eb696a7dbee9c601b92294632:internal/police/service_test.go:generic-api-key:169
+96a147ca96b20c2eb696a7dbee9c601b92294632:internal/police/service_test.go:generic-api-key:182
+96a147ca96b20c2eb696a7dbee9c601b92294632:internal/police/service_test.go:generic-api-key:202
+96a147ca96b20c2eb696a7dbee9c601b92294632:internal/police/service_test.go:generic-api-key:213
+96a147ca96b20c2eb696a7dbee9c601b92294632:internal/police/service_test.go:generic-api-key:217
+96a147ca96b20c2eb696a7dbee9c601b92294632:internal/police/service_test.go:generic-api-key:295

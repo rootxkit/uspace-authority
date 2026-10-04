@@ -29,9 +29,12 @@ const (
 	FromOwnObservation = "own_observation"
 	FromANSPNotice     = "ansp_notice"
 	FromUSSPNotice     = "ussp_notice"
+	// FromPoliceRequest is set by a police export of an area and a
+	// window (WP-19, OpenForPolice) and never by hand.
+	FromPoliceRequest = "police_request"
 )
 
-var origins = []string{FromViolation, FromOwnObservation, FromANSPNotice, FromUSSPNotice}
+var origins = []string{FromViolation, FromOwnObservation, FromANSPNotice, FromUSSPNotice, FromPoliceRequest}
 
 // Statuses of an incident.
 const (
@@ -176,7 +179,7 @@ func normaliseAircraft(field string, a Aircraft, public PublicPartFunc) (Aircraf
 }
 
 // checkNew validates an incident opened by hand.
-func checkNew(in *NewIncident, public PublicPartFunc) error {
+func checkNew(in *NewIncident, public PublicPartFunc, viaPolice bool) error {
 	if err := oneOf("kind", in.Kind, kinds); err != nil {
 		return err
 	}
@@ -185,6 +188,9 @@ func checkNew(in *NewIncident, public PublicPartFunc) error {
 	}
 	if in.OpenedFrom == FromViolation {
 		return core.Fieldf("opened_from", "an incident is opened from a violation by escalating it (POST /v1/violations/{id}/review)")
+	}
+	if (in.OpenedFrom == FromPoliceRequest) != viaPolice {
+		return core.Fieldf("opened_from", "police_request is set by a police export (POST /v1/police/exports) only")
 	}
 	notice := in.OpenedFrom == FromANSPNotice || in.OpenedFrom == FromUSSPNotice
 	switch {
