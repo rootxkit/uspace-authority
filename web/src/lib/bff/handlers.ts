@@ -61,7 +61,10 @@ export function createBff(cfg: BffConfig): BffHandlers {
     session: { secure: true, maxAgeS: cfg.sessionMaxAgeS },
     allowPaths: [...PROXY_ALLOW_PATHS],
     timeoutMs: cfg.timeoutMs,
-    ...(cfg.trustedProxyHops === undefined ? {} : { trustedProxyHops: cfg.trustedProxyHops }),
+    // Without WEB_TRUSTED_PROXY_HOPS no proxy in front of Next.js is
+    // trusted to record the client: api is sent no client address (the
+    // kit requires the choice to be said, retro-audit S6).
+    ...(cfg.trustedProxyHops === undefined ? { noTrustedProxy: true as const } : { trustedProxyHops: cfg.trustedProxyHops }),
     ...(cfg.fetch === undefined ? {} : { fetch: cfg.fetch }),
   });
 }

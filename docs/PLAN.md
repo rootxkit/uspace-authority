@@ -627,12 +627,10 @@ edits another's), `CHANGELOG.md` (one line per WP under Unreleased) and
   (test only). Anything else needs a line in the PR and this section.
 - `web/` (WP-21; npm, exact versions, `pnpm-lock.yaml` frozen):
   `@rootxkit/uspace-ui` (the shared kit, pinned to one GitHub Release
-  tarball URL whose integrity the lockfile records; the pinned
-  `v0.1.0-rc.1` has an unsigned `SHA256SUMS`, written by the same
-  release job that uploads the tarball, so the integrity pins the bytes
-  first downloaded and nothing proves who built them; rootxkit/uspace-ui#20
-  attests every later release keylessly, and the bump to it checks the
-  asset with `gh attestation verify` before the lockfile changes), `next`, `react`,
+  tarball URL whose integrity the lockfile records; `v0.1.0` since
+  WP-23, whose build provenance attestation (rootxkit/uspace-ui#20) was
+  checked with `gh attestation verify` before the lockfile changed;
+  WP-21 pinned `v0.1.0-rc.1`, which had only an unsigned `SHA256SUMS`), `next`, `react`,
   `react-dom`, `maplibre-gl`, `react-hook-form` and `zod` (the kit's
   peers); dev only: `typescript`, `eslint` with `typescript-eslint`,
   `eslint-plugin-react-hooks` and `eslint-plugin-jsx-a11y` (the kit's

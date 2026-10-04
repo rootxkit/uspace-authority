@@ -123,6 +123,34 @@ describe("proxy", () => {
     expect(api.calls[0]?.auth).toBe("Bearer header.payload.sig");
   });
 
+  it("with one trusted hop, api is sent the address that proxy recorded", async () => {
+    let xff: string | null = "unset";
+    const f: typeof fetch = async (_input, init) => {
+      xff = new Headers(init?.headers).get("x-forwarded-for");
+      return Response.json({});
+    };
+    const req = new NextRequest(`${ORIGIN}/_bff/api/v1/auth/session`, {
+      method: "GET",
+      headers: { cookie: "uspace_session=header.payload.sig", host: "console.test", "x-forwarded-for": "198.51.100.9, 192.0.2.7" },
+    });
+    await createBff({ ...cfg(f), trustedProxyHops: 1 }).proxy(req);
+    expect(xff).toBe("192.0.2.7");
+  });
+
+  it("without a trusted hop, a client-written X-Forwarded-For never reaches api (the pair above)", async () => {
+    let xff: string | null = "unset";
+    const f: typeof fetch = async (_input, init) => {
+      xff = new Headers(init?.headers).get("x-forwarded-for");
+      return Response.json({});
+    };
+    const req = new NextRequest(`${ORIGIN}/_bff/api/v1/auth/session`, {
+      method: "GET",
+      headers: { cookie: "uspace_session=header.payload.sig", host: "console.test", "x-forwarded-for": "198.51.100.9" },
+    });
+    await createBff(cfg(f)).proxy(req);
+    expect(xff).toBeNull();
+  });
+
   it("refuses a path outside the allow-list before api (fail closed)", async () => {
     const api = fakeApi();
     for (const p of ["/v1/users", "/v1/zones/TSTP001", "/v1/auth/sessionx", "/v1/picture/ws"]) {
