@@ -1,0 +1,3 @@
+Record ID;Serial;Operator;Class;Mass kg;Maker;Model;Remote ID;Status
+TEST-UAS-1;TESTA0123456789;GEOTEST00000001;C1;0.8;Test Maker;TEST-QUAD;broadcast;Active
+TEST-UAS-2;TEST-legacy-1;GEOTEST00000002;none;2.5;Test Maker;TEST-WING;;Active

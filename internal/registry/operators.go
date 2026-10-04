@@ -56,7 +56,7 @@ func (s *Service) CreateOperator(ctx context.Context, in NewOperator, actor audi
 			Operator: Operator{
 				ID: id, OperatorType: in.OperatorType, RegistrationNumber: public, CompetencyConfirmation: in.CompetencyConfirmation,
 				Authorisations: in.Authorisations, Status: StatusActive, ValidFrom: in.ValidFrom.UTC(), ValidUntil: in.ValidUntil.UTC(),
-				Source: in.Source, RegistryVersion: cs.version, CreatedAt: cs.at, CreatedBy: actor.ID, UpdatedAt: cs.at, UpdatedBy: actor.ID,
+				Source: in.Source, SourceRef: in.SourceRef, RegistryVersion: cs.version, CreatedAt: cs.at, CreatedBy: actor.ID, UpdatedAt: cs.at, UpdatedBy: actor.ID,
 			},
 			Key: key, SecretSalt: salt, SecretHash: hash, Sealed: sealed,
 		})

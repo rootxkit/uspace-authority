@@ -84,11 +84,14 @@ type Operator struct {
 	ValidFrom              time.Time
 	ValidUntil             time.Time
 	Source                 string
-	RegistryVersion        int64
-	CreatedAt              time.Time
-	CreatedBy              string
-	UpdatedAt              time.Time
-	UpdatedBy              string
+	// SourceRef is the source's own id of the entry (WP-20: the
+	// uas.gov.ge record id, the portal application id); "" when none.
+	SourceRef       string
+	RegistryVersion int64
+	CreatedAt       time.Time
+	CreatedBy       string
+	UpdatedAt       time.Time
+	UpdatedBy       string
 }
 
 // OperatorPII is an operator's personal data (947 Art. 14(2)(a)-(c),
@@ -115,6 +118,8 @@ type NewOperator struct {
 	ValidFrom              time.Time // zero means now
 	ValidUntil             time.Time
 	Source                 string // empty means manual
+	// SourceRef is the source's own id (WP-20), unique per source.
+	SourceRef string
 }
 
 // OperatorPatch changes what is not nil.
@@ -153,6 +158,11 @@ type UAS struct {
 	CreatedBy        string
 	UpdatedAt        time.Time
 	UpdatedBy        string
+	// Source and SourceRef say where the entry came from (WP-20); a
+	// manual registration has Source "manual" (or "" before it is stored)
+	// and no SourceRef.
+	Source    string
+	SourceRef string
 }
 
 // NewUAS is a registration request.
@@ -363,6 +373,9 @@ func checkNewOperator(v *regnum.Validator, in *NewOperator, now time.Time) (publ
 	}
 	if in.Source != SourcePortal && in.Source != SourceImport && in.Source != SourceManual {
 		errs = append(errs, core.Fieldf("source", "must be portal, uas_gov_ge_import or manual"))
+	}
+	if in.SourceRef != "" {
+		errs = append(errs, text("source_ref", in.SourceRef, maxRefLen*2, true))
 	}
 	if in.ValidFrom.IsZero() {
 		in.ValidFrom = now

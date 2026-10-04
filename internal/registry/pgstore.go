@@ -83,7 +83,7 @@ func operatorFromRow(r *gen.UasOperator) OperatorRecord {
 			ID: r.ID, OperatorType: r.OperatorType, RegistrationNumber: r.RegistrationNumberPublic,
 			HasSecretPart: r.SecretPartHash != nil, CompetencyConfirmation: r.CompetencyConfirmation,
 			Authorisations: json.RawMessage(r.Authorisations), Status: Status(r.Status), StatusReason: r.StatusReason,
-			ValidFrom: r.ValidFrom, ValidUntil: r.ValidUntil, Source: r.Source, RegistryVersion: r.RegistryVersion,
+			ValidFrom: r.ValidFrom, ValidUntil: r.ValidUntil, Source: r.Source, SourceRef: str(r.SourceRef), RegistryVersion: r.RegistryVersion,
 			CreatedAt: r.CreatedAt, CreatedBy: r.CreatedBy, UpdatedAt: r.UpdatedAt, UpdatedBy: r.UpdatedBy,
 		},
 		Key: r.RegistrationNumberKey, SecretSalt: r.SecretPartSalt, SecretHash: str(r.SecretPartHash),
@@ -101,8 +101,17 @@ func uasFromRow(r *gen.UAS) UAS {
 		RegistrationMark: str(r.RegistrationMark), Manufacturer: r.Manufacturer, Model: r.Model, OwnerRef: str(r.OwnerRef),
 		ClassLabel: str(r.ClassLabel), MTOMG: intPtr(r.MtomG), RIDCapability: r.RidCapability, Status: Status(r.Status),
 		StatusReason: r.StatusReason, RegisteredAt: r.RegisteredAt, RegistryVersion: r.RegistryVersion,
-		CreatedBy: r.CreatedBy, UpdatedAt: r.UpdatedAt, UpdatedBy: r.UpdatedBy,
+		CreatedBy: r.CreatedBy, UpdatedAt: r.UpdatedAt, UpdatedBy: r.UpdatedBy, Source: r.Source, SourceRef: str(r.SourceRef),
 	}
+}
+
+// sourceOrManual is the source column of an aircraft: one registered
+// by hand names none.
+func sourceOrManual(s string) string {
+	if s == "" {
+		return SourceManual
+	}
+	return s
 }
 
 func pilotFromRow(r *gen.RemotePilot) PilotRecord {
@@ -161,6 +170,15 @@ func (p PG) Operator(ctx context.Context, id string) (OperatorRecord, error) {
 // OperatorByKey reads the operator with a compare key.
 func (p PG) OperatorByKey(ctx context.Context, key string) (OperatorRecord, error) {
 	r, err := p.DB.Queries().OperatorByKey(ctx, key)
+	if err != nil {
+		return OperatorRecord{}, mapErr(err)
+	}
+	return operatorFromRow(&r), nil
+}
+
+// OperatorBySourceRef reads the operator a source made under its own id.
+func (p PG) OperatorBySourceRef(ctx context.Context, source, ref string) (OperatorRecord, error) {
+	r, err := p.DB.Queries().OperatorBySourceRef(ctx, gen.OperatorBySourceRefParams{Source: source, SourceRef: &ref})
 	if err != nil {
 		return OperatorRecord{}, mapErr(err)
 	}
@@ -296,7 +314,7 @@ func (t pgTx) InsertOperator(ctx context.Context, r OperatorRecord) (OperatorRec
 		ContactEmailEnc: s.ContactEmail, ContactPhoneEnc: s.ContactPhone, InsurancePolicyNumberEnc: s.InsurancePolicyNumber,
 		CompetencyConfirmation: r.CompetencyConfirmation, Authorisations: authorisationsJSON(r.Authorisations),
 		Status: string(r.Status), StatusReason: r.StatusReason, ValidFrom: r.ValidFrom, ValidUntil: r.ValidUntil,
-		Source: r.Source, RegistryVersion: r.RegistryVersion, CreatedAt: r.CreatedAt, CreatedBy: r.CreatedBy,
+		Source: r.Source, SourceRef: optStr(r.SourceRef), RegistryVersion: r.RegistryVersion, CreatedAt: r.CreatedAt, CreatedBy: r.CreatedBy,
 	})
 	if err != nil {
 		return OperatorRecord{}, mapErr(err)
@@ -361,11 +379,30 @@ func (t pgTx) InsertUAS(ctx context.Context, u UAS) (UAS, error) {
 		RegistrationMark: optStr(u.RegistrationMark), Manufacturer: u.Manufacturer, Model: u.Model, OwnerRef: optStr(u.OwnerRef),
 		ClassLabel: optStr(u.ClassLabel), MtomG: optInt(u.MTOMG), RidCapability: u.RIDCapability, Status: string(u.Status),
 		StatusReason: u.StatusReason, RegisteredAt: u.RegisteredAt, RegistryVersion: u.RegistryVersion, CreatedBy: u.CreatedBy,
+		Source: sourceOrManual(u.Source), SourceRef: optStr(u.SourceRef),
 	})
 	if err != nil {
 		return UAS{}, mapErr(err)
 	}
 	return uasFromRow(&row), nil
+}
+
+// OperatorBySourceRef implements Tx.
+func (t pgTx) OperatorBySourceRef(ctx context.Context, source, ref string) (OperatorRecord, error) {
+	r, err := t.q.OperatorBySourceRef(ctx, gen.OperatorBySourceRefParams{Source: source, SourceRef: &ref})
+	if err != nil {
+		return OperatorRecord{}, mapErr(err)
+	}
+	return operatorFromRow(&r), nil
+}
+
+// UASBySourceRef implements Tx.
+func (t pgTx) UASBySourceRef(ctx context.Context, source, ref string) (UAS, error) {
+	r, err := t.q.UASBySourceRef(ctx, gen.UASBySourceRefParams{Source: source, SourceRef: &ref})
+	if err != nil {
+		return UAS{}, mapErr(err)
+	}
+	return uasFromRow(&r), nil
 }
 
 // UASForUpdate implements Tx.

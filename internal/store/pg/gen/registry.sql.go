@@ -163,17 +163,17 @@ INSERT INTO uas_operators (
     full_name_enc, legal_name_enc, date_of_birth_enc, legal_identification_number_enc,
     postal_address_enc, contact_email_enc, contact_phone_enc, insurance_policy_number_enc,
     competency_confirmation, authorisations, status, status_reason, valid_from, valid_until,
-    source, registry_version, created_at, created_by, updated_at, updated_by
+    source, source_ref, registry_version, created_at, created_by, updated_at, updated_by
 ) VALUES (
     $1, $2, $3, $4,
     $5, $6, $7,
     $8, $9, $10, $11,
     $12, $13, $14, $15,
     $16, $17, $18, $19,
-    $20, $21, $22, $23,
-    $24, $25, $24, $25
+    $20, $21, $22, $23, $24,
+    $25, $26, $25, $26
 )
-RETURNING id, operator_type, registration_number_public, registration_number_key, secret_part_salt, secret_part_hash, pii_key_id, full_name_enc, legal_name_enc, date_of_birth_enc, legal_identification_number_enc, postal_address_enc, contact_email_enc, contact_phone_enc, insurance_policy_number_enc, competency_confirmation, authorisations, status, status_reason, valid_from, valid_until, source, registry_version, created_at, created_by, updated_at, updated_by
+RETURNING id, operator_type, registration_number_public, registration_number_key, secret_part_salt, secret_part_hash, pii_key_id, full_name_enc, legal_name_enc, date_of_birth_enc, legal_identification_number_enc, postal_address_enc, contact_email_enc, contact_phone_enc, insurance_policy_number_enc, competency_confirmation, authorisations, status, status_reason, valid_from, valid_until, source, registry_version, created_at, created_by, updated_at, updated_by, source_ref
 `
 
 type InsertOperatorParams struct {
@@ -199,6 +199,7 @@ type InsertOperatorParams struct {
 	ValidFrom                    time.Time
 	ValidUntil                   time.Time
 	Source                       string
+	SourceRef                    *string
 	RegistryVersion              int64
 	CreatedAt                    time.Time
 	CreatedBy                    string
@@ -228,6 +229,7 @@ func (q *Queries) InsertOperator(ctx context.Context, arg InsertOperatorParams) 
 		arg.ValidFrom,
 		arg.ValidUntil,
 		arg.Source,
+		arg.SourceRef,
 		arg.RegistryVersion,
 		arg.CreatedAt,
 		arg.CreatedBy,
@@ -261,6 +263,7 @@ func (q *Queries) InsertOperator(ctx context.Context, arg InsertOperatorParams) 
 		&i.CreatedBy,
 		&i.UpdatedAt,
 		&i.UpdatedBy,
+		&i.SourceRef,
 	)
 	return i, err
 }
@@ -355,14 +358,15 @@ const insertUAS = `-- name: InsertUAS :one
 INSERT INTO uas (
     id, operator_id, serial, serial_fold, manufacturer_code, registration_mark, manufacturer, model,
     owner_ref, class_label, mtom_g, rid_capability, status, status_reason, registered_at,
-    registry_version, created_by, updated_at, updated_by
+    registry_version, created_by, updated_at, updated_by, source, source_ref
 ) VALUES (
     $1, $2, $3, $4, $5,
     $6, $7, $8, $9,
     $10, $11, $12, $13, $14,
-    $15, $16, $17, $15, $17
+    $15, $16, $17, $15, $17,
+    $18, $19
 )
-RETURNING id, operator_id, serial, serial_fold, manufacturer_code, registration_mark, manufacturer, model, owner_ref, class_label, mtom_g, rid_capability, status, status_reason, registered_at, registry_version, created_by, updated_at, updated_by
+RETURNING id, operator_id, serial, serial_fold, manufacturer_code, registration_mark, manufacturer, model, owner_ref, class_label, mtom_g, rid_capability, status, status_reason, registered_at, registry_version, created_by, updated_at, updated_by, source, source_ref
 `
 
 type InsertUASParams struct {
@@ -383,6 +387,8 @@ type InsertUASParams struct {
 	RegisteredAt     time.Time
 	RegistryVersion  int64
 	CreatedBy        string
+	Source           string
+	SourceRef        *string
 }
 
 func (q *Queries) InsertUAS(ctx context.Context, arg InsertUASParams) (UAS, error) {
@@ -404,6 +410,8 @@ func (q *Queries) InsertUAS(ctx context.Context, arg InsertUASParams) (UAS, erro
 		arg.RegisteredAt,
 		arg.RegistryVersion,
 		arg.CreatedBy,
+		arg.Source,
+		arg.SourceRef,
 	)
 	var i UAS
 	err := row.Scan(
@@ -426,6 +434,8 @@ func (q *Queries) InsertUAS(ctx context.Context, arg InsertUASParams) (UAS, erro
 		&i.CreatedBy,
 		&i.UpdatedAt,
 		&i.UpdatedBy,
+		&i.Source,
+		&i.SourceRef,
 	)
 	return i, err
 }
@@ -442,7 +452,7 @@ func (q *Queries) LastStatusChange(ctx context.Context) (int64, error) {
 }
 
 const listOperators = `-- name: ListOperators :many
-SELECT id, operator_type, registration_number_public, registration_number_key, secret_part_salt, secret_part_hash, pii_key_id, full_name_enc, legal_name_enc, date_of_birth_enc, legal_identification_number_enc, postal_address_enc, contact_email_enc, contact_phone_enc, insurance_policy_number_enc, competency_confirmation, authorisations, status, status_reason, valid_from, valid_until, source, registry_version, created_at, created_by, updated_at, updated_by FROM uas_operators
+SELECT id, operator_type, registration_number_public, registration_number_key, secret_part_salt, secret_part_hash, pii_key_id, full_name_enc, legal_name_enc, date_of_birth_enc, legal_identification_number_enc, postal_address_enc, contact_email_enc, contact_phone_enc, insurance_policy_number_enc, competency_confirmation, authorisations, status, status_reason, valid_from, valid_until, source, registry_version, created_at, created_by, updated_at, updated_by, source_ref FROM uas_operators
 WHERE ($1::text IS NULL OR registration_number_key = $1)
   AND ($2::text IS NULL OR status = $2)
   AND id > $3
@@ -500,6 +510,7 @@ func (q *Queries) ListOperators(ctx context.Context, arg ListOperatorsParams) ([
 			&i.CreatedBy,
 			&i.UpdatedAt,
 			&i.UpdatedBy,
+			&i.SourceRef,
 		); err != nil {
 			return nil, err
 		}
@@ -603,7 +614,7 @@ func (q *Queries) ListStatusChanges(ctx context.Context, arg ListStatusChangesPa
 }
 
 const listUAS = `-- name: ListUAS :many
-SELECT id, operator_id, serial, serial_fold, manufacturer_code, registration_mark, manufacturer, model, owner_ref, class_label, mtom_g, rid_capability, status, status_reason, registered_at, registry_version, created_by, updated_at, updated_by FROM uas
+SELECT id, operator_id, serial, serial_fold, manufacturer_code, registration_mark, manufacturer, model, owner_ref, class_label, mtom_g, rid_capability, status, status_reason, registered_at, registry_version, created_by, updated_at, updated_by, source, source_ref FROM uas
 WHERE ($1::text IS NULL OR serial_fold = $1)
   AND ($2::text IS NULL OR operator_id = $2)
   AND ($3::text IS NULL OR status = $3)
@@ -655,6 +666,8 @@ func (q *Queries) ListUAS(ctx context.Context, arg ListUASParams) ([]UAS, error)
 			&i.CreatedBy,
 			&i.UpdatedAt,
 			&i.UpdatedBy,
+			&i.Source,
+			&i.SourceRef,
 		); err != nil {
 			return nil, err
 		}
@@ -682,7 +695,7 @@ func (q *Queries) NextRegistryVersion(ctx context.Context) (int64, error) {
 }
 
 const operatorByID = `-- name: OperatorByID :one
-SELECT id, operator_type, registration_number_public, registration_number_key, secret_part_salt, secret_part_hash, pii_key_id, full_name_enc, legal_name_enc, date_of_birth_enc, legal_identification_number_enc, postal_address_enc, contact_email_enc, contact_phone_enc, insurance_policy_number_enc, competency_confirmation, authorisations, status, status_reason, valid_from, valid_until, source, registry_version, created_at, created_by, updated_at, updated_by FROM uas_operators WHERE id = $1
+SELECT id, operator_type, registration_number_public, registration_number_key, secret_part_salt, secret_part_hash, pii_key_id, full_name_enc, legal_name_enc, date_of_birth_enc, legal_identification_number_enc, postal_address_enc, contact_email_enc, contact_phone_enc, insurance_policy_number_enc, competency_confirmation, authorisations, status, status_reason, valid_from, valid_until, source, registry_version, created_at, created_by, updated_at, updated_by, source_ref FROM uas_operators WHERE id = $1
 `
 
 func (q *Queries) OperatorByID(ctx context.Context, id string) (UasOperator, error) {
@@ -716,12 +729,13 @@ func (q *Queries) OperatorByID(ctx context.Context, id string) (UasOperator, err
 		&i.CreatedBy,
 		&i.UpdatedAt,
 		&i.UpdatedBy,
+		&i.SourceRef,
 	)
 	return i, err
 }
 
 const operatorByKey = `-- name: OperatorByKey :one
-SELECT id, operator_type, registration_number_public, registration_number_key, secret_part_salt, secret_part_hash, pii_key_id, full_name_enc, legal_name_enc, date_of_birth_enc, legal_identification_number_enc, postal_address_enc, contact_email_enc, contact_phone_enc, insurance_policy_number_enc, competency_confirmation, authorisations, status, status_reason, valid_from, valid_until, source, registry_version, created_at, created_by, updated_at, updated_by FROM uas_operators WHERE registration_number_key = $1
+SELECT id, operator_type, registration_number_public, registration_number_key, secret_part_salt, secret_part_hash, pii_key_id, full_name_enc, legal_name_enc, date_of_birth_enc, legal_identification_number_enc, postal_address_enc, contact_email_enc, contact_phone_enc, insurance_policy_number_enc, competency_confirmation, authorisations, status, status_reason, valid_from, valid_until, source, registry_version, created_at, created_by, updated_at, updated_by, source_ref FROM uas_operators WHERE registration_number_key = $1
 `
 
 func (q *Queries) OperatorByKey(ctx context.Context, registrationNumberKey string) (UasOperator, error) {
@@ -755,12 +769,60 @@ func (q *Queries) OperatorByKey(ctx context.Context, registrationNumberKey strin
 		&i.CreatedBy,
 		&i.UpdatedAt,
 		&i.UpdatedBy,
+		&i.SourceRef,
+	)
+	return i, err
+}
+
+const operatorBySourceRef = `-- name: OperatorBySourceRef :one
+SELECT id, operator_type, registration_number_public, registration_number_key, secret_part_salt, secret_part_hash, pii_key_id, full_name_enc, legal_name_enc, date_of_birth_enc, legal_identification_number_enc, postal_address_enc, contact_email_enc, contact_phone_enc, insurance_policy_number_enc, competency_confirmation, authorisations, status, status_reason, valid_from, valid_until, source, registry_version, created_at, created_by, updated_at, updated_by, source_ref FROM uas_operators WHERE source = $1 AND source_ref = $2
+`
+
+type OperatorBySourceRefParams struct {
+	Source    string
+	SourceRef *string
+}
+
+// WP-20: the operator a source (an import, the portal) made under its
+// own id; the import is idempotent on it.
+func (q *Queries) OperatorBySourceRef(ctx context.Context, arg OperatorBySourceRefParams) (UasOperator, error) {
+	row := q.db.QueryRow(ctx, operatorBySourceRef, arg.Source, arg.SourceRef)
+	var i UasOperator
+	err := row.Scan(
+		&i.ID,
+		&i.OperatorType,
+		&i.RegistrationNumberPublic,
+		&i.RegistrationNumberKey,
+		&i.SecretPartSalt,
+		&i.SecretPartHash,
+		&i.PiiKeyID,
+		&i.FullNameEnc,
+		&i.LegalNameEnc,
+		&i.DateOfBirthEnc,
+		&i.LegalIdentificationNumberEnc,
+		&i.PostalAddressEnc,
+		&i.ContactEmailEnc,
+		&i.ContactPhoneEnc,
+		&i.InsurancePolicyNumberEnc,
+		&i.CompetencyConfirmation,
+		&i.Authorisations,
+		&i.Status,
+		&i.StatusReason,
+		&i.ValidFrom,
+		&i.ValidUntil,
+		&i.Source,
+		&i.RegistryVersion,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.UpdatedBy,
+		&i.SourceRef,
 	)
 	return i, err
 }
 
 const operatorForUpdate = `-- name: OperatorForUpdate :one
-SELECT id, operator_type, registration_number_public, registration_number_key, secret_part_salt, secret_part_hash, pii_key_id, full_name_enc, legal_name_enc, date_of_birth_enc, legal_identification_number_enc, postal_address_enc, contact_email_enc, contact_phone_enc, insurance_policy_number_enc, competency_confirmation, authorisations, status, status_reason, valid_from, valid_until, source, registry_version, created_at, created_by, updated_at, updated_by FROM uas_operators WHERE id = $1 FOR UPDATE
+SELECT id, operator_type, registration_number_public, registration_number_key, secret_part_salt, secret_part_hash, pii_key_id, full_name_enc, legal_name_enc, date_of_birth_enc, legal_identification_number_enc, postal_address_enc, contact_email_enc, contact_phone_enc, insurance_policy_number_enc, competency_confirmation, authorisations, status, status_reason, valid_from, valid_until, source, registry_version, created_at, created_by, updated_at, updated_by, source_ref FROM uas_operators WHERE id = $1 FOR UPDATE
 `
 
 func (q *Queries) OperatorForUpdate(ctx context.Context, id string) (UasOperator, error) {
@@ -794,6 +856,7 @@ func (q *Queries) OperatorForUpdate(ctx context.Context, id string) (UasOperator
 		&i.CreatedBy,
 		&i.UpdatedAt,
 		&i.UpdatedBy,
+		&i.SourceRef,
 	)
 	return i, err
 }
@@ -878,7 +941,7 @@ UPDATE uas_operators SET
     status = $1, status_reason = $2,
     registry_version = $3, updated_at = $4, updated_by = $5
 WHERE id = $6
-RETURNING id, operator_type, registration_number_public, registration_number_key, secret_part_salt, secret_part_hash, pii_key_id, full_name_enc, legal_name_enc, date_of_birth_enc, legal_identification_number_enc, postal_address_enc, contact_email_enc, contact_phone_enc, insurance_policy_number_enc, competency_confirmation, authorisations, status, status_reason, valid_from, valid_until, source, registry_version, created_at, created_by, updated_at, updated_by
+RETURNING id, operator_type, registration_number_public, registration_number_key, secret_part_salt, secret_part_hash, pii_key_id, full_name_enc, legal_name_enc, date_of_birth_enc, legal_identification_number_enc, postal_address_enc, contact_email_enc, contact_phone_enc, insurance_policy_number_enc, competency_confirmation, authorisations, status, status_reason, valid_from, valid_until, source, registry_version, created_at, created_by, updated_at, updated_by, source_ref
 `
 
 type SetOperatorStatusParams struct {
@@ -928,6 +991,7 @@ func (q *Queries) SetOperatorStatus(ctx context.Context, arg SetOperatorStatusPa
 		&i.CreatedBy,
 		&i.UpdatedAt,
 		&i.UpdatedBy,
+		&i.SourceRef,
 	)
 	return i, err
 }
@@ -982,7 +1046,7 @@ UPDATE uas SET
     status = $1, status_reason = $2,
     registry_version = $3, updated_at = $4, updated_by = $5
 WHERE id = $6
-RETURNING id, operator_id, serial, serial_fold, manufacturer_code, registration_mark, manufacturer, model, owner_ref, class_label, mtom_g, rid_capability, status, status_reason, registered_at, registry_version, created_by, updated_at, updated_by
+RETURNING id, operator_id, serial, serial_fold, manufacturer_code, registration_mark, manufacturer, model, owner_ref, class_label, mtom_g, rid_capability, status, status_reason, registered_at, registry_version, created_by, updated_at, updated_by, source, source_ref
 `
 
 type SetUASStatusParams struct {
@@ -1024,12 +1088,14 @@ func (q *Queries) SetUASStatus(ctx context.Context, arg SetUASStatusParams) (UAS
 		&i.CreatedBy,
 		&i.UpdatedAt,
 		&i.UpdatedBy,
+		&i.Source,
+		&i.SourceRef,
 	)
 	return i, err
 }
 
 const uASByID = `-- name: UASByID :one
-SELECT id, operator_id, serial, serial_fold, manufacturer_code, registration_mark, manufacturer, model, owner_ref, class_label, mtom_g, rid_capability, status, status_reason, registered_at, registry_version, created_by, updated_at, updated_by FROM uas WHERE id = $1
+SELECT id, operator_id, serial, serial_fold, manufacturer_code, registration_mark, manufacturer, model, owner_ref, class_label, mtom_g, rid_capability, status, status_reason, registered_at, registry_version, created_by, updated_at, updated_by, source, source_ref FROM uas WHERE id = $1
 `
 
 func (q *Queries) UASByID(ctx context.Context, id string) (UAS, error) {
@@ -1055,12 +1121,14 @@ func (q *Queries) UASByID(ctx context.Context, id string) (UAS, error) {
 		&i.CreatedBy,
 		&i.UpdatedAt,
 		&i.UpdatedBy,
+		&i.Source,
+		&i.SourceRef,
 	)
 	return i, err
 }
 
 const uASBySerialFold = `-- name: UASBySerialFold :many
-SELECT id, operator_id, serial, serial_fold, manufacturer_code, registration_mark, manufacturer, model, owner_ref, class_label, mtom_g, rid_capability, status, status_reason, registered_at, registry_version, created_by, updated_at, updated_by FROM uas WHERE serial_fold = $1 ORDER BY id
+SELECT id, operator_id, serial, serial_fold, manufacturer_code, registration_mark, manufacturer, model, owner_ref, class_label, mtom_g, rid_capability, status, status_reason, registered_at, registry_version, created_by, updated_at, updated_by, source, source_ref FROM uas WHERE serial_fold = $1 ORDER BY id
 `
 
 // Every aircraft whose serial folds to the key (at most one: serial_fold
@@ -1094,6 +1162,8 @@ func (q *Queries) UASBySerialFold(ctx context.Context, serialFold string) ([]UAS
 			&i.CreatedBy,
 			&i.UpdatedAt,
 			&i.UpdatedBy,
+			&i.Source,
+			&i.SourceRef,
 		); err != nil {
 			return nil, err
 		}
@@ -1105,8 +1175,47 @@ func (q *Queries) UASBySerialFold(ctx context.Context, serialFold string) ([]UAS
 	return items, nil
 }
 
+const uASBySourceRef = `-- name: UASBySourceRef :one
+SELECT id, operator_id, serial, serial_fold, manufacturer_code, registration_mark, manufacturer, model, owner_ref, class_label, mtom_g, rid_capability, status, status_reason, registered_at, registry_version, created_by, updated_at, updated_by, source, source_ref FROM uas WHERE source = $1 AND source_ref = $2
+`
+
+type UASBySourceRefParams struct {
+	Source    string
+	SourceRef *string
+}
+
+// WP-20: the aircraft an import made under the source's own id.
+func (q *Queries) UASBySourceRef(ctx context.Context, arg UASBySourceRefParams) (UAS, error) {
+	row := q.db.QueryRow(ctx, uASBySourceRef, arg.Source, arg.SourceRef)
+	var i UAS
+	err := row.Scan(
+		&i.ID,
+		&i.OperatorID,
+		&i.Serial,
+		&i.SerialFold,
+		&i.ManufacturerCode,
+		&i.RegistrationMark,
+		&i.Manufacturer,
+		&i.Model,
+		&i.OwnerRef,
+		&i.ClassLabel,
+		&i.MtomG,
+		&i.RidCapability,
+		&i.Status,
+		&i.StatusReason,
+		&i.RegisteredAt,
+		&i.RegistryVersion,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.UpdatedBy,
+		&i.Source,
+		&i.SourceRef,
+	)
+	return i, err
+}
+
 const uASForUpdate = `-- name: UASForUpdate :one
-SELECT id, operator_id, serial, serial_fold, manufacturer_code, registration_mark, manufacturer, model, owner_ref, class_label, mtom_g, rid_capability, status, status_reason, registered_at, registry_version, created_by, updated_at, updated_by FROM uas WHERE id = $1 FOR UPDATE
+SELECT id, operator_id, serial, serial_fold, manufacturer_code, registration_mark, manufacturer, model, owner_ref, class_label, mtom_g, rid_capability, status, status_reason, registered_at, registry_version, created_by, updated_at, updated_by, source, source_ref FROM uas WHERE id = $1 FOR UPDATE
 `
 
 func (q *Queries) UASForUpdate(ctx context.Context, id string) (UAS, error) {
@@ -1132,6 +1241,8 @@ func (q *Queries) UASForUpdate(ctx context.Context, id string) (UAS, error) {
 		&i.CreatedBy,
 		&i.UpdatedAt,
 		&i.UpdatedBy,
+		&i.Source,
+		&i.SourceRef,
 	)
 	return i, err
 }
@@ -1154,7 +1265,7 @@ UPDATE uas_operators SET
     updated_at = $14,
     updated_by = $15
 WHERE id = $16
-RETURNING id, operator_type, registration_number_public, registration_number_key, secret_part_salt, secret_part_hash, pii_key_id, full_name_enc, legal_name_enc, date_of_birth_enc, legal_identification_number_enc, postal_address_enc, contact_email_enc, contact_phone_enc, insurance_policy_number_enc, competency_confirmation, authorisations, status, status_reason, valid_from, valid_until, source, registry_version, created_at, created_by, updated_at, updated_by
+RETURNING id, operator_type, registration_number_public, registration_number_key, secret_part_salt, secret_part_hash, pii_key_id, full_name_enc, legal_name_enc, date_of_birth_enc, legal_identification_number_enc, postal_address_enc, contact_email_enc, contact_phone_enc, insurance_policy_number_enc, competency_confirmation, authorisations, status, status_reason, valid_from, valid_until, source, registry_version, created_at, created_by, updated_at, updated_by, source_ref
 `
 
 type UpdateOperatorParams struct {
@@ -1224,6 +1335,7 @@ func (q *Queries) UpdateOperator(ctx context.Context, arg UpdateOperatorParams) 
 		&i.CreatedBy,
 		&i.UpdatedAt,
 		&i.UpdatedBy,
+		&i.SourceRef,
 	)
 	return i, err
 }
@@ -1292,7 +1404,7 @@ UPDATE uas SET
     updated_at = $9,
     updated_by = $10
 WHERE id = $11
-RETURNING id, operator_id, serial, serial_fold, manufacturer_code, registration_mark, manufacturer, model, owner_ref, class_label, mtom_g, rid_capability, status, status_reason, registered_at, registry_version, created_by, updated_at, updated_by
+RETURNING id, operator_id, serial, serial_fold, manufacturer_code, registration_mark, manufacturer, model, owner_ref, class_label, mtom_g, rid_capability, status, status_reason, registered_at, registry_version, created_by, updated_at, updated_by, source, source_ref
 `
 
 type UpdateUASParams struct {
@@ -1344,6 +1456,8 @@ func (q *Queries) UpdateUAS(ctx context.Context, arg UpdateUASParams) (UAS, erro
 		&i.CreatedBy,
 		&i.UpdatedAt,
 		&i.UpdatedBy,
+		&i.Source,
+		&i.SourceRef,
 	)
 	return i, err
 }
