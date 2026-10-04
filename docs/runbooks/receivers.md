@@ -31,9 +31,11 @@ the receiver contract and the operator's view. The request body is
 5. `rid-ingest` follows the key set within a second (KV
    `rid_receiver_keys`, pushed and re-read every
    `RID_INGEST_KEYSET_REREAD_S`). A `rid-ingest` started with no
-   receiver registered listens on loopback only and says so
-   (`no receiver keys: listening on loopback only (R-06)`); restart it
-   once the first receiver exists.
+   receiver registered still listens on `RID_INGEST_ADDR`, refuses
+   every batch (`401`, counted as `refused_no_receiver_keys`), says so
+   at start (`no receiver keys: every batch is refused ...`) and fails
+   the `receiver_keys` check of `/readyz` with the count. The first
+   receiver registered is accepted without a restart.
 
 Rotation: `POST /v1/rid/receivers/{id}/keys/rotate` issues new
 credentials, shown once. The previous ones keep working for `grace_s`
@@ -144,7 +146,7 @@ The authority never answers a receiver with 403 (LESSONS B-10): 401 is
 | Symptom | Cause | Action |
 |---|---|---|
 | `rid-ingest` exits at start with `receiver key set invalid` | an entry of `rid_receiver_keys` does not parse, or an id appears twice (B-14) | api re-projects the bucket within `RID_KEYSET_REPROJECT_S`; restart after it has; if it persists, read the named entry |
-| every receiver `401 unauthenticated` after a restart | `rid-ingest` started without the key set (NATS down) and is on loopback | check the start line; restart once NATS is up |
+| every receiver `401 unauthenticated`, `/readyz` `receiver_keys` failing | `rid-ingest` holds no receiver keys: none registered, or the key set unreadable (NATS down) | register a receiver, or restore NATS; the key set is re-read every `RID_INGEST_KEYSET_REREAD_S` and no restart is needed |
 | a receiver change answers `503 key_store_unavailable` | the KV bucket cannot be written; nothing was changed | restore NATS, repeat the change |
 | `storage_unavailable` rising, `queue_depth` rising | tsdb-writer's input (`tsw.v1.*`) is down; batches wait in `ingest.v1` | restore it; the queue drains with nothing lost |
 | `queue_shed_*` rising, `writer_gaps` rows | the queue passed `RID_INGEST_QUEUE_MAX_BATCHES` or `RID_INGEST_QUEUE_MAX_AGE_S` (10 min) | the gap rows say which receiver and how many; restore storage |

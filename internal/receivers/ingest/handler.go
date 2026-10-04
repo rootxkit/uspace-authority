@@ -28,8 +28,11 @@ const (
 	CounterObservationsAccepted = "observations_accepted"
 	CounterEmptyBatches         = "batches_empty"
 	CounterBatchesRefused       = "batches_refused"
-	ReasonInFlight              = "refused_in_flight"
-	SlugInFlight                = "in_flight"
+	// CounterRefusedNoKeys counts the batches refused while the key set
+	// held no receiver at all (each is also refused_unauthenticated).
+	CounterRefusedNoKeys = "refused_no_receiver_keys"
+	ReasonInFlight       = "refused_in_flight"
+	SlugInFlight         = "in_flight"
 )
 
 // Recorder takes each receiver's accepted batches and refusals (Status).
@@ -113,6 +116,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, receivers.MaxBatchBytes)
 	entry, g, err := h.Keyring.Authenticate(r.Context(), r.Header.Get("Authorization"), now)
 	if err != nil {
+		if h.Keyring.Len() == 0 {
+			h.Counters.Inc(CounterRefusedNoKeys)
+		}
 		h.refuse(w, r, receivers.AuthRefusal(err), "")
 		return
 	}

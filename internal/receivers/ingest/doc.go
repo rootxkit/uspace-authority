@@ -38,8 +38,12 @@
 // shed and refused-by-reason counters, the queue depth and lagging with
 // lag_s while a receiver replays old backlog (B-03).
 //
-// With no receiver keys the process listens on loopback only (R-06); a
-// key set with an invalid entry or an id twice stops it at start (B-14).
+// With no receiver keys the process still listens on its configured
+// address and refuses every batch, counted as refused_no_receiver_keys
+// and said by /readyz's receiver_keys check; the key set follower picks
+// up a receiver registered later without a restart (WP-L6 finding 5,
+// replacing the loopback-only start of R-06). A key set with an invalid
+// entry or an id twice stops it at start (B-14).
 // The pipeline resolves against the registry projection, read as
 // authority_ts_reader from TS_URL (opened lazily; registry_unavailable
 // until it loads, said at start and on the status line), and converts

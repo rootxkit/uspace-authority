@@ -291,3 +291,8 @@ Unreleased; the format follows Keep a Changelog.
   CI job `web` with a Playwright smoke against a stub api and picture-ws
   serving the lab's examples; `web/Dockerfile` and the signed web image
   on main; the web runbook.
+- WP-L6 finding 5: rid-ingest binds `RID_INGEST_ADDR` with or without
+  receiver keys (it no longer falls back to loopback); with none every
+  batch is refused, counted as `refused_no_receiver_keys` and reported
+  by the `receiver_keys` check of `/readyz`; a receiver registered later
+  is accepted without a restart.
