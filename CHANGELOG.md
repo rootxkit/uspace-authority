@@ -435,3 +435,10 @@ Unreleased; the format follows Keep a Changelog.
   without an Origin or a 4401 close after the upgrade with one. With
   the cookie, a missing or foreign Origin is still `403 origin`; 4401
   now means a refused or ended session.
+- WP-L7 conformance C7 (contract bug fix): `postDPISANotification`
+  declares its refusal body: every 400, 401, 403, 413 and 503 of the
+  dp-poller notification route is `application/problem+json`, the new
+  component `DPNotificationProblem` (problem/v1 with the F3411
+  `ErrorResponse` member `message` beside it, equal to `detail`), and
+  the code writes exactly that instead of a bare `{"message"}` the
+  contract did not declare. A 400 names the field in `errors`.

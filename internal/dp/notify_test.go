@@ -69,6 +69,12 @@ func notification(owner string, deleted bool) []byte {
 
 func post(t *testing.T, mux *http.ServeMux, tok string, body []byte) (int, string) {
 	t.Helper()
+	code, _, b := postFull(t, mux, tok, body)
+	return code, b
+}
+
+func postFull(t *testing.T, mux *http.ServeMux, tok string, body []byte) (int, http.Header, string) {
+	t.Helper()
 	req := httptest.NewRequest(http.MethodPost, "/uss/identification_service_areas/isa-9", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	if tok != "" {
@@ -76,7 +82,44 @@ func post(t *testing.T, mux *http.ServeMux, tok string, body []byte) (int, strin
 	}
 	rec := httptest.NewRecorder()
 	mux.ServeHTTP(rec, req)
-	return rec.Code, rec.Body.String()
+	return rec.Code, rec.Header(), rec.Body.String()
+}
+
+// refusal is the declared refusal body of the route: problem/v1 and the
+// F3411 ErrorResponse member.
+type refusal struct {
+	Type    string                           `json:"type"`
+	Title   string                           `json:"title"`
+	Status  int                              `json:"status"`
+	Detail  string                           `json:"detail"`
+	Errors  []struct{ Field, Reason string } `json:"errors"`
+	Message *string                          `json:"message"`
+}
+
+// checkRefusal holds a refusal to its contract (C7): the declared
+// application/problem+json, a problem/v1 body of the answered status
+// and slug with errors present, and message, the F3411 ErrorResponse
+// member, equal to the detail.
+func checkRefusal(t *testing.T, name string, code int, hd http.Header, body, slug string) refusal {
+	t.Helper()
+	var p refusal
+	if ct := hd.Get("Content-Type"); ct != "application/problem+json" {
+		t.Errorf("%s: content type %q", name, ct)
+	}
+	if !strings.Contains(body, `"errors":`) {
+		t.Errorf("%s: no errors member: %s", name, body)
+	}
+	if err := json.Unmarshal([]byte(body), &p); err != nil {
+		t.Errorf("%s: %v: %s", name, err, body)
+		return p
+	}
+	if p.Status != code || p.Type != "https://schemas.uspace.ge/problems/"+slug || p.Title == "" || p.Detail == "" {
+		t.Errorf("%s: not the problem of %d %s: %s", name, code, slug, body)
+	}
+	if p.Message == nil || *p.Message != p.Detail {
+		t.Errorf("%s: not an F3411 ErrorResponse: %s", name, body)
+	}
+	return p
 }
 
 // E-01, M6, M18: a notification posted by the Service Provider that owns
@@ -96,36 +139,46 @@ func TestNotificationAcceptedAndEveryRefusal(t *testing.T) {
 	n.Mount(mux)
 	sp := string(f3411.ScopeServiceProvider)
 
+	mismatch := notification("ussp-lab-01", false)
+	mismatch = bytes.Replace(mismatch, []byte(`"id":"isa-9"`), []byte(`"id":"isa-8"`), 1)
 	cases := []struct {
 		name    string
 		tok     string
 		body    []byte
 		status  int
+		slug    string
 		counter string
+		field   string
 	}{
-		{"another host's aud", k.token(t, "ussp-lab-01", "other.example.test", sp), notification("ussp-lab-01", false), 401, CounterNotifyBadToken},
-		{"no token", "", notification("ussp-lab-01", false), 401, CounterNotifyNoToken},
-		{"display provider scope", k.token(t, "ussp-lab-01", ownHost, string(f3411.ScopeDisplayProvider)), notification("ussp-lab-01", false), 403, CounterNotifyScope},
-		{"not the owner", k.token(t, "ussp-other-01", ownHost, sp), notification("ussp-lab-01", false), 403, CounterNotifyNotOwner},
-		{"too large", k.token(t, "ussp-lab-01", ownHost, sp), bytes.Repeat([]byte(" "), 70<<10), 413, CounterNotifyTooLarge},
-		{"malformed", k.token(t, "ussp-lab-01", ownHost, sp), []byte(`{"subscriptions": 7}`), 400, CounterNotifyMalformed},
+		{"another host's aud", k.token(t, "ussp-lab-01", "other.example.test", sp), notification("ussp-lab-01", false), 401, "unauthenticated", CounterNotifyBadToken, ""},
+		{"no token", "", notification("ussp-lab-01", false), 401, "unauthenticated", CounterNotifyNoToken, ""},
+		{"display provider scope", k.token(t, "ussp-lab-01", ownHost, string(f3411.ScopeDisplayProvider)), notification("ussp-lab-01", false), 403, "forbidden", CounterNotifyScope, ""},
+		{"not the owner", k.token(t, "ussp-other-01", ownHost, sp), notification("ussp-lab-01", false), 403, "forbidden", CounterNotifyNotOwner, ""},
+		{"too large", k.token(t, "ussp-lab-01", ownHost, sp), bytes.Repeat([]byte(" "), 70<<10), 413, "body_too_large", CounterNotifyTooLarge, ""},
+		{"malformed", k.token(t, "ussp-lab-01", ownHost, sp), []byte(`{"subscriptions": 7}`), 400, "validation", CounterNotifyMalformed, "body"},
+		{"id mismatch", k.token(t, "ussp-lab-01", ownHost, sp), mismatch, 400, "validation", CounterNotifyIDMismatch, "service_area.id"},
 	}
 	for _, c := range cases {
-		code, body := post(t, mux, c.tok, c.body)
+		code, hd, body := postFull(t, mux, c.tok, c.body)
 		if code != c.status || cnt.Snapshot()[c.counter] == 0 {
 			t.Errorf("%s: %d %s, counters %v", c.name, code, body, cnt.Snapshot())
+			continue
 		}
-		if code != 204 && !strings.Contains(body, `"message"`) {
-			t.Errorf("%s: not an F3411 ErrorResponse: %s", c.name, body)
+		p := checkRefusal(t, c.name, code, hd, body, c.slug)
+		if c.field != "" && (len(p.Errors) != 1 || p.Errors[0].Field != c.field) {
+			t.Errorf("%s: errors %+v, want %s", c.name, p.Errors, c.field)
 		}
 	}
 	if isas.Len() != 0 || changed != 0 {
 		t.Fatalf("a refused notification changed the ISAs (%d) or woke the engine (%d)", isas.Len(), changed)
 	}
 
-	code, body := post(t, mux, k.token(t, "ussp-lab-01", ownHost, sp), notification("ussp-lab-01", false))
+	code, hd, body := postFull(t, mux, k.token(t, "ussp-lab-01", ownHost, sp), notification("ussp-lab-01", false))
 	if code != http.StatusNoContent || isas.Len() != 1 || changed != 1 || cnt.Snapshot()[CounterNotifyAccepted] != 1 {
 		t.Fatalf("accepted: %d %s isas %d changed %d", code, body, isas.Len(), changed)
+	}
+	if body != "" || hd.Get("Content-Type") != "" {
+		t.Fatalf("204 with a body: %q %q", hd.Get("Content-Type"), body)
 	}
 	if got := isas.ForTile(Tile{Box: box2km}, t0); len(got) != 1 || got[0].Owner != "ussp-lab-01" {
 		t.Fatalf("the ISA is not in the tile its extents meet: %+v", got)
@@ -144,9 +197,11 @@ func TestNotificationWithoutVerifierIsRefused(t *testing.T) {
 	n := &Notifications{ISAs: &ISAs{}, Counters: &core.Counters{}}
 	mux := http.NewServeMux()
 	n.Mount(mux)
-	if code, _ := post(t, mux, "x.y.z", notification("u", false)); code != http.StatusServiceUnavailable {
+	code, hd, body := postFull(t, mux, "x.y.z", notification("u", false))
+	if code != http.StatusServiceUnavailable {
 		t.Fatalf("%d", code)
 	}
+	checkRefusal(t, "no verifier", code, hd, body, "unavailable")
 	// Only the notification route is mounted from the generated server.
 	req := httptest.NewRequest(http.MethodGet, "/uss/flights?view=1,2,3,4", nil)
 	rec := httptest.NewRecorder()
