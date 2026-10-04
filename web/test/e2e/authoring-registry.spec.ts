@@ -93,6 +93,28 @@ test("a status transition takes a reason before anything is sent", async ({ page
   expect(sent.map((r) => r.body)).toEqual([{ status: "suspended", reason: "Reported lost by the operator" }]);
 });
 
+test("a reason past api's 500 characters is refused, never cut; 500 are sent whole (the pair)", async ({ page, request }) => {
+  await signIn(page, "en", REGISTRAR);
+  await page.goto("/en/registry/uas/uas-1");
+  const apply = async (reason: string) => {
+    await page.getByTestId("status-to").selectOption("suspended");
+    await page.getByTestId("status-apply").click();
+    const dialog = page.getByRole("alertdialog");
+    await dialog.getByRole("textbox").fill(reason);
+    await dialog.getByRole("button", { name: "Confirm" }).click();
+  };
+  const sent = async () => (await recorded(request)).filter((r) => r.path === "/v1/registry/uas/uas-1/status");
+
+  await apply("x".repeat(501));
+  await expect(page.getByTestId("status-apply-too-long")).toContainText("501 characters; at most 500");
+  expect(await sent()).toEqual([]);
+
+  const whole = "y".repeat(500);
+  await apply(whole);
+  await expect(page.getByTestId("uas-facts").getByTestId("registry-status")).toHaveAttribute("data-status", "suspended");
+  expect((await sent()).map((r) => r.body)).toEqual([{ status: "suspended", reason: whole }]);
+});
+
 test("a registrar registers a natural person with the Art. 14(2) fields", async ({ page, request }) => {
   await signIn(page, "en", REGISTRAR);
   await page.goto("/en/registry/operators/new");

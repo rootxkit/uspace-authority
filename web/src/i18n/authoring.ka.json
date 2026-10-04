@@ -6,6 +6,7 @@
   "authority.act.loading": "იტვირთება",
   "authority.act.not_your_role": "თქვენი როლები ამ მოქმედებას არ მოიცავს. API მას უარყოფდა.",
   "authority.act.refused": "უარყოფილია ({status}): {title}",
+  "authority.act.reason_too_long": "მიზეზი {count} სიმბოლოა; ჩაიწერება არაუმეტეს {max}. არაფერი გაგზავნილა: შეამოკლეთ და სცადეთ ხელახლა.",
   "authority.act.remove": "წაშლა",
   "authority.act.search": "ძიება",
   "authority.cert.acts": "სტატუსი",

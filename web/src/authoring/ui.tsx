@@ -110,8 +110,12 @@ export interface ActProps<T> {
   titleKey: string;
   bodyKey: string;
   vars?: Vars;
-  /** Ask for a reason (api's minLength) and pass it to `run`. */
-  reason?: { minLength: number };
+  /**
+   * Ask for a reason (api's minLength) and pass it to `run`. A reason
+   * longer than `maxLength` (api's) is refused here and nothing is sent:
+   * it is never cut to fit.
+   */
+  reason?: { minLength: number; maxLength?: number };
   destructive?: boolean;
   /** The call; resolves with what api answered. */
   run(reason: string | undefined): Promise<T>;
@@ -132,6 +136,8 @@ export function Act<T>(props: ActProps<T>) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ApiError | "failed" | null>(null);
+  const [tooLong, setTooLong] = useState<number | null>(null);
+  const max = props.reason?.maxLength;
   return (
     <div className="flex flex-col gap-1">
       <ConfirmDialog
@@ -144,8 +150,13 @@ export function Act<T>(props: ActProps<T>) {
         {...(props.destructive === true ? { destructive: true } : {})}
         onConfirm={(reason) => {
           setOpen(false);
-          setBusy(true);
           setError(null);
+          setTooLong(null);
+          if (reasonTooLong(reason, max)) {
+            setTooLong([...(reason ?? "")].length);
+            return;
+          }
+          setBusy(true);
           props
             .run(reason)
             .then((r) => props.onDone?.(r))
@@ -161,9 +172,22 @@ export function Act<T>(props: ActProps<T>) {
           </Button>
         }
       />
+      {tooLong !== null && max !== undefined && (
+        <div role="alert" className="rounded border border-[var(--us-danger)] p-3 text-sm" data-testid={`${props.testId}-too-long`}>
+          {t("authority.act.reason_too_long", { count: tooLong, max })}
+        </div>
+      )}
       {error !== null && <ProblemNotice error={error} testId={`${props.testId}-problem`} />}
     </div>
   );
+}
+
+/**
+ * True when `reason` has more than `max` characters (code points, as
+ * api counts a string's length): the act refuses it rather than cut it.
+ */
+export function reasonTooLong(reason: string | undefined, max: number | undefined): boolean {
+  return max !== undefined && [...(reason ?? "")].length > max;
 }
 
 /** A time in UTC as the kit shows it, or a dash. */

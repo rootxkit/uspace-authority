@@ -242,9 +242,9 @@ export function CertificateDetail({ id }: { id: string }) {
                           titleKey="authority.cert.suspend_title"
                           bodyKey="authority.cert.suspend_body"
                           vars={{ subject, client: c.client_id }}
-                          reason={{ minLength: 1 }}
+                          reason={{ minLength: 1, maxLength: REASON_MAX }}
                           destructive
-                          run={async (reason) => must(await client.POST("/v1/certificates/{id}/suspend", { params: { path: { id } }, body: { reason: (reason ?? "").slice(0, REASON_MAX) } }))}
+                          run={async (reason) => must(await client.POST("/v1/certificates/{id}/suspend", { params: { path: { id } }, body: { reason: reason ?? "" } }))}
                           onDone={done}
                           testId="cert-suspend"
                         />
@@ -255,8 +255,8 @@ export function CertificateDetail({ id }: { id: string }) {
                           titleKey="authority.cert.reinstate_title"
                           bodyKey={c.suspended ? "authority.cert.reinstate_body_suspended" : "authority.cert.reinstate_body_limited"}
                           vars={{ subject }}
-                          reason={{ minLength: 1 }}
-                          run={async (reason) => must(await client.POST("/v1/certificates/{id}/reinstate", { params: { path: { id } }, body: { reason: (reason ?? "").slice(0, REASON_MAX) } }))}
+                          reason={{ minLength: 1, maxLength: REASON_MAX }}
+                          run={async (reason) => must(await client.POST("/v1/certificates/{id}/reinstate", { params: { path: { id } }, body: { reason: reason ?? "" } }))}
                           onDone={done}
                           testId="cert-reinstate"
                         />
@@ -276,10 +276,10 @@ export function CertificateDetail({ id }: { id: string }) {
                           titleKey="authority.cert.limit_title"
                           bodyKey="authority.cert.limit_body"
                           vars={{ subject, limits: lines(limits).join("; ") }}
-                          reason={{ minLength: 1 }}
+                          reason={{ minLength: 1, maxLength: REASON_MAX }}
                           disabled={lines(limits).length === 0}
                           run={async (reason) =>
-                            must(await client.POST("/v1/certificates/{id}/limit", { params: { path: { id } }, body: { reason: (reason ?? "").slice(0, REASON_MAX), limitations: lines(limits) } }))
+                            must(await client.POST("/v1/certificates/{id}/limit", { params: { path: { id } }, body: { reason: reason ?? "", limitations: lines(limits) } }))
                           }
                           onDone={(r) => {
                             setLimits("");
@@ -293,9 +293,9 @@ export function CertificateDetail({ id }: { id: string }) {
                         titleKey="authority.cert.revoke_title"
                         bodyKey="authority.cert.revoke_body"
                         vars={{ subject, client: c.client_id }}
-                        reason={{ minLength: 1 }}
+                        reason={{ minLength: 1, maxLength: REASON_MAX }}
                         destructive
-                        run={async (reason) => must(await client.POST("/v1/certificates/{id}/revoke", { params: { path: { id } }, body: { reason: (reason ?? "").slice(0, REASON_MAX) } }))}
+                        run={async (reason) => must(await client.POST("/v1/certificates/{id}/revoke", { params: { path: { id } }, body: { reason: reason ?? "" } }))}
                         onDone={done}
                         testId="cert-revoke"
                       />

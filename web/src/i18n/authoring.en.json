@@ -6,6 +6,7 @@
   "authority.act.loading": "Loading",
   "authority.act.not_your_role": "Your roles do not include this act. The API would refuse it.",
   "authority.act.refused": "Refused ({status}): {title}",
+  "authority.act.reason_too_long": "The reason has {count} characters; at most {max} are recorded. Nothing was sent: shorten it and try again.",
   "authority.act.remove": "Remove",
   "authority.act.search": "Search",
   "authority.cert.acts": "Status",

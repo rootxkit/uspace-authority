@@ -112,10 +112,10 @@ export function StatusChange(props: {
           titleKey="authority.registry.status_confirm_title"
           bodyKey="authority.registry.status_confirm_body"
           vars={{ subject: props.subject, from: t(`authority.registry.status.${props.current}`), to: to === "" ? "" : t(`authority.registry.status.${to}`) }}
-          reason={{ minLength: 1 }}
+          reason={{ minLength: 1, maxLength: REASON_MAX }}
           destructive={to === "revoked"}
           disabled={to === ""}
-          run={(reason) => (to === "" ? Promise.reject(new Error("no status")) : props.run(to, (reason ?? "").slice(0, REASON_MAX)))}
+          run={(reason) => (to === "" ? Promise.reject(new Error("no status")) : props.run(to, reason ?? ""))}
           onDone={() => {
             setTo("");
             props.onDone();
