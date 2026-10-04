@@ -18,20 +18,21 @@ const Schema = "violation/v1"
 // Producer names detect in the envelope.
 const Producer = "authority/detect"
 
-// Kind is a violation kind (spec 04 §3.3). no_authorisation and
-// rid_absent are later detectors (plan D5, Q-A5, Q-A6).
+// Kind is a violation kind (spec 04 §3.3). rid_absent is a later
+// detector (plan D5, Q-A6).
 type Kind string
 
-// The kinds this detector raises (plan D5).
+// The kinds this detector raises (plan D5; no_authorisation WP-26, Q-A5).
 const (
 	KindHeight120m             Kind = "height_120m"
 	KindZoneIncursion          Kind = "zone_incursion"
 	KindUnregistered           Kind = "unregistered"
 	KindIdentificationMismatch Kind = "identification_mismatch"
+	KindNoAuthorisation        Kind = "no_authorisation"
 )
 
 // Kinds are the kinds this detector raises.
-var Kinds = []Kind{KindHeight120m, KindZoneIncursion, KindUnregistered, KindIdentificationMismatch}
+var Kinds = []Kind{KindHeight120m, KindZoneIncursion, KindUnregistered, KindIdentificationMismatch, KindNoAuthorisation}
 
 // State is where a violation is in its life.
 type State string
@@ -51,6 +52,15 @@ const (
 // uspace-core alerting.ClearReason values. A spec gap: 04 §3.3 lists no
 // reason for it (WP-12 pull request).
 const ClearReasonReconfigured = "reconfigured"
+
+// ClearReasonAuthorised clears a height_120m violation when the aircraft,
+// inside a U-space airspace, is matched to an operational intent and the
+// policy says height_limit_in_uspace skip_when_authorised (WP-26; spec
+// 01 §7: there the authorised volume caps the height, and the USSP's
+// conformance monitoring covers it). It is not "resolved": the aircraft
+// may still be over 120 m. A spec gap like reconfigured: 04 §3.3 lists
+// no reason for it (WP-26 pull request).
+const ClearReasonAuthorised = "authorised"
 
 // Peak is the number a violation rested on, at its worst (03 §1
 // violations.peak_value): height_agl_m for height_120m.

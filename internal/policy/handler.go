@@ -72,6 +72,15 @@ func (h Handler) CreatePolicy(ctx context.Context, req gen.CreatePolicyRequestOb
 	if b.CertificateLapseCeasedMonths != nil {
 		t.CertificateLapseCeasedMonths = *b.CertificateLapseCeasedMonths
 	}
+	// The no_authorisation thresholds unless the version names others
+	// (WP-26; pending GCAA, spec Q2).
+	t.NoAuthorisationGraceS, t.NoAuthorisationSeverity = DefaultNoAuthorisationGraceS, DefaultNoAuthorisationSeverity
+	if b.NoAuthorisationGraceS != nil {
+		t.NoAuthorisationGraceS = *b.NoAuthorisationGraceS
+	}
+	if b.NoAuthorisationSeverity != nil {
+		t.NoAuthorisationSeverity = core.Severity(*b.NoAuthorisationSeverity)
+	}
 	note := ""
 	if b.Note != nil {
 		note = *b.Note
@@ -125,6 +134,7 @@ func toAPI(p Policy) gen.Policy {
 		RegistrationNumberPattern: p.RegistrationNumberPattern,
 	}
 	out.CertificateLapseUnusedMonths, out.CertificateLapseCeasedMonths = p.CertificateLapseUnusedMonths, p.CertificateLapseCeasedMonths
+	out.NoAuthorisationGraceS, out.NoAuthorisationSeverity = p.NoAuthorisationGraceS, gen.Severity(p.NoAuthorisationSeverity)
 	if p.ActivatedAt != nil {
 		at := p.ActivatedAt.UTC()
 		out.ActivatedAt = &at

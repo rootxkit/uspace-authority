@@ -533,6 +533,34 @@ func TestOccurrencesExportMaxBytesDefaultsAndRefusesBelowTheMinimum(t *testing.T
 	}
 }
 
+// WP-26, E-01: a detector client secret without a token endpoint is
+// refused, naming DETECT_TOKEN_URL; with ISSUER_URL (or the endpoint
+// itself) it loads, and the endpoint is the issuer's /oauth/token.
+func TestDetectNeedsATokenEndpointForItsDSSSecret(t *testing.T) {
+	m := map[string]string{"TS_URL": "postgres://u:pw@db:5432/authority_ts", "NATS_URL": "nats://nats:4222",
+		"DSS_BASE_URL": "https://dss.example.test", "DETECT_CLIENT_SECRET_FILE": "/run/keys/detect-client"}
+	var bad Detect
+	fes := FieldErrors(Load(&bad, env(m)))
+	if len(fes) != 1 || fes[0].Field != "DETECT_TOKEN_URL" {
+		t.Fatalf("got %v, want DETECT_TOKEN_URL", fes)
+	}
+	m["ISSUER_URL"] = "https://authority.example.test/"
+	var ok Detect
+	if err := Load(&ok, env(m)); err != nil || ok.TokenURL() != "https://authority.example.test/oauth/token" ||
+		ok.IntentRequeryS != 5 || ok.IntentRadiusM != 10 || ok.ClientID != "authority-01" {
+		t.Fatalf("with ISSUER_URL: %v %q %+v", err, ok.TokenURL(), ok.DetectIntents)
+	}
+	m["DETECT_TOKEN_URL"] = "https://tokens.example.test/oauth/token"
+	var own Detect
+	if err := Load(&own, env(m)); err != nil || own.TokenURL() != "https://tokens.example.test/oauth/token" {
+		t.Fatalf("own endpoint: %v %q", err, own.TokenURL())
+	}
+	var none Detect
+	if err := Load(&none, env(map[string]string{"TS_URL": m["TS_URL"], "NATS_URL": m["NATS_URL"]})); err != nil || none.TokenURL() != "" {
+		t.Fatalf("no DSS: %v", err)
+	}
+}
+
 // REGISTRY_IMPORT_MAX_ROWS defaults to 2000 records, well inside
 // REGISTRY_IMPORT_WRITE_TIMEOUT_S (a first import of 5000 took about 18 s
 // against its 25 s); a larger value is accepted up to 50000.

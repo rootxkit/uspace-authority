@@ -20,6 +20,7 @@ import (
 
 	"github.com/rootxkit/uspace-authority/internal/bus"
 	"github.com/rootxkit/uspace-authority/internal/cell"
+	"github.com/rootxkit/uspace-authority/internal/intents"
 	"github.com/rootxkit/uspace-authority/internal/logging"
 	"github.com/rootxkit/uspace-authority/internal/policy"
 	"github.com/rootxkit/uspace-authority/internal/track"
@@ -50,6 +51,10 @@ const (
 	CounterMonitorRebuilt      = "monitor_rebuilt"               // a new zone set or policy: the monitor rebuilt, each aircraft's last sample re-observed
 	CounterAircraftRefused     = "aircraft_refused"              // a new aircraft refused by the monitor's capacity: it goes unjudged
 	CounterSourceSwitches      = "source_switches_applied"       // a source-control state handed to the monitor (B-11)
+	CounterHeightLifted        = "height_lifted_authorised"      // a height_120m held (or cleared authorised) for an aircraft matched to an intent inside U-space airspace (WP-26)
+	CounterHeightRestored      = "height_restored_unmatched"     // a held height_120m raised: the aircraft lost its match while still over the limit
+	CounterHeightAwaiting      = "height_awaiting_outcome"       // a height_120m raise inside U-space airspace held for the aircraft's first authorisation outcome, at most OutcomeMaxAge (WP-26)
+	CounterNoAuthNotJudged     = "no_authorisation_not_judged"   // an aircraft entered U-space airspace and this detector has no DSS: no_authorisation is not judged for it
 )
 
 // Publisher writes one violation message to the ALRT stream.
@@ -77,6 +82,9 @@ type Inputs interface {
 	Sources() (coresources.State, bool)
 	Env(p core.LatLon) zones.Env
 	Elevation(p core.LatLon) *terrain.Elevation
+	// Authorisations is the operational intents board of the
+	// no_authorisation detector (WP-26); nil without a DSS.
+	Authorisations() *intents.Board
 }
 
 // Settings bound a worker.
@@ -166,10 +174,22 @@ type Worker struct {
 	policyVer int64
 	// regnum is the policy's registration-number pattern: what is kept of
 	// an operator number is its public part under it (G-04).
-	regnum     *regnum.Validator
-	lastWallS  float64
-	open       map[string]*open
-	uspace     map[string]map[string]struct{}
+	regnum    *regnum.Validator
+	lastWallS float64
+	open      map[string]*open
+	uspace    map[string]map[string]struct{}
+	// noAuth are the no_authorisation cases, one per presence of an
+	// aircraft in a U-space airspace (by the presence's alert key);
+	// heldHeight the height_120m keys lifted for an authorised aircraft
+	// (WP-26).
+	noAuth     map[string]*naCase
+	heldHeight map[string]bool
+	// awaitHeight are the height_120m keys whose raise waits for the
+	// aircraft's first authorisation outcome, with the wall time the wait
+	// began (WP-26).
+	awaitHeight map[string]float64
+	// thresholds are the policy's, as of the last rebuild.
+	thresholds policy.Thresholds
 	excerpts   *Excerpts
 	outbox     []*violation.Message
 	rebuilding map[string]bool
@@ -183,6 +203,7 @@ type Worker struct {
 
 type workerStats struct {
 	tracked, active, outbox int
+	noAuth                  noAuthStats
 	capacityExceeded        bool
 	policyVersion           int64
 }
@@ -196,6 +217,7 @@ func NewWorker(name string, in Inputs, set Settings, pub Publisher, logger *slog
 		Name: name, Counters: &core.Counters{}, MonitorCounters: &core.Counters{},
 		in: in, set: set, pub: pub, logger: logger.With(slog.String("cell3", name)), lim: lim,
 		open: map[string]*open{}, uspace: map[string]map[string]struct{}{},
+		noAuth: map[string]*naCase{}, heldHeight: map[string]bool{}, awaitHeight: map[string]float64{},
 	}
 	w.excerpts = NewExcerpts(set.ExcerptWindowS, set.ExcerptMaxSamples, set.MaxAircraft, w.Counters)
 	w.maybeRebuild()
@@ -276,6 +298,9 @@ func (w *Worker) Observe(m *track.Message) bool {
 	}
 	w.Counters.Inc(CounterTrackObserved)
 	w.handle(w.mon.Observe(tr, wallS))
+	if !m.Backlog {
+		w.wantIntents(m, t.CapturedAt)
+	}
 	return true
 }
 
@@ -291,10 +316,14 @@ func (w *Worker) Observe(m *track.Message) bool {
 // deferred.
 func (w *Worker) Tick(ctx context.Context) {
 	w.maybeRebuild()
-	w.handle(w.mon.Tick(w.wallS()))
+	wallS := w.wallS()
+	w.handle(w.mon.Tick(wallS))
+	w.judgeNoAuth(wallS)
+	w.gateHeight()
 	bctx, cancel := context.WithTimeout(ctx, w.tickBudget())
 	w.flush(bctx)
 	w.republish(bctx)
+	w.republishNoAuth(bctx)
 	cancel()
 	w.fold()
 	w.updateStats()
@@ -361,10 +390,12 @@ func (w *Worker) maybeRebuild() {
 			w.zoneByKey[k] = z
 		}
 	}
-	if t.HeightLimitInUspace == policy.HeightSkipWhenAuthorised {
+	w.thresholds = t
+	if t.HeightLimitInUspace == policy.HeightSkipWhenAuthorised && w.in.Authorisations() == nil {
 		// Lifting the limit for an authorised flight needs the
-		// authorisations (WP-26); until then it is judged everywhere.
-		w.warn("detect_height_in_uspace", "height_limit_in_uspace skip_when_authorised has no effect until WP-26: the height limit is evaluated everywhere",
+		// operational intents (WP-26); without a DSS it is judged
+		// everywhere.
+		w.warn("detect_height_in_uspace", "height_limit_in_uspace skip_when_authorised has no effect without a DSS: the height limit is evaluated everywhere",
 			slog.Int64("policy_version", version))
 	}
 	wallS := w.wallS()
@@ -378,6 +409,7 @@ func (w *Worker) maybeRebuild() {
 	w.logger.Info("monitor rebuilt for a new zone set or policy", slog.Int("zones", len(zs.Zones)),
 		slog.Int64("policy_version", version), slog.Int("open_violations", len(w.open)))
 	clear(w.uspace)
+	clear(w.heldHeight)
 	last := w.excerpts.Last()
 	slices.SortFunc(last, func(a, b Observed) int {
 		switch {
@@ -410,6 +442,7 @@ func (w *Worker) maybeRebuild() {
 		delete(w.open, key)
 		w.Counters.Inc(CounterClearedReconfigured)
 	}
+	w.afterRebuildNoAuth(wallS)
 }
 
 func cmpFloat(a, b float64) int {
@@ -436,8 +469,17 @@ func (w *Worker) fold() {
 
 // handle publishes what one monitor call raised and cleared.
 func (w *Worker) handle(ev alerting.Events) {
+	// Presences first: a height_120m raised with the same sample then
+	// knows the aircraft is inside U-space airspace (awaitHeight, WP-26).
 	for i := range ev.Raised {
-		w.raised(&ev.Raised[i])
+		if kind, _ := parseKey(ev.Raised[i].Key); kind == alerting.KindZone {
+			w.raised(&ev.Raised[i])
+		}
+	}
+	for i := range ev.Raised {
+		if kind, _ := parseKey(ev.Raised[i].Key); kind != alerting.KindZone {
+			w.raised(&ev.Raised[i])
+		}
 	}
 	for i := range ev.Cleared {
 		w.cleared(&ev.Cleared[i])
@@ -520,8 +562,9 @@ func stampS(s float64) string {
 
 func strp(s string) *string { return &s }
 
-// isUSpace reports whether a is presence in a U-space airspace, and
-// keeps the aircraft's in_uspace state with it.
+// noteUSpace reports whether a is presence in a U-space airspace, and
+// keeps the aircraft's in_uspace state with it; a raise opens the
+// aircraft's no_authorisation case for that airspace (WP-26).
 func (w *Worker) noteUSpace(a *alerting.Alert, raised bool) bool {
 	kind, parts := parseKey(a.Key)
 	if kind != alerting.KindZone {
@@ -538,12 +581,29 @@ func (w *Worker) noteUSpace(a *alerting.Alert, raised bool) bool {
 		}
 		w.uspace[id][a.Key] = struct{}{}
 		w.Counters.Inc(CounterUSpacePresence)
+		w.openCase(a.Key, id, ref)
 	} else if keys := w.uspace[id]; keys != nil {
 		delete(keys, a.Key)
 		if len(keys) == 0 {
 			delete(w.uspace, id)
 		}
 	}
+	return true
+}
+
+// noteUSpaceCleared is noteUSpace for a clear: the aircraft left the
+// U-space airspace (resolved, after the monitor's hysteresis), went
+// stale, landed or its source was switched off, and its no_authorisation
+// for that airspace clears with the same reason.
+func (w *Worker) noteUSpaceCleared(c *alerting.Cleared) bool {
+	if !w.noteUSpace(&c.Alert, false) {
+		return false
+	}
+	atS := w.wallS()
+	if c.Reason == alerting.ClearResolved && c.ShownFalse {
+		atS = c.LastFalseS
+	}
+	w.closeCase(c.Key, string(c.Reason), atS)
 	return true
 }
 
@@ -572,10 +632,38 @@ func (w *Worker) raised(a *alerting.Alert) {
 		w.Counters.Inc(CounterUpdated)
 		return
 	}
+	if kind == violation.KindHeight120m && w.heightLifted(id) {
+		// height_limit_in_uspace skip_when_authorised: the authorised
+		// volume caps the height of an aircraft matched to an intent
+		// inside U-space airspace (spec 01 §7); held, and raised the moment
+		// the match is lost while the monitor still holds it (gateHeight).
+		delete(w.awaitHeight, a.Key)
+		w.heldHeight[a.Key] = true
+		w.Counters.Inc(CounterHeightLifted)
+		return
+	}
+	if kind == violation.KindHeight120m && w.awaitingOutcome(a.Key, id) {
+		return
+	}
+	b := w.bodyFor(kind, a.Key, id, ref, a.Severity, a.Detail, a.RaisedAtS, a.LastTrueS)
+	updatePeak(&b, a.Detail)
+	ov := &open{body: b, excerptUpToS: a.LastTrueS - w.set.ExcerptWindowS}
+	w.open[a.Key] = ov
+	if w.rebuilding != nil {
+		w.rebuilding[a.Key] = true
+	}
+	w.enqueue(ov, violation.StateRaised, a.LastTrueS)
+	w.Counters.Inc(CounterRaised)
+}
+
+// bodyFor is the body of a new violation of kind on aircraft id: the
+// zone it names, the identification, trust, receiver or USSP, cell and
+// (for height_120m) DEM of the aircraft's last sample.
+func (w *Worker) bodyFor(kind violation.Kind, key, id string, ref zoneRef, sev core.Severity, detail map[string]any, raisedAtS, lastTrueS float64) violation.Body {
 	b := violation.Body{
-		ViolationID: bus.NewULID(w.now()), Kind: kind, State: violation.StateRaised, Severity: a.Severity, AlertKey: a.Key,
-		TrackRef: id, CapturedAt: stampS(a.LastTrueS), OpenedAt: stampS(a.RaisedAtS), PolicyVersion: w.policyVer,
-		Detail: a.Detail, InUSpace: w.uspace[id] != nil, EvidenceRefs: []violation.EvidenceRef{{Type: violation.RefTrack, ID: id}},
+		ViolationID: bus.NewULID(w.now()), Kind: kind, State: violation.StateRaised, Severity: sev, AlertKey: key,
+		TrackRef: id, CapturedAt: stampS(lastTrueS), OpenedAt: stampS(raisedAtS), PolicyVersion: w.policyVer,
+		Detail: detail, InUSpace: w.uspace[id] != nil, EvidenceRefs: []violation.EvidenceRef{{Type: violation.RefTrack, ID: id}},
 	}
 	if ref.zone != nil || ref.id != "" {
 		b.ZoneID = strp(ref.country + "/" + ref.id)
@@ -621,14 +709,7 @@ func (w *Worker) raised(a *alerting.Alert) {
 		c5, _ := cell.Of(core.LatLon{}, cell.Level5)
 		b.Cell5 = c5.String()
 	}
-	updatePeak(&b, a.Detail)
-	ov := &open{body: b, excerptUpToS: a.LastTrueS - w.set.ExcerptWindowS}
-	w.open[a.Key] = ov
-	if w.rebuilding != nil {
-		w.rebuilding[a.Key] = true
-	}
-	w.enqueue(ov, violation.StateRaised, a.LastTrueS)
-	w.Counters.Inc(CounterRaised)
+	return b
 }
 
 // publicPart is an operator number as it may be kept: its public part
@@ -662,7 +743,17 @@ func updatePeak(b *violation.Body, detail map[string]any) {
 // cleared publishes a clear with its reason and the numbers at clearing
 // (C-14).
 func (w *Worker) cleared(c *alerting.Cleared) {
-	if w.noteUSpace(&c.Alert, false) {
+	if w.noteUSpaceCleared(c) {
+		return
+	}
+	if w.heldHeight[c.Key] {
+		// Lifted for an authorised aircraft and never published.
+		delete(w.heldHeight, c.Key)
+		return
+	}
+	if _, waiting := w.awaitHeight[c.Key]; waiting {
+		// Ended before the aircraft's first outcome: never published.
+		delete(w.awaitHeight, c.Key)
 		return
 	}
 	kind, _ := parseKey(c.Key)
@@ -840,8 +931,8 @@ func (w *Worker) deferRepublish(n, from int) {
 }
 
 func (w *Worker) updateStats() {
-	s := workerStats{tracked: w.mon.Tracked(), active: len(w.open), outbox: len(w.outbox),
-		capacityExceeded: w.mon.CapacityExceeded(), policyVersion: w.policyVer}
+	s := workerStats{tracked: w.mon.Tracked(), active: len(w.open) + w.openNoAuth(), outbox: len(w.outbox),
+		capacityExceeded: w.mon.CapacityExceeded(), policyVersion: w.policyVer, noAuth: w.noAuthStats()}
 	w.statMu.Lock()
 	w.stats = s
 	w.statMu.Unlock()
@@ -855,7 +946,11 @@ func (w *Worker) StatusAttrs() []slog.Attr {
 	w.statMu.Unlock()
 	return []slog.Attr{slog.Group("detect_"+strings.ReplaceAll(w.Name, ":", "_"),
 		slog.Int("tracked", s.tracked), slog.Int("open_violations", s.active), slog.Int("outbox", s.outbox),
-		slog.Bool("capacity_exceeded", s.capacityExceeded), slog.Int64("policy_version", s.policyVersion))}
+		slog.Bool("capacity_exceeded", s.capacityExceeded), slog.Int64("policy_version", s.policyVersion),
+		slog.Int("uspace_aircraft", s.noAuth.cases), slog.Int("no_authorisation_open", s.noAuth.open),
+		slog.Int("no_authorisation_unknown", s.noAuth.unknown), slog.Int("no_authorisation_matched", s.noAuth.matched),
+		slog.Int("no_authorisation_grace_running", s.noAuth.grace), slog.Int("height_lifted", s.noAuth.heightLifted),
+		slog.Int("height_awaiting_outcome", s.noAuth.heightAwaiting))}
 }
 
 // CapacityExceeded reports the monitor's state as of the last tick.

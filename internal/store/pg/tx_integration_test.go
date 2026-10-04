@@ -28,7 +28,8 @@ func TestIntegrationWithTxCommitsOnNilAndRollsBackOnError(t *testing.T) {
 			Version: v, HeightLimitAglM: 120, PressureUncertaintyM: 250, ZoneConditionalSeverity: "warning",
 			MismatchSeverity: "warning", IdentificationSeverity: "critical", SpoofDistanceM: 300, IdentityTtlS: 15,
 			MaxGapS: 3, IdentifyWithinS: 4, BroadcastToleranceS: 1, MaxLatencyS: 5, LiveMaxAgeS: 10, ClearAfterS: 3,
-			StaleAfterS: 15, DpViewDiagonalKm: 7, DpPollHz: 1, CisStaleBoundS: 300, HeightLimitInUspace: "evaluate", RegistrationNumberPattern: "^[A-Z]{3}[A-Za-z0-9]{8,16}$", CertificateLapseUnusedMonths: 6, CertificateLapseCeasedMonths: 12, CreatedBy: "test",
+			StaleAfterS: 15, DpViewDiagonalKm: 7, DpPollHz: 1, CisStaleBoundS: 300, HeightLimitInUspace: "evaluate", RegistrationNumberPattern: "^[A-Z]{3}[A-Za-z0-9]{8,16}$", CertificateLapseUnusedMonths: 6, CertificateLapseCeasedMonths: 12,
+			NoAuthorisationGraceS: 10, NoAuthorisationSeverity: "warning", CreatedBy: "test",
 		})
 		return err
 	}

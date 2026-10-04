@@ -145,6 +145,16 @@ describe("adaptViolation", () => {
     expect(v?.clearReason).toBe("reconfigured");
   });
 
+  it("keeps authorised (height_120m lifted for an authorised flight, WP-26) beside the alert", () => {
+    const v = adaptViolation(withBody(full(), { state: "cleared", clear_reason: "authorised" }));
+    expect(v?.alert.clearReason).toBeNull();
+    expect(v?.clearReason).toBe("authorised");
+  });
+
+  it("accepts no_authorisation (WP-26)", () => {
+    expect(adaptViolation(withBody(full(), { kind: "no_authorisation" }))?.alert.kind).toBe("no_authorisation");
+  });
+
   it("refuses a kind this system does not raise (conflicts are never violations, D5)", () => {
     expect(adaptViolation(withBody(full(), { kind: "proximity" }))).toBeNull();
   });

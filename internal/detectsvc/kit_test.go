@@ -20,6 +20,7 @@ import (
 	"github.com/rootxkit/uspace-core/terrain"
 	"github.com/rootxkit/uspace-core/zones"
 
+	"github.com/rootxkit/uspace-authority/internal/intents"
 	"github.com/rootxkit/uspace-authority/internal/policy"
 	"github.com/rootxkit/uspace-authority/internal/track"
 	"github.com/rootxkit/uspace-authority/internal/violation"
@@ -33,7 +34,11 @@ type fakeInputs struct {
 	src  *coresources.State
 	env  func(core.LatLon) zones.Env
 	elev *terrain.Elevation
+	// board is the operational intents board (WP-26), nil for none.
+	board *intents.Board
 }
+
+func (f *fakeInputs) Authorisations() *intents.Board { return f.board }
 
 func (f *fakeInputs) Zones() ZoneSet {
 	f.mu.Lock()
@@ -228,6 +233,7 @@ type sample struct {
 	lat     float64
 	lon     float64
 	altAMSL *float64
+	wgs84   *float64
 	altSrc  core.AltSource
 	press   *float64
 	status  *f3411.RIDOperationalStatus
@@ -276,7 +282,7 @@ func message(t *testing.T, s sample, at time.Time) *track.Message {
 	ts := at
 	m, err := track.New("authority/rid-ingest", core.Times{TS: &ts, RxTS: at, CapturedAt: at, Source: core.TimeBroadcast, Backlog: s.backlog},
 		track.Body{TrackID: s.id, Trust: s.trust, Source: s.source, SourceInstance: s.inst,
-			Position: track.Position{Lat: s.lat, Lng: s.lon}, AltAMSLM: s.altAMSL, AltSource: s.altSrc, AltPressureM: s.press,
+			Position: track.Position{Lat: s.lat, Lng: s.lon}, AltAMSLM: s.altAMSL, AltWGS84M: s.wgs84, AltSource: s.altSrc, AltPressureM: s.press,
 			Status: s.status, Identification: s.ident})
 	if err != nil {
 		t.Fatal(err)

@@ -42,7 +42,7 @@ func TestDefaultsValidate(t *testing.T) {
 func TestValidateRefusesEveryNonPositiveOrNonFiniteThreshold(t *testing.T) {
 	bad := map[string]float64{"zero": 0, "negative": -1, "nan": math.NaN(), "+inf": math.Inf(1), "-inf": math.Inf(-1)}
 	numbers := Defaults().numbers()
-	if len(numbers) != 14 {
+	if len(numbers) != 15 {
 		t.Fatalf("%d numeric thresholds; this test and the migration's CHECK list them all", len(numbers))
 	}
 	v := reflect.ValueOf(Defaults())
@@ -71,14 +71,16 @@ func TestValidateRefusesEveryNonPositiveOrNonFiniteThreshold(t *testing.T) {
 func TestValidateRefusesUnknownSeveritiesAndModes(t *testing.T) {
 	th := Defaults()
 	th.ZoneConditionalSeverity, th.MismatchSeverity, th.IdentificationSeverity = "", "loud", "CRITICAL"
+	th.NoAuthorisationSeverity = "urgent"
 	th.HeightLimitInUspace = "skip"
 	got := strings.Join(fieldsOf(th.Validate()), ",")
-	if got != "zone_conditional_severity,mismatch_severity,identification_severity,height_limit_in_uspace" {
+	if got != "zone_conditional_severity,mismatch_severity,identification_severity,no_authorisation_severity,height_limit_in_uspace" {
 		t.Fatalf("got %s", got)
 	}
 	th = Defaults()
 	th.HeightLimitInUspace = HeightSkipWhenAuthorised
 	th.MismatchSeverity = core.SeverityInfo
+	th.NoAuthorisationSeverity = core.SeverityCritical
 	if err := th.Validate(); err != nil {
 		t.Fatalf("the other valid values: %v", err)
 	}
