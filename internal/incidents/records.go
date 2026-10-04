@@ -97,6 +97,67 @@ func ParseRecord(body []byte, maxBytes int64) (json.RawMessage, error) {
 	return buf.Bytes(), nil
 }
 
+// dailyPath is the national API path of a USSP's daily records bundle
+// (spec 02 F7 "Service records", daily bundles; plan Q-A18). Like the
+// per-flight record, no USSP contract pins its body yet: the bundle is
+// kept verbatim with its hash.
+const dailyPath = "/v1/records/daily/"
+
+// ErrNoDay is a USSP's answer that it holds no bundle for the day (404).
+var ErrNoDay = errors.New("the USSP answered 404: no daily records bundle for the day (or no such route: no contract pins it yet, spec gap)")
+
+// FetchDaily reads a USSP's daily records bundle for day (UTC
+// YYYY-MM-DD) at baseURL with a token of scope ussp.records whose
+// audience is that host, at most maxBytes; the body must be one JSON
+// object and is returned as received. Nothing is retried here.
+func (r *Records) FetchDaily(ctx context.Context, baseURL string, day time.Time, timeout time.Duration, maxBytes int64) ([]byte, error) {
+	if r.Tokens == nil {
+		return nil, ErrNoRecordsClient
+	}
+	u, err := CheckBaseURL(baseURL)
+	if err != nil {
+		return nil, err
+	}
+	if timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
+	}
+	tok, err := r.Tokens.Token(ctx, baseURL, RecordsScope)
+	if err != nil {
+		return nil, fmt.Errorf("token for %s: %w", u.Host, err)
+	}
+	target := strings.TrimRight(u.String(), "/") + dailyPath + day.UTC().Format(time.DateOnly)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, http.NoBody)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+tok)
+	req.Header.Set("Accept", "application/json")
+	resp, err := noRedirect(r.HTTP).Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("GET %s: %w", u.Host+dailyPath+"{date}", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxBytes+1))
+	if err != nil {
+		return nil, fmt.Errorf("read daily records: %w", err)
+	}
+	switch {
+	case resp.StatusCode == http.StatusNotFound:
+		return nil, ErrNoDay
+	case resp.StatusCode != http.StatusOK:
+		return nil, fmt.Errorf("the USSP answered %d", resp.StatusCode)
+	case int64(len(body)) > maxBytes:
+		return nil, fmt.Errorf("daily records larger than %d bytes (ARCHIVE_MAX_OBJECT_BYTES)", maxBytes)
+	}
+	trimmed := bytes.TrimSpace(body)
+	if len(trimmed) == 0 || trimmed[0] != '{' || !json.Valid(trimmed) {
+		return nil, errors.New("daily records are not a JSON object")
+	}
+	return body, nil
+}
+
 // Fetch reads one flight's service record from the USSP at baseURL with
 // a token of scope ussp.records whose audience is that host. Every
 // failure is an error naming what failed (it becomes the manifest's

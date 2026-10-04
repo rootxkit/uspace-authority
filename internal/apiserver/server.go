@@ -261,6 +261,20 @@ type DPOHandler interface {
 	GetDPOReport(ctx context.Context, request gen.GetDPOReportRequestObject) (gen.GetDPOReportResponseObject, error)
 }
 
+// AuditVerifyHandler serves GET /v1/audit/verify (api, WP-27).
+type AuditVerifyHandler interface {
+	VerifyAuditChain(ctx context.Context, request gen.VerifyAuditChainRequestObject) (gen.VerifyAuditChainResponseObject, error)
+}
+
+// RetentionHandler serves /v1/retention/* (api, WP-27): the status of
+// the retention and archive jobs, and the legal holds.
+type RetentionHandler interface {
+	GetRetentionStatus(ctx context.Context, request gen.GetRetentionStatusRequestObject) (gen.GetRetentionStatusResponseObject, error)
+	ListLegalHolds(ctx context.Context, request gen.ListLegalHoldsRequestObject) (gen.ListLegalHoldsResponseObject, error)
+	PlaceLegalHold(ctx context.Context, request gen.PlaceLegalHoldRequestObject) (gen.PlaceLegalHoldResponseObject, error)
+	ReleaseLegalHold(ctx context.Context, request gen.ReleaseLegalHoldRequestObject) (gen.ReleaseLegalHoldResponseObject, error)
+}
+
 // Server implements gen.StrictServerInterface by delegating to one
 // handler per group. A group left nil must not be mounted.
 type Server struct {
@@ -287,6 +301,8 @@ type Server struct {
 	CertificatesHandler
 	PoliceHandler
 	DPOHandler
+	AuditVerifyHandler
+	RetentionHandler
 }
 
 var _ gen.StrictServerInterface = Server{}

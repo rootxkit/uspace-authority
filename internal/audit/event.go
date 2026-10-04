@@ -271,6 +271,30 @@ const (
 	EventRegistryOperatorLinkUsed      = "registry_operator_link_used"
 )
 
+// Event types of WP-27's retention, archive and verification
+// (internal/retention, internal/audit, internal/incidents,
+// internal/certs): every legal hold placed and released, every batch of
+// rows deleted after its period, every month of this log dropped (with
+// the anchor of the chain), every telemetry chunk archived and dropped
+// and every archived object deleted, every scheduled or requested
+// verification of the chain and of the evidence packs, and the USSP
+// daily records fetched or missing (02 F7).
+const (
+	EventLegalHoldPlaced         = "legal_hold_placed"
+	EventLegalHoldReleased       = "legal_hold_released"
+	EventLegalHoldsViewed        = "legal_holds_viewed"
+	EventRetentionStatusViewed   = "retention_status_viewed"
+	EventRetentionRowsDeleted    = "retention_rows_deleted"
+	EventAuditMonthDropped       = "audit_month_dropped"
+	EventArchiveChunkArchived    = "archive_chunk_archived"
+	EventArchiveChunkDropped     = "archive_chunk_dropped"
+	EventArchiveObjectDeleted    = "archive_object_deleted"
+	EventAuditChainVerified      = "audit_chain_verified"
+	EventEvidencePacksReverified = "evidence_packs_reverified"
+	EventUSSPRecordsFetched      = "ussp_records_fetched"
+	EventUSSPRecordsDayMissing   = "ussp_records_day_missing"
+)
+
 // DefaultCatalogue is the catalogue of this build.
 func DefaultCatalogue() Catalogue {
 	return Catalogue{
@@ -397,6 +421,20 @@ func DefaultCatalogue() Catalogue {
 		EventRegistryPortalMailFailed:      {},
 		EventRegistryOperatorLinkRequested: {},
 		EventRegistryOperatorLinkUsed:      {},
+
+		EventLegalHoldPlaced:         {},
+		EventLegalHoldReleased:       {},
+		EventLegalHoldsViewed:        {},
+		EventRetentionStatusViewed:   {},
+		EventRetentionRowsDeleted:    {},
+		EventAuditMonthDropped:       {},
+		EventArchiveChunkArchived:    {},
+		EventArchiveChunkDropped:     {},
+		EventArchiveObjectDeleted:    {},
+		EventAuditChainVerified:      {},
+		EventEvidencePacksReverified: {},
+		EventUSSPRecordsFetched:      {},
+		EventUSSPRecordsDayMissing:   {},
 	}
 }
 

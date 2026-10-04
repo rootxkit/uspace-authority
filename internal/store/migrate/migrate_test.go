@@ -3,6 +3,7 @@ package migrate
 import (
 	"io/fs"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -121,5 +122,32 @@ func TestLatestRefusesAFileWithoutAVersion(t *testing.T) {
 	empty := Tree{Name: "empty", fsys: fstest.MapFS{"README": {}}}
 	if _, err := Latest(empty); err == nil {
 		t.Fatal("an empty tree has a latest version")
+	}
+}
+
+// TestEachVersionIsOneFileWithNoGap holds every tree to versions 1..n,
+// each named by exactly one file: two branches that each took the next
+// number (WP-26 and WP-27 both wrote relational 00024) meet as a
+// duplicate goose refuses, and a gap leaves a version that lands later
+// unapplied on a database already past it.
+func TestEachVersionIsOneFileWithNoGap(t *testing.T) {
+	for _, tree := range Trees() {
+		byVersion := map[int64][]string{}
+		for path := range sqlFiles(t, tree) {
+			digits, _, _ := strings.Cut(path, "_")
+			v, err := strconv.ParseInt(digits, 10, 64)
+			if err != nil {
+				t.Fatalf("%s: %s: %v", tree.Name, path, err)
+			}
+			byVersion[v] = append(byVersion[v], path)
+		}
+		for v := int64(1); v <= int64(len(byVersion)); v++ {
+			if n := len(byVersion[v]); n != 1 {
+				t.Errorf("%s: version %d named by %d files: %v", tree.Name, v, n, byVersion[v])
+			}
+		}
+		if latest, err := Latest(tree); err != nil || latest != int64(len(byVersion)) {
+			t.Errorf("%s: latest %d with %d versions: %v", tree.Name, latest, len(byVersion), err)
+		}
 	}
 }

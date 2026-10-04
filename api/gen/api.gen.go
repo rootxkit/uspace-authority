@@ -21,6 +21,27 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for AuditChainBreakReason.
+const (
+	AuditChainBreakReasonHashMismatch      AuditChainBreakReason = "hash_mismatch"
+	AuditChainBreakReasonPayloadUnreadable AuditChainBreakReason = "payload_unreadable"
+	AuditChainBreakReasonPrevHashMismatch  AuditChainBreakReason = "prev_hash_mismatch"
+)
+
+// Valid indicates whether the value is a known member of the AuditChainBreakReason enum.
+func (e AuditChainBreakReason) Valid() bool {
+	switch e {
+	case AuditChainBreakReasonHashMismatch:
+		return true
+	case AuditChainBreakReasonPayloadUnreadable:
+		return true
+	case AuditChainBreakReasonPrevHashMismatch:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AuditEventActorType.
 const (
 	AuditEventActorTypeClient   AuditEventActorType = "client"
@@ -1686,6 +1707,39 @@ func (e RegistryValidityStatus) Valid() bool {
 	}
 }
 
+// Defines values for RetentionJobRunOutcome.
+const (
+	RetentionJobRunOutcomeFailed RetentionJobRunOutcome = "failed"
+	RetentionJobRunOutcomeOk     RetentionJobRunOutcome = "ok"
+)
+
+// Valid indicates whether the value is a known member of the RetentionJobRunOutcome enum.
+func (e RetentionJobRunOutcome) Valid() bool {
+	switch e {
+	case RetentionJobRunOutcomeFailed:
+		return true
+	case RetentionJobRunOutcomeOk:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RetentionPeriodsIncidents.
+const (
+	RetentionPeriodsIncidentsIndefinite RetentionPeriodsIncidents = "indefinite"
+)
+
+// Valid indicates whether the value is a known member of the RetentionPeriodsIncidents enum.
+func (e RetentionPeriodsIncidents) Valid() bool {
+	switch e {
+	case RetentionPeriodsIncidentsIndefinite:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for Role.
 const (
 	RoleAdmin           Role = "admin"
@@ -2322,6 +2376,18 @@ func (e ListPublicationsParamsState) Valid() bool {
 	}
 }
 
+// AuditChainBreak defines model for AuditChainBreak.
+type AuditChainBreak struct {
+	Got    *string               `json:"got,omitempty"`
+	Id     int64                 `json:"id"`
+	Reason AuditChainBreakReason `json:"reason"`
+	Ts     time.Time             `json:"ts"`
+	Want   *string               `json:"want,omitempty"`
+}
+
+// AuditChainBreakReason defines model for AuditChainBreak.Reason.
+type AuditChainBreakReason string
+
 // AuditEvent defines model for AuditEvent.
 type AuditEvent struct {
 	ActorId    string                 `json:"actor_id"`
@@ -2347,6 +2413,28 @@ type AuditEventPage struct {
 
 	// NextBeforeId Pass as before_id for the next page; absent on the last page.
 	NextBeforeId *int64 `json:"next_before_id,omitempty"`
+}
+
+// AuditVerification defines model for AuditVerification.
+type AuditVerification struct {
+	// AnchoredTo The dropped month whose last hash the first row links to (older months dropped after their retention); empty otherwise.
+	AnchoredTo *string          `json:"anchored_to,omitempty"`
+	Broken     *AuditChainBreak `json:"broken,omitempty"`
+	FirstId    *int64           `json:"first_id,omitempty"`
+
+	// Intact True when every row checked holds its hash and its link.
+	Intact   bool    `json:"intact"`
+	LastHash *string `json:"last_hash,omitempty"`
+	LastId   *int64  `json:"last_id,omitempty"`
+
+	// Month The UTC month verified (YYYY-MM).
+	Month string `json:"month"`
+
+	// Rows Rows checked.
+	Rows int64 `json:"rows"`
+
+	// VerifiedAt When the verification was recorded in the chain.
+	VerifiedAt time.Time `json:"verified_at"`
 }
 
 // CISCacheState defines model for CISCacheState.
@@ -3118,6 +3206,46 @@ type KeyRotation struct {
 
 // KeyRotationState defines model for KeyRotation.State.
 type KeyRotationState string
+
+// LegalHold defines model for LegalHold.
+type LegalHold struct {
+	Active        bool       `json:"active"`
+	CaseRef       string     `json:"case_ref"`
+	HoldId        string     `json:"hold_id"`
+	PlacedAt      time.Time  `json:"placed_at"`
+	PlacedBy      string     `json:"placed_by"`
+	Reason        string     `json:"reason"`
+	ReleaseReason *string    `json:"release_reason,omitempty"`
+	ReleasedAt    *time.Time `json:"released_at,omitempty"`
+	ReleasedBy    *string    `json:"released_by,omitempty"`
+	Serials       []string   `json:"serials"`
+	TrackIds      []string   `json:"track_ids"`
+	ViolationIds  []string   `json:"violation_ids"`
+	WindowFrom    *time.Time `json:"window_from,omitempty"`
+	WindowTo      *time.Time `json:"window_to,omitempty"`
+}
+
+// LegalHoldInput defines model for LegalHoldInput.
+type LegalHoldInput struct {
+	CaseRef      string     `json:"case_ref"`
+	Reason       string     `json:"reason"`
+	Serials      *[]string  `json:"serials,omitempty"`
+	TrackIds     *[]string  `json:"track_ids,omitempty"`
+	ViolationIds *[]string  `json:"violation_ids,omitempty"`
+	WindowFrom   *time.Time `json:"window_from,omitempty"`
+	WindowTo     *time.Time `json:"window_to,omitempty"`
+}
+
+// LegalHoldPage defines model for LegalHoldPage.
+type LegalHoldPage struct {
+	Holds     []LegalHold `json:"holds"`
+	Truncated bool        `json:"truncated"`
+}
+
+// LegalHoldRelease defines model for LegalHoldRelease.
+type LegalHoldRelease struct {
+	Reason string `json:"reason"`
+}
 
 // ListPublication defines model for ListPublication.
 type ListPublication struct {
@@ -4763,6 +4891,68 @@ type RegistryValidityList struct {
 // RegistryValidityStatus defines model for RegistryValidityStatus.
 type RegistryValidityStatus string
 
+// RetentionArchiveCounts The telemetry archive ledger by state; archived means exported and verified, not yet dropped (held, or waiting).
+type RetentionArchiveCounts struct {
+	Archived       int64 `json:"archived"`
+	Dropped        int64 `json:"dropped"`
+	Exporting      int64 `json:"exporting"`
+	ObjectsDeleted int64 `json:"objects_deleted"`
+}
+
+// RetentionJobRun defines model for RetentionJobRun.
+type RetentionJobRun struct {
+	FinishedAt *time.Time `json:"finished_at,omitempty"`
+	Job        string     `json:"job"`
+
+	// Outcome Absent while the run is unfinished or was interrupted.
+	Outcome   *RetentionJobRunOutcome `json:"outcome,omitempty"`
+	RunId     int64                   `json:"run_id"`
+	StartedAt time.Time               `json:"started_at"`
+	Summary   *map[string]interface{} `json:"summary,omitempty"`
+}
+
+// RetentionJobRunOutcome Absent while the run is unfinished or was interrupted.
+type RetentionJobRunOutcome string
+
+// RetentionPeriods defines model for RetentionPeriods.
+type RetentionPeriods struct {
+	// ArchiveStore The archive store
+	ArchiveStore string `json:"archive_store"`
+
+	// ArchiveYears Years an archived chunk or USSP daily bundle is kept.
+	ArchiveYears int `json:"archive_years"`
+
+	// AuditYears Years a month of the audit log is kept after it ended.
+	AuditYears int                       `json:"audit_years"`
+	Incidents  RetentionPeriodsIncidents `json:"incidents"`
+
+	// OnlineDays Days the telemetry hypertables stay online before they are archived and dropped.
+	OnlineDays int `json:"online_days"`
+
+	// PendingGcaa True while the periods are the spec's Q8 defaults and GCAA and the DPO have not decided.
+	PendingGcaa bool `json:"pending_gcaa"`
+
+	// ViolationsYears Years a closed violation is kept after it closed.
+	ViolationsYears int `json:"violations_years"`
+}
+
+// RetentionPeriodsIncidents defines model for RetentionPeriods.Incidents.
+type RetentionPeriodsIncidents string
+
+// RetentionStatus defines model for RetentionStatus.
+type RetentionStatus struct {
+	ActiveHolds int64 `json:"active_holds"`
+
+	// Archive The telemetry archive ledger by state; archived means exported and verified, not yet dropped (held, or waiting).
+	Archive           RetentionArchiveCounts `json:"archive"`
+	AuditBrokenMonths []string               `json:"audit_broken_months"`
+	Jobs              []RetentionJobRun      `json:"jobs"`
+	Periods           RetentionPeriods       `json:"periods"`
+
+	// UsspMissingDays USSP code and day (CODE/YYYY-MM-DD) of every daily records bundle still missing after the grace period.
+	UsspMissingDays []string `json:"ussp_missing_days"`
+}
+
 // Revoked defines model for Revoked.
 type Revoked struct {
 	Revoked int `json:"revoked"`
@@ -5370,6 +5560,11 @@ type ListAuditEventsParams struct {
 	Purpose *string `form:"purpose,omitempty" json:"purpose,omitempty"`
 }
 
+// VerifyAuditChainParams defines parameters for VerifyAuditChain.
+type VerifyAuditChainParams struct {
+	Month string `form:"month" json:"month"`
+}
+
 // GetSessionParams defines parameters for GetSession.
 type GetSessionParams struct {
 	// Activity false checks the session without counting the request as activity.
@@ -5559,6 +5754,12 @@ type ValidateRegistryParams struct {
 // ValidateRegistryBatchParams defines parameters for ValidateRegistryBatch.
 type ValidateRegistryBatchParams struct {
 	Purpose RegistryPurpose `form:"purpose" json:"purpose"`
+}
+
+// ListLegalHoldsParams defines parameters for ListLegalHolds.
+type ListLegalHoldsParams struct {
+	IncludeReleased *bool `form:"include_released,omitempty" json:"include_released,omitempty"`
+	Limit           *int  `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // ListRIDFramesParams defines parameters for ListRIDFrames.
@@ -5785,6 +5986,12 @@ type SetRegistryUASStatusJSONRequestBody = RegistryStatusInput
 
 // ValidateRegistryBatchJSONRequestBody defines body for ValidateRegistryBatch for application/json ContentType.
 type ValidateRegistryBatchJSONRequestBody = RegistryValidateBatch
+
+// PlaceLegalHoldJSONRequestBody defines body for PlaceLegalHold for application/json ContentType.
+type PlaceLegalHoldJSONRequestBody = LegalHoldInput
+
+// ReleaseLegalHoldJSONRequestBody defines body for ReleaseLegalHold for application/json ContentType.
+type ReleaseLegalHoldJSONRequestBody = LegalHoldRelease
 
 // CreateRIDReceiverJSONRequestBody defines body for CreateRIDReceiver for application/json ContentType.
 type CreateRIDReceiverJSONRequestBody = RIDReceiverInput
@@ -6183,6 +6390,21 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /v1/audit/events (the `ListAuditEvents` operationId).
 	ListAuditEvents(ctx context.Context, params *ListAuditEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// VerifyAuditChain Verify one month of the audit log's hash chain
+	//
+	// Recomputes the month's chain in id order (`audit.Verify`) and
+	// answers how many rows from which id to which were checked, the
+	// last hash, and the first broken row or none. The oldest kept
+	// month, once older months were dropped after their retention,
+	// links to the anchor recorded at the drop (`anchored_to`). The
+	// verification is itself an `audit_chain_verified` events row in
+	// the chain, and a broken month is an alarm on the status line.
+	// `month` is a UTC calendar month (YYYY-MM); a month with no rows
+	// answers `rows: 0`, never "intact" without numbers.
+	//
+	// Corresponds with GET /v1/audit/verify (the `VerifyAuditChain` operationId).
+	VerifyAuditChain(ctx context.Context, params *VerifyAuditChainParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// LoginWithBody First sign-in step (password)
 	//
@@ -7855,6 +8077,90 @@ type ClientInterface interface {
 	// Corresponds with POST /v1/registry/validate (the `ValidateRegistryBatch` operationId).
 	ValidateRegistryBatch(ctx context.Context, params *ValidateRegistryBatchParams, body ValidateRegistryBatchJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListLegalHolds Legal holds, newest first
+	//
+	// Active holds, and released ones with `include_released`. At most
+	// `limit`; `truncated` says when there are more. The read is a
+	// `legal_holds_viewed` events row.
+	//
+	// Corresponds with GET /v1/retention/holds (the `ListLegalHolds` operationId).
+	ListLegalHolds(ctx context.Context, params *ListLegalHoldsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PlaceLegalHoldWithBody Place a legal hold
+	//
+	// Keeps what the hold covers past every retention period until it
+	// is released: no deletion batch, chunk drop, month drop or
+	// archive expiry touches it. A hold covers the violations named in
+	// `violation_ids` (and their aircraft's telemetry around them);
+	// with a window `[window_from, window_to)` the records of that
+	// time, all of them when no list is given, else those of the
+	// listed `track_ids` and `serials`; without a window the listed
+	// aircraft at any time. A window, or at least one list, is
+	// required. Placing a hold waits for a deletion batch in progress
+	// and is never missed by the next one (the hold gate). The hold is
+	// a `legal_hold_placed` events row with the case reference.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/retention/holds (the `PlaceLegalHold` operationId).
+	PlaceLegalHoldWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PlaceLegalHold Place a legal hold
+	//
+	// Keeps what the hold covers past every retention period until it
+	// is released: no deletion batch, chunk drop, month drop or
+	// archive expiry touches it. A hold covers the violations named in
+	// `violation_ids` (and their aircraft's telemetry around them);
+	// with a window `[window_from, window_to)` the records of that
+	// time, all of them when no list is given, else those of the
+	// listed `track_ids` and `serials`; without a window the listed
+	// aircraft at any time. A window, or at least one list, is
+	// required. Placing a hold waits for a deletion batch in progress
+	// and is never missed by the next one (the hold gate). The hold is
+	// a `legal_hold_placed` events row with the case reference.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/retention/holds (the `PlaceLegalHold` operationId).
+	PlaceLegalHold(ctx context.Context, body PlaceLegalHoldJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReleaseLegalHoldWithBody Release a legal hold
+	//
+	// The hold stays on record with who released it, when and why; its
+	// records fall back under their retention periods at the next run.
+	// 409 when it is released already. A `legal_hold_released` events
+	// row.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/retention/holds/{hold_id}/release (the `ReleaseLegalHold` operationId).
+	ReleaseLegalHoldWithBody(ctx context.Context, holdId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReleaseLegalHold Release a legal hold
+	//
+	// The hold stays on record with who released it, when and why; its
+	// records fall back under their retention periods at the next run.
+	// 409 when it is released already. A `legal_hold_released` events
+	// row.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/retention/holds/{hold_id}/release (the `ReleaseLegalHold` operationId).
+	ReleaseLegalHold(ctx context.Context, holdId string, body ReleaseLegalHoldJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetRetentionStatus The retention periods, the jobs' last runs, the archive and the alarms
+	//
+	// The periods in force (`pending_gcaa: true`: the spec's Q8
+	// defaults until GCAA and the DPO decide), every job's newest run
+	// from the job ledger (database clock) with its summary, the
+	// archive ledger by state, the active holds, the months of the
+	// audit log found broken, and the USSP days still missing after
+	// the grace period (02 F7). The read is a `retention_status_viewed`
+	// events row.
+	//
+	// Corresponds with GET /v1/retention/status (the `GetRetentionStatus` operationId).
+	GetRetentionStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListRIDFrames Raw Remote ID frames in a time window (purpose required, audited)
 	//
 	// Read-only from `rid_observations`, by ingest time in [from, to).
@@ -8677,6 +8983,31 @@ func (c *Client) GetDPOReport(ctx context.Context, params *GetDPOReportParams, r
 // Corresponds with GET /v1/audit/events (the `ListAuditEvents` operationId).
 func (c *Client) ListAuditEvents(ctx context.Context, params *ListAuditEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListAuditEventsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// VerifyAuditChain Verify one month of the audit log's hash chain
+//
+// Recomputes the month's chain in id order (`audit.Verify`) and
+// answers how many rows from which id to which were checked, the
+// last hash, and the first broken row or none. The oldest kept
+// month, once older months were dropped after their retention,
+// links to the anchor recorded at the drop (`anchored_to`). The
+// verification is itself an `audit_chain_verified` events row in
+// the chain, and a broken month is an alarm on the status line.
+// `month` is a UTC calendar month (YYYY-MM); a month with no rows
+// answers `rows: 0`, never "intact" without numbers.
+//
+// Corresponds with GET /v1/audit/verify (the `VerifyAuditChain` operationId).
+func (c *Client) VerifyAuditChain(ctx context.Context, params *VerifyAuditChainParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewVerifyAuditChainRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -11638,6 +11969,150 @@ func (c *Client) ValidateRegistryBatch(ctx context.Context, params *ValidateRegi
 	return c.Client.Do(req)
 }
 
+// ListLegalHolds Legal holds, newest first
+//
+// Active holds, and released ones with `include_released`. At most
+// `limit`; `truncated` says when there are more. The read is a
+// `legal_holds_viewed` events row.
+//
+// Corresponds with GET /v1/retention/holds (the `ListLegalHolds` operationId).
+func (c *Client) ListLegalHolds(ctx context.Context, params *ListLegalHoldsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListLegalHoldsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PlaceLegalHoldWithBody Place a legal hold
+//
+// Keeps what the hold covers past every retention period until it
+// is released: no deletion batch, chunk drop, month drop or
+// archive expiry touches it. A hold covers the violations named in
+// `violation_ids` (and their aircraft's telemetry around them);
+// with a window `[window_from, window_to)` the records of that
+// time, all of them when no list is given, else those of the
+// listed `track_ids` and `serials`; without a window the listed
+// aircraft at any time. A window, or at least one list, is
+// required. Placing a hold waits for a deletion batch in progress
+// and is never missed by the next one (the hold gate). The hold is
+// a `legal_hold_placed` events row with the case reference.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/retention/holds (the `PlaceLegalHold` operationId).
+func (c *Client) PlaceLegalHoldWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPlaceLegalHoldRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// PlaceLegalHold Place a legal hold
+//
+// Keeps what the hold covers past every retention period until it
+// is released: no deletion batch, chunk drop, month drop or
+// archive expiry touches it. A hold covers the violations named in
+// `violation_ids` (and their aircraft's telemetry around them);
+// with a window `[window_from, window_to)` the records of that
+// time, all of them when no list is given, else those of the
+// listed `track_ids` and `serials`; without a window the listed
+// aircraft at any time. A window, or at least one list, is
+// required. Placing a hold waits for a deletion batch in progress
+// and is never missed by the next one (the hold gate). The hold is
+// a `legal_hold_placed` events row with the case reference.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/retention/holds (the `PlaceLegalHold` operationId).
+func (c *Client) PlaceLegalHold(ctx context.Context, body PlaceLegalHoldJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPlaceLegalHoldRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ReleaseLegalHoldWithBody Release a legal hold
+//
+// The hold stays on record with who released it, when and why; its
+// records fall back under their retention periods at the next run.
+// 409 when it is released already. A `legal_hold_released` events
+// row.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/retention/holds/{hold_id}/release (the `ReleaseLegalHold` operationId).
+func (c *Client) ReleaseLegalHoldWithBody(ctx context.Context, holdId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReleaseLegalHoldRequestWithBody(c.Server, holdId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ReleaseLegalHold Release a legal hold
+//
+// The hold stays on record with who released it, when and why; its
+// records fall back under their retention periods at the next run.
+// 409 when it is released already. A `legal_hold_released` events
+// row.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/retention/holds/{hold_id}/release (the `ReleaseLegalHold` operationId).
+func (c *Client) ReleaseLegalHold(ctx context.Context, holdId string, body ReleaseLegalHoldJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReleaseLegalHoldRequest(c.Server, holdId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetRetentionStatus The retention periods, the jobs' last runs, the archive and the alarms
+//
+// The periods in force (`pending_gcaa: true`: the spec's Q8
+// defaults until GCAA and the DPO decide), every job's newest run
+// from the job ledger (database clock) with its summary, the
+// archive ledger by state, the active holds, the months of the
+// audit log found broken, and the USSP days still missing after
+// the grace period (02 F7). The read is a `retention_status_viewed`
+// events row.
+//
+// Corresponds with GET /v1/retention/status (the `GetRetentionStatus` operationId).
+func (c *Client) GetRetentionStatus(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetRetentionStatusRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // ListRIDFrames Raw Remote ID frames in a time window (purpose required, audited)
 //
 // Read-only from `rid_observations`, by ingest time in [from, to).
@@ -13208,6 +13683,56 @@ func NewListAuditEventsRequest(server string, params *ListAuditEventsParams) (*h
 				}
 			}
 
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewVerifyAuditChainRequest constructs an http.Request for the VerifyAuditChain method
+func NewVerifyAuditChainRequest(server string, params *VerifyAuditChainParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/audit/verify")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "month", params.Month, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
 		}
 
 		if encoded := queryValues.Encode(); encoded != "" {
@@ -17462,6 +17987,186 @@ func NewValidateRegistryBatchRequestWithBody(server string, params *ValidateRegi
 	return req, nil
 }
 
+// NewListLegalHoldsRequest constructs an http.Request for the ListLegalHolds method
+func NewListLegalHoldsRequest(server string, params *ListLegalHoldsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/retention/holds")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.IncludeReleased != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "include_released", *params.IncludeReleased, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPlaceLegalHoldRequest calls the generic PlaceLegalHold builder with application/json body
+func NewPlaceLegalHoldRequest(server string, body PlaceLegalHoldJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPlaceLegalHoldRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPlaceLegalHoldRequestWithBody constructs an http.Request for the PlaceLegalHold method, with any body, and a specified content type
+func NewPlaceLegalHoldRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/retention/holds")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewReleaseLegalHoldRequest calls the generic ReleaseLegalHold builder with application/json body
+func NewReleaseLegalHoldRequest(server string, holdId string, body ReleaseLegalHoldJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewReleaseLegalHoldRequestWithBody(server, holdId, "application/json", bodyReader)
+}
+
+// NewReleaseLegalHoldRequestWithBody constructs an http.Request for the ReleaseLegalHold method, with any body, and a specified content type
+func NewReleaseLegalHoldRequestWithBody(server string, holdId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "hold_id", holdId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/retention/holds/%s/release", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetRetentionStatusRequest constructs an http.Request for the GetRetentionStatus method
+func NewGetRetentionStatusRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/retention/status")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListRIDFramesRequest constructs an http.Request for the ListRIDFrames method
 func NewListRIDFramesRequest(server string, params *ListRIDFramesParams) (*http.Request, error) {
 	var err error
@@ -19775,6 +20480,23 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /v1/audit/events (the `ListAuditEvents` operationId).
 	ListAuditEventsWithResponse(ctx context.Context, params *ListAuditEventsParams, reqEditors ...RequestEditorFn) (*ListAuditEventsResponse, error)
 
+	// VerifyAuditChainWithResponse Verify one month of the audit log's hash chain
+	//
+	// Recomputes the month's chain in id order (`audit.Verify`) and
+	// answers how many rows from which id to which were checked, the
+	// last hash, and the first broken row or none. The oldest kept
+	// month, once older months were dropped after their retention,
+	// links to the anchor recorded at the drop (`anchored_to`). The
+	// verification is itself an `audit_chain_verified` events row in
+	// the chain, and a broken month is an alarm on the status line.
+	// `month` is a UTC calendar month (YYYY-MM); a month with no rows
+	// answers `rows: 0`, never "intact" without numbers.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/audit/verify (the `VerifyAuditChain` operationId).
+	VerifyAuditChainWithResponse(ctx context.Context, params *VerifyAuditChainParams, reqEditors ...RequestEditorFn) (*VerifyAuditChainResponse, error)
+
 	// LoginWithBodyWithResponse First sign-in step (password)
 	//
 	// Checks the password and returns a short, single-use MFA
@@ -21534,6 +22256,94 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /v1/registry/validate (the `ValidateRegistryBatch` operationId).
 	ValidateRegistryBatchWithResponse(ctx context.Context, params *ValidateRegistryBatchParams, body ValidateRegistryBatchJSONRequestBody, reqEditors ...RequestEditorFn) (*ValidateRegistryBatchResponse, error)
 
+	// ListLegalHoldsWithResponse Legal holds, newest first
+	//
+	// Active holds, and released ones with `include_released`. At most
+	// `limit`; `truncated` says when there are more. The read is a
+	// `legal_holds_viewed` events row.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/retention/holds (the `ListLegalHolds` operationId).
+	ListLegalHoldsWithResponse(ctx context.Context, params *ListLegalHoldsParams, reqEditors ...RequestEditorFn) (*ListLegalHoldsResponse, error)
+
+	// PlaceLegalHoldWithBodyWithResponse Place a legal hold
+	//
+	// Keeps what the hold covers past every retention period until it
+	// is released: no deletion batch, chunk drop, month drop or
+	// archive expiry touches it. A hold covers the violations named in
+	// `violation_ids` (and their aircraft's telemetry around them);
+	// with a window `[window_from, window_to)` the records of that
+	// time, all of them when no list is given, else those of the
+	// listed `track_ids` and `serials`; without a window the listed
+	// aircraft at any time. A window, or at least one list, is
+	// required. Placing a hold waits for a deletion batch in progress
+	// and is never missed by the next one (the hold gate). The hold is
+	// a `legal_hold_placed` events row with the case reference.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/retention/holds (the `PlaceLegalHold` operationId).
+	PlaceLegalHoldWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PlaceLegalHoldResponse, error)
+
+	// PlaceLegalHoldWithResponse Place a legal hold
+	//
+	// Keeps what the hold covers past every retention period until it
+	// is released: no deletion batch, chunk drop, month drop or
+	// archive expiry touches it. A hold covers the violations named in
+	// `violation_ids` (and their aircraft's telemetry around them);
+	// with a window `[window_from, window_to)` the records of that
+	// time, all of them when no list is given, else those of the
+	// listed `track_ids` and `serials`; without a window the listed
+	// aircraft at any time. A window, or at least one list, is
+	// required. Placing a hold waits for a deletion batch in progress
+	// and is never missed by the next one (the hold gate). The hold is
+	// a `legal_hold_placed` events row with the case reference.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/retention/holds (the `PlaceLegalHold` operationId).
+	PlaceLegalHoldWithResponse(ctx context.Context, body PlaceLegalHoldJSONRequestBody, reqEditors ...RequestEditorFn) (*PlaceLegalHoldResponse, error)
+
+	// ReleaseLegalHoldWithBodyWithResponse Release a legal hold
+	//
+	// The hold stays on record with who released it, when and why; its
+	// records fall back under their retention periods at the next run.
+	// 409 when it is released already. A `legal_hold_released` events
+	// row.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/retention/holds/{hold_id}/release (the `ReleaseLegalHold` operationId).
+	ReleaseLegalHoldWithBodyWithResponse(ctx context.Context, holdId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReleaseLegalHoldResponse, error)
+
+	// ReleaseLegalHoldWithResponse Release a legal hold
+	//
+	// The hold stays on record with who released it, when and why; its
+	// records fall back under their retention periods at the next run.
+	// 409 when it is released already. A `legal_hold_released` events
+	// row.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/retention/holds/{hold_id}/release (the `ReleaseLegalHold` operationId).
+	ReleaseLegalHoldWithResponse(ctx context.Context, holdId string, body ReleaseLegalHoldJSONRequestBody, reqEditors ...RequestEditorFn) (*ReleaseLegalHoldResponse, error)
+
+	// GetRetentionStatusWithResponse The retention periods, the jobs' last runs, the archive and the alarms
+	//
+	// The periods in force (`pending_gcaa: true`: the spec's Q8
+	// defaults until GCAA and the DPO decide), every job's newest run
+	// from the job ledger (database clock) with its summary, the
+	// archive ledger by state, the active holds, the months of the
+	// audit log found broken, and the USSP days still missing after
+	// the grace period (02 F7). The read is a `retention_status_viewed`
+	// events row.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/retention/status (the `GetRetentionStatus` operationId).
+	GetRetentionStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetRetentionStatusResponse, error)
+
 	// ListRIDFramesWithResponse Raw Remote ID frames in a time window (purpose required, audited)
 	//
 	// Read-only from `rid_observations`, by ingest time in [from, to).
@@ -22617,6 +23427,61 @@ func (r ListAuditEventsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListAuditEventsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type VerifyAuditChainResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *AuditVerification
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r VerifyAuditChainResponse) GetJSON200() *AuditVerification {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r VerifyAuditChainResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r VerifyAuditChainResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r VerifyAuditChainResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r VerifyAuditChainResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r VerifyAuditChainResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r VerifyAuditChainResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -27880,6 +28745,233 @@ func (r ValidateRegistryBatchResponse) ContentType() string {
 	return ""
 }
 
+type ListLegalHoldsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LegalHoldPage
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListLegalHoldsResponse) GetJSON200() *LegalHoldPage {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r ListLegalHoldsResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ListLegalHoldsResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListLegalHoldsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListLegalHoldsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListLegalHoldsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListLegalHoldsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PlaceLegalHoldResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *LegalHold
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r PlaceLegalHoldResponse) GetJSON201() *LegalHold {
+	return r.JSON201
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r PlaceLegalHoldResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r PlaceLegalHoldResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r PlaceLegalHoldResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r PlaceLegalHoldResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PlaceLegalHoldResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PlaceLegalHoldResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ReleaseLegalHoldResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *LegalHold
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ReleaseLegalHoldResponse) GetJSON200() *LegalHold {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r ReleaseLegalHoldResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r ReleaseLegalHoldResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r ReleaseLegalHoldResponse) GetApplicationproblemJSON409() *Problem {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ReleaseLegalHoldResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ReleaseLegalHoldResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ReleaseLegalHoldResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReleaseLegalHoldResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ReleaseLegalHoldResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetRetentionStatusResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *RetentionStatus
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetRetentionStatusResponse) GetJSON200() *RetentionStatus {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetRetentionStatusResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetRetentionStatusResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetRetentionStatusResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetRetentionStatusResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetRetentionStatusResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListRIDFramesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -30241,6 +31333,29 @@ func (c *ClientWithResponses) ListAuditEventsWithResponse(ctx context.Context, p
 		return nil, err
 	}
 	return ParseListAuditEventsResponse(rsp)
+}
+
+// VerifyAuditChainWithResponse Verify one month of the audit log's hash chain
+//
+// Recomputes the month's chain in id order (`audit.Verify`) and
+// answers how many rows from which id to which were checked, the
+// last hash, and the first broken row or none. The oldest kept
+// month, once older months were dropped after their retention,
+// links to the anchor recorded at the drop (`anchored_to`). The
+// verification is itself an `audit_chain_verified` events row in
+// the chain, and a broken month is an alarm on the status line.
+// `month` is a UTC calendar month (YYYY-MM); a month with no rows
+// answers `rows: 0`, never "intact" without numbers.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/audit/verify (the `VerifyAuditChain` operationId).
+func (c *ClientWithResponses) VerifyAuditChainWithResponse(ctx context.Context, params *VerifyAuditChainParams, reqEditors ...RequestEditorFn) (*VerifyAuditChainResponse, error) {
+	rsp, err := c.VerifyAuditChain(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseVerifyAuditChainResponse(rsp)
 }
 
 // LoginWithBodyWithResponse First sign-in step (password)
@@ -32770,6 +33885,130 @@ func (c *ClientWithResponses) ValidateRegistryBatchWithResponse(ctx context.Cont
 	return ParseValidateRegistryBatchResponse(rsp)
 }
 
+// ListLegalHoldsWithResponse Legal holds, newest first
+//
+// Active holds, and released ones with `include_released`. At most
+// `limit`; `truncated` says when there are more. The read is a
+// `legal_holds_viewed` events row.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/retention/holds (the `ListLegalHolds` operationId).
+func (c *ClientWithResponses) ListLegalHoldsWithResponse(ctx context.Context, params *ListLegalHoldsParams, reqEditors ...RequestEditorFn) (*ListLegalHoldsResponse, error) {
+	rsp, err := c.ListLegalHolds(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListLegalHoldsResponse(rsp)
+}
+
+// PlaceLegalHoldWithBodyWithResponse Place a legal hold
+//
+// Keeps what the hold covers past every retention period until it
+// is released: no deletion batch, chunk drop, month drop or
+// archive expiry touches it. A hold covers the violations named in
+// `violation_ids` (and their aircraft's telemetry around them);
+// with a window `[window_from, window_to)` the records of that
+// time, all of them when no list is given, else those of the
+// listed `track_ids` and `serials`; without a window the listed
+// aircraft at any time. A window, or at least one list, is
+// required. Placing a hold waits for a deletion batch in progress
+// and is never missed by the next one (the hold gate). The hold is
+// a `legal_hold_placed` events row with the case reference.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/retention/holds (the `PlaceLegalHold` operationId).
+func (c *ClientWithResponses) PlaceLegalHoldWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PlaceLegalHoldResponse, error) {
+	rsp, err := c.PlaceLegalHoldWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePlaceLegalHoldResponse(rsp)
+}
+
+// PlaceLegalHoldWithResponse Place a legal hold
+//
+// Keeps what the hold covers past every retention period until it
+// is released: no deletion batch, chunk drop, month drop or
+// archive expiry touches it. A hold covers the violations named in
+// `violation_ids` (and their aircraft's telemetry around them);
+// with a window `[window_from, window_to)` the records of that
+// time, all of them when no list is given, else those of the
+// listed `track_ids` and `serials`; without a window the listed
+// aircraft at any time. A window, or at least one list, is
+// required. Placing a hold waits for a deletion batch in progress
+// and is never missed by the next one (the hold gate). The hold is
+// a `legal_hold_placed` events row with the case reference.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/retention/holds (the `PlaceLegalHold` operationId).
+func (c *ClientWithResponses) PlaceLegalHoldWithResponse(ctx context.Context, body PlaceLegalHoldJSONRequestBody, reqEditors ...RequestEditorFn) (*PlaceLegalHoldResponse, error) {
+	rsp, err := c.PlaceLegalHold(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePlaceLegalHoldResponse(rsp)
+}
+
+// ReleaseLegalHoldWithBodyWithResponse Release a legal hold
+//
+// The hold stays on record with who released it, when and why; its
+// records fall back under their retention periods at the next run.
+// 409 when it is released already. A `legal_hold_released` events
+// row.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/retention/holds/{hold_id}/release (the `ReleaseLegalHold` operationId).
+func (c *ClientWithResponses) ReleaseLegalHoldWithBodyWithResponse(ctx context.Context, holdId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReleaseLegalHoldResponse, error) {
+	rsp, err := c.ReleaseLegalHoldWithBody(ctx, holdId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReleaseLegalHoldResponse(rsp)
+}
+
+// ReleaseLegalHoldWithResponse Release a legal hold
+//
+// The hold stays on record with who released it, when and why; its
+// records fall back under their retention periods at the next run.
+// 409 when it is released already. A `legal_hold_released` events
+// row.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/retention/holds/{hold_id}/release (the `ReleaseLegalHold` operationId).
+func (c *ClientWithResponses) ReleaseLegalHoldWithResponse(ctx context.Context, holdId string, body ReleaseLegalHoldJSONRequestBody, reqEditors ...RequestEditorFn) (*ReleaseLegalHoldResponse, error) {
+	rsp, err := c.ReleaseLegalHold(ctx, holdId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReleaseLegalHoldResponse(rsp)
+}
+
+// GetRetentionStatusWithResponse The retention periods, the jobs' last runs, the archive and the alarms
+//
+// The periods in force (`pending_gcaa: true`: the spec's Q8
+// defaults until GCAA and the DPO decide), every job's newest run
+// from the job ledger (database clock) with its summary, the
+// archive ledger by state, the active holds, the months of the
+// audit log found broken, and the USSP days still missing after
+// the grace period (02 F7). The read is a `retention_status_viewed`
+// events row.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/retention/status (the `GetRetentionStatus` operationId).
+func (c *ClientWithResponses) GetRetentionStatusWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetRetentionStatusResponse, error) {
+	rsp, err := c.GetRetentionStatus(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetRetentionStatusResponse(rsp)
+}
+
 // ListRIDFramesWithResponse Raw Remote ID frames in a time window (purpose required, audited)
 //
 // Read-only from `rid_observations`, by ingest time in [from, to).
@@ -34127,6 +35366,46 @@ func ParseListAuditEventsResponse(rsp *http.Response) (*ListAuditEventsResponse,
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseVerifyAuditChainResponse parses an HTTP response from a VerifyAuditChainWithResponse call
+func ParseVerifyAuditChainResponse(rsp *http.Response) (*VerifyAuditChainResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &VerifyAuditChainResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AuditVerification
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Problem
@@ -38251,6 +39530,173 @@ func ParseValidateRegistryBatchResponse(rsp *http.Response) (*ValidateRegistryBa
 	return response, nil
 }
 
+// ParseListLegalHoldsResponse parses an HTTP response from a ListLegalHoldsWithResponse call
+func ParseListLegalHoldsResponse(rsp *http.Response) (*ListLegalHoldsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListLegalHoldsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LegalHoldPage
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePlaceLegalHoldResponse parses an HTTP response from a PlaceLegalHoldWithResponse call
+func ParsePlaceLegalHoldResponse(rsp *http.Response) (*PlaceLegalHoldResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PlaceLegalHoldResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest LegalHold
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReleaseLegalHoldResponse parses an HTTP response from a ReleaseLegalHoldWithResponse call
+func ParseReleaseLegalHoldResponse(rsp *http.Response) (*ReleaseLegalHoldResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReleaseLegalHoldResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest LegalHold
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetRetentionStatusResponse parses an HTTP response from a GetRetentionStatusWithResponse call
+func ParseGetRetentionStatusResponse(rsp *http.Response) (*GetRetentionStatusResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetRetentionStatusResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RetentionStatus
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListRIDFramesResponse parses an HTTP response from a ListRIDFramesWithResponse call
 func ParseListRIDFramesResponse(rsp *http.Response) (*ListRIDFramesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -39834,6 +41280,9 @@ type ServerInterface interface {
 	// ListAuditEvents Audit events, newest first
 	// (GET /v1/audit/events)
 	ListAuditEvents(w http.ResponseWriter, r *http.Request, params ListAuditEventsParams)
+	// VerifyAuditChain Verify one month of the audit log's hash chain
+	// (GET /v1/audit/verify)
+	VerifyAuditChain(w http.ResponseWriter, r *http.Request, params VerifyAuditChainParams)
 	// Login First sign-in step (password)
 	// (POST /v1/auth/login)
 	Login(w http.ResponseWriter, r *http.Request)
@@ -40092,6 +41541,18 @@ type ServerInterface interface {
 	// ValidateRegistryBatch Validity of up to 100 entities (F8)
 	// (POST /v1/registry/validate)
 	ValidateRegistryBatch(w http.ResponseWriter, r *http.Request, params ValidateRegistryBatchParams)
+	// ListLegalHolds Legal holds, newest first
+	// (GET /v1/retention/holds)
+	ListLegalHolds(w http.ResponseWriter, r *http.Request, params ListLegalHoldsParams)
+	// PlaceLegalHold Place a legal hold
+	// (POST /v1/retention/holds)
+	PlaceLegalHold(w http.ResponseWriter, r *http.Request)
+	// ReleaseLegalHold Release a legal hold
+	// (POST /v1/retention/holds/{hold_id}/release)
+	ReleaseLegalHold(w http.ResponseWriter, r *http.Request, holdId string)
+	// GetRetentionStatus The retention periods, the jobs' last runs, the archive and the alarms
+	// (GET /v1/retention/status)
+	GetRetentionStatus(w http.ResponseWriter, r *http.Request)
 	// ListRIDFrames Raw Remote ID frames in a time window (purpose required, audited)
 	// (GET /v1/rid/frames)
 	ListRIDFrames(w http.ResponseWriter, r *http.Request, params ListRIDFramesParams)
@@ -40463,6 +41924,39 @@ func (siw *ServerInterfaceWrapper) ListAuditEvents(w http.ResponseWriter, r *htt
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListAuditEvents(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// VerifyAuditChain operation middleware
+func (siw *ServerInterfaceWrapper) VerifyAuditChain(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params VerifyAuditChainParams
+
+	// ------------- Required query parameter "month" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "month", r.URL.Query(), &params.Month, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "month"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "month", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VerifyAuditChain(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -43208,6 +44702,106 @@ func (siw *ServerInterfaceWrapper) ValidateRegistryBatch(w http.ResponseWriter, 
 	handler.ServeHTTP(w, r)
 }
 
+// ListLegalHolds operation middleware
+func (siw *ServerInterfaceWrapper) ListLegalHolds(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListLegalHoldsParams
+
+	// ------------- Optional query parameter "include_released" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include_released", r.URL.Query(), &params.IncludeReleased, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "include_released"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "include_released", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListLegalHolds(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PlaceLegalHold operation middleware
+func (siw *ServerInterfaceWrapper) PlaceLegalHold(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PlaceLegalHold(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReleaseLegalHold operation middleware
+func (siw *ServerInterfaceWrapper) ReleaseLegalHold(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "hold_id" -------------
+	var holdId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "hold_id", r.PathValue("hold_id"), &holdId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "hold_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReleaseLegalHold(w, r, holdId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetRetentionStatus operation middleware
+func (siw *ServerInterfaceWrapper) GetRetentionStatus(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRetentionStatus(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListRIDFrames operation middleware
 func (siw *ServerInterfaceWrapper) ListRIDFrames(w http.ResponseWriter, r *http.Request) {
 
@@ -44898,6 +46492,11 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/police/serials/{serial}", wrapper.QueryPoliceSerial)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/police/exports", wrapper.CreatePoliceExport)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/police/exports/{pack_id}/download", wrapper.DownloadPoliceExport)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/audit/verify", wrapper.VerifyAuditChain)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/retention/status", wrapper.GetRetentionStatus)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/retention/holds", wrapper.ListLegalHolds)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/retention/holds", wrapper.PlaceLegalHold)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/retention/holds/{hold_id}/release", wrapper.ReleaseLegalHold)
 
 	return m
 }
@@ -45291,6 +46890,61 @@ type ListAuditEventsdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response ListAuditEventsdefaultApplicationProblemPlusJSONResponse) VisitListAuditEventsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyAuditChainRequestObject struct {
+	Params VerifyAuditChainParams
+}
+
+type VerifyAuditChainResponseObject interface {
+	VisitVerifyAuditChainResponse(w http.ResponseWriter) error
+}
+
+type VerifyAuditChain200JSONResponse AuditVerification
+
+func (response VerifyAuditChain200JSONResponse) VisitVerifyAuditChainResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyAuditChain400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response VerifyAuditChain400ApplicationProblemPlusJSONResponse) VisitVerifyAuditChainResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyAuditChaindefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response VerifyAuditChaindefaultApplicationProblemPlusJSONResponse) VisitVerifyAuditChainResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -50956,6 +52610,238 @@ func (response ValidateRegistryBatchdefaultApplicationProblemPlusJSONResponse) V
 	return err
 }
 
+type ListLegalHoldsRequestObject struct {
+	Params ListLegalHoldsParams
+}
+
+type ListLegalHoldsResponseObject interface {
+	VisitListLegalHoldsResponse(w http.ResponseWriter) error
+}
+
+type ListLegalHolds200JSONResponse LegalHoldPage
+
+func (response ListLegalHolds200JSONResponse) VisitListLegalHoldsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLegalHolds400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response ListLegalHolds400ApplicationProblemPlusJSONResponse) VisitListLegalHoldsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLegalHoldsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListLegalHoldsdefaultApplicationProblemPlusJSONResponse) VisitListLegalHoldsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PlaceLegalHoldRequestObject struct {
+	Body *PlaceLegalHoldJSONRequestBody
+}
+
+type PlaceLegalHoldResponseObject interface {
+	VisitPlaceLegalHoldResponse(w http.ResponseWriter) error
+}
+
+type PlaceLegalHold201JSONResponse LegalHold
+
+func (response PlaceLegalHold201JSONResponse) VisitPlaceLegalHoldResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PlaceLegalHold400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response PlaceLegalHold400ApplicationProblemPlusJSONResponse) VisitPlaceLegalHoldResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PlaceLegalHolddefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response PlaceLegalHolddefaultApplicationProblemPlusJSONResponse) VisitPlaceLegalHoldResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReleaseLegalHoldRequestObject struct {
+	HoldId string `json:"hold_id"`
+	Body   *ReleaseLegalHoldJSONRequestBody
+}
+
+type ReleaseLegalHoldResponseObject interface {
+	VisitReleaseLegalHoldResponse(w http.ResponseWriter) error
+}
+
+type ReleaseLegalHold200JSONResponse LegalHold
+
+func (response ReleaseLegalHold200JSONResponse) VisitReleaseLegalHoldResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReleaseLegalHold400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response ReleaseLegalHold400ApplicationProblemPlusJSONResponse) VisitReleaseLegalHoldResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReleaseLegalHold404ApplicationProblemPlusJSONResponse Problem
+
+func (response ReleaseLegalHold404ApplicationProblemPlusJSONResponse) VisitReleaseLegalHoldResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReleaseLegalHold409ApplicationProblemPlusJSONResponse Problem
+
+func (response ReleaseLegalHold409ApplicationProblemPlusJSONResponse) VisitReleaseLegalHoldResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReleaseLegalHolddefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ReleaseLegalHolddefaultApplicationProblemPlusJSONResponse) VisitReleaseLegalHoldResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRetentionStatusRequestObject struct {
+}
+
+type GetRetentionStatusResponseObject interface {
+	VisitGetRetentionStatusResponse(w http.ResponseWriter) error
+}
+
+type GetRetentionStatus200JSONResponse RetentionStatus
+
+func (response GetRetentionStatus200JSONResponse) VisitGetRetentionStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetRetentionStatusdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetRetentionStatusdefaultApplicationProblemPlusJSONResponse) VisitGetRetentionStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListRIDFramesRequestObject struct {
 	Params ListRIDFramesParams
 }
@@ -52953,6 +54839,9 @@ type StrictServerInterface interface {
 	// ListAuditEvents Audit events, newest first
 	// (GET /v1/audit/events)
 	ListAuditEvents(ctx context.Context, request ListAuditEventsRequestObject) (ListAuditEventsResponseObject, error)
+	// VerifyAuditChain Verify one month of the audit log's hash chain
+	// (GET /v1/audit/verify)
+	VerifyAuditChain(ctx context.Context, request VerifyAuditChainRequestObject) (VerifyAuditChainResponseObject, error)
 	// Login First sign-in step (password)
 	// (POST /v1/auth/login)
 	Login(ctx context.Context, request LoginRequestObject) (LoginResponseObject, error)
@@ -53211,6 +55100,18 @@ type StrictServerInterface interface {
 	// ValidateRegistryBatch Validity of up to 100 entities (F8)
 	// (POST /v1/registry/validate)
 	ValidateRegistryBatch(ctx context.Context, request ValidateRegistryBatchRequestObject) (ValidateRegistryBatchResponseObject, error)
+	// ListLegalHolds Legal holds, newest first
+	// (GET /v1/retention/holds)
+	ListLegalHolds(ctx context.Context, request ListLegalHoldsRequestObject) (ListLegalHoldsResponseObject, error)
+	// PlaceLegalHold Place a legal hold
+	// (POST /v1/retention/holds)
+	PlaceLegalHold(ctx context.Context, request PlaceLegalHoldRequestObject) (PlaceLegalHoldResponseObject, error)
+	// ReleaseLegalHold Release a legal hold
+	// (POST /v1/retention/holds/{hold_id}/release)
+	ReleaseLegalHold(ctx context.Context, request ReleaseLegalHoldRequestObject) (ReleaseLegalHoldResponseObject, error)
+	// GetRetentionStatus The retention periods, the jobs' last runs, the archive and the alarms
+	// (GET /v1/retention/status)
+	GetRetentionStatus(ctx context.Context, request GetRetentionStatusRequestObject) (GetRetentionStatusResponseObject, error)
 	// ListRIDFrames Raw Remote ID frames in a time window (purpose required, audited)
 	// (GET /v1/rid/frames)
 	ListRIDFrames(ctx context.Context, request ListRIDFramesRequestObject) (ListRIDFramesResponseObject, error)
@@ -53557,6 +55458,32 @@ func (sh *strictHandler) ListAuditEvents(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListAuditEventsResponseObject); ok {
 		if err := validResponse.VisitListAuditEventsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// VerifyAuditChain operation middleware
+func (sh *strictHandler) VerifyAuditChain(w http.ResponseWriter, r *http.Request, params VerifyAuditChainParams) {
+	var request VerifyAuditChainRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.VerifyAuditChain(ctx, request.(VerifyAuditChainRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "VerifyAuditChain")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(VerifyAuditChainResponseObject); ok {
+		if err := validResponse.VisitVerifyAuditChainResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -56057,6 +57984,120 @@ func (sh *strictHandler) ValidateRegistryBatch(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ValidateRegistryBatchResponseObject); ok {
 		if err := validResponse.VisitValidateRegistryBatchResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListLegalHolds operation middleware
+func (sh *strictHandler) ListLegalHolds(w http.ResponseWriter, r *http.Request, params ListLegalHoldsParams) {
+	var request ListLegalHoldsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListLegalHolds(ctx, request.(ListLegalHoldsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListLegalHolds")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListLegalHoldsResponseObject); ok {
+		if err := validResponse.VisitListLegalHoldsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PlaceLegalHold operation middleware
+func (sh *strictHandler) PlaceLegalHold(w http.ResponseWriter, r *http.Request) {
+	var request PlaceLegalHoldRequestObject
+
+	var body PlaceLegalHoldJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PlaceLegalHold(ctx, request.(PlaceLegalHoldRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PlaceLegalHold")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PlaceLegalHoldResponseObject); ok {
+		if err := validResponse.VisitPlaceLegalHoldResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReleaseLegalHold operation middleware
+func (sh *strictHandler) ReleaseLegalHold(w http.ResponseWriter, r *http.Request, holdId string) {
+	var request ReleaseLegalHoldRequestObject
+
+	request.HoldId = holdId
+
+	var body ReleaseLegalHoldJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReleaseLegalHold(ctx, request.(ReleaseLegalHoldRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReleaseLegalHold")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReleaseLegalHoldResponseObject); ok {
+		if err := validResponse.VisitReleaseLegalHoldResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetRetentionStatus operation middleware
+func (sh *strictHandler) GetRetentionStatus(w http.ResponseWriter, r *http.Request) {
+	var request GetRetentionStatusRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetRetentionStatus(ctx, request.(GetRetentionStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetRetentionStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetRetentionStatusResponseObject); ok {
+		if err := validResponse.VisitGetRetentionStatusResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

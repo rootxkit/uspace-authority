@@ -29,9 +29,11 @@ var RetentionChecks = []RetentionCheck{
 }
 
 // UncheckedRetention are the hypertables with personal data whose
-// retention period no check verifies yet (WP-27 owns them): named on the
-// status line as unchecked, so a clean line is never read as covering
-// them (audit B-N4).
+// retention tsdb-writer does not check: api's archive job (WP-27,
+// internal/retention) archives and drops them after the online window
+// and reports them on api's status line and GET /v1/retention/status.
+// They are named here as unchecked, so this line is never read as
+// covering them (audit B-N4).
 var UncheckedRetention = []string{"tracks", "rid_observations", "manned_tracks"}
 
 // OlderThaner counts rows older than an age (ts.WriterPool.OlderThan).

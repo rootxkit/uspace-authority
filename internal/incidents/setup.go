@@ -64,8 +64,11 @@ type Parts struct {
 	// RecordTokens counts the records client's token requests; nil
 	// without a client.
 	RecordTokens *core.Counters
-	reader       *ts.Reader
-	backfill     func(ctx context.Context)
+	// Records reads USSP service records (also the daily bundles of
+	// WP-27); its Tokens is nil without a client.
+	Records  *Records
+	reader   *ts.Reader
+	backfill func(ctx context.Context)
 }
 
 // PublicPartOf returns the public part of a registration under the
@@ -111,7 +114,7 @@ func Assemble(ctx context.Context, s Setup) (*Parts, error) {
 	}
 	records := &Records{HTTP: &http.Client{Timeout: time.Duration(c.RecordsTimeoutMS) * time.Millisecond},
 		Timeout: time.Duration(c.RecordsTimeoutMS) * time.Millisecond, MaxBytes: int64(c.RecordsMaxBytes)}
-	p := &Parts{Service: svc, Counters: counters, reader: rd}
+	p := &Parts{Service: svc, Counters: counters, reader: rd, Records: records}
 	if c.RecordsClientSecretFile != "" {
 		tc, err := recordsClient(s.TokenURL, c)
 		if err != nil {

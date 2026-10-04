@@ -33,6 +33,10 @@ type Result struct {
 	FirstID  int64
 	LastID   int64
 	LastHash string
+	// AnchoredTo is the dropped month (audit_dropped_months, WP-27)
+	// whose last hash the month's first row links to, when the months
+	// before it were dropped after their retention; empty otherwise.
+	AnchoredTo string
 	// Broken is the first broken row, or nil when the chain holds.
 	Broken *Broken
 }
@@ -63,7 +67,18 @@ func verify(ctx context.Context, q *gen.Queries, month time.Time, page int32) (R
 				prev, err := q.LastEventBefore(ctx, gen.LastEventBeforeParams{BeforeTs: month, BeforeID: r.ID})
 				switch {
 				case store.IsNoRows(err):
-					want = GenesisHash
+					// Nothing before it: the first month ever, or the oldest
+					// kept month after older ones were dropped, whose first
+					// row links to the anchor recorded at the drop.
+					anchor, aerr := q.DroppedMonthAnchor(ctx, month)
+					switch {
+					case store.IsNoRows(aerr):
+						want = GenesisHash
+					case aerr != nil:
+						return res, fmt.Errorf("audit verify %s: anchor: %w", res.Month, aerr)
+					default:
+						want, res.AnchoredTo = anchor.LastHash, anchor.Month.UTC().Format("2006-01")
+					}
 				case err != nil:
 					return res, fmt.Errorf("audit verify %s: predecessor: %w", res.Month, err)
 				default:
