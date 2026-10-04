@@ -352,3 +352,21 @@ Unreleased; the format follows Keep a Changelog.
   `REGISTRY_OPERATOR_REPORTS=on`; the mail outbox sent after the commit
   with bounded retries and `en`/`ka` catalogues; the registry-import
   and registry-portal runbooks. Defaults pending GCAA.
+- WP-27: retention, archive and record verification (`internal/retention`,
+  `internal/archive`, relational `00024_retention`, timeseries
+  `00013_archive`). The spec 08 Q8 periods as configuration, pending
+  GCAA (90 days telemetry online, 2 years archive, 5 years violations,
+  incidents indefinite, audit 10 years), the regulatory floor enforced by
+  the database; `rid_observations`, `tracks` and `manned_tracks` chunks
+  past the online window exported by one `COPY` to gzip NDJSON in
+  `ARCHIVE_URL` (a local directory), read back and checked, then dropped
+  only through `authority_archive_drop_chunk` against the `archive_chunks`
+  ledger; the remote pilot position removed from archived System frames
+  unless an incident references the aircraft (06 §5); legal holds
+  (`/v1/retention/holds*`) and open incidents keep everything they cover;
+  expired violations deleted in bounded, audited batches and the oldest
+  audit months dropped with the chain's anchor; the monthly hash-chain
+  verification recorded in the chain and `GET /v1/audit/verify`; the
+  monthly evidence-pack re-verification; the daily USSP records pull
+  with the missing-day alarm; the `job_runs` ledger on the database
+  clock; `GET /v1/retention/status`; the retention runbook.
