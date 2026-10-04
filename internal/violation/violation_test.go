@@ -91,7 +91,7 @@ func TestMessagesValidateAgainstTheSchema(t *testing.T) {
 		}
 	}
 	bad := example(StateRaised)
-	bad.Body.Kind = "no_authorisation"
+	bad.Body.Kind = "rid_absent"
 	if validate(t, s, bad) == nil || Validate(bad) == nil {
 		t.Fatal("a kind this detector does not raise validated")
 	}

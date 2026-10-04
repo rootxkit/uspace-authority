@@ -93,6 +93,7 @@
   "authority.tracks.title": "Aircraft",
   "authority.tracks.unverified": "as broadcast and unverified",
   "authority.tracks.unverified_provider": "as reported by a provider and unverified",
+  "authority.violation.clear.authorised": "an authorisation caps the height (U-space airspace)",
   "authority.violation.clear.flight_ended": "the flight ended",
   "authority.violation.clear.landed": "the aircraft landed",
   "authority.violation.clear.reconfigured": "the zones or the policy changed",

@@ -358,7 +358,7 @@ func TestValidateRefusesAndAccepts(t *testing.T) {
 		"schema":       func(m *violation.Message) { m.Schema = "x" },
 		"msg_id":       func(m *violation.Message) { m.MsgID = "x" },
 		"violation_id": func(m *violation.Message) { m.Body.ViolationID = "x" },
-		"kind":         func(m *violation.Message) { m.Body.Kind = "no_authorisation" },
+		"kind":         func(m *violation.Message) { m.Body.Kind = "rid_absent" },
 		"state":        func(m *violation.Message) { m.Body.State = "x" },
 		"severity":     func(m *violation.Message) { m.Body.Severity = "x" },
 		"track_ref":    func(m *violation.Message) { m.Body.TrackRef = "" },
