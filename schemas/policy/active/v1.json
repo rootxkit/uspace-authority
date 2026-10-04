@@ -42,8 +42,8 @@
         "registration_number_pattern": { "type": "string", "minLength": 1, "maxLength": 256 },
         "certificate_lapse_unused_months": { "type": "integer", "minimum": 1, "maximum": 120 },
         "certificate_lapse_ceased_months": { "type": "integer", "minimum": 1, "maximum": 120 },
-        "no_authorisation_grace_s": { "$ref": "#/$defs/positive", "default": 10, "description": "Optional: a value written before migration 00022 lacks it and a follower takes this default (internal/policy Decode). Spec default, pending GCAA." },
-        "no_authorisation_severity": { "$ref": "#/$defs/severity", "default": "warning", "description": "Optional: a value written before migration 00022 lacks it and a follower takes this default (internal/policy Decode). Spec default, pending GCAA." },
+        "no_authorisation_grace_s": { "$ref": "#/$defs/positive", "default": 10, "description": "Optional: a value written before migration 00024 lacks it and a follower takes this default (internal/policy Decode). Spec default, pending GCAA." },
+        "no_authorisation_severity": { "$ref": "#/$defs/severity", "default": "warning", "description": "Optional: a value written before migration 00024 lacks it and a follower takes this default (internal/policy Decode). Spec default, pending GCAA." },
         "activated_at": { "type": ["string", "null"], "format": "date-time" }
       }
     }

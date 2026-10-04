@@ -55,7 +55,7 @@ func Encode(p Policy, producer string, now time.Time) ([]byte, error) {
 func Decode(raw []byte) (Policy, error) {
 	var env bus.Envelope[ActiveBody]
 	// A value an api older than WP-26 wrote has no no_authorisation
-	// members: it carries their defaults, as migration 00022 gave every
+	// members: it carries their defaults, as migration 00024 gave every
 	// stored version, rather than being refused for a zero grace.
 	env.Body.NoAuthorisationGraceS = DefaultNoAuthorisationGraceS
 	env.Body.NoAuthorisationSeverity = DefaultNoAuthorisationSeverity

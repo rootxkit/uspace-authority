@@ -84,7 +84,7 @@ func TestActivePolicyEncodesValidatesAndDecodes(t *testing.T) {
 }
 
 // defaultedMembers are the members Decode fills when a value lacks them
-// (written before migration 00022): the schema leaves them optional and
+// (written before migration 00024): the schema leaves them optional and
 // names the same default.
 var defaultedMembers = map[string]any{
 	"no_authorisation_grace_s":  float64(DefaultNoAuthorisationGraceS),
@@ -138,7 +138,7 @@ func TestActiveSchemaNamesEveryMember(t *testing.T) {
 	}
 }
 
-// The schema and Decode agree on a value written before migration 00022:
+// The schema and Decode agree on a value written before migration 00024:
 // the schema accepts it, as Decode does with its defaults; a value naming
 // a zero grace is refused by both (E-01).
 func TestActiveSchemaAndDecodeAgreeOnAnOlderValue(t *testing.T) {
@@ -206,7 +206,7 @@ func TestPublishersReachEveryOneAndJoinErrors(t *testing.T) {
 	}
 }
 
-// WP-26, E-01 pair: a value written before migration 00022 (no
+// WP-26, E-01 pair: a value written before migration 00024 (no
 // no_authorisation members) decodes with their defaults instead of being
 // refused for a zero grace; a value that names them keeps its own; one
 // that names a zero grace is refused, naming it.

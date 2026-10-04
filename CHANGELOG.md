@@ -353,7 +353,7 @@ Unreleased; the format follows Keep a Changelog.
   with bounded retries and `en`/`ka` catalogues; the registry-import
   and registry-portal runbooks. Defaults pending GCAA.
 - WP-26: the `no_authorisation` detector (`internal/intents`,
-  `internal/detectsvc/noauth.go`, migration `00022_no_authorisation_policy`):
+  `internal/detectsvc/noauth.go`, migration `00024_no_authorisation_policy`):
   every U-space airspace in force read from the DSS
   (`queryOperationalIntentReferences`, `utm.conformance_monitoring_sa`)
   into a bounded cache never older than 24 h, each aircraft inside one

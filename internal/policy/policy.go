@@ -86,13 +86,13 @@ func Defaults() Thresholds {
 		// Reg. 2021/664 Art. 16(2).
 		CertificateLapseUnusedMonths: DefaultLapseUnusedMonths,
 		CertificateLapseCeasedMonths: DefaultLapseCeasedMonths,
-		// WP-26, pending GCAA (spec Q2): migration 00022.
+		// WP-26, pending GCAA (spec Q2): migration 00024.
 		NoAuthorisationGraceS:   DefaultNoAuthorisationGraceS,
 		NoAuthorisationSeverity: DefaultNoAuthorisationSeverity,
 	}
 }
 
-// The no_authorisation defaults (migration 00022_no_authorisation_policy;
+// The no_authorisation defaults (migration 00024_no_authorisation_policy;
 // pending GCAA, spec Q2).
 const (
 	DefaultNoAuthorisationGraceS                 = 10
