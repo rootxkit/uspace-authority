@@ -332,3 +332,16 @@ Unreleased; the format follows Keep a Changelog.
   `police_request`) downloaded by the exporting agency only; no path to
   occurrence reports (imports, queries, role); the monthly DPO report
   `GET /v1/audit/dpo-report`; the police-realm runbook.
+- WP-26: the `no_authorisation` detector (`internal/intents`,
+  `internal/detectsvc/noauth.go`, migration `00022_no_authorisation_policy`):
+  every U-space airspace in force read from the DSS
+  (`queryOperationalIntentReferences`, `utm.conformance_monitoring_sa`)
+  into a bounded cache never older than 24 h, each aircraft inside one
+  asked at its position; unmatched past `no_authorisation_grace_s`
+  raises with the candidates and why each failed, a match or the exit
+  clears it, the DSS down suspends it (never a clear); with
+  `height_limit_in_uspace = skip_when_authorised` the 120 m rule is
+  lifted for a matched aircraft whose height was checked (clear reason
+  `authorised`); policy defaults pending GCAA; the fake DSS answers the
+  query; spec gap Q-A22 (no details, identity or subscription with the
+  decided scope); the no-authorisation runbook.
