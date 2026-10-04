@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/rootxkit/uspace-authority/internal/audit"
 	"github.com/rootxkit/uspace-authority/internal/store/pg/gen"
 )
 
@@ -85,4 +86,52 @@ func (r txReader) OperatorBySource(ctx context.Context, source, ref string) (Ope
 		return Operator{}, false, err
 	}
 	return o.Operator, true, nil
+}
+
+// Within is the registry inside one registry change that a caller's
+// own statements share (WP-20: a portal approval registers the operator
+// and decides the application in one transaction).
+type Within interface {
+	Reader
+	// CreateOperator is Service.CreateOperator in the change. A refusal
+	// is counted and returned; the change goes on unless the caller
+	// returns an error.
+	CreateOperator(ctx context.Context, in NewOperator, actor audit.Actor) (Operator, error)
+}
+
+// Change runs fn in one registry change, as every registry write runs
+// (LockProjection held, the change numbered), with the queries bound to
+// its transaction for the caller's own statements and a Within over it
+// for the registry's. Everything commits together or not at all; the
+// projection rows a registration collected are written after the commit
+// (a loosening change, G-08), so no projection row says active for a
+// registration whose transaction rolled back. fn's error is returned
+// as it is.
+func (s *Service) Change(ctx context.Context, fn func(q *gen.Queries, w Within) error) error {
+	return s.commitChange(ctx, func(tx Tx, cs *changeSet) error {
+		q, err := queriesOf(tx)
+		if err != nil {
+			return err
+		}
+		return fn(q, txWithin{txReader: txReader{s: s, tx: tx}, cs: cs})
+	})
+}
+
+// txWithin is Within on one change.
+type txWithin struct {
+	txReader
+	cs *changeSet
+}
+
+// CreateOperator implements Within.
+func (w txWithin) CreateOperator(ctx context.Context, in NewOperator, actor audit.Actor) (Operator, error) {
+	p, err := w.s.prepareOperator(&in)
+	if err != nil {
+		return Operator{}, err
+	}
+	op, err := w.s.insertOperator(ctx, w.tx, w.cs, &in, &p, actor)
+	if err != nil {
+		return Operator{}, w.s.refused(err)
+	}
+	return op, nil
 }

@@ -72,3 +72,24 @@ func TestIntegrationChooseNumberBeyondThePool(t *testing.T) {
 		t.Fatalf("%d applications hold a number, want %d", n, poolAtOnce)
 	}
 }
+
+// More approvals at once than the pool has connections all finish: the
+// registration and the decision run on the one connection that holds
+// the application's row lock, so no approval holds a connection while
+// it waits for another. Each ends approved with one operator.
+func TestIntegrationApprovalsBeyondThePool(t *testing.T) {
+	it := newIntegrationPool(t, func(u string) string { return u }, smallPool)
+	apps := it.manyUnderReview(t, poolAtOnce)
+	atOnce(t, apps, func(ctx context.Context, a Application) error {
+		r, err := it.svc.Approve(ctx, a.ID, nil, registrar)
+		if err == nil && r.State != StateApproved {
+			return fmt.Errorf("approved as %s", r.State)
+		}
+		return err
+	})
+	for i := range apps {
+		if n := it.count(t, `SELECT count(*) FROM uas_operators WHERE source_ref = $1`, apps[i].ID); n != 1 {
+			t.Fatalf("%s: %d operators", apps[i].ID, n)
+		}
+	}
+}

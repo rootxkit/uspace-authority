@@ -73,13 +73,15 @@ const (
 type Registry interface {
 	CheckNumber(ctx context.Context, number string) (registry.PublicCheck, error)
 	NumberFree(ctx context.Context, number string) (public string, free bool, err error)
-	CreateOperator(ctx context.Context, in registry.NewOperator, actor audit.Actor) (registry.Operator, error)
 	OperatorBySource(ctx context.Context, source, ref string) (registry.Operator, bool, error)
 	ContactForLink(ctx context.Context, number string) (registry.OperatorContact, bool, error)
 	// Read runs fn in one relational transaction with a registry reader
 	// over it: what the portal asks of the registry while it holds an
 	// application's row lock is asked on that same connection.
 	Read(ctx context.Context, fn func(q *gen.Queries, r registry.Reader) error) error
+	// Change runs fn in one registry change: the approval's statements
+	// and the operator's registration commit together, on one connection.
+	Change(ctx context.Context, fn func(q *gen.Queries, w registry.Within) error) error
 }
 
 // NumberChecker answers whether a registration number is free (the

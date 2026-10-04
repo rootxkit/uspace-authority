@@ -357,15 +357,18 @@ func (s *Service) StartReview(ctx context.Context, id string, actor audit.Actor)
 
 // Approve registers the applicant: the number and its secret part are
 // chosen once and kept on the application (the secret sealed) in their
-// own transaction; then, in one transaction holding the application's
-// row lock throughout, the state is checked again, the operator is
-// registered through the registry (source portal, source_ref the
-// application id, so a retried approval finds it instead of registering
-// it twice), the application approved, the secret moved into the
-// approval e-mail's outbox row and the events row written. A refusal
-// taking the same lock waits for the approval and then finds it decided,
-// so no operator is registered for a refused application. The secret
-// part is in no response.
+// own transaction; then, in one registry change whose transaction holds
+// the application's row lock throughout, the state is checked again,
+// the operator is registered through the registry (source portal,
+// source_ref the application id, so a retried approval finds it instead
+// of registering it twice), the application approved, the secret moved
+// into the approval e-mail's outbox row and the events row written, all
+// committed together on one connection. A refusal taking the same lock
+// waits for the approval and then finds it decided, so no operator is
+// registered for a refused application; an approval that fails leaves
+// no operator behind. Nothing here waits for a second pooled connection
+// while it holds one, so approvals beyond the pool's size queue instead
+// of deadlocking. The secret part is in no response.
 func (s *Service) Approve(ctx context.Context, id string, validUntil *time.Time, actor audit.Actor) (Application, error) {
 	if err := s.needApplications(); err != nil {
 		return Application{}, err
@@ -376,7 +379,7 @@ func (s *Service) Approve(ctx context.Context, id string, validUntil *time.Time,
 	}
 	var out Application
 	taken := false
-	err = s.DB.WithTx(ctx, func(q *gen.Queries) error {
+	err = s.Registry.Change(ctx, func(q *gen.Queries, reg registry.Within) error {
 		cur, err := q.ApplicationForUpdate(ctx, id)
 		if store.IsNoRows(err) {
 			return notFoundApplication()
@@ -395,7 +398,7 @@ func (s *Service) Approve(ctx context.Context, id string, validUntil *time.Time,
 			return httpx.Refuse(http.StatusConflict, httpx.SlugConflict,
 				"the number chosen for this application changed meanwhile; approve again")
 		}
-		op, collided, err := s.registerOperator(ctx, &app, &applicant, secret, actor)
+		op, collided, err := s.registerOperator(ctx, reg, &app, &applicant, secret, actor)
 		if err != nil {
 			return err
 		}
@@ -505,29 +508,23 @@ func (s *Service) chooseNumber(ctx context.Context, id string, validUntil *time.
 }
 
 // registerOperator registers the operator of an application through the
-// registry, once: a retried approval finds the operator the first one
-// registered (source portal, source_ref the application id). collided
-// is a number another registration took meanwhile: the caller clears it
-// on the application, under its row lock, and the next approval chooses
-// another.
-func (s *Service) registerOperator(ctx context.Context, app *Application, a *Applicant, secret string, actor audit.Actor) (op registry.Operator, collided bool, err error) {
-	if op, found, err := s.Registry.OperatorBySource(ctx, registry.SourcePortal, app.ID); err != nil || found {
+// registry change reg, once: a retried approval finds the operator the
+// first one registered (source portal, source_ref the application id).
+// collided is a number another registration took meanwhile: the caller
+// clears it on the application, in the same transaction, and the next
+// approval chooses another.
+func (s *Service) registerOperator(ctx context.Context, reg registry.Within, app *Application, a *Applicant, secret string, actor audit.Actor) (op registry.Operator, collided bool, err error) {
+	if op, found, err := reg.OperatorBySource(ctx, registry.SourcePortal, app.ID); err != nil || found {
 		return op, false, err
 	}
-	op, err = s.Registry.CreateOperator(ctx, registry.NewOperator{
+	op, err = reg.CreateOperator(ctx, registry.NewOperator{
 		OperatorType: a.OperatorType, RegistrationNumber: app.IssuedNumber, SecretPart: secret, PII: a.PII,
 		CompetencyConfirmation: a.CompetencyConfirmation, Authorisations: a.Authorisations, ValidUntil: *app.ValidUntil,
 		Source: registry.SourcePortal, SourceRef: app.ID,
 	}, actor)
-	if err == nil {
-		return op, false, nil
-	}
-	found, ok, ferr := s.Registry.OperatorBySource(ctx, registry.SourcePortal, app.ID)
 	switch {
-	case ferr != nil:
-		return registry.Operator{}, false, ferr
-	case ok:
-		return found, false, nil
+	case err == nil:
+		return op, false, nil
 	case httpx.ProblemFromError(err).Status == http.StatusConflict:
 		s.count(CounterIssueCollision)
 		return registry.Operator{}, true, nil

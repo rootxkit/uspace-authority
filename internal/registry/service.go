@@ -193,6 +193,15 @@ type changeSet struct {
 // so a change committed after it is not undone. After the projection is
 // written the new version is published.
 func (s *Service) change(ctx context.Context, fn func(tx Tx, cs *changeSet) error) error {
+	if err := s.commitChange(ctx, fn); err != nil {
+		return s.refused(err)
+	}
+	return nil
+}
+
+// commitChange is change without counting a refusal: Change's caller
+// returns its own refusals through it.
+func (s *Service) commitChange(ctx context.Context, fn func(tx Tx, cs *changeSet) error) error {
 	var projected bool
 	var cs *changeSet
 	err := s.Store.InTx(ctx, func(tx Tx) error {
@@ -226,7 +235,7 @@ func (s *Service) change(ctx context.Context, fn func(tx Tx, cs *changeSet) erro
 				slog.Int64("registry_version", cs.version))
 			s.RequestRepair()
 		}
-		return s.refused(err)
+		return err
 	}
 	if cs.loosening && (len(cs.ops) > 0 || len(cs.uas) > 0) {
 		if err := s.writeProjection(ctx, cs); err != nil {

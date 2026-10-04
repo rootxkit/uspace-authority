@@ -27,6 +27,7 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/store"
 	"github.com/rootxkit/uspace-authority/internal/store/migrate"
 	"github.com/rootxkit/uspace-authority/internal/store/pg"
+	pggen "github.com/rootxkit/uspace-authority/internal/store/pg/gen"
 	"github.com/rootxkit/uspace-authority/internal/store/storetest"
 )
 
@@ -303,7 +304,13 @@ func TestIntegrationApplicationEndToEnd(t *testing.T) {
 	// A retried registration finds the operator the approval made.
 	a := Application{ID: app.ID, IssuedNumber: approved.IssuedNumber, ValidUntil: approved.ValidUntil}
 	in := applicant()
-	again, collided, err := it.svc.registerOperator(ctx, &a, &in, secret[1], registrar)
+	var again registry.Operator
+	var collided bool
+	err = it.reg.Service.Change(ctx, func(_ *pggen.Queries, w registry.Within) error {
+		var err error
+		again, collided, err = it.svc.registerOperator(ctx, w, &a, &in, secret[1], registrar)
+		return err
+	})
 	if err != nil || collided || again.ID != approved.OperatorID {
 		t.Fatalf("retried registration %+v %v", again, err)
 	}
