@@ -61,7 +61,10 @@ export function createBff(cfg: BffConfig): BffHandlers {
     session: { secure: true, maxAgeS: cfg.sessionMaxAgeS },
     allowPaths: [...PROXY_ALLOW_PATHS],
     timeoutMs: cfg.timeoutMs,
-    ...(cfg.trustedProxyHops === undefined ? {} : { trustedProxyHops: cfg.trustedProxyHops }),
+    // Without WEB_TRUSTED_PROXY_HOPS no forwarded header is believed and
+    // api gets no client address (the kit's noTrustedProxy); a client IP
+    // comes only through the configured proxies.
+    ...(cfg.trustedProxyHops === undefined ? { noTrustedProxy: true as const } : { trustedProxyHops: cfg.trustedProxyHops }),
     ...(cfg.fetch === undefined ? {} : { fetch: cfg.fetch }),
   });
 }

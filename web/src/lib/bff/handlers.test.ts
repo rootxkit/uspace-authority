@@ -16,6 +16,7 @@ interface Call {
   url: string;
   method: string;
   auth: string | null;
+  xff: string | null;
   body: unknown;
 }
 
@@ -25,7 +26,7 @@ function fakeApi(): { fetch: typeof fetch; calls: Call[] } {
     const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
     const headers = new Headers(init?.headers);
     const text = typeof init?.body === "string" ? init.body : null;
-    calls.push({ url, method: init?.method ?? "GET", auth: headers.get("authorization"), body: text === null ? null : JSON.parse(text) });
+    calls.push({ url, method: init?.method ?? "GET", auth: headers.get("authorization"), xff: headers.get("x-forwarded-for"), body: text === null ? null : JSON.parse(text) });
     const path = new URL(url).pathname;
     const exp = new Date(Date.now() + 3600_000).toISOString();
     if (path === "/v1/auth/login") return Response.json({ mfa_token: "challenge-1", expires_at: new Date(Date.now() + 300_000).toISOString() });
@@ -129,6 +130,26 @@ describe("proxy", () => {
       expect((await createBff(cfg(api.fetch)).proxy(get(p))).status, p).toBe(404);
     }
     expect(api.calls).toEqual([]);
+  });
+
+  it("without WEB_TRUSTED_PROXY_HOPS api gets no client address, whatever the client wrote", async () => {
+    const api = fakeApi();
+    const req = new NextRequest(`${ORIGIN}/_bff/api/v1/auth/session`, {
+      method: "GET",
+      headers: { cookie: "uspace_session=header.payload.sig", host: "console.test", "x-forwarded-for": "198.51.100.7, 203.0.113.9" },
+    });
+    expect((await createBff(cfg(api.fetch)).proxy(req)).status).toBe(200);
+    expect(api.calls[0]?.xff).toBeNull();
+  });
+
+  it("with one trusted hop api gets the address that hop recorded, not the client's own entry (the pair above)", async () => {
+    const api = fakeApi();
+    const req = new NextRequest(`${ORIGIN}/_bff/api/v1/auth/session`, {
+      method: "GET",
+      headers: { cookie: "uspace_session=header.payload.sig", host: "console.test", "x-forwarded-for": "198.51.100.7, 203.0.113.9" },
+    });
+    expect((await createBff({ ...cfg(api.fetch), trustedProxyHops: 1 }).proxy(req)).status).toBe(200);
+    expect(api.calls[0]?.xff).toBe("203.0.113.9");
   });
 
   it("the allow-list is anchored", () => {

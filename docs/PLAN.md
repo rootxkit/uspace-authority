@@ -628,16 +628,18 @@ edits another's), `CHANGELOG.md` (one line per WP under Unreleased) and
 - `web/` (WP-21; npm, exact versions, `pnpm-lock.yaml` frozen):
   `@rootxkit/uspace-ui` (the shared kit, pinned to one GitHub Release
   tarball URL whose integrity the lockfile records; the pinned
-  `v0.1.0-rc.1` has an unsigned `SHA256SUMS`, written by the same
-  release job that uploads the tarball, so the integrity pins the bytes
-  first downloaded and nothing proves who built them; rootxkit/uspace-ui#20
-  attests every later release keylessly, and the bump to it checks the
-  asset with `gh attestation verify` before the lockfile changes), `next`, `react`,
+  `v0.1.0` carries a keyless build provenance attestation of the kit's
+  `release.yml` at `refs/tags/v0.1.0`, checked with `gh attestation
+  verify` before the lockfile changed (WP-22), and every later bump
+  checks it the same way), `next`, `react`,
   `react-dom`, `maplibre-gl`, `react-hook-form` and `zod` (the kit's
   peers); dev only: `typescript`, `eslint` with `typescript-eslint`,
   `eslint-plugin-react-hooks` and `eslint-plugin-jsx-a11y` (the kit's
   lint config), `tailwindcss` with `@tailwindcss/postcss` (the kit's
-  theme), `vitest`, `@playwright/test` (the smoke run), `@types/*`, and
+  theme), `vitest`, `@playwright/test` (the smoke run),
+  `@axe-core/playwright` (WP-22: the accessibility check of every page
+  in the smoke run, on the `axe-core` the kit names as its peer),
+  `@types/*`, and
   `json-schema-to-typescript` (this repository's frame extras typed
   from `schemas/picture/*` and `schemas/violation/v1.json`).
 - Lint: `gofmt`, `go vet`, staticcheck and golangci-lint pinned to the
