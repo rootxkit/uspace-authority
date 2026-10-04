@@ -155,7 +155,8 @@ func (d *DailyRecords) RunOnce(ctx context.Context) (map[string]any, error) {
 	return sum, nil
 }
 
-// one tries one day; ok when it is fetched, stored and recorded; alarm
+// one tries one day; ok when it is fetched, stored and recorded (by
+// this run, or by another one meanwhile); alarm
 // when this attempt raised the day's missing alarm.
 func (d *DailyRecords) one(ctx context.Context, code, baseURL string, day, today time.Time) (ok, alarm bool, err error) {
 	why := ""
@@ -201,10 +202,17 @@ func (d *DailyRecords) one(ctx context.Context, code, baseURL string, day, today
 		why = why[:2000]
 	}
 	due := !today.Before(day.AddDate(0, 0, 1+d.GraceDays))
+	raced := false
 	err = d.DB.WithTx(ctx, func(q *gen.Queries) error {
 		rec, err := q.RecordUSSPDayMissing(ctx, gen.RecordUSSPDayMissingParams{UsspCode: code, Day: pgDay(day), LastError: &why})
 		if err != nil {
 			return err
+		}
+		if rec.State == "fetched" {
+			// Another run (a second api instance) fetched and recorded
+			// the day while this one was failing to: the row is theirs.
+			raced = true
+			return nil
 		}
 		if !due || rec.Alarmed {
 			return nil
@@ -220,6 +228,11 @@ func (d *DailyRecords) one(ctx context.Context, code, baseURL string, day, today
 	})
 	if err != nil {
 		return false, false, fmt.Errorf("ussp records: record missing %s %s: %w", code, day.Format(time.DateOnly), err)
+	}
+	if raced {
+		d.logger().Info("USSP daily records not fetched by this run; another run recorded the day meanwhile",
+			slog.String("ussp_code", code), slog.String("day", day.Format(time.DateOnly)), slog.String("reason", why))
+		return true, false, nil
 	}
 	if alarm {
 		d.inc(CounterRecordsDaysMissing)

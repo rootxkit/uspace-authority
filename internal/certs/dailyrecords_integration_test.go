@@ -30,6 +30,9 @@ type fakeUSSP struct {
 	mu      sync.Mutex
 	missing map[string]bool
 	reads   []string
+	// onMiss, when set, runs before a missing day is answered (another
+	// instance's run recording the day meanwhile).
+	onMiss func(day string)
 }
 
 func (u *fakeUSSP) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -40,9 +43,12 @@ func (u *fakeUSSP) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	u.mu.Lock()
 	u.reads = append(u.reads, day)
-	miss := u.missing[day]
+	miss, onMiss := u.missing[day], u.onMiss
 	u.mu.Unlock()
 	if miss {
+		if onMiss != nil {
+			onMiss(day)
+		}
 		http.NotFound(w, r)
 		return
 	}
@@ -136,6 +142,55 @@ func TestIntegrationDailyRecordsArePulledAndAMissingDayIsAnAlarm(t *testing.T) {
 	sum, err = restarted.RunOnce(ctx)
 	if err != nil || sum["days_fetched"] != 1 || len(sum["missing_days"].([]string)) != 0 || len(missingOf(restarted)) != 0 {
 		t.Fatalf("third run %v %v", sum, err)
+	}
+}
+
+// A day another run fetched while this one was asking (the USSP failed
+// this run, then the other recorded it): the failure is not written
+// over the fetched row, nothing is an alarm, and the run does not fail.
+// The presence half (a day really missing is recorded and alarmed) is
+// TestIntegrationDailyRecordsArePulledAndAMissingDayIsAnAlarm.
+func TestIntegrationDailyRecordsToleratesAConcurrentFetch(t *testing.T) {
+	r := newRig(t, false)
+	ctx := context.Background()
+	today := dayOf(time.Now())
+	day := today.AddDate(0, 0, -3)
+	u := &fakeUSSP{missing: map[string]bool{day.Format(time.DateOnly): true}}
+	u.onMiss = func(string) {
+		if _, err := r.sql.Exec(`INSERT INTO ussp_daily_records (ussp_code, day, state, sha256, size_bytes, archive_key, attempts)
+			VALUES ('RAC', $1, 'fetched', 'sha256:' || repeat('0', 64), 2, 'ussp-records/RAC/other', 1)`, day); err != nil {
+			t.Error(err)
+		}
+	}
+	srv := httptest.NewServer(u)
+	t.Cleanup(srv.Close)
+	in := ussp("RAC")
+	in.BaseURL = srv.URL
+	is, err := r.svc.Issue(ctx, in, admin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.svc.RecordNotice(ctx, is.Certificate.ID, NoticeInput{State: NoticeStarted, At: time.Now(), Reference: "S-1"}, SourceManual, nil, admin); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.sql.Exec(`UPDATE certificates SET operations_started_at = now() - interval '3 days' WHERE id = $1`, is.Certificate.ID); err != nil {
+		t.Fatal(err)
+	}
+	job := &DailyRecords{DB: r.db, Audit: audit.NewWriter(r.db), Store: archive.Dir{Root: t.TempDir()}, GraceDays: 0, BackfillDays: 3,
+		Timeout: 5 * time.Second, MaxBytes: 1 << 20, MaxUSSPs: 10, Logger: logging.Discard(),
+		Fetcher: &incidents.Records{Tokens: staticToken{}, HTTP: srv.Client()}}
+	sum, err := job.RunOnce(ctx)
+	if err != nil || sum["days_alarmed"] != 0 || len(sum["missing_days"].([]string)) != 0 {
+		t.Fatalf("run %v %v", sum, err)
+	}
+	var state, key string
+	var lastError *string
+	if err := r.sql.QueryRow(`SELECT state, archive_key, last_error FROM ussp_daily_records WHERE ussp_code = 'RAC' AND day = $1`, day).
+		Scan(&state, &key, &lastError); err != nil || state != "fetched" || key != "ussp-records/RAC/other" || lastError != nil {
+		t.Fatalf("the concurrent fetch's row: %s %s %v %v", state, key, lastError, err)
+	}
+	if n := r.count(t, `SELECT count(*) FROM events WHERE event_type = $1`, audit.EventUSSPRecordsDayMissing); n != 0 {
+		t.Fatalf("%d alarm rows for a fetched day", n)
 	}
 }
 

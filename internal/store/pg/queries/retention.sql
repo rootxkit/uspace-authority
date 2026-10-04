@@ -157,11 +157,15 @@ SET state = 'fetched', sha256 = EXCLUDED.sha256, size_bytes = EXCLUDED.size_byte
     attempts = ussp_daily_records.attempts + 1, last_error = NULL, updated_at = now();
 
 -- name: RecordUSSPDayMissing :one
+-- Always the day's row: a run that fetched the day meanwhile (its row
+-- 'fetched') is returned unchanged rather than as no row, and the
+-- caller sees it fetched.
 INSERT INTO ussp_daily_records (ussp_code, day, state, attempts, last_error)
 VALUES (sqlc.arg(ussp_code), sqlc.arg(day), 'missing', 1, sqlc.arg(last_error))
 ON CONFLICT (ussp_code, day) DO UPDATE
-SET attempts = ussp_daily_records.attempts + 1, last_error = EXCLUDED.last_error, updated_at = now()
-WHERE ussp_daily_records.state = 'missing'
+SET attempts = CASE WHEN ussp_daily_records.state = 'missing' THEN ussp_daily_records.attempts + 1 ELSE ussp_daily_records.attempts END,
+    last_error = CASE WHEN ussp_daily_records.state = 'missing' THEN EXCLUDED.last_error ELSE ussp_daily_records.last_error END,
+    updated_at = CASE WHEN ussp_daily_records.state = 'missing' THEN now() ELSE ussp_daily_records.updated_at END
 RETURNING *;
 
 -- name: MarkUSSPDayAlarmed :exec

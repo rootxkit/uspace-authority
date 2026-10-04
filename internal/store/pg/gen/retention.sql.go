@@ -889,8 +889,9 @@ const recordUSSPDayMissing = `-- name: RecordUSSPDayMissing :one
 INSERT INTO ussp_daily_records (ussp_code, day, state, attempts, last_error)
 VALUES ($1, $2, 'missing', 1, $3)
 ON CONFLICT (ussp_code, day) DO UPDATE
-SET attempts = ussp_daily_records.attempts + 1, last_error = EXCLUDED.last_error, updated_at = now()
-WHERE ussp_daily_records.state = 'missing'
+SET attempts = CASE WHEN ussp_daily_records.state = 'missing' THEN ussp_daily_records.attempts + 1 ELSE ussp_daily_records.attempts END,
+    last_error = CASE WHEN ussp_daily_records.state = 'missing' THEN EXCLUDED.last_error ELSE ussp_daily_records.last_error END,
+    updated_at = CASE WHEN ussp_daily_records.state = 'missing' THEN now() ELSE ussp_daily_records.updated_at END
 RETURNING ussp_code, day, state, sha256, size_bytes, archive_key, attempts, last_error, alarmed, first_tried, updated_at, object_deleted_at
 `
 
@@ -900,6 +901,9 @@ type RecordUSSPDayMissingParams struct {
 	LastError *string
 }
 
+// Always the day's row: a run that fetched the day meanwhile (its row
+// 'fetched') is returned unchanged rather than as no row, and the
+// caller sees it fetched.
 func (q *Queries) RecordUSSPDayMissing(ctx context.Context, arg RecordUSSPDayMissingParams) (UsspDailyRecord, error) {
 	row := q.db.QueryRow(ctx, recordUSSPDayMissing, arg.UsspCode, arg.Day, arg.LastError)
 	var i UsspDailyRecord
