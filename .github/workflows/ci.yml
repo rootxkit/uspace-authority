@@ -433,9 +433,26 @@ jobs:
           curl -sSfL -o "$RUNNER_TEMP/$tarball" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/$tarball"
           echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/$tarball" | sha256sum -c -
           tar -xzf "$RUNNER_TEMP/$tarball" -C "$RUNNER_TEMP" gitleaks
+      # Which commits: on a pull request only its own (base..head), so a
+      # finding on another branch never fails it; on main, a tag or a
+      # manual run the whole history of the commit checked out, which
+      # holds the pushed range. Never every fetched branch (gitleaks'
+      # default --all): the checkout fetches them all.
       - name: gitleaks
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          "$RUNNER_TEMP/gitleaks" git --redact --verbose .
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            range="origin/$BASE_REF..$HEAD_SHA"
+          else
+            range="$GITHUB_SHA"
+          fi
+          # An empty range would scan nothing and pass: refuse it.
+          n=$(git rev-list --count "$range")
+          [ "$n" -gt 0 ] || { echo "empty scan range: $range"; exit 1; }
+          echo "gitleaks commits: $range ($n commits)"
+          "$RUNNER_TEMP/gitleaks" git --redact --verbose --log-opts="$range" .
 
   # main and v* tags only: build, push to GHCR with an SBOM and
   # provenance, and sign with cosign (keyless).
