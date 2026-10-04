@@ -138,7 +138,7 @@ CTA-2063-A (G-06).
   (`503 projection_unavailable`); a loosening one (a new record, a
   status becoming active) after it, repaired if it fails (G-08).
 - **Bounds** (E-10): `REGISTRY_IMPORT_MAX_BYTES` (8 MiB, 413 beyond),
-  `REGISTRY_IMPORT_MAX_ROWS` (5000 records, 400 beyond), 4096 bytes a
+  `REGISTRY_IMPORT_MAX_ROWS` (2000 records, 400 beyond), 4096 bytes a
   value, 256 columns, and `REGISTRY_IMPORT_WRITE_TIMEOUT_S` (25 s, inside
   the listener's 30 s write timeout) on the transaction: an import past
   it is rolled back and answered `503 import_timeout`, never committed
@@ -204,7 +204,7 @@ period.
 | `REGISTRY_IMPORT_EVERY_S` | `86400` | the re-import period (pending GCAA) |
 | `REGISTRY_IMPORT_TIMEOUT_S` | `60` | one fetch |
 | `REGISTRY_IMPORT_MAX_BYTES` | `8388608` | one export |
-| `REGISTRY_IMPORT_MAX_ROWS` | `5000` | records of one export (at most 50000) |
+| `REGISTRY_IMPORT_MAX_ROWS` | `2000` | records of one export (at most 50000; pending GCAA) |
 | `REGISTRY_IMPORT_WRITE_TIMEOUT_S` | `25` | one import's transaction (at most 25) |
 
 Counters: `registry_import_applied`, `registry_import_refused`,

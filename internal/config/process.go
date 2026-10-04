@@ -120,7 +120,7 @@ type RegistryPortal struct {
 	RegistryImportEveryS    int    `env:"REGISTRY_IMPORT_EVERY_S" default:"86400" min:"300" max:"604800" help:"period of the re-import from REGISTRY_IMPORT_URL (pending GCAA: the agreed cadence); a failed fetch waits for the next period"`
 	RegistryImportTimeoutS  int    `env:"REGISTRY_IMPORT_TIMEOUT_S" default:"60" min:"1" max:"600" help:"bound on one fetch of an export"`
 	RegistryImportMaxBytes  int    `env:"REGISTRY_IMPORT_MAX_BYTES" default:"8388608" min:"1024" max:"67108864" help:"largest export read (upload or fetch); larger is refused 413 (E-10)"`
-	RegistryImportMaxRows   int    `env:"REGISTRY_IMPORT_MAX_ROWS" default:"5000" min:"1" max:"50000" help:"records one export holds at most; more is refused 400, never cut (E-10); a first import of 5000 records takes about 20 s against REGISTRY_IMPORT_WRITE_TIMEOUT_S, so split a larger one"`
+	RegistryImportMaxRows   int    `env:"REGISTRY_IMPORT_MAX_ROWS" default:"2000" min:"1" max:"50000" help:"records one export holds at most; more is refused 400, never cut (E-10); the default leaves room inside REGISTRY_IMPORT_WRITE_TIMEOUT_S (a first import of 5000 records took about 18 s), so split a larger export (pending GCAA: the export's size)"`
 	RegistryImportWriteS    int    `env:"REGISTRY_IMPORT_WRITE_TIMEOUT_S" default:"25" min:"1" max:"25" help:"bound on one import's transaction, inside the listener's 30 s write timeout: past it the import is rolled back (503 import_timeout), never committed after its caller was cut off; split a larger export"`
 
 	RegistryCheckPerMin int `env:"REGISTRY_CHECK_PER_MIN" default:"30" min:"1" max:"100000" help:"public GET /v1/registry/check requests per minute per client address (behind the trusted proxies); past it 429 with Retry-After"`
