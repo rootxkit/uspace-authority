@@ -104,6 +104,13 @@ var Roles = map[string][]string{
 	"GetRegistryPilotPersonalData":    {RoleRegistrar, RoleInspector},
 	"RecordPilotCompetency":           {RoleRegistrar},
 
+	"ImportRegistry":                     {RoleRegistrar},
+	"ListRegistryApplications":           {RoleRegistrar},
+	"GetRegistryApplicationPersonalData": {RoleRegistrar},
+	"StartRegistryApplicationReview":     {RoleRegistrar},
+	"ApproveRegistryApplication":         {RoleRegistrar},
+	"RefuseRegistryApplication":          {RoleRegistrar},
+
 	"ListRIDReceivers":      {RoleAdmin},
 	"CreateRIDReceiver":     {RoleAdmin},
 	"GetRIDReceiver":        {RoleAdmin},
@@ -269,6 +276,16 @@ var Public = map[string]bool{
 	"ReceiveCISNotification": true,
 
 	"GetCertificateRegister": true,
+
+	// WP-20: the public check, and the portal operations whose
+	// credential is a link token checked by internal/regportal (the
+	// applicant and the operator hold no account, plan Q-A17).
+	"CheckRegistration":            true,
+	"SubmitRegistryApplication":    true,
+	"GetRegistryApplicationStatus": true,
+	"VerifyRegistryApplication":    true,
+	"RequestOperatorLink":          true,
+	"CreateOperatorOccurrence":     true,
 }
 
 // AnySession lists the operations open to every console session

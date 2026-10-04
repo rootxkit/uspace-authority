@@ -1,0 +1,3 @@
+Record ID;Reg No;Type;Name;Company;Born;Company ID;Address;E-mail;Phone;Insurance;Competency;Issued;Expires;Status
+TEST-OP-1;GEOTEST00000001-x9z;Physical person;Test Person;;02.01.1980;;1 Test Street, Tbilisi;operator@example.test;+995 555 000 001;TEST-INS-1;;01.01.2026;31.12.2030;Active
+TEST-OP-2;GEOTEST00000002;Legal person;;Test Aerial LLC;;TEST-404000001;2 Test Avenue, Batumi;ops@example.test;+995 555 000 002;;yes;2026-01-01;2031-12-31;Suspended

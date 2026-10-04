@@ -6,6 +6,7 @@ import (
 	"math"
 	"net/netip"
 	"net/url"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -105,7 +106,90 @@ type API struct {
 	DPAdmin
 	Certificates
 	Police
+	RegistryPortal
 }
+
+// RegistryPortal is api's uas.gov.ge import, public check and
+// registration portal (WP-20, plan Q-A10, Q-A11, Q-A17). Every default
+// that is a policy answer (retention, validity, budgets, the number's
+// shape) is the spec's demo default, pending GCAA.
+type RegistryPortal struct {
+	RegistryImportRulesFile string `env:"REGISTRY_IMPORT_RULES_FILE" help:"the rules file mapping a uas.gov.ge export onto the registry (docs/runbooks/registry-import.md; agreed with GCAA, outside the repository); unset: POST /v1/registry/import is refused 503 import_not_configured; a file that does not check stops the start"`
+	RegistryImportURL       string `env:"REGISTRY_IMPORT_URL" help:"the export URL agreed with GCAA (G-11: nothing is scraped), https, with {kind} replaced by operators and uas; unset: no periodic re-import"`
+	RegistryImportTokenFile string `env:"REGISTRY_IMPORT_TOKEN_FILE" help:"file holding the bearer token of REGISTRY_IMPORT_URL, if the agreement names one"`
+	RegistryImportEveryS    int    `env:"REGISTRY_IMPORT_EVERY_S" default:"86400" min:"300" max:"604800" help:"period of the re-import from REGISTRY_IMPORT_URL (pending GCAA: the agreed cadence); a failed fetch waits for the next period"`
+	RegistryImportTimeoutS  int    `env:"REGISTRY_IMPORT_TIMEOUT_S" default:"60" min:"1" max:"600" help:"bound on one fetch of an export"`
+	RegistryImportMaxBytes  int    `env:"REGISTRY_IMPORT_MAX_BYTES" default:"8388608" min:"1024" max:"67108864" help:"largest export read (upload or fetch); larger is refused 413 (E-10)"`
+	RegistryImportMaxRows   int    `env:"REGISTRY_IMPORT_MAX_ROWS" default:"2000" min:"1" max:"50000" help:"records one export holds at most; more is refused 400, never cut (E-10); the default leaves room inside REGISTRY_IMPORT_WRITE_TIMEOUT_S (a first import of 5000 records took about 18 s), so split a larger export (pending GCAA: the export's size)"`
+	RegistryImportWriteS    int    `env:"REGISTRY_IMPORT_WRITE_TIMEOUT_S" default:"25" min:"1" max:"25" help:"bound on one import's transaction, inside the listener's 30 s write timeout: past it the import is rolled back (503 import_timeout), never committed after its caller was cut off; split a larger export"`
+
+	RegistryCheckPerMin int `env:"REGISTRY_CHECK_PER_MIN" default:"30" min:"1" max:"100000" help:"public GET /v1/registry/check requests per minute per client address (behind the trusted proxies); past it 429 with Retry-After"`
+	RegistryCheckBurst  int `env:"REGISTRY_CHECK_BURST" default:"10" min:"1" max:"100000" help:"burst of the public check's per-address budget"`
+	RegistryCheckMaxIPs int `env:"REGISTRY_CHECK_MAX_IPS" default:"10000" min:"1" max:"10000000" help:"client addresses the check's limiter remembers; past it the one seen longest ago is forgotten and counted (E-10)"`
+
+	RegistryApplications    string `env:"REGISTRY_APPLICATIONS" default:"off" enum:"on|off" help:"the public portal's registration applications (Q-A11: only if the authority is the registry of record, spec Q4, pending GCAA); off: every application operation is 404"`
+	RegistryOperatorReports string `env:"REGISTRY_OPERATOR_REPORTS" default:"off" enum:"on|off" help:"operators' occurrence reports through an e-mailed link (2019/947 Art. 19(2)); off: POST /v1/registry/operator-links and /v1/occurrences/operator are 404"`
+	RegistryPortalKeyFile   string `env:"REGISTRY_PORTAL_KEY_FILE" help:"key (one line of base64, openssl rand -base64 32) signing the portal's links and keying the address hashes of its budgets; required when either portal flag is on, and different from PII_KEY_FILE and REGISTRY_HASH_KEY_FILE"`
+	RegistryPortalURL       string `env:"REGISTRY_PORTAL_URL" kind:"url" help:"base URL of the public portal pages the e-mailed links open (the token travels in the fragment); required when either portal flag is on"`
+
+	RegistryApplicationVerifyTTLS int    `env:"REGISTRY_APPLICATION_VERIFY_TTL_S" default:"86400" min:"600" max:"604800" help:"lifetime of an application's verification link (pending GCAA)"`
+	RegistryApplicationsRetainS   int    `env:"REGISTRY_APPLICATIONS_RETAIN_S" default:"7776000" min:"86400" max:"315360000" help:"decided applications are deleted this long after the decision (90 days; pending GCAA and the DPO), unverified ones a link lifetime after their link expired; the operator a decision registered stays in the registry"`
+	RegistryApplicationValidityS  int    `env:"REGISTRY_APPLICATION_VALIDITY_S" default:"157680000" min:"86400" max:"631152000" help:"validity of a registration approved without a valid_until (5 years; pending GCAA)"`
+	RegistryApplicationsPerIP     int    `env:"REGISTRY_APPLICATIONS_PER_IP" default:"5" min:"1" max:"100000" help:"applications one client address may submit per REGISTRY_APPLICATIONS_WINDOW_S, counted in the database across replicas and restarts; past it 429 (pending GCAA)"`
+	RegistryApplicationsWindowS   int    `env:"REGISTRY_APPLICATIONS_WINDOW_S" default:"3600" min:"60" max:"604800" help:"the window of the application and link budgets"`
+	RegistryIssuePrefix           string `env:"REGISTRY_ISSUE_PREFIX" default:"GEO" help:"the leading letters of a number the portal issues (Q-A10, spec Q5: the EU country code by default, pending GCAA); the issued number must match the policy's registration_number_pattern"`
+	RegistryIssueRandomLen        int    `env:"REGISTRY_ISSUE_RANDOM_LEN" default:"12" min:"6" max:"32" help:"random lower-case letters and digits after REGISTRY_ISSUE_PREFIX (the EU AMC form's 12, unverified; pending GCAA)"`
+
+	RegistryOperatorLinkTTLS      int `env:"REGISTRY_OPERATOR_LINK_TTL_S" default:"86400" min:"600" max:"604800" help:"lifetime of an operator's occurrence-report link, spent by one report"`
+	RegistryOperatorLinksPerIP    int `env:"REGISTRY_OPERATOR_LINKS_PER_IP" default:"10" min:"1" max:"100000" help:"link requests per client address per REGISTRY_APPLICATIONS_WINDOW_S; past it 429"`
+	RegistryOperatorLinksPerOwner int `env:"REGISTRY_OPERATOR_LINKS_PER_OPERATOR" default:"5" min:"1" max:"1000" help:"links mailed to one operator per window; requests beyond it are answered 202 and mail nothing (counted)"`
+
+	RegistryMailSMTPAddr      string `env:"REGISTRY_MAIL_SMTP_ADDR" help:"host:port of the SMTP relay the portal's e-mails leave by; required when either portal flag is on"`
+	RegistryMailTLS           string `env:"REGISTRY_MAIL_TLS" default:"starttls" enum:"starttls|tls|none" help:"how the SMTP connection is protected; none only to a loopback relay"`
+	RegistryMailFrom          string `env:"REGISTRY_MAIL_FROM" help:"the From address of the portal's e-mails"`
+	RegistryMailUser          string `env:"REGISTRY_MAIL_USER" help:"SMTP user (PLAIN auth over TLS); unset: no auth"`
+	RegistryMailPasswordFile  string `env:"REGISTRY_MAIL_PASSWORD_FILE" help:"file holding the SMTP password"`
+	RegistryMailEveryS        int    `env:"REGISTRY_MAIL_EVERY_S" default:"10" min:"1" max:"3600" help:"period of the outbox sender"`
+	RegistryMailBatch         int    `env:"REGISTRY_MAIL_BATCH" default:"20" min:"1" max:"1000" help:"messages one run of the sender takes at most"`
+	RegistryMailMaxAttempts   int    `env:"REGISTRY_MAIL_MAX_ATTEMPTS" default:"8" min:"1" max:"100" help:"delivery attempts of one message; past them it is failed for good (counted, an events row) and its content cleared; a permanent SMTP refusal (5xx) fails at once"`
+	RegistryMailRetryS        int    `env:"REGISTRY_MAIL_RETRY_S" default:"60" min:"1" max:"86400" help:"first retry of a failed delivery; each failure doubles it up to an hour"`
+	RegistryMailTimeoutS      int    `env:"REGISTRY_MAIL_TIMEOUT_S" default:"30" min:"1" max:"600" help:"bound on one delivery"`
+	RegistryPortalPurgeEveryS int    `env:"REGISTRY_PORTAL_PURGE_EVERY_S" default:"3600" min:"60" max:"86400" help:"period of the purge of applications past their retention, spent links and old budget rows"`
+}
+
+// PortalOn reports whether a portal flag is on.
+func (r *RegistryPortal) PortalOn() bool {
+	return r.RegistryApplications == "on" || r.RegistryOperatorReports == "on"
+}
+
+func (r *RegistryPortal) validatePortal() []error {
+	var errs []error
+	if r.RegistryImportURL != "" && r.RegistryImportRulesFile == "" {
+		errs = append(errs, core.Fieldf("REGISTRY_IMPORT_URL", "needs REGISTRY_IMPORT_RULES_FILE: an export is read only under the agreed rules"))
+	}
+	if r.PortalOn() {
+		for _, v := range [][2]string{
+			{"REGISTRY_PORTAL_KEY_FILE", r.RegistryPortalKeyFile}, {"REGISTRY_PORTAL_URL", r.RegistryPortalURL},
+			{"REGISTRY_MAIL_SMTP_ADDR", r.RegistryMailSMTPAddr}, {"REGISTRY_MAIL_FROM", r.RegistryMailFrom},
+		} {
+			if v[1] == "" {
+				errs = append(errs, core.Fieldf(v[0], "required when REGISTRY_APPLICATIONS or REGISTRY_OPERATOR_REPORTS is on"))
+			}
+		}
+	}
+	if (r.RegistryMailUser == "") != (r.RegistryMailPasswordFile == "") {
+		errs = append(errs, core.Fieldf("REGISTRY_MAIL_USER", "set it together with REGISTRY_MAIL_PASSWORD_FILE, or neither"))
+	}
+	if r.RegistryMailUser != "" && r.RegistryMailTLS == "none" {
+		errs = append(errs, core.Fieldf("REGISTRY_MAIL_TLS", "none would send the SMTP password in clear"))
+	}
+	if !issuePrefix.MatchString(r.RegistryIssuePrefix) {
+		errs = append(errs, core.Fieldf("REGISTRY_ISSUE_PREFIX", "1 to 8 upper-case ASCII letters"))
+	}
+	return errs
+}
+
+var issuePrefix = regexp.MustCompile(`^[A-Z]{1,8}$`)
 
 // Police is api's police realm (WP-19, spec 02 F10, Q-A14): the purposes
 // a police query may name and which of them release personal data (the
@@ -1136,6 +1220,7 @@ func (c *API) Validate() error {
 	if c.CISSendBackoffMaxS < c.CISSendBackoffMinS {
 		errs = append(errs, core.Fieldf("CIS_SEND_BACKOFF_MAX_S", "must not be shorter than CIS_SEND_BACKOFF_MIN_S"))
 	}
+	errs = append(errs, c.validatePortal()...)
 	return errors.Join(errs...)
 }
 

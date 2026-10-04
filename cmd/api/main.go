@@ -29,7 +29,9 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/policy"
 	"github.com/rootxkit/uspace-authority/internal/proc"
 	"github.com/rootxkit/uspace-authority/internal/receivers"
+	"github.com/rootxkit/uspace-authority/internal/regimport"
 	"github.com/rootxkit/uspace-authority/internal/registry"
+	"github.com/rootxkit/uspace-authority/internal/regportal"
 	"github.com/rootxkit/uspace-authority/internal/sources"
 	"github.com/rootxkit/uspace-authority/internal/sources/switches"
 	"github.com/rootxkit/uspace-authority/internal/store"
@@ -335,6 +337,45 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 		defer pol.Close()
 		rt.AddCounters("police", pol.Counters)
 
+		// The uas.gov.ge import, the public check and the registration
+		// portal (WP-20): the rules file checks at start or api does not
+		// start; the re-import runs only from the agreed URL (G-11).
+		imp, err := regimport.Assemble(regimport.Setup{
+			DB: db, Registry: reg.Service, RulesFile: cfg.RegistryImportRulesFile, URL: cfg.RegistryImportURL,
+			TokenFile: cfg.RegistryImportTokenFile, Timeout: time.Duration(cfg.RegistryImportTimeoutS) * time.Second,
+			MaxBytes: cfg.RegistryImportMaxBytes, MaxRecords: cfg.RegistryImportMaxRows,
+			WriteTimeout: time.Duration(cfg.RegistryImportWriteS) * time.Second, Logger: rt.Logger, Limiter: rt.Limiter,
+		})
+		if err != nil {
+			return err
+		}
+		rt.AddCounters("registry_import", imp.Counters)
+		if imp.Job != nil {
+			wg.Go(func() { imp.Job.Run(ctx, time.Duration(cfg.RegistryImportEveryS)*time.Second) })
+		}
+		portal, err := regportal.Assemble(regportal.Setup{
+			DB: db, Audit: auditWriter, Registry: reg.Service, Occurrences: occ.Service, PublicPart: occ.Service.PublicPart,
+			PIIKeyID: cfg.PIIKeyID, PIIKeyFile: cfg.PIIKeyFile, HashKeyFile: cfg.RegistryHashKeyFile, PortalKey: cfg.RegistryPortalKeyFile,
+			Config: portalConfig(cfg), SMTP: regportal.SMTP{
+				Addr: cfg.RegistryMailSMTPAddr, From: cfg.RegistryMailFrom, User: cfg.RegistryMailUser, TLS: cfg.RegistryMailTLS,
+				Timeout: time.Duration(cfg.RegistryMailTimeoutS) * time.Second,
+			},
+			MailPasswordFile: cfg.RegistryMailPasswordFile, CheckPerMin: cfg.RegistryCheckPerMin, CheckBurst: cfg.RegistryCheckBurst,
+			CheckMaxIPs: cfg.RegistryCheckMaxIPs, Logger: rt.Logger, Limiter: rt.Limiter,
+		})
+		if err != nil {
+			return err
+		}
+		rt.AddCounters("registry_portal", portal.Counters)
+		if cfg.PortalOn() {
+			wg.Go(func() {
+				portal.Service.Run(ctx, time.Duration(cfg.RegistryMailEveryS)*time.Second, time.Duration(cfg.RegistryPortalPurgeEveryS)*time.Second)
+			})
+		}
+		rt.Logger.Info("registry portal", slog.String("applications", cfg.RegistryApplications),
+			slog.String("operator_reports", cfg.RegistryOperatorReports), slog.Bool("import_rules", imp.Service.Rules != nil),
+			slog.Bool("reimport", imp.Job != nil))
+
 		// The Display Provider's administration (WP-14).
 		dpa, err := dpadmin.Assemble(cfg, rt, db, auditWriter, bp)
 		if err != nil {
@@ -366,15 +407,17 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 
 		mux := http.NewServeMux()
 		apiserver.Mount(mux, apiserver.Server{
-			PolicyHandler:       policy.Handler{Service: svc},
-			AuditHandler:        audit.Handler{Writer: auditWriter},
-			TokenHandler:        tok.Handler,
-			OAuthAdminHandler:   tok.Handler,
-			AuthHandler:         az.Handler,
-			UsersHandler:        az.Handler,
-			RegistryHandler:     reg.Handler,
-			RIDReceiversHandler: rx.Handler,
-			CellsHandler:        assign.Handler{Service: cells},
+			PolicyHandler:         policy.Handler{Service: svc},
+			AuditHandler:          audit.Handler{Writer: auditWriter},
+			TokenHandler:          tok.Handler,
+			OAuthAdminHandler:     tok.Handler,
+			AuthHandler:           az.Handler,
+			UsersHandler:          az.Handler,
+			RegistryHandler:       reg.Handler,
+			RegistryImportHandler: regimport.Handler{Service: imp.Service},
+			RegistryPortalHandler: portal.Handler,
+			RIDReceiversHandler:   rx.Handler,
+			CellsHandler:          assign.Handler{Service: cells},
 			SourcesHandler: switches.Handler{
 				Service: sw, Status: statuses, StaleAfter: time.Duration(cfg.SourceStatusStaleS) * time.Second,
 			},
@@ -398,7 +441,10 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 				"POST /v1/zones/import":                 int64(zonesvc.MaxDocumentBytes),
 				"POST /v1/zones/import/airspace-gov-ge": int64(zonesvc.MaxDocumentBytes) * 2,
 				// An occurrence report is bounded below the default (E-10).
-				"POST /v1/occurrences": occurrences.MaxIntakeBytes,
+				"POST /v1/occurrences":          occurrences.MaxIntakeBytes,
+				"POST /v1/occurrences/operator": occurrences.MaxIntakeBytes,
+				// An export file as large as REGISTRY_IMPORT_MAX_BYTES (WP-20).
+				"POST /v1/registry/import": int64(cfg.RegistryImportMaxBytes),
 			},
 			BodyCounters: zs.Counters,
 		})

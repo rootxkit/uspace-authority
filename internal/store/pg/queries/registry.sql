@@ -12,14 +12,14 @@ INSERT INTO uas_operators (
     full_name_enc, legal_name_enc, date_of_birth_enc, legal_identification_number_enc,
     postal_address_enc, contact_email_enc, contact_phone_enc, insurance_policy_number_enc,
     competency_confirmation, authorisations, status, status_reason, valid_from, valid_until,
-    source, registry_version, created_at, created_by, updated_at, updated_by
+    source, source_ref, registry_version, created_at, created_by, updated_at, updated_by
 ) VALUES (
     sqlc.arg(id), sqlc.arg(operator_type), sqlc.arg(registration_number_public), sqlc.arg(registration_number_key),
     sqlc.narg(secret_part_salt), sqlc.narg(secret_part_hash), sqlc.arg(pii_key_id),
     sqlc.narg(full_name_enc), sqlc.narg(legal_name_enc), sqlc.narg(date_of_birth_enc), sqlc.narg(legal_identification_number_enc),
     sqlc.arg(postal_address_enc), sqlc.arg(contact_email_enc), sqlc.arg(contact_phone_enc), sqlc.narg(insurance_policy_number_enc),
     sqlc.arg(competency_confirmation), sqlc.arg(authorisations), sqlc.arg(status), sqlc.arg(status_reason),
-    sqlc.arg(valid_from), sqlc.arg(valid_until), sqlc.arg(source), sqlc.arg(registry_version),
+    sqlc.arg(valid_from), sqlc.arg(valid_until), sqlc.arg(source), sqlc.narg(source_ref), sqlc.arg(registry_version),
     sqlc.arg(created_at), sqlc.arg(created_by), sqlc.arg(created_at), sqlc.arg(created_by)
 )
 RETURNING *;
@@ -32,6 +32,11 @@ SELECT * FROM uas_operators WHERE id = sqlc.arg(id) FOR UPDATE;
 
 -- name: OperatorByKey :one
 SELECT * FROM uas_operators WHERE registration_number_key = sqlc.arg(registration_number_key);
+
+-- name: OperatorBySourceRef :one
+-- WP-20: the operator a source (an import, the portal) made under its
+-- own id; the import is idempotent on it.
+SELECT * FROM uas_operators WHERE source = sqlc.arg(source) AND source_ref = sqlc.arg(source_ref);
 
 -- name: ListOperators :many
 -- One page in id order after after_id; key and status filter when given.
@@ -84,12 +89,13 @@ SELECT id, registration_number_public, status, registry_version FROM uas_operato
 INSERT INTO uas (
     id, operator_id, serial, serial_fold, manufacturer_code, registration_mark, manufacturer, model,
     owner_ref, class_label, mtom_g, rid_capability, status, status_reason, registered_at,
-    registry_version, created_by, updated_at, updated_by
+    registry_version, created_by, updated_at, updated_by, source, source_ref
 ) VALUES (
     sqlc.arg(id), sqlc.arg(operator_id), sqlc.arg(serial), sqlc.arg(serial_fold), sqlc.arg(manufacturer_code),
     sqlc.narg(registration_mark), sqlc.arg(manufacturer), sqlc.arg(model), sqlc.narg(owner_ref),
     sqlc.narg(class_label), sqlc.narg(mtom_g), sqlc.arg(rid_capability), sqlc.arg(status), sqlc.arg(status_reason),
-    sqlc.arg(registered_at), sqlc.arg(registry_version), sqlc.arg(created_by), sqlc.arg(registered_at), sqlc.arg(created_by)
+    sqlc.arg(registered_at), sqlc.arg(registry_version), sqlc.arg(created_by), sqlc.arg(registered_at), sqlc.arg(created_by),
+    sqlc.arg(source), sqlc.narg(source_ref)
 )
 RETURNING *;
 
@@ -103,6 +109,10 @@ SELECT * FROM uas WHERE id = sqlc.arg(id) FOR UPDATE;
 -- Every aircraft whose serial folds to the key (at most one: serial_fold
 -- is unique; the caller still refuses more than one, G-05).
 SELECT * FROM uas WHERE serial_fold = sqlc.arg(serial_fold) ORDER BY id;
+
+-- name: UASBySourceRef :one
+-- WP-20: the aircraft an import made under the source's own id.
+SELECT * FROM uas WHERE source = sqlc.arg(source) AND source_ref = sqlc.arg(source_ref);
 
 -- name: ListUAS :many
 SELECT * FROM uas

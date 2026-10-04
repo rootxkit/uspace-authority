@@ -89,6 +89,15 @@ func (m *memStore) Operator(_ context.Context, id string) (OperatorRecord, error
 	return r, nil
 }
 
+func (m *memStore) OperatorBySourceRef(ctx context.Context, source, ref string) (OperatorRecord, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if err := m.read(); err != nil {
+		return OperatorRecord{}, err
+	}
+	return memTx{m}.OperatorBySourceRef(ctx, source, ref)
+}
+
 func (m *memStore) OperatorByKey(_ context.Context, key string) (OperatorRecord, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -267,8 +276,11 @@ func (t memTx) byKey(key string) (OperatorRecord, error) {
 	return OperatorRecord{}, ErrNotFound
 }
 
-func (t memTx) InsertOperator(_ context.Context, r OperatorRecord) (OperatorRecord, error) {
+func (t memTx) InsertOperator(ctx context.Context, r OperatorRecord) (OperatorRecord, error) {
 	if _, err := t.byKey(r.Key); err == nil {
+		return OperatorRecord{}, ErrDuplicate
+	}
+	if _, err := t.OperatorBySourceRef(ctx, r.Source, r.SourceRef); err == nil {
 		return OperatorRecord{}, ErrDuplicate
 	}
 	r.HasSecretPart = r.SecretHash != ""
@@ -289,6 +301,24 @@ func (t memTx) OperatorForUpdate(_ context.Context, id string) (OperatorRecord, 
 
 func (t memTx) OperatorByKey(_ context.Context, key string) (OperatorRecord, error) {
 	return t.byKey(key)
+}
+
+func (t memTx) OperatorBySourceRef(_ context.Context, source, ref string) (OperatorRecord, error) {
+	for id := range t.m.operators {
+		if r := t.m.operators[id]; r.Source == source && r.SourceRef == ref && ref != "" {
+			return r, nil
+		}
+	}
+	return OperatorRecord{}, ErrNotFound
+}
+
+func (t memTx) UASBySourceRef(_ context.Context, source, ref string) (UAS, error) {
+	for id := range t.m.uas {
+		if u := t.m.uas[id]; u.Source == source && u.SourceRef == ref && ref != "" {
+			return u, nil
+		}
+	}
+	return UAS{}, ErrNotFound
 }
 
 func (t memTx) UpdateOperator(_ context.Context, r OperatorRecord) (OperatorRecord, error) {
@@ -325,9 +355,13 @@ func (t memTx) InsertUAS(_ context.Context, u UAS) (UAS, error) {
 		return UAS{}, errors.New("foreign key violation")
 	}
 	for id := range t.m.uas {
-		if e := t.m.uas[id]; e.SerialFold == u.SerialFold || e.ManufacturerCode == u.ManufacturerCode && e.Serial == u.Serial {
+		if e := t.m.uas[id]; e.SerialFold == u.SerialFold || e.ManufacturerCode == u.ManufacturerCode && e.Serial == u.Serial ||
+			u.SourceRef != "" && e.Source == u.Source && e.SourceRef == u.SourceRef {
 			return UAS{}, ErrDuplicate
 		}
+	}
+	if u.Source == "" {
+		u.Source = SourceManual
 	}
 	t.m.uas[u.ID] = u
 	return u, nil

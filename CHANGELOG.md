@@ -332,3 +332,23 @@ Unreleased; the format follows Keep a Changelog.
   `police_request`) downloaded by the exporting agency only; no path to
   occurrence reports (imports, queries, role); the monthly DPO report
   `GET /v1/audit/dpo-report`; the police-realm runbook.
+- WP-20: the uas.gov.ge import (`internal/regimport`, `POST
+  /v1/registry/import`, registrar): a CSV or flat JSON export read under
+  a rules file of configuration (columns, value maps, date formats and
+  offset, mass unit, the export's number pattern and secret suffix),
+  all or nothing in one registry transaction, every problem by record
+  and field, a dry run that writes nothing but its events row,
+  idempotent on the record's source id (`source = uas_gov_ge_import`,
+  `source_ref`, migration `00022_registry_import`), the `registry_imports`
+  ledger and the periodic re-import from the agreed `REGISTRY_IMPORT_URL`
+  that never reruns content it ran to an outcome; the public status-only
+  `GET /v1/registry/check` with a per-address limit; the registration
+  applications of the portal behind `REGISTRY_APPLICATIONS=on`
+  (`internal/regportal`, migration `00023_registry_portal`: e-mail verification by a signed link, sealed
+  content, database budgets per address, review, approval that issues a
+  number under the policy's pattern and a secret part mailed once,
+  refusal, purge), and an operator's single-use e-mailed link into
+  WP-18's intake (`POST /v1/occurrences/operator`) behind
+  `REGISTRY_OPERATOR_REPORTS=on`; the mail outbox sent after the commit
+  with bounded retries and `en`/`ka` catalogues; the registry-import
+  and registry-portal runbooks. Defaults pending GCAA.
