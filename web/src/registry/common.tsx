@@ -169,10 +169,10 @@ export function RegistryList<Row>(props: {
             />
             <div className="flex gap-2">
               <Button type="button" size="sm" variant="outline" disabled={cursors.length === 1} onClick={() => setCursors((c) => c.slice(0, -1))}>
-                {t("ui.previous_page")}
+                {t("authority.act.api_previous")}
               </Button>
               <Button type="button" size="sm" variant="outline" disabled={page.next === undefined} onClick={() => setCursors((c) => [...c, page.next])} data-testid={`${props.testId}-next`}>
-                {t("ui.next_page")}
+                {t("authority.act.api_next")}
               </Button>
             </div>
           </>

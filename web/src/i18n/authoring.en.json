@@ -1,5 +1,7 @@
 {
   "authority.act.add": "Add",
+  "authority.act.api_next": "More results from the API",
+  "authority.act.api_previous": "Earlier results from the API",
   "authority.act.failed": "The API could not be reached or answered something unreadable. Nothing was changed by this page; try again.",
   "authority.act.loading": "Loading",
   "authority.act.not_your_role": "Your roles do not include this act. The API would refuse it.",
@@ -571,7 +573,7 @@
   "authority.zone.publish_nothing": "No version is approved: there is nothing to publish.",
   "authority.zone.publish_preview": "{approved} approved versions wait; with them {in_force} are in force now.",
   "authority.zone.publish_title": "Publish",
-  "authority.zone.published": "Published as zones version {version}: {published} versions, {features} features in the publication, {state}.",
+  "authority.zone.published": "Published as zones version {version}: {published} versions, {features} features in the publication, which was {state} when the API answered.",
   "authority.zone.published_as": "zones version {version}, {by_at}",
   "authority.zone.purpose": "Purpose",
   "authority.zone.purpose.AUTHORIZATION": "AUTHORIZATION",

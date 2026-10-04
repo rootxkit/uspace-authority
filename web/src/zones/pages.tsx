@@ -128,10 +128,10 @@ export function AirspaceList({ dataset }: { dataset: Dataset }) {
                 />
                 <div className="flex gap-2">
                   <Button type="button" size="sm" variant="outline" disabled={cursors.length === 1} onClick={() => setCursors((x) => x.slice(0, -1))}>
-                    {t("ui.previous_page")}
+                    {t("authority.act.api_previous")}
                   </Button>
                   <Button type="button" size="sm" variant="outline" disabled={page.next === undefined} onClick={() => setCursors((x) => [...x, page.next])}>
-                    {t("ui.next_page")}
+                    {t("authority.act.api_next")}
                   </Button>
                 </div>
               </>
@@ -307,8 +307,14 @@ function VersionFacts({ z, dataset }: { z: ZoneVersion; dataset: Dataset }) {
           ["authority.zone.f.created", byAt(t, lang, z.created_by, z.created_at)],
           ["authority.zone.f.approved", byAt(t, lang, z.approved_by, z.approved_at)],
           ["authority.zone.f.published", z.published_version === undefined ? null : t("authority.zone.published_as", { version: z.published_version, by_at: byAt(t, lang, z.published_by, z.published_at) ?? dash })],
-          ["authority.uspace.f.airspace_name", z.designation?.airspace_name],
-          ["authority.uspace.f.services_required", z.designation?.services_required.join(", ")],
+          ...(dataset === "uspace_airspace"
+            ? ([
+                ["authority.uspace.f.airspace_name", z.designation?.airspace_name],
+                ["authority.uspace.f.services_required", z.designation?.services_required.join(", ")],
+                ["authority.uspace.f.in_controlled_airspace", z.designation === undefined ? null : t(z.designation.in_controlled_airspace ? "common.yes" : "common.no")],
+                ["authority.uspace.f.adjacent_ids", z.designation?.adjacent_ids?.join(", ")],
+              ] as const)
+            : []),
         ]}
       />
       {z.extensions.length > 0 && (

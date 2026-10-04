@@ -1,5 +1,7 @@
 {
   "authority.act.add": "დამატება",
+  "authority.act.api_next": "API-ს მეტი შედეგი",
+  "authority.act.api_previous": "API-ს წინა შედეგები",
   "authority.act.failed": "API მიუწვდომელია ან წაუკითხავი პასუხი დააბრუნა. ამ გვერდს არაფერი შეუცვლია; სცადეთ ხელახლა.",
   "authority.act.loading": "იტვირთება",
   "authority.act.not_your_role": "თქვენი როლები ამ მოქმედებას არ მოიცავს. API მას უარყოფდა.",
@@ -571,7 +573,7 @@
   "authority.zone.publish_nothing": "დამტკიცებული ვერსია არ არის: გამოსაქვეყნებელი არაფერია.",
   "authority.zone.publish_preview": "{approved} დამტკიცებული ვერსია ელოდება; მათთან ერთად ახლა მოქმედებს {in_force}.",
   "authority.zone.publish_title": "გამოქვეყნება",
-  "authority.zone.published": "გამოქვეყნდა ზონების ვერსიად {version}: {published} ვერსია, პუბლიკაციაში {features} ობიექტი, {state}.",
+  "authority.zone.published": "გამოქვეყნდა ზონების ვერსიად {version}: {published} ვერსია, პუბლიკაციაში {features} ობიექტი; API-ს პასუხისას პუბლიკაცია იყო: {state}.",
   "authority.zone.published_as": "ზონების ვერსია {version}, {by_at}",
   "authority.zone.purpose": "მიზანი",
   "authority.zone.purpose.AUTHORIZATION": "AUTHORIZATION (ავტორიზაცია)",

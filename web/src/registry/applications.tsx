@@ -103,7 +103,7 @@ function Queue() {
           />
           <div className="flex gap-2">
             <Button type="button" size="sm" variant="outline" disabled={cursors.length === 1} onClick={() => setCursors((x) => x.slice(0, -1))}>
-              {t("ui.previous_page")}
+              {t("authority.act.api_previous")}
             </Button>
             <Button
               type="button"
@@ -112,7 +112,7 @@ function Queue() {
               disabled={load.data.next_cursor === undefined}
               onClick={() => setCursors((x) => [...x, load.data.next_cursor])}
             >
-              {t("ui.next_page")}
+              {t("authority.act.api_next")}
             </Button>
           </div>
         </>
