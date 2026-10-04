@@ -182,6 +182,19 @@ type IncidentsHandler interface {
 	VerifyEvidencePack(ctx context.Context, request gen.VerifyEvidencePackRequestObject) (gen.VerifyEvidencePackResponseObject, error)
 }
 
+// OccurrencesHandler serves /v1/occurrences* (api, WP-18): the
+// 376/2014 intake, the officers' handling, the reporter's identity for
+// incident officers only and the de-identified export.
+type OccurrencesHandler interface {
+	CreateOccurrence(ctx context.Context, request gen.CreateOccurrenceRequestObject) (gen.CreateOccurrenceResponseObject, error)
+	ListOccurrences(ctx context.Context, request gen.ListOccurrencesRequestObject) (gen.ListOccurrencesResponseObject, error)
+	ExportOccurrences(ctx context.Context, request gen.ExportOccurrencesRequestObject) (gen.ExportOccurrencesResponseObject, error)
+	GetOccurrence(ctx context.Context, request gen.GetOccurrenceRequestObject) (gen.GetOccurrenceResponseObject, error)
+	GetOccurrenceReporter(ctx context.Context, request gen.GetOccurrenceReporterRequestObject) (gen.GetOccurrenceReporterResponseObject, error)
+	ClassifyOccurrence(ctx context.Context, request gen.ClassifyOccurrenceRequestObject) (gen.ClassifyOccurrenceResponseObject, error)
+	UpdateOccurrenceAnalysis(ctx context.Context, request gen.UpdateOccurrenceAnalysisRequestObject) (gen.UpdateOccurrenceAnalysisResponseObject, error)
+}
+
 // DPHandler serves /v1/dp/* administration (api, WP-14): oversight
 // areas, the Service Providers seen, USS availability arbitration. The
 // x-dp operations are served by dp-poller (DisplayProvider).
@@ -229,6 +242,7 @@ type Server struct {
 	CISPHandler
 	ViolationsHandler
 	IncidentsHandler
+	OccurrencesHandler
 	DPHandler
 	CertificatesHandler
 }

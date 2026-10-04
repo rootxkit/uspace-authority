@@ -8,7 +8,8 @@
 #                       (oapi-codegen, api/clients/oapi-codegen.dss-*.yaml;
 #                       the F3411 and F3548 operations of WP-14, with
 #                       uspace-core's types)
-#   sqlc.yaml        -> internal/store/pg/gen, internal/store/ts/gen/{writer,reader}
+#   sqlc.yaml        -> internal/store/pg/gen, internal/store/ts/gen/{writer,reader},
+#                       internal/occurrences/store/gen (WP-18)
 #                       (sqlc, from the migration trees and the query files)
 # openapi-typescript (web/src/api/) is added here by WP-21.
 #
@@ -50,7 +51,8 @@ done
 sqlc_config=sqlc.yaml
 if [ "$out" != "$root" ]; then
   for d in migrations internal/store/pg/queries internal/store/pg/schema \
-           internal/store/ts/queries internal/store/ts/schema; do
+           internal/store/ts/queries internal/store/ts/schema \
+           internal/occurrences/store/queries; do
     mkdir -p "$out/$d"
     cp -R "$d/." "$out/$d/"
   done
@@ -58,4 +60,4 @@ if [ "$out" != "$root" ]; then
   sqlc_config="$out/sqlc.yaml"
 fi
 "$GO" run "github.com/sqlc-dev/sqlc/cmd/sqlc@${SQLC_VERSION}" generate -f "$sqlc_config"
-echo "generated: internal/store/pg/gen, internal/store/ts/gen (sqlc ${SQLC_VERSION})"
+echo "generated: internal/store/pg/gen, internal/store/ts/gen, internal/occurrences/store/gen (sqlc ${SQLC_VERSION})"

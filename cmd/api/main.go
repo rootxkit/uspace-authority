@@ -23,6 +23,7 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/config"
 	"github.com/rootxkit/uspace-authority/internal/dpadmin"
 	"github.com/rootxkit/uspace-authority/internal/incidents"
+	"github.com/rootxkit/uspace-authority/internal/occurrences"
 	"github.com/rootxkit/uspace-authority/internal/passhash"
 	"github.com/rootxkit/uspace-authority/internal/policy"
 	"github.com/rootxkit/uspace-authority/internal/proc"
@@ -294,6 +295,26 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 		wg.Go(func() { vio.Run(ctx) })
 		wg.Go(func() { inc.Run(ctx) })
 
+		// Occurrence reports (WP-18, 376/2014): their own schema, worked
+		// by their own role through a pool of their own; never joined to
+		// violations or incidents. The audit writer records on that
+		// pool's transactions.
+		occ, err := occurrences.Assemble(ctx, occurrences.Setup{
+			PGURL: cfg.PGURL, StatementTimeout: time.Duration(cfg.PGStatementTimeoutS) * time.Second, Audit: auditWriter,
+			Config: cfg.Occurrences, PIIKeyID: cfg.PIIKeyID, PIIKeyFile: cfg.PIIKeyFile,
+			Pattern: func() (string, bool) {
+				p, ok := follower.Current()
+				return p.RegistrationNumberPattern, ok
+			},
+			Logger: rt.Logger, Limiter: rt.Limiter,
+		})
+		if err != nil {
+			return err
+		}
+		defer occ.Close()
+		rt.Ready.Add("occurrences", occ.Ping)
+		rt.AddCounters("occurrences", occ.Counters)
+
 		// The Display Provider's administration (WP-14).
 		dpa, err := dpadmin.Assemble(cfg, rt, db, auditWriter, bp)
 		if err != nil {
@@ -337,12 +358,13 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 			SourcesHandler: switches.Handler{
 				Service: sw, Status: statuses, StaleAfter: time.Duration(cfg.SourceStatusStaleS) * time.Second,
 			},
-			ZonesHandler:      zs.Handler,
-			USpaceHandler:     zs.Handler,
-			CISPHandler:       cis.Handler,
-			ViolationsHandler: vio.Handler,
-			IncidentsHandler:  inc.Handler,
-			DPHandler:         dpa,
+			ZonesHandler:       zs.Handler,
+			USpaceHandler:      zs.Handler,
+			CISPHandler:        cis.Handler,
+			ViolationsHandler:  vio.Handler,
+			IncidentsHandler:   inc.Handler,
+			OccurrencesHandler: occ.Handler,
+			DPHandler:          dpa,
 
 			CertificatesHandler: crt.Handler,
 		}, apiserver.Options{
@@ -353,6 +375,8 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 			BodyLimits: map[string]int64{
 				"POST /v1/zones/import":                 int64(zonesvc.MaxDocumentBytes),
 				"POST /v1/zones/import/airspace-gov-ge": int64(zonesvc.MaxDocumentBytes) * 2,
+				// An occurrence report is bounded below the default (E-10).
+				"POST /v1/occurrences": occurrences.MaxIntakeBytes,
 			},
 			BodyCounters: zs.Counters,
 		})

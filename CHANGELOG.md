@@ -296,6 +296,22 @@ Unreleased; the format follows Keep a Changelog.
   batch is refused, counted as `refused_no_receiver_keys` and reported
   by the `receiver_keys` check of `/readyz`; a receiver registered later
   is accepted without a restart.
+- WP-18: occurrence reports under Reg. 376/2014 (`internal/occurrences`,
+  migration `00020_occurrences`): the `occurrences` schema worked by its
+  own role `authority_occurrences` through a second pool only that
+  package imports, with no grant for `authority_app` and no link to
+  violations or incidents (proved on the live catalogue through
+  `pg_depend`); `schemas/occurrence/v1.json` with examples, owned here,
+  matching the ANSP's outbox body; `POST /v1/occurrences` (scope
+  `occurrences.write`, the token's `sub` as `reporter_org`, idempotent
+  on the reference, late reports flagged by the database's
+  `within_72h`, never refused, the reporter reference sealed under its
+  own `OCCURRENCE_KEY_FILE`, registrations cut to their public part);
+  reads without the reporter for incident officers and inspectors, the
+  reporter for incident officers only with a purpose (audited),
+  classification from a configured scheme, analysis and closure; the
+  de-identified, hash-sealed and audited export in the pluggable
+  `eccairs-compatible-draft` format (Q-A12); the occurrences runbook.
 - WP-19: uspace-core v1.4.0. `internal/ground` loads `GEOID_FILE` with
   `geoid.LoadMapped` (after its own 128 MiB bound) and the DEM tiles
   with `terrain.MappedDirOpener`, so detect, dp-poller and rid-ingest on

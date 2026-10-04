@@ -107,6 +107,13 @@ tags:
       authority's own case files, opened from escalated violations, its
       own observations and notices, and hash-sealed evidence packs
       whose creation and every download are audited with the purpose.
+  - name: occurrences
+    description: |
+      Occurrence reports under Reg. (EU) 376/2014 (WP-18, spec 01 A8):
+      intake from USSPs and the ANSP, independent handling by incident
+      officers (classification, analysis), the reporter's identity for
+      them only, and the de-identified export; segregated from
+      violations and incidents (376 Art. 15-16).
   - name: certificates
     description: |
       USSP and CISP certificates (WP-16, spec 01 A5, 02 F1 and F7):
@@ -3064,6 +3071,277 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  # WP-18: occurrence reports under Reg. (EU) 376/2014 (spec 01 A8, 02
+  # F7 and F11, 03 §1 occurrence_reports, 04 §3.3 occurrence/v1, 06 §2
+  # T6, 06 §5, 09 §1.7); docs/runbooks/occurrences.md is the procedure.
+  # The reports live in their own schema and role and are never joined
+  # to violations or incidents (376 Art. 15-16). The reporter's identity
+  # is its own operation, for incident officers only, purpose-logged;
+  # an inspector reads reports without it (403 there). The
+  # de-identified export carries no reporter, name or address.
+  /v1/occurrences:
+    post:
+      operationId: createOccurrence
+      tags: [occurrences]
+      summary: Report an occurrence (occurrence/v1; USSPs, the ANSP)
+      description: |
+        The body is `occurrence/v1` (schemas/occurrence/v1.json, owned
+        here, M14). The sender is the token's `sub`, recorded as
+        `reporter_org` (a `reporter.org` that differs is ignored and
+        counted). Idempotent on (`reporter_org`, `report_ref`): the same
+        report again answers 200 with the id given first; another
+        report under the same reference is 409 `report_ref_conflict`.
+        A report received more than the reporting deadline (72 h,
+        `OCCURRENCES_REPORT_DEADLINE_S`) after `became_aware_at` is
+        accepted with `within_72h: false`, never refused. A
+        `became_aware_at` ahead of the database clock by more than the
+        allowed skew, or before `occurred_at`, is 400. A
+        `reporter.person_ref` is stored sealed under the occurrence key;
+        without that key configured such a report is 503
+        `occurrence_key_unavailable` (retry later), never stored in
+        clear. Operator aircraft keep the registration number's public
+        part only. Recorded with an `occurrence_received` events row
+        that holds no reporter identity.
+      security:
+        - ecosystemToken: []
+      x-scope: occurrences.write
+      x-audit: {event_type: occurrence_received, entity_type: occurrence, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OccurrenceReport"
+      responses:
+        "200":
+          description: The same report was received before; the id given then.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OccurrenceReceipt"
+        "201":
+          description: The report as received.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OccurrenceReceipt"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        "413":
+          $ref: "#/components/responses/Problem"
+        "503":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    get:
+      operationId: listOccurrences
+      tags: [occurrences]
+      summary: Occurrence reports, newest received first (no reporter identity)
+      security:
+        - sessionCookie: []
+      x-roles: [incident_officer, inspector]
+      x-audit: none
+      parameters:
+        - {name: state, in: query, schema: {$ref: "#/components/schemas/OccurrenceState"}}
+        - {name: category, in: query, schema: {$ref: "#/components/schemas/OccurrenceCategory"}}
+        - {name: channel, in: query, schema: {$ref: "#/components/schemas/OccurrenceChannel"}}
+        - {name: from, in: query, description: Received at or after., schema: {type: string, format: date-time}}
+        - {name: to, in: query, description: Received before., schema: {type: string, format: date-time}}
+        - {name: cursor, in: query, schema: {type: string, maxLength: 128}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 200, default: 50}}
+      responses:
+        "200":
+          description: One page of reports.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OccurrencePage"
+        "400":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/occurrences/export:
+    post:
+      operationId: exportOccurrences
+      tags: [occurrences]
+      summary: A de-identified export of the reports received in a window (hash-sealed, audited)
+      description: |
+        Builds the de-identified record set of the reports received in
+        [`from`, `to`) in `format` (default `eccairs-compatible-draft`,
+        the only format of this build; the E5X writer is open question
+        Q-A12). No reporter organisation, reporter reference, person,
+        name or address; aircraft by serial and the registration
+        number's public part; the narrative as the reporter wrote it
+        (the officer redacts it before filing). `content` is the exact
+        document; `content_hash` is the SHA-256 of its UTF-8 bytes,
+        recorded in `deidentified_exports` and in the
+        `occurrence_export_created` events row. A window holding more
+        reports than `OCCURRENCES_EXPORT_MAX_RECORDS` is refused
+        (`export_too_large`), never thinned.
+      security:
+        - sessionCookie: []
+      x-roles: [incident_officer]
+      x-audit: {event_type: occurrence_export_created, entity_type: occurrence_export, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OccurrenceExportInput"
+      responses:
+        "201":
+          description: The sealed export.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OccurrenceExport"
+        "400":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/occurrences/{occurrence_id}:
+    parameters:
+      - {name: occurrence_id, in: path, required: true, schema: {type: string, pattern: "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"}}
+    get:
+      operationId: getOccurrence
+      tags: [occurrences]
+      summary: One occurrence report (no reporter identity)
+      security:
+        - sessionCookie: []
+      x-roles: [incident_officer, inspector]
+      x-audit: none
+      responses:
+        "200":
+          description: The report.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Occurrence"
+        "404":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/occurrences/{occurrence_id}/reporter:
+    parameters:
+      - {name: occurrence_id, in: path, required: true, schema: {type: string, pattern: "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"}}
+    get:
+      operationId: getOccurrenceReporter
+      tags: [occurrences]
+      summary: The reporter of an occurrence (incident officers only; purpose required, audited)
+      description: |
+        The reporting organisation, its reference and the reporter's
+        person reference opened from the occurrence key. Refused without
+        `purpose`; every read is an `occurrence_reporter_viewed` events
+        row with the purpose, written before the identity is returned
+        (376 Art. 16(1)). An inspector, whatever else it may read, is
+        403 here. Without the occurrence key a sealed person reference
+        is 503 `occurrence_key_unavailable`.
+      security:
+        - sessionCookie: []
+      x-roles: [incident_officer]
+      x-audit: {event_type: occurrence_reporter_viewed, entity_type: occurrence, purpose: required}
+      parameters:
+        - {name: purpose, in: query, required: true, schema: {type: string, minLength: 1, maxLength: 200}}
+      responses:
+        "200":
+          description: The reporter.
+          headers:
+            Cache-Control:
+              schema: {type: string, enum: [no-store]}
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OccurrenceReporter"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "503":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/occurrences/{occurrence_id}/classify:
+    parameters:
+      - {name: occurrence_id, in: path, required: true, schema: {type: string, pattern: "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"}}
+    post:
+      operationId: classifyOccurrence
+      tags: [occurrences]
+      summary: Classify the safety risk of an occurrence (376 Art. 7(2))
+      description: |
+        `risk_classification` is one class of the configured scheme
+        (`OCCURRENCES_RISK_CLASSES`; another value is 400 naming the
+        scheme). A received report becomes `classified`; a classified or
+        analysed one keeps its state with the new class; a closed one
+        is 409 `occurrence_closed`. Recorded with an
+        `occurrence_classified` events row (from, to).
+      security:
+        - sessionCookie: []
+      x-roles: [incident_officer]
+      x-audit: {event_type: occurrence_classified, entity_type: occurrence, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OccurrenceClassification"
+      responses:
+        "200":
+          description: The report as classified.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Occurrence"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/occurrences/{occurrence_id}/analysis:
+    parameters:
+      - {name: occurrence_id, in: path, required: true, schema: {type: string, pattern: "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"}}
+    patch:
+      operationId: updateOccurrenceAnalysis
+      tags: [occurrences]
+      summary: Record the analysis and follow-up of an occurrence, mark it analysed or closed
+      description: |
+        Every member is optional; what is present is applied in one
+        transaction with one `occurrence_analysis_updated` events row
+        naming what changed (never the text). `state` moves a classified
+        report to `analysed` (an analysis is required) and an analysed
+        one to `closed`; a report not yet classified cannot be analysed
+        (409 `occurrence_not_classified`) and a closed one cannot change
+        (409 `occurrence_closed`).
+      security:
+        - sessionCookie: []
+      x-roles: [incident_officer]
+      x-audit: {event_type: occurrence_analysis_updated, entity_type: occurrence, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OccurrenceAnalysisPatch"
+      responses:
+        "200":
+          description: The report as changed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Occurrence"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+
   # WP-16: USSP and CISP certificates (spec 01 A5, 02 F1 and F7, 03 §1;
   # Reg. 2021/664 Art. 7(6), 14-16, 18(a)). Issuing a certificate creates
   # its holder's client in the token service (06 §3, least privilege);
@@ -5692,6 +5970,218 @@ components:
           description: unverifiable when the signing key is not held by this system any more.
         signature_detail: {type: [string, "null"]}
         verified_at: {type: string, format: date-time}
+    OccurrenceCategory:
+      type: string
+      description: The 376/2014 Art. 4(1) class of the report (spec 04 §3.3; the UAS classes of 2015/1018 are unverified, Q9).
+      enum: [airprox, nonconformance_in_prohibited, lost_link_in_uspace, emergency, other]
+    OccurrenceChannel:
+      type: string
+      description: mandatory (376 Art. 4) or voluntary (Art. 5); an operator's report (2019/947 Art. 19(2)) is mandatory.
+      enum: [mandatory, voluntary]
+    OccurrenceState:
+      type: string
+      enum: [received, classified, analysed, closed]
+    OccurrenceReporterInput:
+      type: object
+      description: |
+        Who reports. `org` is informational: the authority records the
+        token's `sub`. `person_ref` is the reporter's opaque reference
+        in the sender's system, sent in clear over TLS (M13) and sealed
+        at rest here; it is shown to incident officers only and never
+        exported (376 Art. 16).
+      properties:
+        org: {type: string, maxLength: 160}
+        person_ref: {type: string, maxLength: 128}
+    OccurrenceAircraftInput:
+      type: object
+      description: One UAS of the report. An operator registration's secret part is dropped, never stored.
+      properties:
+        serial: {type: string, maxLength: 128}
+        operator_reg: {type: string, maxLength: 128}
+        flight_id: {type: string, maxLength: 128}
+        authorisation_number: {type: string, maxLength: 128}
+    OccurrenceManned:
+      type: object
+      description: One manned aircraft of the report.
+      properties:
+        icao24: {type: string, pattern: "^[0-9a-f]{6}$"}
+        callsign: {type: string, maxLength: 128}
+    OccurrenceSeparation:
+      type: object
+      description: The minimum separation observed, in metres (horizontal, vertical) and when.
+      properties:
+        h_m: {type: number, format: double, minimum: 0}
+        v_m: {type: number, format: double, minimum: 0}
+        at: {type: string, format: date-time}
+    OccurrenceReport:
+      type: object
+      description: |
+        `occurrence/v1` (spec 04 §3.3), the request body of POST
+        /v1/occurrences; schemas/occurrence/v1.json is the same shape
+        with examples. Members this version does not know are ignored
+        (02 §1).
+      required: [schema, report_ref, channel, occurred_at, became_aware_at, category]
+      properties:
+        schema: {type: string, enum: [occurrence/v1]}
+        report_ref: {type: string, minLength: 1, maxLength: 128, description: "The sender's reference: with the sender, the idempotency key."}
+        channel: {$ref: "#/components/schemas/OccurrenceChannel"}
+        occurred_at: {type: string, format: date-time}
+        became_aware_at: {type: string, format: date-time, description: When the reporter became aware; the 72 h of 376 Art. 4(7)-(8) run from it.}
+        category: {$ref: "#/components/schemas/OccurrenceCategory"}
+        reporter: {$ref: "#/components/schemas/OccurrenceReporterInput"}
+        aircraft:
+          type: array
+          maxItems: 50
+          items: {$ref: "#/components/schemas/OccurrenceAircraftInput"}
+        manned:
+          type: array
+          maxItems: 50
+          items: {$ref: "#/components/schemas/OccurrenceManned"}
+        intent_refs:
+          type: array
+          maxItems: 50
+          items: {type: string, minLength: 1, maxLength: 64}
+        min_separation: {$ref: "#/components/schemas/OccurrenceSeparation"}
+        narrative: {type: string, maxLength: 20000, description: At most 20000 bytes of UTF-8.}
+        evidence_urls:
+          type: array
+          maxItems: 20
+          items: {type: string, format: uri, maxLength: 2048}
+        reported_at: {type: string, format: date-time, description: When the sender recorded the report.}
+    OccurrenceReceipt:
+      type: object
+      description: The acknowledgement of a report. It holds no reporter identity.
+      required: [occurrence_id, report_ref, received_at, within_72h, state, replayed]
+      properties:
+        occurrence_id: {type: string, description: The authority's id of the report (ULID).}
+        report_ref: {type: string}
+        received_at: {type: string, format: date-time, description: The authority's database clock at intake.}
+        within_72h: {type: boolean, description: "Received within the reporting deadline after became_aware_at; false: late, accepted and flagged."}
+        state: {$ref: "#/components/schemas/OccurrenceState"}
+        replayed: {type: boolean, description: True when this answers a report received before.}
+    OccurrenceAircraft:
+      type: object
+      properties:
+        serial: {type: string}
+        operator_reg: {type: string, description: The registration number's public part.}
+        flight_id: {type: string}
+        authorisation_number: {type: string}
+    OccurrenceSummary:
+      type: object
+      description: A report without its reporter's identity.
+      required: [occurrence_id, channel, origin, category, occurred_at, became_aware_at, received_at, within_72h, state,
+                 has_reporter_person, updated_at]
+      properties:
+        occurrence_id: {type: string}
+        channel: {$ref: "#/components/schemas/OccurrenceChannel"}
+        origin: {type: string, enum: [client, operator], description: "client: a USSP or the ANSP through its token; operator: an operator's report (2019/947 Art. 19(2))."}
+        category: {$ref: "#/components/schemas/OccurrenceCategory"}
+        occurred_at: {type: string, format: date-time}
+        became_aware_at: {type: string, format: date-time}
+        received_at: {type: string, format: date-time}
+        reported_at: {type: [string, "null"], format: date-time}
+        within_72h: {type: boolean}
+        state: {$ref: "#/components/schemas/OccurrenceState"}
+        risk_classification: {type: [string, "null"]}
+        has_reporter_person: {type: boolean, description: Whether a reporter person reference is held (readable by incident officers only).}
+        closed_at: {type: [string, "null"], format: date-time}
+        updated_at: {type: string, format: date-time}
+    OccurrencePage:
+      type: object
+      required: [occurrences]
+      properties:
+        occurrences:
+          type: array
+          items:
+            $ref: "#/components/schemas/OccurrenceSummary"
+        next_cursor:
+          type: string
+          description: Pass as cursor for the next page; absent on the last page.
+    Occurrence:
+      type: object
+      description: A report without its reporter's identity (GET .../reporter has it, for incident officers only).
+      required: [occurrence_id, channel, origin, category, occurred_at, became_aware_at, received_at, within_72h,
+                 report_deadline_s, state, has_reporter_person, aircraft, manned, intent_refs, narrative, evidence_urls,
+                 analysis, follow_up, updated_at]
+      properties:
+        occurrence_id: {type: string}
+        channel: {$ref: "#/components/schemas/OccurrenceChannel"}
+        origin: {type: string, enum: [client, operator]}
+        category: {$ref: "#/components/schemas/OccurrenceCategory"}
+        occurred_at: {type: string, format: date-time}
+        became_aware_at: {type: string, format: date-time}
+        received_at: {type: string, format: date-time}
+        reported_at: {type: [string, "null"], format: date-time}
+        within_72h: {type: boolean}
+        report_deadline_s: {type: integer, description: The reporting deadline in force at intake.}
+        state: {$ref: "#/components/schemas/OccurrenceState"}
+        risk_classification: {type: [string, "null"]}
+        classified_at: {type: [string, "null"], format: date-time}
+        classified_by: {type: [string, "null"]}
+        has_reporter_person: {type: boolean}
+        aircraft:
+          type: array
+          items: {$ref: "#/components/schemas/OccurrenceAircraft"}
+        manned:
+          type: array
+          items: {$ref: "#/components/schemas/OccurrenceManned"}
+        intent_refs:
+          type: array
+          items: {type: string}
+        min_separation:
+          oneOf:
+            - {$ref: "#/components/schemas/OccurrenceSeparation"}
+            - {type: "null"}
+        narrative: {type: string}
+        evidence_urls:
+          type: array
+          items: {type: string}
+        analysis: {type: string}
+        follow_up: {type: string}
+        closed_at: {type: [string, "null"], format: date-time}
+        updated_at: {type: string, format: date-time}
+        updated_by: {type: [string, "null"]}
+    OccurrenceReporter:
+      type: object
+      description: The reporter of an occurrence, for incident officers only (376 Art. 16).
+      required: [occurrence_id, reporter_org, report_ref]
+      properties:
+        occurrence_id: {type: string}
+        reporter_org: {type: string, description: "The sender's client id, or operator:<registration public part>."}
+        report_ref: {type: string}
+        person_ref: {type: [string, "null"], description: "The reporter's reference in the sender's system; null when none was sent."}
+    OccurrenceClassification:
+      type: object
+      required: [risk_classification]
+      additionalProperties: false
+      properties:
+        risk_classification: {type: string, minLength: 1, maxLength: 64}
+    OccurrenceAnalysisPatch:
+      type: object
+      additionalProperties: false
+      properties:
+        analysis: {type: string, maxLength: 20000}
+        follow_up: {type: string, maxLength: 20000}
+        state: {type: string, enum: [analysed, closed]}
+    OccurrenceExportInput:
+      type: object
+      required: [from, to]
+      additionalProperties: false
+      properties:
+        from: {type: string, format: date-time, description: Received at or after.}
+        to: {type: string, format: date-time, description: Received before.}
+        format: {type: string, minLength: 1, maxLength: 64, description: "Default eccairs-compatible-draft (OCCURRENCES_EXPORT_FORMAT)."}
+    OccurrenceExport:
+      type: object
+      required: [export_id, format, created_at, record_count, size_bytes, content_hash, content]
+      properties:
+        export_id: {type: string}
+        format: {type: string}
+        created_at: {type: string, format: date-time}
+        record_count: {type: integer}
+        size_bytes: {type: integer, format: int64}
+        content_hash: {type: string, description: "sha256:<64 hex> of the UTF-8 bytes of content."}
+        content: {type: string, description: The de-identified document exactly as sealed (JSON text for eccairs-compatible-draft).}
     ViolationReviewInput:
       type: object
       required: [decision]

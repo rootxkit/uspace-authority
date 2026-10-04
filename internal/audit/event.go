@@ -200,6 +200,20 @@ const (
 	EventEvidencePackVerified   = "evidence_pack_verified"
 )
 
+// Event types of WP-18's occurrence reports (internal/occurrences,
+// 376/2014): a report received, its classification and analysis, every
+// read of its reporter's identity (a PII read: purpose required) and
+// every de-identified export with its hash. No payload holds the
+// reporter's identity or the report's text.
+const (
+	EventOccurrenceReceived         = "occurrence_received"
+	EventOccurrenceClassified       = "occurrence_classified"
+	EventOccurrenceAnalysisUpdated  = "occurrence_analysis_updated"
+	EventOccurrenceReporterViewed   = "occurrence_reporter_viewed"
+	EventOccurrenceReporterUnopened = "occurrence_reporter_unopened"
+	EventOccurrenceExportCreated    = "occurrence_export_created"
+)
+
 // The F3411 Display Provider's events (WP-14): an oversight area added,
 // and a USS availability arbitration requested (before the DSS call),
 // set or failed (after it).
@@ -311,6 +325,13 @@ func DefaultCatalogue() Catalogue {
 		EventEvidencePackBuilt:      {PIIView: true},
 		EventEvidencePackDownloaded: {PIIView: true},
 		EventEvidencePackVerified:   {},
+
+		EventOccurrenceReceived:         {},
+		EventOccurrenceClassified:       {},
+		EventOccurrenceAnalysisUpdated:  {},
+		EventOccurrenceReporterViewed:   {PIIView: true},
+		EventOccurrenceReporterUnopened: {PIIView: true},
+		EventOccurrenceExportCreated:    {},
 
 		EventDPViewCreated:           {},
 		EventDPAvailabilityRequested: {},

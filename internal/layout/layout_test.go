@@ -172,3 +172,73 @@ func TestHostnameCheckCatchesAHost(t *testing.T) {
 		t.Fatalf("got %v", got)
 	}
 }
+
+// reaches lists the packages of deps (imports or dependencies by
+// package) that reach target or a package below it, other than those
+// allowed admits.
+func reaches(deps map[string][]string, target string, allowed func(pkg string) bool) []string {
+	var bad []string
+	for pkg, ds := range deps {
+		if allowed(pkg) {
+			continue
+		}
+		for _, d := range ds {
+			if d == target || strings.HasPrefix(d, target+"/") {
+				bad = append(bad, pkg+" reaches "+d)
+			}
+		}
+	}
+	return bad
+}
+
+const occurrencesPkg = module + "/internal/occurrences"
+
+// ownOccurrences admits internal/occurrences and its own packages.
+func ownOccurrences(pkg string) bool {
+	return pkg == occurrencesPkg || strings.HasPrefix(pkg, occurrencesPkg+"/")
+}
+
+// WP-18: the occurrences schema's pool and queries (the
+// authority_occurrences role) are imported by internal/occurrences only.
+func TestOnlyOccurrencesImportsItsStore(t *testing.T) {
+	for _, b := range reaches(goList(t, repoRoot(t), "./...", false), occurrencesPkg+"/store", ownOccurrences) {
+		t.Error(b)
+	}
+}
+
+// enforcement are the packages whose records an occurrence report must
+// never reach (376/2014 Art. 15-16, CLAUDE.md rule 6).
+var enforcement = []string{module + "/internal/violations", module + "/internal/incidents", module + "/internal/violation",
+	module + "/internal/detectsvc"}
+
+// WP-18: violations, incidents and detection never depend on the
+// occurrence reports, directly or through another package.
+func TestEnforcementNeverDependsOnOccurrences(t *testing.T) {
+	root := repoRoot(t)
+	for _, pkg := range enforcement {
+		deps := goList(t, root, "./"+strings.TrimPrefix(pkg, module+"/"), true)
+		if len(deps) != 1 {
+			t.Fatalf("go list %s: %v", pkg, deps)
+		}
+		for _, b := range reaches(deps, occurrencesPkg, func(string) bool { return false }) {
+			t.Error(b)
+		}
+	}
+}
+
+// E-01: both checks see an import when there is one.
+func TestOccurrenceImportChecksCatchAnImport(t *testing.T) {
+	imports := map[string][]string{
+		module + "/internal/registry":      {occurrencesPkg + "/store/gen"},
+		occurrencesPkg:                     {occurrencesPkg + "/store"},
+		module + "/internal/occurrences/x": {occurrencesPkg + "/store"},
+		module + "/cmd/api":                {occurrencesPkg},
+	}
+	if got := reaches(imports, occurrencesPkg+"/store", ownOccurrences); len(got) != 1 || !strings.HasPrefix(got[0], module+"/internal/registry ") {
+		t.Fatalf("store check: %v", got)
+	}
+	deps := map[string][]string{module + "/internal/incidents": {"fmt", occurrencesPkg + "/store"}}
+	if got := reaches(deps, occurrencesPkg, func(string) bool { return false }); len(got) != 1 {
+		t.Fatalf("dependency check: %v", got)
+	}
+}

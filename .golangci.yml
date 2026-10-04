@@ -110,16 +110,20 @@ linters:
           deny:
             - pkg: github.com/lestrrat-go/jwx
               desc: "only internal/tokens and internal/authz import jwx, and JWS goes through core's auth helpers"
-        # Plan §3: only internal/store opens a database.
+        # Plan §3: only internal/store opens a database, and the
+        # occurrences schema's own pool (WP-18, its own role) in
+        # internal/occurrences/store, which only internal/occurrences
+        # imports (internal/layout holds it to that).
         database-only-in-store:
           list-mode: lax
           files:
             - "$all"
             - "!**/internal/store/**"
+            - "!**/internal/occurrences/store/**"
             - "!$test"
           deny:
             - pkg: github.com/jackc/pgx
-              desc: "only internal/store (pg, ts, migrate) opens a database"
+              desc: "only internal/store (pg, ts, migrate) and internal/occurrences/store open a database"
             - pkg: database/sql
               desc: "only internal/store (pg, ts, migrate) opens a database"
             - pkg: github.com/pressly/goose

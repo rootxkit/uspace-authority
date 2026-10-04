@@ -52,12 +52,16 @@ func (d *DB) Ping(ctx context.Context) error { return d.pool.Ping(ctx) }
 func (d *DB) Queries() *gen.Queries { return d.q }
 
 // RequireSchema refuses a relational schema older than this build's.
-func (d *DB) RequireSchema(ctx context.Context) error {
+func (d *DB) RequireSchema(ctx context.Context) error { return RequireSchema(ctx, d.q) }
+
+// RequireSchema is the schema check of D7 through q, for a pool of the
+// relational database that is not a DB (internal/occurrences' own role).
+func RequireSchema(ctx context.Context, q *gen.Queries) error {
 	want, err := migrate.Latest(migrate.Relational)
 	if err != nil {
 		return err
 	}
-	got, err := d.q.SchemaVersion(ctx)
+	got, err := q.SchemaVersion(ctx)
 	if err != nil {
 		if store.IsNoRows(err) || store.SQLState(err) == "42P01" {
 			return store.RequireVersion(migrate.Relational.Name, 0, want)

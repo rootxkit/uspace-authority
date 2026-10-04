@@ -84,3 +84,46 @@ func FuzzOpen(f *testing.F) {
 		}
 	})
 }
+
+// Plan D9: the occurrence key must not be the PII key. SameKey tells two
+// keys apart whatever their ids, and holds the same key under two ids
+// together (E-01 pair).
+func TestSameKey(t *testing.T) {
+	a, _ := NewSealer("pii-1", testKey(7))
+	b, _ := NewSealer("occ-1", testKey(7))
+	c, _ := NewSealer("pii-1", testKey(8))
+	if !a.SameKey(b) {
+		t.Fatal("the same key under another id is another key")
+	}
+	if a.SameKey(c) {
+		t.Fatal("another key under the same id is the same key")
+	}
+	if a.SameKey(nil) || (*Sealer)(nil).SameKey(a) {
+		t.Fatal("a missing sealer has the same key")
+	}
+}
+
+// LoadSealerAs names its own variables in every refusal, and loads a
+// valid key like LoadSealer.
+func TestLoadSealerAsNamesItsVariables(t *testing.T) {
+	dir := t.TempDir()
+	if _, err := LoadSealerAs("OCCURRENCE_KEY_ID", "OCCURRENCE_KEY_FILE", "occ-1", filepath.Join(dir, "absent")); !isField(err, "OCCURRENCE_KEY_FILE") {
+		t.Fatalf("absent: %v", err)
+	}
+	p := filepath.Join(dir, "occ.key")
+	if err := os.WriteFile(p, []byte(base64.StdEncoding.EncodeToString(testKey(9))), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadSealerAs("OCCURRENCE_KEY_ID", "OCCURRENCE_KEY_FILE", "bad id!", p); !isField(err, "OCCURRENCE_KEY_ID") {
+		t.Fatalf("bad id: %v", err)
+	}
+	s, err := LoadSealerAs("OCCURRENCE_KEY_ID", "OCCURRENCE_KEY_FILE", "occ-1", p)
+	if err != nil || s.KeyID() != "occ-1" {
+		t.Fatalf("%v %v", s, err)
+	}
+}
+
+func isField(err error, field string) bool {
+	var fe *core.FieldError
+	return errors.As(err, &fe) && fe.Field == field
+}

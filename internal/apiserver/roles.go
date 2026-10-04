@@ -127,6 +127,13 @@ var Roles = map[string][]string{
 	"DownloadEvidencePack": {RoleInspector, RoleIncidentOfficer},
 	"VerifyEvidencePack":   {RoleInspector, RoleIncidentOfficer},
 
+	"ListOccurrences":          {RoleIncidentOfficer, RoleInspector},
+	"GetOccurrence":            {RoleIncidentOfficer, RoleInspector},
+	"GetOccurrenceReporter":    OccurrenceReporterRoles,
+	"ClassifyOccurrence":       {RoleIncidentOfficer},
+	"UpdateOccurrenceAnalysis": {RoleIncidentOfficer},
+	"ExportOccurrences":        {RoleIncidentOfficer},
+
 	"ListDPViews":               {RoleAdmin},
 	"CreateDPView":              {RoleAdmin},
 	"ListDPProviders":           {RoleAdmin},
@@ -185,6 +192,14 @@ var DisplayProvider = map[string]bool{"GetDPDisplayData": true, "GetDPFlightDeta
 // personal data.
 var PIIRoles = []string{RoleRegistrar, RoleInspector}
 
+// OccurrenceReporterRoles are the only roles that may read an
+// occurrence reporter's identity: the incident officers, the independent
+// persons of 376/2014 Art. 6(3) (spec 01 §1; 06 §2 T6). They are not
+// PIIRoles: an inspector, who reads the registry's personal data for
+// enforcement, never reads who reported an occurrence (Art. 15-16). A
+// test holds the reporter operation to this list.
+var OccurrenceReporterRoles = []string{RoleIncidentOfficer}
+
 // Scopes maps every machine operation to the ecosystem scope it
 // requires (WP-2 table B), mirroring x-scope in api/openapi.yaml; a
 // test compares the two. A console session is never admitted to one.
@@ -193,6 +208,7 @@ var Scopes = map[string]string{
 	"ValidateRegistryBatch": "registry.validate",
 	"ListRegistryChanges":   "registry.validate",
 	"PostCertificateStatus": "certificates.status",
+	"CreateOccurrence":      "occurrences.write",
 }
 
 // Public lists the operations with `security: []` in the contract: no
