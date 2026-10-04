@@ -190,3 +190,21 @@ func TestOccurrenceSchemaMatchesTheContract(t *testing.T) {
 		t.Fatalf("parsed %v", props)
 	}
 }
+
+// A sender's outbox reads the schema to learn which refusals to retry:
+// the schema says that 409 report_ref_conflict is permanent (the
+// reference is held by another report and no retry changes that), under
+// the slug the service answers.
+func TestSchemaSaysTheRefConflictIsPermanent(t *testing.T) {
+	_, m := compileSchema(t)
+	props, _ := m["properties"].(map[string]any)
+	ref, _ := props["report_ref"].(map[string]any)
+	for name, desc := range map[string]any{"description": m["description"], "report_ref.description": ref["description"]} {
+		d, _ := desc.(string)
+		for _, want := range []string{"409", SlugRefConflict, "permanent", "not retr"} {
+			if !strings.Contains(d, want) {
+				t.Errorf("%s does not say %q: %s", name, want, d)
+			}
+		}
+	}
+}
