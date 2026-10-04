@@ -49,6 +49,8 @@ tags:
     description: The versioned authority policy (INV-03); thresholds are data.
   - name: audit
     description: The append-only audit log with its monthly hash chain.
+  - name: retention
+    description: Retention periods, legal holds and the archive (WP-27); the periods are the spec's defaults pending GCAA.
   - name: tokens
     description: |
       The ecosystem OAuth2 token service (WP-2): client credentials,
@@ -4880,6 +4882,170 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  # WP-27: retention, legal holds and the verification of the records
+  # (spec 05 §4, 06 §2 T7, 06 §5, 08 Q8; plan Q-A15, Q-A18;
+  # docs/runbooks/retention.md). The periods are configuration, the
+  # spec's defaults pending GCAA.
+  /v1/audit/verify:
+    get:
+      operationId: verifyAuditChain
+      tags: [audit]
+      summary: Verify one month of the audit log's hash chain
+      description: |
+        Recomputes the month's chain in id order (`audit.Verify`) and
+        answers how many rows from which id to which were checked, the
+        last hash, and the first broken row or none. The oldest kept
+        month, once older months were dropped after their retention,
+        links to the anchor recorded at the drop (`anchored_to`). The
+        verification is itself an `audit_chain_verified` events row in
+        the chain, and a broken month is an alarm on the status line.
+        `month` is a UTC calendar month (YYYY-MM); a month with no rows
+        answers `rows: 0`, never "intact" without numbers.
+      security:
+        - sessionCookie: []
+      x-roles: [admin, auditor]
+      x-audit: {event_type: audit_chain_verified, entity_type: events, purpose: none}
+      parameters:
+        - {name: month, in: query, required: true, schema: {type: string, pattern: "^[0-9]{4}-(0[1-9]|1[0-2])$"}}
+      responses:
+        "200":
+          description: What was checked and what was found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditVerification"
+        "400":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/retention/status:
+    get:
+      operationId: getRetentionStatus
+      tags: [retention]
+      summary: The retention periods, the jobs' last runs, the archive and the alarms
+      description: |
+        The periods in force (`pending_gcaa: true`: the spec's Q8
+        defaults until GCAA and the DPO decide), every job's newest run
+        from the job ledger (database clock) with its summary, the
+        archive ledger by state, the active holds, the months of the
+        audit log found broken, and the USSP days still missing after
+        the grace period (02 F7). The read is a `retention_status_viewed`
+        events row.
+      security:
+        - sessionCookie: []
+      x-roles: [admin, auditor]
+      x-audit: {event_type: retention_status_viewed, entity_type: retention, purpose: none}
+      responses:
+        "200":
+          description: The status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RetentionStatus"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/retention/holds:
+    get:
+      operationId: listLegalHolds
+      tags: [retention]
+      summary: Legal holds, newest first
+      description: |
+        Active holds, and released ones with `include_released`. At most
+        `limit`; `truncated` says when there are more. The read is a
+        `legal_holds_viewed` events row.
+      security:
+        - sessionCookie: []
+      x-roles: [admin, auditor, incident_officer]
+      x-audit: {event_type: legal_holds_viewed, entity_type: legal_hold, purpose: none}
+      parameters:
+        - {name: include_released, in: query, schema: {type: boolean, default: false}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 500, default: 100}}
+      responses:
+        "200":
+          description: One page of holds.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LegalHoldPage"
+        "400":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: placeLegalHold
+      tags: [retention]
+      summary: Place a legal hold
+      description: |
+        Keeps what the hold covers past every retention period until it
+        is released: no deletion batch, chunk drop, month drop or
+        archive expiry touches it. A hold covers the violations named in
+        `violation_ids` (and their aircraft's telemetry around them);
+        with a window `[window_from, window_to)` the records of that
+        time, all of them when no list is given, else those of the
+        listed `track_ids` and `serials`; without a window the listed
+        aircraft at any time. A window, or at least one list, is
+        required. Placing a hold waits for a deletion batch in progress
+        and is never missed by the next one (the hold gate). The hold is
+        a `legal_hold_placed` events row with the case reference.
+      security:
+        - sessionCookie: []
+      x-roles: [admin, incident_officer]
+      x-audit: {event_type: legal_hold_placed, entity_type: legal_hold, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LegalHoldInput"
+      responses:
+        "201":
+          description: The hold.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LegalHold"
+        "400":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/retention/holds/{hold_id}/release:
+    parameters:
+      - {name: hold_id, in: path, required: true, schema: {type: string, pattern: "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"}}
+    post:
+      operationId: releaseLegalHold
+      tags: [retention]
+      summary: Release a legal hold
+      description: |
+        The hold stays on record with who released it, when and why; its
+        records fall back under their retention periods at the next run.
+        409 when it is released already. A `legal_hold_released` events
+        row.
+      security:
+        - sessionCookie: []
+      x-roles: [admin, incident_officer]
+      x-audit: {event_type: legal_hold_released, entity_type: legal_hold, purpose: none}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LegalHoldRelease"
+      responses:
+        "200":
+          description: The released hold.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LegalHold"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "409":
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Problem"
+
 components:
   securitySchemes:
     sessionCookie:
@@ -7667,3 +7833,137 @@ components:
             police_queries: {type: integer}
             police_queries_with_pii: {type: integer}
             pii_views: {type: integer}
+    # WP-27: retention, legal holds and the chain verification.
+    AuditVerification:
+      type: object
+      required: [month, rows, intact, verified_at]
+      properties:
+        month: {type: string, description: The UTC month verified (YYYY-MM).}
+        rows: {type: integer, format: int64, description: Rows checked.}
+        first_id: {type: integer, format: int64}
+        last_id: {type: integer, format: int64}
+        last_hash: {type: string}
+        anchored_to:
+          type: string
+          description: The dropped month whose last hash the first row links to (older months dropped after their retention); empty otherwise.
+        intact: {type: boolean, description: True when every row checked holds its hash and its link.}
+        broken:
+          $ref: "#/components/schemas/AuditChainBreak"
+        verified_at: {type: string, format: date-time, description: When the verification was recorded in the chain.}
+    AuditChainBreak:
+      type: object
+      required: [id, ts, reason]
+      properties:
+        id: {type: integer, format: int64}
+        ts: {type: string, format: date-time}
+        reason: {type: string, enum: [prev_hash_mismatch, hash_mismatch, payload_unreadable]}
+        want: {type: string}
+        got: {type: string}
+    RetentionPeriods:
+      type: object
+      required: [online_days, archive_years, violations_years, incidents, audit_years, pending_gcaa, archive_store]
+      properties:
+        online_days: {type: integer, description: Days the telemetry hypertables stay online before they are archived and dropped.}
+        archive_years: {type: integer, description: Years an archived chunk or USSP daily bundle is kept.}
+        violations_years: {type: integer, description: Years a closed violation is kept after it closed.}
+        incidents: {type: string, enum: [indefinite]}
+        audit_years: {type: integer, description: Years a month of the audit log is kept after it ended.}
+        pending_gcaa: {type: boolean, description: True while the periods are the spec's Q8 defaults and GCAA and the DPO have not decided.}
+        archive_store: {type: string, description: The archive store, or empty when none is configured (nothing is archived, so no chunk is dropped).}
+    RetentionJobRun:
+      type: object
+      required: [job, run_id, started_at]
+      properties:
+        job: {type: string}
+        run_id: {type: integer, format: int64}
+        started_at: {type: string, format: date-time}
+        finished_at: {type: string, format: date-time}
+        outcome: {type: string, enum: [ok, failed], description: Absent while the run is unfinished or was interrupted.}
+        summary: {type: object, additionalProperties: true}
+    RetentionArchiveCounts:
+      type: object
+      required: [exporting, archived, dropped, objects_deleted]
+      description: The telemetry archive ledger by state; archived means exported and verified, not yet dropped (held, or waiting).
+      properties:
+        exporting: {type: integer, format: int64}
+        archived: {type: integer, format: int64}
+        dropped: {type: integer, format: int64}
+        objects_deleted: {type: integer, format: int64}
+    RetentionStatus:
+      type: object
+      required: [periods, jobs, archive, active_holds, audit_broken_months, ussp_missing_days]
+      properties:
+        periods:
+          $ref: "#/components/schemas/RetentionPeriods"
+        jobs:
+          type: array
+          items:
+            $ref: "#/components/schemas/RetentionJobRun"
+        archive:
+          $ref: "#/components/schemas/RetentionArchiveCounts"
+        active_holds: {type: integer, format: int64}
+        audit_broken_months:
+          type: array
+          items: {type: string}
+        ussp_missing_days:
+          type: array
+          description: USSP code and day (CODE/YYYY-MM-DD) of every daily records bundle still missing after the grace period.
+          items: {type: string}
+    LegalHoldInput:
+      type: object
+      required: [case_ref, reason]
+      properties:
+        case_ref: {type: string, minLength: 1, maxLength: 200}
+        reason: {type: string, minLength: 1, maxLength: 2000}
+        window_from: {type: string, format: date-time}
+        window_to: {type: string, format: date-time}
+        track_ids:
+          type: array
+          maxItems: 64
+          items: {type: string, minLength: 1, maxLength: 256}
+        serials:
+          type: array
+          maxItems: 64
+          items: {type: string, minLength: 1, maxLength: 64}
+        violation_ids:
+          type: array
+          maxItems: 64
+          items: {type: string, pattern: "^[0-7][0-9A-HJKMNP-TV-Z]{25}$"}
+    LegalHoldRelease:
+      type: object
+      required: [reason]
+      properties:
+        reason: {type: string, minLength: 1, maxLength: 2000}
+    LegalHold:
+      type: object
+      required: [hold_id, case_ref, reason, track_ids, serials, violation_ids, placed_by, placed_at, active]
+      properties:
+        hold_id: {type: string}
+        case_ref: {type: string}
+        reason: {type: string}
+        window_from: {type: string, format: date-time}
+        window_to: {type: string, format: date-time}
+        track_ids:
+          type: array
+          items: {type: string}
+        serials:
+          type: array
+          items: {type: string}
+        violation_ids:
+          type: array
+          items: {type: string}
+        placed_by: {type: string}
+        placed_at: {type: string, format: date-time}
+        active: {type: boolean}
+        released_by: {type: string}
+        released_at: {type: string, format: date-time}
+        release_reason: {type: string}
+    LegalHoldPage:
+      type: object
+      required: [holds, truncated]
+      properties:
+        holds:
+          type: array
+          items:
+            $ref: "#/components/schemas/LegalHold"
+        truncated: {type: boolean}

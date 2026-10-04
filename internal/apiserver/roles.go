@@ -78,6 +78,11 @@ var Roles = map[string][]string{
 	"UnlockUserMFA":        {RoleAdmin},
 	"SetUserPoliceAccess":  {RoleAdmin},
 	"GetDPOReport":         {RoleAdmin, RoleAuditor},
+	"VerifyAuditChain":     {RoleAdmin, RoleAuditor},
+	"GetRetentionStatus":   {RoleAdmin, RoleAuditor},
+	"ListLegalHolds":       {RoleAdmin, RoleAuditor, RoleIncidentOfficer},
+	"PlaceLegalHold":       {RoleAdmin, RoleIncidentOfficer},
+	"ReleaseLegalHold":     {RoleAdmin, RoleIncidentOfficer},
 
 	"QueryPoliceAircraft":  PoliceRoles,
 	"QueryPoliceOperator":  PoliceRoles,
