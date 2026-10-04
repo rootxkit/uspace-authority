@@ -517,7 +517,8 @@ func (q *Queries) PurgePortalMail(ctx context.Context, retainS float64) (int64, 
 
 const refuseApplication = `-- name: RefuseApplication :one
 UPDATE registry_applications SET state = 'refused', refusal_reason = $1, decided_at = now(),
-    registrar_id = $2, review_started_at = COALESCE(review_started_at, now())
+    registrar_id = $2, review_started_at = COALESCE(review_started_at, now()),
+    issued_number = NULL, secret_enc = NULL, valid_until = NULL
 WHERE id = $3 AND state IN ('submitted', 'under_review')
 RETURNING id, kind, state, operator_type, lang, pii_key_id, payload_enc, remote_ip_hash, submitted_at, verify_expires_at, verified_at, registrar_id, review_started_at, decided_at, refusal_reason, issued_number, secret_enc, operator_id, valid_until
 `
@@ -528,6 +529,9 @@ type RefuseApplicationParams struct {
 	ID            string
 }
 
+// A refusal drops what a half-finished approval chose (the number, its
+// sealed secret part and the validity): a refused application has none,
+// and the secret part is kept only for an approval under review.
 func (q *Queries) RefuseApplication(ctx context.Context, arg RefuseApplicationParams) (RegistryApplication, error) {
 	row := q.db.QueryRow(ctx, refuseApplication, arg.RefusalReason, arg.RegistrarID, arg.ID)
 	var i RegistryApplication

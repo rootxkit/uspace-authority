@@ -75,8 +75,12 @@ WHERE id = sqlc.arg(id) AND state = 'under_review'
 RETURNING *;
 
 -- name: RefuseApplication :one
+-- A refusal drops what a half-finished approval chose (the number, its
+-- sealed secret part and the validity): a refused application has none,
+-- and the secret part is kept only for an approval under review.
 UPDATE registry_applications SET state = 'refused', refusal_reason = sqlc.arg(refusal_reason), decided_at = now(),
-    registrar_id = sqlc.arg(registrar_id), review_started_at = COALESCE(review_started_at, now())
+    registrar_id = sqlc.arg(registrar_id), review_started_at = COALESCE(review_started_at, now()),
+    issued_number = NULL, secret_enc = NULL, valid_until = NULL
 WHERE id = sqlc.arg(id) AND state IN ('submitted', 'under_review')
 RETURNING *;
 
