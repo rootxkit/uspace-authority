@@ -154,6 +154,7 @@ type Occurrences struct {
 	OccurrencesRiskClasses     []string `env:"OCCURRENCES_RISK_CLASSES" default:"accident,serious_incident,incident,occurrence_without_safety_effect,not_determined" help:"the safety risk classification scheme of POST /v1/occurrences/{id}/classify (376/2014 Art. 7(2)), comma-separated; the default is the ECCAIRS occurrence class list (unverified against the taxonomy, Q-A12)"`
 	OccurrencesExportFormat    string   `env:"OCCURRENCES_EXPORT_FORMAT" default:"eccairs-compatible-draft" help:"the de-identified export's default format (Q-A12, owner-only: E5X is a later writer); the formats this build knows are listed at start"`
 	OccurrencesExportMaxRecord int      `env:"OCCURRENCES_EXPORT_MAX_RECORDS" default:"5000" min:"1" max:"1000000" help:"reports one export holds at most; a window holding more is refused (export_too_large), never thinned"`
+	OccurrencesExportMaxBytes  int      `env:"OCCURRENCES_EXPORT_MAX_BYTES" default:"33554432" min:"1024" max:"1073741824" help:"bytes one export document holds at most (32 MiB); a larger one is refused (export_too_large), never truncated"`
 	OccurrencesWriteTimeoutS   int      `env:"OCCURRENCES_WRITE_TIMEOUT_S" default:"10" min:"1" max:"600" help:"bound on one occurrences transaction"`
 }
 

@@ -251,7 +251,7 @@ func service(t testing.TB, now time.Time, sealer *pii.Sealer) (*Service, *memSto
 	seq := 0
 	s := &Service{Store: m, Sealer: sealer, PublicPart: PublicPartOf(nil), Deadline: 72 * time.Hour, ClockSkew: 5 * time.Minute,
 		RiskClasses: []string{"serious_incident", "incident", "occurrence_without_safety_effect"}, Exporters: DefaultExporters(),
-		DefaultFormat: FormatECCAIRSDraft, MaxExportRecords: 10, Counters: &core.Counters{},
+		DefaultFormat: FormatECCAIRSDraft, MaxExportRecords: 10, MaxExportBytes: 1 << 20, Counters: &core.Counters{},
 		NewID: func(time.Time) string {
 			seq++
 			return ulidOf(seq)

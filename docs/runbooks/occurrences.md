@@ -111,8 +111,11 @@ and `record_count`. The hash, size, format and count are recorded in
 `occurrences.deidentified_exports` (no update, no delete) and in the
 `occurrence_export_created` events row. To verify a filed copy, hash its
 bytes and compare. A window holding more than
-`OCCURRENCES_EXPORT_MAX_RECORDS` (5000) reports is refused
-(`export_too_large`), never thinned: narrow the window.
+`OCCURRENCES_EXPORT_MAX_RECORDS` (5000) reports, or whose document is
+larger than `OCCURRENCES_EXPORT_MAX_BYTES` (32 MiB), is refused
+(`export_too_large`), never thinned or truncated: narrow the window. The
+reports are read in one short transaction and the document is built with
+no transaction open; the record is written in a second one.
 
 Formats are pluggable (`internal/occurrences` `Exporter`); this build has
 one, `eccairs-compatible-draft` (`OCCURRENCES_EXPORT_FORMAT`).
@@ -182,6 +185,7 @@ package that adds an `Exporter` and a format name; nothing else changes.
 | `OCCURRENCES_RISK_CLASSES` | the ECCAIRS occurrence classes | the classification scheme |
 | `OCCURRENCES_EXPORT_FORMAT` | `eccairs-compatible-draft` | the default export format |
 | `OCCURRENCES_EXPORT_MAX_RECORDS` | 5000 | reports one export holds at most |
+| `OCCURRENCES_EXPORT_MAX_BYTES` | 33554432 | bytes one export document holds at most |
 | `OCCURRENCES_WRITE_TIMEOUT_S` | 10 | bound on one transaction |
 
 At start `api` logs `occurrences ready` (role, whether the key is held,

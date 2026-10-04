@@ -515,3 +515,72 @@ func TestReporterPurposeIsBounded(t *testing.T) {
 		t.Fatalf("audited purpose %q", ev[0].Purpose)
 	}
 }
+
+// spyExporter records whether the store's transaction was open while the
+// document was built: the memory store holds its lock for a whole
+// transaction.
+type spyExporter struct {
+	m      *memStore
+	inner  Exporter
+	inTx   bool
+	called int
+}
+
+func (e *spyExporter) Format() string { return e.inner.Format() }
+
+func (e *spyExporter) Export(meta ExportMeta, reports []Report) ([]byte, error) {
+	e.called++
+	if e.m.mu.TryLock() {
+		e.m.mu.Unlock()
+	} else {
+		e.inTx = true
+	}
+	return e.inner.Export(meta, reports)
+}
+
+// E-10: an export is bounded by its bytes as well as its records. At the
+// byte bound it is built, sealed and recorded; a byte over it is refused
+// (export_too_large), never truncated, and records nothing. The document
+// is built outside any transaction of the store.
+func TestExportByteBoundAndNoOpenTransaction(t *testing.T) {
+	s, m := service(t, aware.Add(time.Hour), newSealer(t, "occ-test"))
+	spy := &spyExporter{m: m, inner: ECCAIRSDraft{}}
+	s.Exporters = Exporters{FormatECCAIRSDraft: spy}
+	ctx := context.Background()
+	for i := range 3 {
+		body := mutate(t, anspBody, func(m map[string]any) { m["report_ref"] = fmt.Sprintf("ANSP-OCC-2026-%04d", i+1) })
+		if _, err := s.Intake(ctx, ClientOrigin(anspActor), input(t, body)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	w := ExportRequest{From: aware, To: aware.Add(2 * time.Hour)}
+	s.MaxExportBytes = 1 << 20
+	first, err := s.Export(ctx, officer, w)
+	if err != nil || first.Export.RecordCount != 3 {
+		t.Fatalf("%+v %v", first.Export, err)
+	}
+	if spy.inTx {
+		t.Fatal("the export was built inside an open transaction")
+	}
+	size := first.Export.SizeBytes
+	s.MaxExportBytes = size
+	if res, err := s.Export(ctx, officer, w); err != nil || res.Export.SizeBytes != size {
+		t.Fatalf("at the byte bound: %+v %v", res.Export, err)
+	}
+	exports, events := len(m.exports), len(m.eventsOf("occurrence_export_created"))
+	s.MaxExportBytes = size - 1
+	_, err = s.Export(ctx, officer, w)
+	wantProblem(t, err, http.StatusBadRequest, SlugExportTooLarge)
+	wantField(t, err, "to")
+	if len(m.exports) != exports || len(m.eventsOf("occurrence_export_created")) != events {
+		t.Fatal("a refused export was recorded")
+	}
+	s.MaxExportBytes = 0
+	if _, err := s.Export(ctx, officer, w); err == nil {
+		t.Fatal("an export without a byte bound")
+	}
+	snap := s.Counters.Snapshot()
+	if snap[CounterExportTooLarge] != 1 || snap[CounterExports] != 2 || spy.inTx {
+		t.Fatalf("counters %v, built in a transaction %v", snap, spy.inTx)
+	}
+}

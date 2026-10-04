@@ -101,6 +101,7 @@ type Service struct {
 	Exporters        Exporters
 	DefaultFormat    string
 	MaxExportRecords int
+	MaxExportBytes   int64
 	WriteTimeout     time.Duration
 	Counters         *core.Counters
 	Logger           *slog.Logger
@@ -464,9 +465,11 @@ type ExportResult struct {
 
 // Export builds the de-identified record set of the reports received in
 // [From, To) in the requested format, seals it by its SHA-256 and records
-// it (deidentified_exports and an occurrence_export_created events row)
-// in one transaction. A window holding more than MaxExportRecords is
-// refused, never thinned.
+// it (deidentified_exports and an occurrence_export_created events row).
+// The reports are read in one short transaction, the document is built
+// with none open, and the record is written in a second. A window holding
+// more than MaxExportRecords, or a document of more than MaxExportBytes,
+// is refused, never thinned or truncated.
 func (s *Service) Export(ctx context.Context, actor audit.Actor, req ExportRequest) (ExportResult, error) {
 	format := strings.TrimSpace(req.Format)
 	if format == "" {
@@ -485,33 +488,47 @@ func (s *Service) Export(ctx context.Context, actor audit.Actor, req ExportReque
 	if limit <= 0 {
 		return ExportResult{}, errors.New("occurrences: no export bound configured (OCCURRENCES_EXPORT_MAX_RECORDS)")
 	}
-	var out ExportResult
+	maxBytes := s.MaxExportBytes
+	if maxBytes <= 0 {
+		return ExportResult{}, errors.New("occurrences: no export size bound configured (OCCURRENCES_EXPORT_MAX_BYTES)")
+	}
+	var (
+		now  time.Time
+		rows []Report
+	)
 	err := s.tx(ctx, func(tx Tx) error {
-		now, err := tx.Now(ctx)
-		if err != nil {
+		var err error
+		if now, err = tx.Now(ctx); err != nil {
 			return err
 		}
-		rows, err := tx.Received(ctx, from, to, limit+1)
-		if err != nil {
-			return err
-		}
-		if len(rows) > limit {
-			s.inc(CounterExportTooLarge)
-			return httpx.Refuse(http.StatusBadRequest, SlugExportTooLarge, "the window holds more reports than one export may; narrow it",
-				core.Fieldf("to", "the window holds more than %d reports (OCCURRENCES_EXPORT_MAX_RECORDS)", limit))
-		}
-		meta := ExportMeta{ExportID: s.newID(), CreatedAt: now, From: from, To: to}
-		content, err := ex.Export(meta, rows)
-		if err != nil {
-			return err
-		}
-		sum := sha256.Sum256(content)
-		e := Export{ID: meta.ExportID, CreatedAt: now, CreatedBy: actor.ID, Format: ex.Format(), ContentHash: "sha256:" + hex.EncodeToString(sum[:]),
-			SizeBytes: int64(len(content)), RecordCount: len(rows), From: from, To: to}
+		rows, err = tx.Received(ctx, from, to, limit+1)
+		return err
+	})
+	if err != nil {
+		return ExportResult{}, err
+	}
+	if len(rows) > limit {
+		s.inc(CounterExportTooLarge)
+		return ExportResult{}, httpx.Refuse(http.StatusBadRequest, SlugExportTooLarge, "the window holds more reports than one export may; narrow it",
+			core.Fieldf("to", "the window holds more than %d reports (OCCURRENCES_EXPORT_MAX_RECORDS)", limit))
+	}
+	meta := ExportMeta{ExportID: s.newID(), CreatedAt: now, From: from, To: to}
+	content, err := ex.Export(meta, rows)
+	if err != nil {
+		return ExportResult{}, err
+	}
+	if int64(len(content)) > maxBytes {
+		s.inc(CounterExportTooLarge)
+		return ExportResult{}, httpx.Refuse(http.StatusBadRequest, SlugExportTooLarge, "the window's export is larger than one export may be; narrow it",
+			core.Fieldf("to", "the window's export is %d bytes, more than %d (OCCURRENCES_EXPORT_MAX_BYTES)", len(content), maxBytes))
+	}
+	sum := sha256.Sum256(content)
+	e := Export{ID: meta.ExportID, CreatedAt: now, CreatedBy: actor.ID, Format: ex.Format(), ContentHash: "sha256:" + hex.EncodeToString(sum[:]),
+		SizeBytes: int64(len(content)), RecordCount: len(rows), From: from, To: to}
+	err = s.tx(ctx, func(tx Tx) error {
 		if err := tx.InsertExport(ctx, &e); err != nil {
 			return err
 		}
-		out = ExportResult{Export: e, Content: content}
 		return tx.Audit(ctx, audit.Event{Actor: actor, EntityType: EntityExport, EntityID: e.ID, EventType: audit.EventOccurrenceExportCreated,
 			Payload: map[string]any{"format": e.Format, "content_hash": e.ContentHash, "size_bytes": e.SizeBytes,
 				"record_count": e.RecordCount, "from": stamp(from), "to": stamp(to)}})
@@ -519,6 +536,7 @@ func (s *Service) Export(ctx context.Context, actor audit.Actor, req ExportReque
 	if err != nil {
 		return ExportResult{}, err
 	}
+	out := ExportResult{Export: e, Content: content}
 	s.inc(CounterExports)
 	return out, nil
 }

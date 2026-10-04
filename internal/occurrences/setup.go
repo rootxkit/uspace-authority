@@ -86,7 +86,7 @@ func Assemble(ctx context.Context, s Setup) (*Parts, error) {
 	svc := &Service{Store: PG{DB: db, Audit: s.Audit}, Sealer: sealer, PublicPart: PublicPartOf(s.Pattern),
 		Deadline: time.Duration(c.OccurrencesDeadlineS) * time.Second, ClockSkew: time.Duration(c.OccurrencesClockSkewS) * time.Second,
 		RiskClasses: c.OccurrencesRiskClasses, Exporters: exporters, DefaultFormat: c.OccurrencesExportFormat,
-		MaxExportRecords: c.OccurrencesExportMaxRecord, WriteTimeout: time.Duration(c.OccurrencesWriteTimeoutS) * time.Second,
+		MaxExportRecords: c.OccurrencesExportMaxRecord, MaxExportBytes: int64(c.OccurrencesExportMaxBytes), WriteTimeout: time.Duration(c.OccurrencesWriteTimeoutS) * time.Second,
 		Counters: counters, Logger: logger, Limiter: s.Limiter}
 	if sealer == nil {
 		logger.Error("occurrence reports carrying a reporter reference are refused (503 occurrence_key_unavailable) until OCCURRENCE_KEY_FILE is configured",
@@ -99,6 +99,7 @@ func Assemble(ctx context.Context, s Setup) (*Parts, error) {
 	logger.Info("occurrences ready", slog.String("role", c.OccurrencesPGRole), slog.Bool("occurrence_key", sealer != nil),
 		slog.String("occurrence_key_id", keyID), slog.Int("report_deadline_s", c.OccurrencesDeadlineS),
 		slog.Any("risk_classes", c.OccurrencesRiskClasses), slog.String("export_format", c.OccurrencesExportFormat),
-		slog.Any("export_formats", exporters.Formats()), slog.Int("export_max_records", c.OccurrencesExportMaxRecord))
+		slog.Any("export_formats", exporters.Formats()), slog.Int("export_max_records", c.OccurrencesExportMaxRecord),
+		slog.Int("export_max_bytes", c.OccurrencesExportMaxBytes))
 	return &Parts{Service: svc, Handler: Handler{Service: svc}, Counters: counters, db: db}, nil
 }
