@@ -25,6 +25,7 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/incidents"
 	"github.com/rootxkit/uspace-authority/internal/occurrences"
 	"github.com/rootxkit/uspace-authority/internal/passhash"
+	"github.com/rootxkit/uspace-authority/internal/police"
 	"github.com/rootxkit/uspace-authority/internal/policy"
 	"github.com/rootxkit/uspace-authority/internal/proc"
 	"github.com/rootxkit/uspace-authority/internal/receivers"
@@ -315,6 +316,25 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 		rt.Ready.Add("occurrences", occ.Ping)
 		rt.AddCounters("occurrences", occ.Counters)
 
+		// The police realm (WP-19): purpose-logged queries of the picture
+		// (the telemetry database as the reader role) and of the registry,
+		// legal exports through WP-17's packs, the DPO report.
+		pol, err := police.Assemble(ctx, police.Setup{
+			DB: db, Audit: auditWriter, Config: cfg.Police, Accounts: authz.PG{DB: db, Audit: auditWriter}, Registry: reg.Service,
+			Incidents: inc.Service, Packs: inc.Packs, TSURL: cfg.TSURL, TSRole: cfg.TSReaderRole, TSMaxConns: cfg.TSMaxConns,
+			StatementTimeout: time.Duration(cfg.PGStatementTimeoutS) * time.Second,
+			Pattern: func() (string, bool) {
+				p, ok := follower.Current()
+				return p.RegistrationNumberPattern, ok
+			},
+			Logger: rt.Logger,
+		})
+		if err != nil {
+			return err
+		}
+		defer pol.Close()
+		rt.AddCounters("police", pol.Counters)
+
 		// The Display Provider's administration (WP-14).
 		dpa, err := dpadmin.Assemble(cfg, rt, db, auditWriter, bp)
 		if err != nil {
@@ -367,6 +387,8 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 			DPHandler:          dpa,
 
 			CertificatesHandler: crt.Handler,
+			PoliceHandler:       pol.Handler,
+			DPOHandler:          pol.Handler,
 		}, apiserver.Options{
 			Logger:      rt.Logger,
 			Middlewares: []apiserver.Middleware{tok.Handler.FormGuard(), apiserver.Authorize(identify, apiserver.DefaultRules())},
