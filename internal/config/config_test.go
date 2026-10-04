@@ -512,3 +512,23 @@ func TestAPIRefusesACallbackHostOutsideTheAudiences(t *testing.T) {
 		}
 	}
 }
+
+// WP-18 A-M3: the export byte bound is never absent once api starts.
+// Unset it is the 32 MiB default; a value below 1024 (0 included) is
+// refused at start naming the variable, so the service's own refusal of
+// a missing bound is not something an export discovers.
+func TestOccurrencesExportMaxBytesDefaultsAndRefusesBelowTheMinimum(t *testing.T) {
+	var c API
+	if err := Load(&c, env(validAPI())); err != nil || c.OccurrencesExportMaxBytes != 33554432 {
+		t.Fatalf("default: %v %d", err, c.OccurrencesExportMaxBytes)
+	}
+	for v, ok := range map[string]bool{"0": false, "1023": false, "-1": false, "1024": true, "1073741824": true, "1073741825": false} {
+		m := validAPI()
+		m["OCCURRENCES_EXPORT_MAX_BYTES"] = v
+		var cfg API
+		err := Load(&cfg, env(m))
+		if ok != (err == nil) || (err != nil && !strings.Contains(err.Error(), "OCCURRENCES_EXPORT_MAX_BYTES")) {
+			t.Errorf("OCCURRENCES_EXPORT_MAX_BYTES=%s: %v", v, err)
+		}
+	}
+}

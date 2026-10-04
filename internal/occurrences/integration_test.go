@@ -38,7 +38,7 @@ func newPGFixture(t *testing.T) *pgFixture {
 	sealer := newSealer(t, "occ-int-1")
 	svc := &Service{Store: PG{DB: db, Audit: &audit.Writer{Catalogue: audit.DefaultCatalogue()}}, Sealer: sealer, PublicPart: PublicPartOf(nil),
 		Deadline: 72 * time.Hour, ClockSkew: 5 * time.Minute, RiskClasses: []string{"serious_incident", "incident"},
-		Exporters: DefaultExporters(), DefaultFormat: FormatECCAIRSDraft, MaxExportRecords: 100, WriteTimeout: 10 * time.Second,
+		Exporters: DefaultExporters(), DefaultFormat: FormatECCAIRSDraft, MaxExportRecords: 100, MaxExportBytes: 1 << 20, WriteTimeout: 10 * time.Second,
 		Counters: &core.Counters{}}
 	return &pgFixture{svc: svc, db: db, admin: storetest.Open(t, u)}
 }
@@ -178,6 +178,41 @@ func TestIntegrationIntakeHandlingAndExportOnPostgres(t *testing.T) {
 	}
 	if err := f.asRole(t, ostore.Role, `DELETE FROM occurrences.occurrence_reports`); store.SQLState(err) != store.StateInsufficientPrivilege {
 		t.Fatalf("delete of a report: %v", err)
+	}
+}
+
+// A-M3 export byte bound against PostgreSQL, both sides: under the
+// bound the export is built, recorded in deidentified_exports and
+// audited; over it the same window is refused export_too_large and
+// leaves neither an export row nor an events row.
+func TestIntegrationExportByteBoundOnPostgres(t *testing.T) {
+	f := newPGFixture(t)
+	ctx := context.Background()
+	for _, ref := range []string{"ANSP-OCC-2026-0201", "ANSP-OCC-2026-0202"} {
+		if _, err := f.svc.Intake(ctx, ClientOrigin(anspActor), input(t, recent(t, ref, time.Hour))); err != nil {
+			t.Fatal(err)
+		}
+	}
+	w := ExportRequest{From: time.Now().Add(-time.Hour), To: time.Now().Add(time.Minute)}
+	exports := func() int { return f.count(t, `SELECT count(*) FROM occurrences.deidentified_exports`) }
+	audited := func() int {
+		return f.count(t, `SELECT count(*) FROM events WHERE event_type = 'occurrence_export_created'`)
+	}
+
+	under, err := f.svc.Export(ctx, officer, w)
+	if err != nil || under.Export.RecordCount != 2 || int64(len(under.Content)) > f.svc.MaxExportBytes {
+		t.Fatalf("under the bound: %+v %v", under.Export, err)
+	}
+	if exports() != 1 || audited() != 1 {
+		t.Fatalf("under the bound: %d exports, %d audited", exports(), audited())
+	}
+
+	f.svc.MaxExportBytes = under.Export.SizeBytes / 2
+	_, err = f.svc.Export(ctx, officer, w)
+	wantProblem(t, err, 400, SlugExportTooLarge)
+	wantField(t, err, "to")
+	if exports() != 1 || audited() != 1 {
+		t.Fatalf("over the bound: %d exports, %d audited", exports(), audited())
 	}
 }
 
