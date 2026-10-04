@@ -53,7 +53,7 @@ func (h Handler) QueryPoliceAircraft(ctx context.Context, req gen.QueryPoliceAir
 
 // QueryPoliceOperator serves GET /v1/police/operators/{reg}.
 func (h Handler) QueryPoliceOperator(ctx context.Context, req gen.QueryPoliceOperatorRequestObject) (gen.QueryPoliceOperatorResponseObject, error) {
-	out, err := h.Service.QueryOperator(ctx, LookupQuery{Key: req.Reg, Purpose: req.Params.Purpose, CaseRef: req.Params.CaseRef})
+	out, err := h.Service.QueryOperator(ctx, LookupQuery{Term: req.Reg, Purpose: req.Params.Purpose, CaseRef: req.Params.CaseRef})
 	if rl := rateLimited(err); rl != nil {
 		return gen.QueryPoliceOperator429ApplicationProblemPlusJSONResponse{RateLimitedApplicationProblemPlusJSONResponse: *rl}, nil
 	}
@@ -65,7 +65,7 @@ func (h Handler) QueryPoliceOperator(ctx context.Context, req gen.QueryPoliceOpe
 
 // QueryPoliceSerial serves GET /v1/police/serials/{serial}.
 func (h Handler) QueryPoliceSerial(ctx context.Context, req gen.QueryPoliceSerialRequestObject) (gen.QueryPoliceSerialResponseObject, error) {
-	out, err := h.Service.QuerySerial(ctx, LookupQuery{Key: req.Serial, Purpose: req.Params.Purpose, CaseRef: req.Params.CaseRef})
+	out, err := h.Service.QuerySerial(ctx, LookupQuery{Term: req.Serial, Purpose: req.Params.Purpose, CaseRef: req.Params.CaseRef})
 	if rl := rateLimited(err); rl != nil {
 		return gen.QueryPoliceSerial429ApplicationProblemPlusJSONResponse{RateLimitedApplicationProblemPlusJSONResponse: *rl}, nil
 	}

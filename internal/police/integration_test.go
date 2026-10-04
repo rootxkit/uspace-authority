@@ -165,7 +165,7 @@ func TestIntegrationBudgetHoldsAcrossReplicasAndRestarts(t *testing.T) {
 	f := newIfix(t)
 	a, b := f.svc, f.service(t)
 	ctx := as(officerID, insideIP)
-	q := LookupQuery{Key: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"}
+	q := LookupQuery{Term: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"}
 	if _, err := a.QuerySerial(ctx, q); err != nil {
 		t.Fatal(err)
 	}
@@ -205,7 +205,7 @@ func TestIntegrationBudgetHoldsAcrossReplicasAndRestarts(t *testing.T) {
 // role; INSERT as the application role is the one way in.
 func TestIntegrationThePoliceRecordIsAppendOnly(t *testing.T) {
 	f := newIfix(t)
-	if _, err := f.svc.QuerySerial(as(officerID, insideIP), LookupQuery{Key: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"}); err != nil {
+	if _, err := f.svc.QuerySerial(as(officerID, insideIP), LookupQuery{Term: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"}); err != nil {
 		t.Fatal(err)
 	}
 	for _, q := range []string{`UPDATE police_queries SET result_count = 9`, `DELETE FROM police_queries`} {
@@ -293,7 +293,7 @@ func TestIntegrationUsersConstraintsFollowTheRealm(t *testing.T) {
 func TestIntegrationAllowListIsReadOnEveryQuery(t *testing.T) {
 	f := newIfix(t)
 	ctx := as(officerID, insideIP)
-	q := LookupQuery{Key: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"}
+	q := LookupQuery{Term: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"}
 	if _, err := f.svc.QuerySerial(ctx, q); err != nil {
 		t.Fatal(err)
 	}

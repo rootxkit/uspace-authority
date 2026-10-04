@@ -77,7 +77,7 @@ func TestAircraftIdentityOnlyForAPIIPurpose(t *testing.T) {
 // The identity carries what reaches the person and nothing else (G-10).
 func TestIdentityIsTheMinimalSubset(t *testing.T) {
 	k := newKit(t)
-	out, err := k.svc.QueryOperator(as(officerID, insideIP), LookupQuery{Key: "GEOTEST00000001", Purpose: "criminal_investigation", CaseRef: "C"})
+	out, err := k.svc.QueryOperator(as(officerID, insideIP), LookupQuery{Term: "GEOTEST00000001", Purpose: "criminal_investigation", CaseRef: "C"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,21 +152,21 @@ func TestPurposeAndCaseReferenceAreRequired(t *testing.T) {
 func TestOnlyAnActivePoliceAccountQueries(t *testing.T) {
 	k := newKit(t)
 	console := apiserver.WithIdentity(context.Background(), apiserver.Identity{ActorType: "user", Subject: officerID, Realm: apiserver.RealmConsole, Session: true})
-	if _, err := k.svc.QuerySerial(console, LookupQuery{Key: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"}); problemOf(t, err).Status != http.StatusForbidden {
+	if _, err := k.svc.QuerySerial(console, LookupQuery{Term: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"}); problemOf(t, err).Status != http.StatusForbidden {
 		t.Fatal("a console session queried")
 	}
-	if _, err := k.svc.QuerySerial(as("ffffffffffffffffffffffffffffffff", insideIP), LookupQuery{Key: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"}); problemOf(t, err).Status != http.StatusForbidden {
+	if _, err := k.svc.QuerySerial(as("ffffffffffffffffffffffffffffffff", insideIP), LookupQuery{Term: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"}); problemOf(t, err).Status != http.StatusForbidden {
 		t.Fatal("an unknown account queried")
 	}
 	u := k.acc[officerID]
 	u.Status = "disabled"
 	k.acc[officerID] = u
-	if _, err := k.svc.QuerySerial(as(officerID, insideIP), LookupQuery{Key: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"}); problemOf(t, err).Status != http.StatusForbidden {
+	if _, err := k.svc.QuerySerial(as(officerID, insideIP), LookupQuery{Term: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"}); problemOf(t, err).Status != http.StatusForbidden {
 		t.Fatal("a disabled account queried")
 	}
 	u.Status = "active"
 	k.acc[officerID] = u
-	if _, err := k.svc.QuerySerial(as(officerID, insideIP), LookupQuery{Key: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"}); err != nil {
+	if _, err := k.svc.QuerySerial(as(officerID, insideIP), LookupQuery{Term: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"}); err != nil {
 		t.Fatalf("the active twin: %v", err)
 	}
 }
@@ -179,7 +179,7 @@ func TestBudgetsPerUserAndPerAgency(t *testing.T) {
 	ctx := as(officerID, insideIP)
 	h := Handler{Service: k.svc}
 	for range k.svc.Budget.User {
-		if _, err := k.svc.QuerySerial(ctx, LookupQuery{Key: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"}); err != nil {
+		if _, err := k.svc.QuerySerial(ctx, LookupQuery{Term: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -199,7 +199,7 @@ func TestBudgetsPerUserAndPerAgency(t *testing.T) {
 		t.Fatalf("refusals %v", r)
 	}
 	k.led.now = k.led.now.Add(time.Minute)
-	if _, err := k.svc.QuerySerial(ctx, LookupQuery{Key: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"}); err != nil {
+	if _, err := k.svc.QuerySerial(ctx, LookupQuery{Term: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"}); err != nil {
 		t.Fatalf("after the window: %v", err)
 	}
 	// A second account of the agency spends the agency's budget, the
@@ -210,11 +210,11 @@ func TestBudgetsPerUserAndPerAgency(t *testing.T) {
 	u.ID = second
 	k.acc[second] = u
 	for i := range 2 {
-		if _, err := k.svc.QuerySerial(as(second, insideIP), LookupQuery{Key: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"}); err != nil {
+		if _, err := k.svc.QuerySerial(as(second, insideIP), LookupQuery{Term: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"}); err != nil {
 			t.Fatalf("query %d: %v", i, err)
 		}
 	}
-	_, err = k.svc.QuerySerial(as(second, insideIP), LookupQuery{Key: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"})
+	_, err = k.svc.QuerySerial(as(second, insideIP), LookupQuery{Term: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"})
 	var spent *BudgetSpentError
 	if !errors.As(err, &spent) || spent.Scope != "agency" {
 		t.Fatalf("past the agency's budget: %v", err)
@@ -288,18 +288,18 @@ func TestAircraftUnresolvedIdentityIsSaid(t *testing.T) {
 func TestLookups(t *testing.T) {
 	k := newKit(t)
 	ctx := as(officerID, insideIP)
-	op, err := k.svc.QueryOperator(ctx, LookupQuery{Key: " GEOTEST00000001 ", Purpose: "public_order", CaseRef: "C"})
+	op, err := k.svc.QueryOperator(ctx, LookupQuery{Term: " GEOTEST00000001 ", Purpose: "public_order", CaseRef: "C"})
 	if err != nil || op.Operator.RegistrationNumber != "GEOTEST00000001" || len(op.Fleet) != 1 || op.Identity != nil {
 		t.Fatalf("operator: %+v %v", op, err)
 	}
-	sn, err := k.svc.QuerySerial(ctx, LookupQuery{Key: "TESTA0123456789", Purpose: "criminal_investigation", CaseRef: "C"})
+	sn, err := k.svc.QuerySerial(ctx, LookupQuery{Term: "TESTA0123456789", Purpose: "criminal_investigation", CaseRef: "C"})
 	if err != nil || sn.Uas.Serial != "TESTA0123456789" || sn.Operator.RegistrationNumber != "GEOTEST00000001" || sn.Identity == nil {
 		t.Fatalf("serial: %+v %v", sn, err)
 	}
-	if _, err := k.svc.QueryOperator(ctx, LookupQuery{Key: "GEOTEST00000009", Purpose: "criminal_investigation", CaseRef: "C"}); problemOf(t, err).Status != http.StatusNotFound {
+	if _, err := k.svc.QueryOperator(ctx, LookupQuery{Term: "GEOTEST00000009", Purpose: "criminal_investigation", CaseRef: "C"}); problemOf(t, err).Status != http.StatusNotFound {
 		t.Fatal("unknown operator")
 	}
-	if _, err := k.svc.QuerySerial(ctx, LookupQuery{Key: "TESTNONE", Purpose: "public_order", CaseRef: "C"}); problemOf(t, err).Status != http.StatusNotFound {
+	if _, err := k.svc.QuerySerial(ctx, LookupQuery{Term: "TESTNONE", Purpose: "public_order", CaseRef: "C"}); problemOf(t, err).Status != http.StatusNotFound {
 		t.Fatal("unknown serial")
 	}
 	last := k.led.entries[len(k.led.entries)-1]
@@ -310,7 +310,7 @@ func TestLookups(t *testing.T) {
 		t.Fatalf("personal-data reads %v", k.reg.reads)
 	}
 	k.reg.operators["op-2"] = k.reg.operators[opID]
-	if _, err := k.svc.QueryOperator(ctx, LookupQuery{Key: "GEOTEST00000001", Purpose: "public_order", CaseRef: "C"}); problemOf(t, err).Status != http.StatusConflict {
+	if _, err := k.svc.QueryOperator(ctx, LookupQuery{Term: "GEOTEST00000001", Purpose: "public_order", CaseRef: "C"}); problemOf(t, err).Status != http.StatusConflict {
 		t.Fatal("an ambiguous number was answered")
 	}
 }
@@ -511,12 +511,12 @@ func TestFleetBound(t *testing.T) {
 		id := "uas-extra-" + string(rune('a'+i))
 		k.reg.uas[id] = registry.UAS{ID: id, OperatorID: opID, Serial: "TESTX" + string(rune('A'+i)), Status: registry.StatusActive}
 	}
-	out, err := k.svc.QueryOperator(as(officerID, insideIP), LookupQuery{Key: "GEOTEST00000001", Purpose: "public_order", CaseRef: "C"})
+	out, err := k.svc.QueryOperator(as(officerID, insideIP), LookupQuery{Term: "GEOTEST00000001", Purpose: "public_order", CaseRef: "C"})
 	if err != nil || len(out.Fleet) != k.svc.Limits.MaxFleet || !out.FleetTruncated {
 		t.Fatalf("%d aircraft, truncated %v, %v", len(out.Fleet), out.FleetTruncated, err)
 	}
 	delete(k.reg.uas, "uas-extra-a")
-	if out, _ := k.svc.QueryOperator(as(officerID, insideIP), LookupQuery{Key: "GEOTEST00000001", Purpose: "public_order", CaseRef: "C"}); out.FleetTruncated {
+	if out, _ := k.svc.QueryOperator(as(officerID, insideIP), LookupQuery{Term: "GEOTEST00000001", Purpose: "public_order", CaseRef: "C"}); out.FleetTruncated {
 		t.Fatal("a fleet at the bound was said truncated")
 	}
 }

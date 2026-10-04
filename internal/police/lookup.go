@@ -14,7 +14,7 @@ import (
 
 // LookupQuery is GET /v1/police/operators/{reg} and /serials/{serial}.
 type LookupQuery struct {
-	Key     string
+	Term    string
 	Purpose string
 	CaseRef string
 }
@@ -34,7 +34,7 @@ func (s *Service) begin(ctx context.Context, q LookupQuery, field string) (Calle
 	if err != nil {
 		return Caller{}, "", "", "", err
 	}
-	key, err := checkIdentity(field, q.Key)
+	key, err := checkIdentity(field, q.Term)
 	if err != nil {
 		return Caller{}, "", "", "", err
 	}
