@@ -199,6 +199,22 @@ func TestIntegrationBudgetHoldsAcrossReplicasAndRestarts(t *testing.T) {
 	if n := f.count(`SELECT count(*) FROM events WHERE event_type = 'police_query_refused' AND payload->>'reason' = 'budget_spent_user'`); n != 5 {
 		t.Fatalf("%d refusal rows", n)
 	}
+	// The pre-check reads the same rows and writes none: spent at the
+	// bound for the user and for the agency, admitted below it.
+	c := Caller{UserID: officerID, Agency: agencyA}
+	for _, tc := range []struct {
+		b     Budget
+		scope string
+	}{{a.Budget, "user"}, {Budget{User: 100, Agency: 3, Window: time.Hour}, "agency"}, {Budget{User: 4, Agency: 4, Window: time.Hour}, ""}} {
+		err := a.Ledger.CheckBudget(ctx, c, tc.b)
+		var s *BudgetSpentError
+		if (tc.scope == "" && err != nil) || (tc.scope != "" && (!errors.As(err, &s) || s.Scope != tc.scope)) {
+			t.Fatalf("pre-check of %+v: %v", tc.b, err)
+		}
+	}
+	if n := f.count(`SELECT count(*) FROM police_queries`); n != 3 {
+		t.Fatalf("the pre-check wrote: %d rows", n)
+	}
 }
 
 // police_queries and police_exports refuse UPDATE and DELETE for every

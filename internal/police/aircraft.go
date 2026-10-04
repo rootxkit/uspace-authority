@@ -105,6 +105,9 @@ func (s *Service) QueryAircraft(ctx context.Context, q AircraftQuery) (gen.Polic
 	if err != nil {
 		return gen.PoliceAircraftAnswer{}, err
 	}
+	if err := s.precheck(ctx, c, KindAircraft, purpose, caseRef); err != nil {
+		return gen.PoliceAircraftAnswer{}, err
+	}
 	clock, err := s.Telemetry.PoliceClock(ctx, freshnessHorizon.Seconds())
 	if err != nil {
 		return gen.PoliceAircraftAnswer{}, fmt.Errorf("read the telemetry clock: %w", err)

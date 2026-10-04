@@ -147,6 +147,10 @@ agency's advisory lock, so every api replica shares them and a restart
 keeps them. Past one: 429 with `Retry-After` (when the oldest row leaves
 the window) and a `police_query_refused` row (`budget_spent_user`,
 `budget_spent_agency`). A refused query is not a `police_queries` row.
+A spent budget is refused before the query reads the picture, the
+registry or an incident; the check is made again under the lock when
+the row is written, so two replicas racing for the last query still
+write one.
 
 Counters on the status line and `/metrics` (`police` group):
 `police_queries`, `police_queries_refused_budget`,

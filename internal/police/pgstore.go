@@ -47,11 +47,8 @@ func (p PG) Record(ctx context.Context, e Entry, b Budget) (time.Time, error) {
 		if err != nil {
 			return err
 		}
-		switch {
-		case used.UserN >= int64(b.User):
-			return &BudgetSpentError{Scope: "user", RetryAfter: frees(used.UserFreesInS)}
-		case used.AgencyN >= int64(b.Agency):
-			return &BudgetSpentError{Scope: "agency", RetryAfter: frees(used.AgencyFreesInS)}
+		if err := spentOf(used, b); err != nil {
+			return err
 		}
 		if at, err = tx.InsertPoliceQuery(ctx, gen.InsertPoliceQueryParams{ID: e.ID, UserID: e.Caller.UserID, Agency: e.Caller.Agency,
 			SessionJti: e.Caller.JTI, Kind: e.Kind, Purpose: e.Purpose, CaseRef: e.CaseRef, Query: q, ResultCount: int32(e.ResultCount),
@@ -66,6 +63,27 @@ func (p PG) Record(ctx context.Context, e Entry, b Budget) (time.Time, error) {
 		return err
 	})
 	return at, err
+}
+
+// CheckBudget implements Ledger: the budget query of Record, outside a
+// transaction and without the lock.
+func (p PG) CheckBudget(ctx context.Context, c Caller, b Budget) error {
+	used, err := p.DB.Queries().PoliceBudget(ctx, gen.PoliceBudgetParams{UserID: c.UserID, Agency: c.Agency, WindowS: b.Window.Seconds()})
+	if err != nil {
+		return err
+	}
+	return spentOf(used, b)
+}
+
+// spentOf is the spent budget of used, or nil.
+func spentOf(used gen.PoliceBudgetRow, b Budget) error {
+	switch {
+	case used.UserN >= int64(b.User):
+		return &BudgetSpentError{Scope: "user", RetryAfter: frees(used.UserFreesInS)}
+	case used.AgencyN >= int64(b.Agency):
+		return &BudgetSpentError{Scope: "agency", RetryAfter: frees(used.AgencyFreesInS)}
+	}
+	return nil
 }
 
 // frees is a Retry-After: at least a second.

@@ -134,6 +134,11 @@ type Ledger interface {
 	// transaction. A spent budget is a *BudgetSpentError, nothing
 	// written.
 	Record(ctx context.Context, e Entry, b Budget) (time.Time, error)
+	// CheckBudget reads the budgets of c's user and agency without the
+	// lock and writes nothing: a spent one is a *BudgetSpentError. It
+	// lets a query be refused before it reads the picture or the
+	// registry; Record still decides under the lock.
+	CheckBudget(ctx context.Context, c Caller, b Budget) error
 	// Refused records a police_query_refused events row on its own.
 	Refused(ctx context.Context, actor audit.Actor, reason string, payload map[string]any) error
 	InsertExport(ctx context.Context, x Export) error
@@ -266,6 +271,27 @@ func (s *Service) refused(ctx context.Context, c Caller, reason string, payload 
 	}
 }
 
+// budgetRefused counts and records err when it is a spent budget.
+func (s *Service) budgetRefused(ctx context.Context, c Caller, kind, purpose, caseRef string, err error) {
+	var spent *BudgetSpentError
+	if errors.As(err, &spent) {
+		s.inc(CounterRefusedBudget)
+		s.refused(ctx, c, "budget_spent_"+spent.Scope, map[string]any{"kind": kind, "purpose": purpose,
+			"case_ref": caseRef, "retry_after_s": int(spent.RetryAfter.Seconds())})
+	}
+}
+
+// precheck refuses a query whose budget is already spent (recorded)
+// before it reads the picture, the registry or an incident. A query it
+// admits is still recorded, and may still be refused, by record.
+func (s *Service) precheck(ctx context.Context, c Caller, kind, purpose, caseRef string) error {
+	if err := s.Ledger.CheckBudget(ctx, c, s.Budget); err != nil {
+		s.budgetRefused(ctx, c, kind, purpose, caseRef, err)
+		return err
+	}
+	return nil
+}
+
 // record writes e under the budgets, refusing a spent one (recorded).
 func (s *Service) record(ctx context.Context, e *Entry) error {
 	id, err := s.newID()
@@ -274,12 +300,7 @@ func (s *Service) record(ctx context.Context, e *Entry) error {
 	}
 	e.ID = id
 	if _, err := s.Ledger.Record(ctx, *e, s.Budget); err != nil {
-		var spent *BudgetSpentError
-		if errors.As(err, &spent) {
-			s.inc(CounterRefusedBudget)
-			s.refused(ctx, e.Caller, "budget_spent_"+spent.Scope, map[string]any{"kind": e.Kind, "purpose": e.Purpose,
-				"case_ref": e.CaseRef, "retry_after_s": int(spent.RetryAfter.Seconds())})
-		}
+		s.budgetRefused(ctx, e.Caller, e.Kind, e.Purpose, e.CaseRef, err)
 		return err
 	}
 	s.inc(CounterQueries)

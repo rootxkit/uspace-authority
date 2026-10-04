@@ -46,9 +46,12 @@ type fakeRegistry struct {
 	uas       map[string]registry.UAS // by id
 	reads     []piiRead
 	failPII   bool
+	// lookups counts the registry reads by number or serial.
+	lookups int
 }
 
 func (r *fakeRegistry) OperatorByNumber(_ context.Context, number string) (registry.Operator, bool, error) {
+	r.lookups++
 	var found []registry.Operator
 	for id := range r.operators {
 		if strings.EqualFold(r.operators[id].RegistrationNumber, number) {
@@ -65,6 +68,7 @@ func (r *fakeRegistry) OperatorByNumber(_ context.Context, number string) (regis
 }
 
 func (r *fakeRegistry) UASBySerial(_ context.Context, sn string) (registry.UAS, bool, error) {
+	r.lookups++
 	for id := range r.uas {
 		if r.uas[id].Serial == sn {
 			return r.uas[id], true, nil
@@ -128,9 +132,11 @@ type fakeTelemetry struct {
 	positions []reader.PolicePositionsRow
 	gaps      reader.PoliceWriterGapsRow
 	asked     []reader.PoliceAircraftParams
+	clocks    int
 }
 
 func (f *fakeTelemetry) PoliceClock(context.Context, float64) (reader.PoliceClockRow, error) {
+	f.clocks++
 	return reader.PoliceClockRow{DbNow: f.now, HasNewest: f.hasNewest, NewestAgeS: f.newestAge}, nil
 }
 
@@ -164,9 +170,11 @@ func (f *fakeTelemetry) PoliceWriterGaps(context.Context, reader.PoliceWriterGap
 type fakeIncidents struct {
 	views  map[string]incidents.View
 	opened []incidents.PoliceRequest
+	got    int
 }
 
 func (f *fakeIncidents) Get(_ context.Context, id string) (incidents.View, error) {
+	f.got++
 	v, ok := f.views[id]
 	if !ok {
 		return incidents.View{}, errors.New("no such incident")
@@ -225,26 +233,40 @@ type fakeLedger struct {
 	dpoSeen  []string
 }
 
-func (l *fakeLedger) Record(_ context.Context, e Entry, b Budget) (time.Time, error) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
+// spent is the spent budget of c, or nil; l.mu is held.
+func (l *fakeLedger) spent(c Caller, b Budget) error {
 	var user, agency int
 	for i := range l.entries {
 		if l.now.Sub(l.at[i]) >= b.Window {
 			continue
 		}
-		if l.entries[i].Caller.UserID == e.Caller.UserID {
+		if l.entries[i].Caller.UserID == c.UserID {
 			user++
 		}
-		if l.entries[i].Caller.Agency == e.Caller.Agency {
+		if l.entries[i].Caller.Agency == c.Agency {
 			agency++
 		}
 	}
 	switch {
 	case user >= b.User:
-		return time.Time{}, &BudgetSpentError{Scope: "user", RetryAfter: 30 * time.Second}
+		return &BudgetSpentError{Scope: "user", RetryAfter: 30 * time.Second}
 	case agency >= b.Agency:
-		return time.Time{}, &BudgetSpentError{Scope: "agency", RetryAfter: 30 * time.Second}
+		return &BudgetSpentError{Scope: "agency", RetryAfter: 30 * time.Second}
+	}
+	return nil
+}
+
+func (l *fakeLedger) CheckBudget(_ context.Context, c Caller, b Budget) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.spent(c, b)
+}
+
+func (l *fakeLedger) Record(_ context.Context, e Entry, b Budget) (time.Time, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if err := l.spent(e.Caller, b); err != nil {
+		return time.Time{}, err
 	}
 	l.entries, l.at = append(l.entries, e), append(l.at, l.now)
 	return l.now, nil

@@ -97,10 +97,18 @@ func (s *Service) Export(ctx context.Context, r ExportRequest) (gen.PoliceExport
 		aircraft []incidents.Aircraft
 		box      BBox
 	)
-	if r.IncidentID != "" {
-		if !ulidPattern.MatchString(r.IncidentID) {
-			return gen.PoliceExport{}, core.Fieldf("incident_id", "not an incident id")
+	if r.IncidentID != "" && !ulidPattern.MatchString(r.IncidentID) {
+		return gen.PoliceExport{}, core.Fieldf("incident_id", "not an incident id")
+	}
+	if r.BBox != nil {
+		if box, err = ParseBBox("query.bbox", *r.BBox, s.Limits.MaxBBoxDeg); err != nil {
+			return gen.PoliceExport{}, err
 		}
+	}
+	if err := s.precheck(ctx, c, KindExport, purpose, caseRef); err != nil {
+		return gen.PoliceExport{}, err
+	}
+	if r.IncidentID != "" {
 		query["incident_id"] = r.IncidentID
 		rctx, cancel := s.bounded(ctx)
 		view, err := s.Incidents.Get(rctx, r.IncidentID)
@@ -110,9 +118,6 @@ func (s *Service) Export(ctx context.Context, r ExportRequest) (gen.PoliceExport
 		}
 		count = len(view.Aircraft)
 	} else {
-		if box, err = ParseBBox("query.bbox", *r.BBox, s.Limits.MaxBBoxDeg); err != nil {
-			return gen.PoliceExport{}, err
-		}
 		query["bbox"] = box.String()
 		rctx, cancel := s.bounded(ctx)
 		seen, truncated, err := s.readAircraft(rctx, box, Window{From: from, To: to}, incidents.MaxAircraft, false)

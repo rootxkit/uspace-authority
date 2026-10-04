@@ -553,3 +553,70 @@ func TestExportWindowTooLongIsRefusedFirst(t *testing.T) {
 		t.Fatalf("the longest window: %T, opened %d, recorded %d", resp, len(k.inc.opened), len(k.led.entries))
 	}
 }
+
+// E-01: a spent budget is refused before the telemetry, the registry or
+// an incident is read, for every kind of query, and each refusal is
+// recorded; once the window frees, the same queries read again.
+func TestSpentBudgetReadsNothing(t *testing.T) {
+	k := newKit(t)
+	ctx := as(officerID, insideIP)
+	k.track("TRACK-A", "GEOTEST00000001", ptr(uasID), k.now.Add(-time.Second), 1)
+	for range k.svc.Budget.User {
+		if _, err := k.svc.QuerySerial(ctx, LookupQuery{Term: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	k.reg.lookups = 0
+	b := box
+	from := k.now.Add(-time.Hour)
+	k.inc.views["01J9ZZQYB1C2D3E4F5G6H7J8K9"] = incidents.View{Aircraft: make([]pggen.ListIncidentAircraftRow, 1)}
+	queries := map[string]func() error{
+		"aircraft": func() error {
+			_, err := k.svc.QueryAircraft(ctx, AircraftQuery{BBox: box, Purpose: "public_order", CaseRef: "C"})
+			return err
+		},
+		"operator": func() error {
+			_, err := k.svc.QueryOperator(ctx, LookupQuery{Term: "GEOTEST00000001", Purpose: "public_order", CaseRef: "C"})
+			return err
+		},
+		"serial": func() error {
+			_, err := k.svc.QuerySerial(ctx, LookupQuery{Term: "TESTA0123456789", Purpose: "public_order", CaseRef: "C"})
+			return err
+		},
+		"export_incident": func() error {
+			_, err := k.svc.Export(ctx, ExportRequest{Purpose: "criminal_investigation", CaseRef: "C", From: from, To: k.now,
+				IncidentID: "01J9ZZQYB1C2D3E4F5G6H7J8K9"})
+			return err
+		},
+		"export_area": func() error {
+			_, err := k.svc.Export(ctx, ExportRequest{Purpose: "criminal_investigation", CaseRef: "C", From: from, To: k.now, BBox: &b})
+			return err
+		},
+	}
+	for name, q := range queries {
+		var spent *BudgetSpentError
+		if err := q(); !errors.As(err, &spent) || spent.Scope != "user" {
+			t.Fatalf("%s past the budget: %v", name, err)
+		}
+	}
+	if k.tel.clocks != 0 || len(k.tel.asked) != 0 || k.reg.lookups != 0 || k.inc.got != 0 || len(k.inc.opened) != 0 {
+		t.Fatalf("a spent budget read: clock %d, aircraft %d, registry %d, incidents %d, opened %d",
+			k.tel.clocks, len(k.tel.asked), k.reg.lookups, k.inc.got, len(k.inc.opened))
+	}
+	if r := k.led.refusals; len(r) != len(queries) || r[0]["reason"] != "budget_spent_user" {
+		t.Fatalf("refusals %v", r)
+	}
+	if n := k.svc.Counters.Get(CounterRefusedBudget); n != uint64(len(queries)) {
+		t.Fatalf("%s = %d", CounterRefusedBudget, n)
+	}
+	k.led.now = k.led.now.Add(time.Minute)
+	for name, q := range queries {
+		if err := q(); err != nil {
+			t.Fatalf("%s after the window: %v", name, err)
+		}
+	}
+	if k.tel.clocks != 1 || len(k.tel.asked) != 2 || k.reg.lookups != 2 || k.inc.got != 1 || len(k.inc.opened) != 1 {
+		t.Fatalf("after the window: clock %d, aircraft %d, registry %d, incidents %d, opened %d",
+			k.tel.clocks, len(k.tel.asked), k.reg.lookups, k.inc.got, len(k.inc.opened))
+	}
+}

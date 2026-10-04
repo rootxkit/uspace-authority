@@ -21,7 +21,7 @@ type LookupQuery struct {
 
 // begin checks what every lookup carries: the caller, the purpose, the
 // case reference and the path key.
-func (s *Service) begin(ctx context.Context, q LookupQuery, field string) (Caller, string, string, string, error) {
+func (s *Service) begin(ctx context.Context, q LookupQuery, kind, field string) (Caller, string, string, string, error) {
 	c, err := s.caller(ctx)
 	if err != nil {
 		return Caller{}, "", "", "", err
@@ -36,6 +36,9 @@ func (s *Service) begin(ctx context.Context, q LookupQuery, field string) (Calle
 	}
 	key, err := checkIdentity(field, q.Term)
 	if err != nil {
+		return Caller{}, "", "", "", err
+	}
+	if err := s.precheck(ctx, c, kind, purpose, caseRef); err != nil {
 		return Caller{}, "", "", "", err
 	}
 	return c, purpose, caseRef, key, nil
@@ -72,7 +75,7 @@ func ambiguous(field string) error {
 func (s *Service) QueryOperator(ctx context.Context, q LookupQuery) (gen.PoliceOperatorAnswer, error) {
 	ctx, cancel := s.bounded(ctx)
 	defer cancel()
-	c, purpose, caseRef, reg, err := s.begin(ctx, q, "reg")
+	c, purpose, caseRef, reg, err := s.begin(ctx, q, KindOperator, "reg")
 	if err != nil {
 		return gen.PoliceOperatorAnswer{}, err
 	}
@@ -130,7 +133,7 @@ func (s *Service) QueryOperator(ctx context.Context, q LookupQuery) (gen.PoliceO
 func (s *Service) QuerySerial(ctx context.Context, q LookupQuery) (gen.PoliceSerialAnswer, error) {
 	ctx, cancel := s.bounded(ctx)
 	defer cancel()
-	c, purpose, caseRef, sn, err := s.begin(ctx, q, "serial")
+	c, purpose, caseRef, sn, err := s.begin(ctx, q, KindSerial, "serial")
 	if err != nil {
 		return gen.PoliceSerialAnswer{}, err
 	}
