@@ -583,6 +583,16 @@ func (s *Service) drop(ctx context.Context, c ts.Chunk, rows int64) (held string
 			held = h.All
 			return nil
 		}
+		// As ExpireArchive: an open incident keeps its time whether or
+		// not an aircraft has been named for it yet.
+		open, err := q.OpenIncidentsAround(ctx, gen.OpenIncidentsAroundParams{FromTs: c.RangeStart.Add(-s.IncidentMargin), ToTs: c.RangeEnd.Add(s.IncidentMargin)})
+		if err != nil {
+			return err
+		}
+		if open {
+			held = "an open incident occurred within the margin of the chunk's range"
+			return nil
+		}
 		if len(h.TrackIDs)+len(h.Serials) > 0 {
 			has, err := s.TS.HoldsRows(ctx, c, h.TrackIDs, h.Serials)
 			if err != nil {

@@ -234,10 +234,15 @@ func TestIntegrationHeldChunksStayAndReleasedOnesGo(t *testing.T) {
 	}
 	by := map[string]int{}
 	for _, why := range held {
-		for _, id := range []string{trackHold, wholeHold, inc} {
+		for _, id := range []string{trackHold, wholeHold} {
 			if strings.Contains(why, id) {
 				by[id]++
 			}
+		}
+		// The open incident holds its time before its aircraft are
+		// looked at (as ExpireArchive does).
+		if strings.Contains(why, "open incident") {
+			by[inc]++
 		}
 	}
 	if by[trackHold] != 1 || by[wholeHold] != 2 || by[inc] != 1 {
@@ -262,6 +267,52 @@ func TestIntegrationHeldChunksStayAndReleasedOnesGo(t *testing.T) {
 	}
 	if n := f.rows(t, "rid_observations", "ingest_ts", window); n != 0 {
 		t.Fatalf("%d frames online after the incident closed", n)
+	}
+}
+
+// E-01, an open incident nobody has named an aircraft for yet: its chunk
+// is archived and stays online (as ExpireArchive keeps its object),
+// though no hold or incident_aircraft row names anything in it; the
+// presence half beside it: a chunk outside the incident's margin is
+// dropped in the same run, and once the incident closes its chunk is.
+func TestIntegrationAnOpenIncidentWithoutAircraftKeepsItsChunkOnline(t *testing.T) {
+	ctx := context.Background()
+	f := newFixture(t)
+	window := time.Now().AddDate(0, 0, -90)
+	ofIncident, apart := dayAgo(120), dayAgo(130)
+	f.track(t, ofIncident, "track-n", "")
+	f.track(t, apart, "track-o", "")
+	inc := f.incident(t, "open", ofIncident, "", []string{"track-n"})
+	if _, err := f.pgAdmin.Exec(`DELETE FROM incident_aircraft WHERE incident_id = $1`, inc); err != nil {
+		t.Fatal(err)
+	}
+
+	sum, err := f.svc.ArchiveTelemetry(ctx)
+	if err != nil || sum["archived"] != int64(2) || sum["dropped"] != int64(1) {
+		t.Fatalf("open incident run %v %v", sum, err)
+	}
+	held := sum["held"].(map[string]string)
+	if len(held) != 1 {
+		t.Fatalf("held %v", held)
+	}
+	for _, why := range held {
+		if !strings.Contains(why, "open incident") {
+			t.Fatalf("held for %q, want the open incident", why)
+		}
+	}
+	if n := f.rows(t, "tracks", "captured_at", window); n != 1 {
+		t.Fatalf("%d tracks online, want the incident day's 1", n)
+	}
+
+	if _, err := f.pgAdmin.Exec(`UPDATE incidents SET status = 'closed', closed_at = now() WHERE incident_id = $1`, inc); err != nil {
+		t.Fatal(err)
+	}
+	sum, err = f.svc.ArchiveTelemetry(ctx)
+	if err != nil || sum["dropped"] != int64(1) || len(sum["held"].(map[string]string)) != 0 {
+		t.Fatalf("after close %v %v", sum, err)
+	}
+	if n := f.rows(t, "tracks", "captured_at", window); n != 0 {
+		t.Fatalf("%d tracks online after the incident closed", n)
 	}
 }
 
