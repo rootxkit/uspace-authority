@@ -18,7 +18,7 @@
                    "broadcast_tolerance_s", "max_latency_s", "live_max_age_s", "clear_after_s", "stale_after_s",
                    "dp_view_diagonal_km", "dp_poll_hz", "cis_stale_bound_s", "height_limit_in_uspace",
                    "registration_number_pattern", "certificate_lapse_unused_months", "certificate_lapse_ceased_months",
-                   "no_authorisation_grace_s", "no_authorisation_severity", "activated_at"],
+                   "activated_at"],
       "properties": {
         "version": { "type": "integer", "minimum": 1 },
         "height_limit_agl_m": { "$ref": "#/$defs/positive" },
@@ -42,8 +42,8 @@
         "registration_number_pattern": { "type": "string", "minLength": 1, "maxLength": 256 },
         "certificate_lapse_unused_months": { "type": "integer", "minimum": 1, "maximum": 120 },
         "certificate_lapse_ceased_months": { "type": "integer", "minimum": 1, "maximum": 120 },
-        "no_authorisation_grace_s": { "$ref": "#/$defs/positive" },
-        "no_authorisation_severity": { "$ref": "#/$defs/severity" },
+        "no_authorisation_grace_s": { "$ref": "#/$defs/positive", "default": 10, "description": "Optional: a value written before migration 00022 lacks it and a follower takes this default (internal/policy Decode). Spec default, pending GCAA." },
+        "no_authorisation_severity": { "$ref": "#/$defs/severity", "default": "warning", "description": "Optional: a value written before migration 00022 lacks it and a follower takes this default (internal/policy Decode). Spec default, pending GCAA." },
         "activated_at": { "type": ["string", "null"], "format": "date-time" }
       }
     }
