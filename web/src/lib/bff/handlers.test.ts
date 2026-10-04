@@ -7,7 +7,7 @@
 // acceptance it differs from (E-01).
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { configFromEnv, createBff, PROXY_ALLOW_PATHS, type BffConfig } from "./handlers";
+import { configFromEnv, createBff, DEFAULT_PROXY_MAX_BODY_BYTES, PROXY_ALLOW_PATHS, type BffConfig } from "./handlers";
 
 const ORIGIN = "https://console.test";
 const SECRET = "unit-test-only-challenge-seal-key-0123456789";
@@ -126,7 +126,20 @@ describe("proxy", () => {
 
   it("refuses a path outside the allow-list before api (fail closed)", async () => {
     const api = fakeApi();
-    for (const p of ["/v1/users", "/v1/zones/TSTP001", "/v1/auth/sessionx", "/v1/picture/ws"]) {
+    for (const p of [
+      "/v1/users",
+      "/v1/zones/TSTP0012",
+      "/v1/auth/sessionx",
+      "/v1/picture/ws",
+      // The registry's machine and public operations are not the console's (WP-22).
+      "/v1/registry/validate",
+      "/v1/registry/changes",
+      "/v1/registry/check",
+      "/v1/registry/operators/a/b",
+      "/v1/registry/applications/x/verify",
+      "/v1/certificates/abc/status",
+      "/v1/zones/import/airspace-gov-ge",
+    ]) {
       expect((await createBff(cfg(api.fetch)).proxy(get(p))).status, p).toBe(404);
     }
     expect(api.calls).toEqual([]);
@@ -152,6 +165,57 @@ describe("proxy", () => {
     expect(api.calls[0]?.xff).toBe("203.0.113.9");
   });
 
+  it("forwards each console page's operation (the pair of the refusals above)", async () => {
+    const api = fakeApi();
+    const paths = [
+      "/v1/registry/operators",
+      "/v1/registry/operators/op-1/personal-data",
+      "/v1/registry/uas/u-1/status",
+      "/v1/registry/pilots/p-1/competencies",
+      "/v1/registry/import",
+      "/v1/registry/applications",
+      "/v1/registry/applications/a-1/approve",
+      "/v1/zones/TSTP001",
+      "/v1/zones/TSTP001/versions",
+      "/v1/zones/publish",
+      "/v1/uspace/TSU001/designate",
+      "/v1/publications",
+      "/v1/certificates/register",
+      "/v1/certificates/0123456789abcdef0123456789abcdef/suspend",
+    ];
+    for (const p of paths) expect((await createBff(cfg(api.fetch)).proxy(get(p))).status, p).toBe(200);
+    expect(api.calls.map((c) => new URL(c.url).pathname)).toEqual(paths);
+  });
+
+  const write = (method: string, body: string | null, headers: Record<string, string> = {}) =>
+    new NextRequest(`${ORIGIN}/_bff/api/v1/registry/operators`, {
+      method,
+      headers: { cookie: "uspace_session=header.payload.sig; uspace_csrf=proxy-csrf-1", "x-csrf-token": "proxy-csrf-1", host: "console.test", origin: ORIGIN, ...headers },
+      ...(body === null ? {} : { body }),
+    });
+
+  it("forwards a write within the body bound (the pair of the two below)", async () => {
+    const api = fakeApi();
+    const res = await createBff({ ...cfg(api.fetch), proxyMaxBodyBytes: 16 }).proxy(write("POST", "0123456789abcdef", { "content-length": "16" }));
+    expect(res.status).toBe(200);
+    expect(api.calls).toHaveLength(1);
+  });
+
+  it("refuses a write past the body bound with 413 before api (E-10)", async () => {
+    const api = fakeApi();
+    const res = await createBff({ ...cfg(api.fetch), proxyMaxBodyBytes: 16 }).proxy(write("POST", "0123456789abcdefg", { "content-length": "17" }));
+    expect(res.status).toBe(413);
+    expect(api.calls).toEqual([]);
+  });
+
+  it("refuses a write that does not announce its length with 411 before api", async () => {
+    const api = fakeApi();
+    const req = write("PATCH", null);
+    expect(req.headers.get("content-length")).toBeNull();
+    expect((await createBff(cfg(api.fetch)).proxy(req)).status).toBe(411);
+    expect(api.calls).toEqual([]);
+  });
+
   it("the allow-list is anchored", () => {
     expect(PROXY_ALLOW_PATHS.every((re) => re.source.startsWith("^") && re.source.endsWith("$"))).toBe(true);
   });
@@ -161,13 +225,15 @@ describe("configuration", () => {
   const good = { WEB_API_INTERNAL_URL: "http://api:8080", WEB_MFA_CHALLENGE_SECRET: SECRET };
 
   it("a complete environment is a configuration (the pair of the refusals below)", () => {
-    expect(configFromEnv(good)).toMatchObject({ apiBase: "http://api:8080", sessionMaxAgeS: 43200, timeoutMs: 10000 });
+    expect(configFromEnv(good)).toMatchObject({ apiBase: "http://api:8080", sessionMaxAgeS: 43200, timeoutMs: 10000, proxyMaxBodyBytes: DEFAULT_PROXY_MAX_BODY_BYTES });
+    expect(configFromEnv({ ...good, WEB_PROXY_MAX_BODY_BYTES: "1024" })).toMatchObject({ proxyMaxBodyBytes: 1024 });
   });
 
   it("names what is missing or wrong", () => {
     expect(configFromEnv({ ...good, WEB_API_INTERNAL_URL: "" })).toEqual({ problem: "WEB_API_INTERNAL_URL is not set" });
     expect(configFromEnv({ ...good, WEB_API_INTERNAL_URL: "ftp://x" })).toHaveProperty("problem");
     expect(configFromEnv({ ...good, WEB_MFA_CHALLENGE_SECRET: "short" })).toHaveProperty("problem");
+    expect(configFromEnv({ ...good, WEB_PROXY_MAX_BODY_BYTES: "-1" })).toHaveProperty("problem");
     expect(configFromEnv({ ...good, WEB_TRUSTED_PROXY_HOPS: "0" })).toEqual({
       problem: 'WEB_TRUSTED_PROXY_HOPS: want a whole number of at least 1, got "0"',
     });
