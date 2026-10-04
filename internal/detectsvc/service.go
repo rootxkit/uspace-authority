@@ -18,6 +18,7 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/bus"
 	"github.com/rootxkit/uspace-authority/internal/cell"
 	"github.com/rootxkit/uspace-authority/internal/ground"
+	"github.com/rootxkit/uspace-authority/internal/intents"
 	"github.com/rootxkit/uspace-authority/internal/logging"
 	"github.com/rootxkit/uspace-authority/internal/policy"
 	"github.com/rootxkit/uspace-authority/internal/sources"
@@ -89,6 +90,9 @@ type Shared struct {
 	PolicyF      *policy.Follower
 	SourcesF     *sources.Follower
 	Ground       *ground.Service
+	// Intents is the no_authorisation detector's view of the operational
+	// intents (WP-26); nil without a DSS.
+	Intents *intents.Board
 
 	mu  sync.Mutex
 	set ZoneSet
@@ -147,6 +151,9 @@ func (s *Shared) Env(p core.LatLon) zones.Env {
 	return s.Ground.Env(p)
 }
 
+// Authorisations is the operational intents board, nil without one.
+func (s *Shared) Authorisations() *intents.Board { return s.Intents }
+
 // Elevation is the DEM sample at p with its dataset, or nil.
 func (s *Shared) Elevation(p core.LatLon) *terrain.Elevation {
 	if s.Ground == nil {
@@ -174,7 +181,18 @@ func (s *Shared) Problems() []string {
 	if s.Ground != nil {
 		noTerrain, noGeoid = s.Ground.Ground() == nil, s.Ground.Undulator() == nil
 	}
-	return problems(s.Zones(), zoneNJ, restrNJ, noTerrain, noGeoid)
+	out := problems(s.Zones(), zoneNJ, restrNJ, noTerrain, noGeoid)
+	if s.Intents != nil {
+		out = append(out, s.Intents.Problems()...)
+	} else if hasUSpace(s.Zones().Zones) {
+		out = append(out, "no_authorisation not judged: no DSS (DSS_BASE_URL and DETECT_CLIENT_SECRET_FILE) while a U-space airspace is in force")
+	}
+	return out
+}
+
+// hasUSpace reports whether a U-space airspace is among zs.
+func hasUSpace(zs []*zones.Zone) bool {
+	return slices.ContainsFunc(zs, func(z *zones.Zone) bool { return z != nil && z.Type == core.ZoneUSpace })
 }
 
 // problems is Problems over its inputs.
