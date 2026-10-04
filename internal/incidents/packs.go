@@ -332,6 +332,14 @@ func logger(l *slog.Logger) *slog.Logger {
 
 func packAAD(packID string) []byte { return []byte("evidence_packs:" + packID + ":archive") }
 
+// CheckRequest refuses a pack request Create would refuse for its own
+// shape (kind, purpose, case reference, window), without reading or
+// writing anything: a caller that records or opens something before
+// Create asks it first, so a refused request leaves nothing behind.
+func (p *Packs) CheckRequest(piiRole bool, r PackRequest) error {
+	return p.checkRequest(piiRole, &r)
+}
+
 func (p *Packs) checkRequest(piiRole bool, r *PackRequest) error {
 	if err := oneOf("kind", r.Kind, []string{KindOversight, KindLegal}); err != nil {
 		return err

@@ -187,11 +187,21 @@ type packCall struct {
 }
 
 type fakePacks struct {
+	// maxWindow is WP-17's INCIDENTS_PACK_MAX_WINDOW_S.
+	maxWindow  time.Duration
 	created    []packCall
 	downloaded []packCall
 }
 
+// CheckRequest is WP-17's own check, at the fake's window.
+func (f *fakePacks) CheckRequest(piiRole bool, r incidents.PackRequest) error {
+	return (&incidents.Packs{MaxWindow: f.maxWindow}).CheckRequest(piiRole, r)
+}
+
 func (f *fakePacks) Create(ctx context.Context, _ audit.Actor, piiRole bool, incidentID string, r incidents.PackRequest) (pggen.EvidencePack, error) {
+	if err := f.CheckRequest(piiRole, r); err != nil {
+		return pggen.EvidencePack{}, err
+	}
 	f.created = append(f.created, packCall{piiRole: piiRole, incident: incidentID, req: r, annotations: annotationsOf(ctx)})
 	return pggen.EvidencePack{PackID: "01JTESTPACK000000000000000", IncidentID: incidentID, Kind: r.Kind, WindowFrom: r.From, WindowTo: r.To,
 		ContentHash: "sha256:00", SizeBytes: 10, CreatedAt: r.From}, nil
@@ -302,7 +312,7 @@ func newKit(t *testing.T) *kit {
 		},
 		tel:   &fakeTelemetry{now: now, hasNewest: true, newestAge: 2},
 		inc:   &fakeIncidents{views: map[string]incidents.View{}},
-		packs: &fakePacks{},
+		packs: &fakePacks{maxWindow: 6 * time.Hour},
 		led:   &fakeLedger{now: now, exports: map[string]Export{}},
 		now:   now,
 	}

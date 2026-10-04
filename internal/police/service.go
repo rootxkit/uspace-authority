@@ -80,7 +80,11 @@ type Incidents interface {
 }
 
 // Packs builds and serves legal evidence packs (WP-17's builder).
+// CheckRequest refuses what Create would refuse for the request's own
+// shape (the window above INCIDENTS_PACK_MAX_WINDOW_S among it), reading
+// and writing nothing.
 type Packs interface {
+	CheckRequest(piiRole bool, r incidents.PackRequest) error
 	Create(ctx context.Context, actor audit.Actor, piiRole bool, incidentID string, r incidents.PackRequest) (pggen.EvidencePack, error)
 	Download(ctx context.Context, actor audit.Actor, piiRole bool, incidentID, packID, purpose string) ([]byte, pggen.EvidencePack, error)
 }

@@ -520,3 +520,36 @@ func TestFleetBound(t *testing.T) {
 		t.Fatal("a fleet at the bound was said truncated")
 	}
 }
+
+// A window one second longer than a pack holds is refused 400
+// window_too_large through the police path before anything is read,
+// recorded or opened: no incident, no police_queries row, no budget
+// spent. Its twin, the longest window a pack holds, is built.
+func TestExportWindowTooLongIsRefusedFirst(t *testing.T) {
+	k := newKit(t)
+	ctx := as(officerID, insideIP)
+	h := Handler{Service: k.svc}
+	k.track("TRACK-A", "GEOTEST00000001", ptr(uasID), k.now.Add(-time.Minute), 1)
+	b := box
+	to := k.now
+	body := func(from time.Time) gen.CreatePoliceExportRequestObject {
+		return gen.CreatePoliceExportRequestObject{Body: &gen.PoliceExportInput{Purpose: "criminal_investigation", CaseRef: "CASE-W",
+			From: from, To: to, Query: &struct {
+				Bbox string `json:"bbox"`
+			}{Bbox: b}}}
+	}
+	_, err := h.CreatePoliceExport(ctx, body(to.Add(-k.packs.maxWindow-time.Second)))
+	if p := problemOf(t, err); p.Status != http.StatusBadRequest || p.Slug() != incidents.SlugWindowTooLarge {
+		t.Fatalf("a window one second too long: %+v", p)
+	}
+	if len(k.inc.opened) != 0 || len(k.led.entries) != 0 || len(k.packs.created) != 0 || len(k.tel.asked) != 0 {
+		t.Fatalf("refused, yet opened %v, recorded %v, built %v, read %v", k.inc.opened, k.led.entries, k.packs.created, k.tel.asked)
+	}
+	resp, err := h.CreatePoliceExport(ctx, body(to.Add(-k.packs.maxWindow)))
+	if err != nil {
+		t.Fatalf("the longest window: %v", err)
+	}
+	if _, ok := resp.(gen.CreatePoliceExport201JSONResponse); !ok || len(k.inc.opened) != 1 || len(k.led.entries) != 1 {
+		t.Fatalf("the longest window: %T, opened %d, recorded %d", resp, len(k.inc.opened), len(k.led.entries))
+	}
+}

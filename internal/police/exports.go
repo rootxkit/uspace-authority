@@ -84,6 +84,13 @@ func (s *Service) Export(ctx context.Context, r ExportRequest) (gen.PoliceExport
 		return gen.PoliceExport{}, core.Fieldf("to", "must be after from")
 	}
 	from, to := r.From.UTC(), r.To.UTC()
+	// The pack's own checks (its window above all) come before any read,
+	// record or opened incident: a request the pack would refuse leaves
+	// no orphan incident and spends no budget.
+	packReq := incidents.PackRequest{Kind: incidents.KindLegal, From: from, To: to, Purpose: purpose, CaseRef: caseRef}
+	if err := s.Packs.CheckRequest(true, packReq); err != nil {
+		return gen.PoliceExport{}, err
+	}
 	query := map[string]any{"from": from, "to": to}
 	var (
 		count    int
@@ -140,8 +147,7 @@ func (s *Service) Export(ctx context.Context, r ExportRequest) (gen.PoliceExport
 		}
 		incidentID, opened = view.Incident.IncidentID, true
 	}
-	pack, err := s.Packs.Create(pctx, c.Actor, true, incidentID, incidents.PackRequest{Kind: incidents.KindLegal, From: from, To: to,
-		Purpose: purpose, CaseRef: caseRef})
+	pack, err := s.Packs.Create(pctx, c.Actor, true, incidentID, packReq)
 	if err != nil {
 		return gen.PoliceExport{}, err
 	}
