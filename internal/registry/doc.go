@@ -103,7 +103,9 @@
 //     the portal's applicant check, its number issuance check, the
 //     idempotency of an approval (source portal, source_ref the
 //     application id) and the operator's registered address for an
-//     occurrence link.
+//     occurrence link. Read runs the portal's own statements and these
+//     reads in one transaction, so a step that holds an application's
+//     row lock never waits for a second pooled connection.
 //
 // Later work packages: the bus push and KV (WP-10); the resolvers that
 // read the projection (WP-8, WP-14).

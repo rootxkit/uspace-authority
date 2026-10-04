@@ -443,7 +443,9 @@ func (s *Service) chooseNumber(ctx context.Context, id string, validUntil *time.
 	var app Application
 	var applicant Applicant
 	var secret string
-	err := s.DB.WithTx(ctx, func(q *gen.Queries) error {
+	// One connection: the number is checked through the registry reader
+	// on the transaction that holds the row lock, never on a second one.
+	err := s.Registry.Read(ctx, func(q *gen.Queries, reg registry.Reader) error {
 		cur, err := q.ApplicationForUpdate(ctx, id)
 		if store.IsNoRows(err) {
 			return notFoundApplication()
@@ -477,7 +479,7 @@ func (s *Service) chooseNumber(ctx context.Context, id string, validUntil *time.
 			app = applicationOf(&cur)
 			return nil
 		}
-		number, err := IssueNumber(ctx, s.Registry, s.Config.IssuePrefix, s.Config.IssueRandomLen, func() { s.count(CounterIssueCollision) })
+		number, err := IssueNumber(ctx, reg, s.Config.IssuePrefix, s.Config.IssueRandomLen, func() { s.count(CounterIssueCollision) })
 		if err != nil {
 			return err
 		}
