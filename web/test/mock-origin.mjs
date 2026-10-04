@@ -6,8 +6,10 @@
 //   MOCK_PORT=3000 MOCK_UPSTREAM=http://127.0.0.1:3100 node test/mock-origin.mjs
 //
 // - api (the shapes of api/openapi.yaml): POST /v1/auth/login, POST
-//   /v1/auth/mfa, GET /v1/auth/session, POST /v1/auth/logout, GET
-//   /v1/zones. The BFF reaches these here too (WEB_API_INTERNAL_URL).
+//   /v1/auth/mfa, GET /v1/auth/session, POST /v1/auth/logout, and the
+//   registry, zone, U-space, publication and certificate operations of
+//   test/mock/authoring.mjs (WP-22), which holds the zones too. The BFF
+//   reaches these here too (WEB_API_INTERNAL_URL).
 // - picture-ws (docs/runbooks/picture.md): WS /v1/picture/ws with the
 //   same-origin and cookie rules of M22 (a foreign Origin is 403, no
 //   live session is a 4401 close), and GET /v1/picture/sources. On
@@ -28,12 +30,14 @@
 //   POST /__mock/state {nats?: "connected"|"unavailable", revoke?: true}
 //   GET  /__mock/requests                 the api requests answered: method, path, body keys
 //   GET  /__mock/subscribes               the console/subscribe/v1 bodies received
+//   /__mock/authoring/*                   test/mock/authoring.mjs's controls
 //
 // The accounts and the code below are test data of this file, not
 // credentials of anything.
 import { createHash, randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import http from "node:http";
+import { AUTHORING_ACCOUNTS, createAuthoring } from "./mock/authoring.mjs";
 
 const PORT = Number(process.env.MOCK_PORT ?? "3000");
 const UPSTREAM = new URL(process.env.MOCK_UPSTREAM ?? "http://127.0.0.1:3100");
@@ -44,6 +48,7 @@ const CODE = "246810";
 const ACCOUNTS = {
   inspector1: { password: "inspector1-test-password", roles: ["inspector"] },
   registrar1: { password: "registrar1-test-password", roles: ["registrar"] },
+  ...AUTHORING_ACCOUNTS,
 };
 
 const lab = (p) => JSON.parse(readFileSync(new URL(`../../internal/picture/testdata/lab/${p}`, import.meta.url), "utf8"));
@@ -55,12 +60,14 @@ const VIOLATION = fixture("violation.json");
 const PROVIDER_TRACK = fixture("provider-track.json");
 
 let state;
+let authoring = null;
 const requests = [];
 const subscribes = [];
 const sockets = new Set();
 
 function reset() {
   state = { nats: "connected", natsSince: null, sessions: new Map(), challenges: new Map() };
+  authoring?.reset();
   requests.length = 0;
   subscribes.length = 0;
   for (const s of sockets) s.close(1001);
@@ -82,18 +89,21 @@ function problem(res, status, slug, title, detail) {
   json(res, status, { type: `https://schemas.uspace.ge/problems/${slug}`, title, status, detail }, { "Content-Type": "application/problem+json" });
 }
 
-function readJson(req) {
+function readText(req) {
   return new Promise((resolve) => {
     let text = "";
     req.on("data", (c) => (text += c));
-    req.on("end", () => {
-      try {
-        resolve(text === "" ? {} : JSON.parse(text));
-      } catch {
-        resolve({});
-      }
-    });
+    req.on("end", () => resolve(text));
   });
+}
+
+async function readJson(req) {
+  const text = await readText(req);
+  try {
+    return text === "" ? {} : JSON.parse(text);
+  } catch {
+    return {};
+  }
 }
 
 function cookie(req, name) {
@@ -196,8 +206,16 @@ const ZONES = {
   ],
 };
 
+authoring = createAuthoring({ zonesSeed: ZONES.zones });
+
 async function api(req, res, url) {
-  const body = req.method === "POST" ? await readJson(req) : {};
+  const raw = ["POST", "PUT", "PATCH"].includes(req.method ?? "") ? await readText(req) : "";
+  let body = {};
+  try {
+    body = raw === "" ? {} : JSON.parse(raw);
+  } catch {
+    body = {};
+  }
   requests.push({ method: req.method, path: url.pathname, keys: Object.keys(body).sort() });
   const p = url.pathname;
   if (p === "/v1/auth/login" && req.method === "POST") {
@@ -228,10 +246,8 @@ async function api(req, res, url) {
     res.writeHead(204);
     return res.end();
   }
-  if (p === "/v1/zones" && req.method === "GET") {
-    if (!s.roles.some((r) => ["inspector", "admin", "viewer"].includes(r))) return problem(res, 403, "forbidden", "Forbidden", "this role does not read zones");
-    return json(res, 200, ZONES);
-  }
+  // The registry, zones, U-space, publications and certificates (WP-22).
+  if (authoring.handle(req, res, url, s, body, raw)) return;
   return problem(res, 404, "not_found", "Not found", `${req.method} ${p}`);
 }
 
@@ -408,6 +424,10 @@ function pictureSources(req, res) {
 
 async function control(req, res, path) {
   if (path === "/__mock/health") return json(res, 200, { ok: true });
+  if (path.startsWith("/__mock/authoring/")) {
+    const out = authoring.control(path.slice("/__mock/authoring/".length), req.method === "POST" ? await readJson(req) : {});
+    return out === null ? json(res, 404, { error: "unknown control" }) : json(res, 200, out);
+  }
   if (path === "/__mock/requests") return json(res, 200, requests);
   if (path === "/__mock/subscribes") return json(res, 200, subscribes);
   const input = await readJson(req);
