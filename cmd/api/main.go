@@ -32,6 +32,7 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/regimport"
 	"github.com/rootxkit/uspace-authority/internal/registry"
 	"github.com/rootxkit/uspace-authority/internal/regportal"
+	"github.com/rootxkit/uspace-authority/internal/retention"
 	"github.com/rootxkit/uspace-authority/internal/sources"
 	"github.com/rootxkit/uspace-authority/internal/sources/switches"
 	"github.com/rootxkit/uspace-authority/internal/store"
@@ -405,6 +406,26 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 			crt.Service.RunJobs(ctx, time.Duration(cfg.CertificatesLapseEveryS)*time.Second, time.Duration(cfg.CertificatesRepairS)*time.Second)
 		})
 
+		// Retention, archive and record verification (WP-27): the daily
+		// retention job (archive and drop the telemetry beyond its online
+		// window, delete what is past its period, never what is held), the
+		// monthly verification of the audit chain and of the evidence packs,
+		// the daily USSP records pull, each due on the database clock under
+		// its own advisory lock; the legal holds.
+		ret, err := retention.Assemble(ctx, retention.Setup{
+			DB: db, Audit: auditWriter, Config: cfg.Retention, TSURL: cfg.TSURL, TSMaxConns: cfg.TSMaxConns,
+			StatementTimeout: time.Duration(cfg.PGStatementTimeoutS) * time.Second, Packs: inc.Packs, Records: inc.Records,
+			Logger: rt.Logger, Limiter: rt.Limiter,
+		})
+		if err != nil {
+			return err
+		}
+		defer func() { cancel(); wg.Wait(); ret.Close() }()
+		rt.Ready.Add("archive", ret.Service.TS.Ping)
+		rt.AddCounters("retention", ret.Counters)
+		rt.AddStatus(ret.StatusAttrs)
+		wg.Go(func() { ret.Scheduler.Run(ctx) })
+
 		mux := http.NewServeMux()
 		apiserver.Mount(mux, apiserver.Server{
 			PolicyHandler:         policy.Handler{Service: svc},
@@ -432,6 +453,8 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 			CertificatesHandler: crt.Handler,
 			PoliceHandler:       pol.Handler,
 			DPOHandler:          pol.Handler,
+			AuditVerifyHandler:  audit.VerifyHandler{Verifier: ret.Verifier},
+			RetentionHandler:    ret.Handler,
 		}, apiserver.Options{
 			Logger:      rt.Logger,
 			Middlewares: []apiserver.Middleware{tok.Handler.FormGuard(), apiserver.Authorize(identify, apiserver.DefaultRules())},

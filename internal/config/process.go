@@ -107,6 +107,7 @@ type API struct {
 	Certificates
 	Police
 	RegistryPortal
+	Retention
 }
 
 // RegistryPortal is api's uas.gov.ge import, public check and
@@ -1221,6 +1222,7 @@ func (c *API) Validate() error {
 		errs = append(errs, core.Fieldf("CIS_SEND_BACKOFF_MAX_S", "must not be shorter than CIS_SEND_BACKOFF_MIN_S"))
 	}
 	errs = append(errs, c.validatePortal()...)
+	errs = append(errs, c.validateRetention()...)
 	return errors.Join(errs...)
 }
 
