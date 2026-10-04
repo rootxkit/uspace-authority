@@ -14,21 +14,34 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/audit"
 	"github.com/rootxkit/uspace-authority/internal/httpx"
 	"github.com/rootxkit/uspace-authority/internal/registry"
+	pggen "github.com/rootxkit/uspace-authority/internal/store/pg/gen"
 	"github.com/rootxkit/uspace-authority/internal/store/storetest"
 )
 
-// stubRegistry is the registry with CreateOperator replaced by create
-// when it is set.
+// stubRegistry is the registry with the change's CreateOperator
+// replaced by create when it is set; create gets the change's own
+// Within to pass the registration on to.
 type stubRegistry struct {
 	Registry
-	create func(ctx context.Context, in registry.NewOperator, actor audit.Actor) (registry.Operator, error)
+	create func(ctx context.Context, w registry.Within, in registry.NewOperator, actor audit.Actor) (registry.Operator, error)
 }
 
-func (r *stubRegistry) CreateOperator(ctx context.Context, in registry.NewOperator, actor audit.Actor) (registry.Operator, error) {
-	if r.create != nil {
-		return r.create(ctx, in, actor)
+func (r *stubRegistry) Change(ctx context.Context, fn func(q *pggen.Queries, w registry.Within) error) error {
+	return r.Registry.Change(ctx, func(q *pggen.Queries, w registry.Within) error {
+		return fn(q, stubWithin{Within: w, r: r})
+	})
+}
+
+type stubWithin struct {
+	registry.Within
+	r *stubRegistry
+}
+
+func (w stubWithin) CreateOperator(ctx context.Context, in registry.NewOperator, actor audit.Actor) (registry.Operator, error) {
+	if w.r.create != nil {
+		return w.r.create(ctx, w.Within, in, actor)
 	}
-	return r.Registry.CreateOperator(ctx, in, actor)
+	return w.Within.CreateOperator(ctx, in, actor)
 }
 
 // stub replaces the service's registry with a stubRegistry over it.
@@ -79,7 +92,7 @@ func TestIntegrationRefuseAfterAHalfFailedApproval(t *testing.T) {
 	} {
 		t.Run(c.name, func(t *testing.T) {
 			app := it.underReview(t, fmt.Sprintf("192.0.2.%d", 50+i))
-			reg.create = func(context.Context, registry.NewOperator, audit.Actor) (registry.Operator, error) {
+			reg.create = func(context.Context, registry.Within, registry.NewOperator, audit.Actor) (registry.Operator, error) {
 				return registry.Operator{}, c.err
 			}
 			if _, err := it.svc.Approve(ctx, app.ID, nil, registrar); err == nil {
@@ -114,7 +127,7 @@ func TestIntegrationRefusalWaitsForAnApprovalInFlight(t *testing.T) {
 	reg := it.stub(t)
 	app := it.underReview(t, "192.0.2.60")
 	var refuseErr error
-	reg.create = func(ctx context.Context, in registry.NewOperator, actor audit.Actor) (registry.Operator, error) {
+	reg.create = func(ctx context.Context, w registry.Within, in registry.NewOperator, actor audit.Actor) (registry.Operator, error) {
 		// The refusal runs to its end, or to its deadline, while the
 		// registration is still in progress.
 		rctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -125,7 +138,7 @@ func TestIntegrationRefusalWaitsForAnApprovalInFlight(t *testing.T) {
 			done <- err
 		}()
 		refuseErr = <-done
-		return reg.Registry.CreateOperator(ctx, in, actor)
+		return w.CreateOperator(ctx, in, actor)
 	}
 	approved, err := it.svc.Approve(ctx, app.ID, nil, registrar)
 	if refuseErr == nil {
@@ -143,27 +156,60 @@ func TestIntegrationRefusalWaitsForAnApprovalInFlight(t *testing.T) {
 	}
 }
 
-// An approval that registered the operator and then failed before its
-// decision is finished by approving again; a refusal of it is 409, so
-// the registry never keeps an operator for a refused application.
-func TestIntegrationHalfFinishedApprovalIsNotRefused(t *testing.T) {
+// An approval whose decision fails after the registration leaves no
+// operator behind: the registration and the decision are one
+// transaction. The application stays under review with its number, and
+// a refusal of it goes through (no operator for a refused application).
+func TestIntegrationFailedApprovalLeavesNoOperator(t *testing.T) {
 	it := newIntegration(t)
 	reg := it.stub(t)
-	app := it.underReview(t, "192.0.2.61")
+	app := it.underReview(t, "192.0.2.62")
 	actx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	reg.create = func(ctx context.Context, in registry.NewOperator, actor audit.Actor) (registry.Operator, error) {
-		op, err := reg.Registry.CreateOperator(ctx, in, actor)
-		cancel() // the decision's statements fail after the registration committed
+	registered := false
+	reg.create = func(ctx context.Context, w registry.Within, in registry.NewOperator, actor audit.Actor) (registry.Operator, error) {
+		op, err := w.CreateOperator(ctx, in, actor)
+		registered = err == nil
+		cancel() // the decision's statements fail after the registration
 		return op, err
 	}
 	if _, err := it.svc.Approve(actx, app.ID, nil, registrar); err == nil {
 		t.Fatal("the approval did not fail")
 	}
 	reg.create = nil
+	if !registered {
+		t.Fatal("the registration did not run before the decision failed")
+	}
+	if n := it.count(t, `SELECT count(*) FROM uas_operators WHERE source_ref = $1`, app.ID); n != 0 {
+		t.Fatalf("%d operators registered by a failed approval", n)
+	}
+	if n := it.count(t, `SELECT count(*) FROM registry_applications WHERE id = $1 AND state = 'under_review' AND issued_number IS NOT NULL`, app.ID); n != 1 {
+		t.Fatal("the failed approval changed the application")
+	}
+	r, err := it.svc.Refuse(context.Background(), app.ID, "documents incomplete", registrar)
+	if err != nil || r.State != StateRefused {
+		t.Fatalf("refuse %+v %v", r, err)
+	}
+}
+
+// An application whose operator is registered already (an approval
+// half-finished before registration and decision were one transaction)
+// is finished by approving again; a refusal of it is 409, so the
+// registry never keeps an operator for a refused application.
+func TestIntegrationHalfFinishedApprovalIsNotRefused(t *testing.T) {
+	it := newIntegration(t)
 	ctx := context.Background()
-	if n := it.count(t, `SELECT count(*) FROM uas_operators WHERE source_ref = $1`, app.ID); n != 1 {
-		t.Fatalf("%d operators registered", n)
+	app := it.underReview(t, "192.0.2.61")
+	chosen, a, secret, err := it.svc.chooseNumber(ctx, app.ID, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := it.reg.Service.CreateOperator(ctx, registry.NewOperator{
+		OperatorType: a.OperatorType, RegistrationNumber: chosen.IssuedNumber, SecretPart: secret, PII: a.PII,
+		CompetencyConfirmation: a.CompetencyConfirmation, Authorisations: a.Authorisations, ValidUntil: *chosen.ValidUntil,
+		Source: registry.SourcePortal, SourceRef: app.ID,
+	}, registrar); err != nil {
+		t.Fatal(err)
 	}
 	if _, err := it.svc.Refuse(ctx, app.ID, "documents incomplete", registrar); httpx.ProblemFromError(err).Status != http.StatusConflict {
 		t.Fatalf("a half-finished approval was refused: %v", err)
@@ -214,7 +260,7 @@ func TestIntegrationRetriedApprovalKeepsItsValidity(t *testing.T) {
 	reg := it.stub(t)
 	app := it.underReview(t, "192.0.2.90")
 	first := time.Now().UTC().Add(400 * 24 * time.Hour).Truncate(time.Second)
-	reg.create = func(context.Context, registry.NewOperator, audit.Actor) (registry.Operator, error) {
+	reg.create = func(context.Context, registry.Within, registry.NewOperator, audit.Actor) (registry.Operator, error) {
 		return registry.Operator{}, errors.New("registry unavailable")
 	}
 	if _, err := it.svc.Approve(ctx, app.ID, &first, registrar); err == nil {
@@ -234,7 +280,7 @@ func TestIntegrationRetriedApprovalKeepsItsValidity(t *testing.T) {
 		t.Fatalf("retried with the same valid_until %+v %v", approved, err)
 	}
 	app2 := it.underReview(t, "192.0.2.91")
-	reg.create = func(context.Context, registry.NewOperator, audit.Actor) (registry.Operator, error) {
+	reg.create = func(context.Context, registry.Within, registry.NewOperator, audit.Actor) (registry.Operator, error) {
 		return registry.Operator{}, errors.New("registry unavailable")
 	}
 	if _, err := it.svc.Approve(ctx, app2.ID, &first, registrar); err == nil {
