@@ -12,6 +12,7 @@ PKGS    ?= ./...
 CORE    ?= github.com/rootxkit/uspace-core
 COMPOSE ?= docker compose -f deploy/compose.dev.yaml
 IMAGE   ?= ghcr.io/rootxkit/uspace-authority
+WEB_IMAGE ?= ghcr.io/rootxkit/uspace-authority-web
 TAG     ?= dev
 
 # Linter versions pinned to the ones uspace-core pins and
@@ -29,7 +30,7 @@ DEV_NATS_URL ?= nats://127.0.0.1:56422
 
 .PHONY: all build vet fmt fmt-check tools staticcheck lint test race cover vectors \
         generate verify-generated integration migrate up down image tidy secrets \
-        vulncheck ci clean
+        vulncheck ci clean web-image web-check
 
 all: ci
 
@@ -106,6 +107,14 @@ down:
 
 image:
 	docker build --build-arg VERSION=$(TAG) -t $(IMAGE):$(TAG) .
+
+# The console (WP-21): web/'s own image, context web/ (docs/runbooks/web.md).
+web-image:
+	docker build -t $(WEB_IMAGE):$(TAG) web
+
+# web/'s checks, as the CI job web runs them (pnpm through corepack).
+web-check:
+	cd web && pnpm install --frozen-lockfile && pnpm check:api && pnpm check:schemas && 	  pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm check:bundle && pnpm e2e
 
 secrets:
 	gitleaks detect --no-banner --redact

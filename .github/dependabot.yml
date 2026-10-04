@@ -15,3 +15,17 @@ updates:
     schedule:
       interval: monthly
     open-pull-requests-limit: 5
+  # web/ (WP-21): the console's npm dependencies and its image's base.
+  # uspace-ui is a release tarball pinned by URL and moved by hand.
+  - package-ecosystem: npm
+    directory: /web
+    schedule:
+      interval: monthly
+    ignore:
+      - dependency-name: "@rootxkit/uspace-ui"
+    open-pull-requests-limit: 5
+  - package-ecosystem: docker
+    directory: /web
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2

@@ -618,6 +618,21 @@ edits another's), `CHANGELOG.md` (one line per WP under Unreleased) and
   validator the CISP and the lab use);
   `google/go-cmp` and `testcontainers-go` or plain service containers
   (test only). Anything else needs a line in the PR and this section.
+- `web/` (WP-21; npm, exact versions, `pnpm-lock.yaml` frozen):
+  `@rootxkit/uspace-ui` (the shared kit, pinned to one GitHub Release
+  tarball URL whose integrity the lockfile records; the pinned
+  `v0.1.0-rc.1` has an unsigned `SHA256SUMS`, written by the same
+  release job that uploads the tarball, so the integrity pins the bytes
+  first downloaded and nothing proves who built them; rootxkit/uspace-ui#20
+  attests every later release keylessly, and the bump to it checks the
+  asset with `gh attestation verify` before the lockfile changes), `next`, `react`,
+  `react-dom`, `maplibre-gl`, `react-hook-form` and `zod` (the kit's
+  peers); dev only: `typescript`, `eslint` with `typescript-eslint`,
+  `eslint-plugin-react-hooks` and `eslint-plugin-jsx-a11y` (the kit's
+  lint config), `tailwindcss` with `@tailwindcss/postcss` (the kit's
+  theme), `vitest`, `@playwright/test` (the smoke run), `@types/*`, and
+  `json-schema-to-typescript` (this repository's frame extras typed
+  from `schemas/picture/*` and `schemas/violation/v1.json`).
 - Lint: `gofmt`, `go vet`, staticcheck and golangci-lint pinned to the
   versions `uspace-core` pins (v0.8.1, v2.14.0) with the same `.golangci.yml`
   base plus `depguard` for §3's import rules; `forbidigo` forbids `panic`,
