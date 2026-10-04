@@ -7,7 +7,7 @@
 // acceptance it differs from (E-01).
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { configFromEnv, createBff, PROXY_ALLOW_PATHS, type BffConfig } from "./handlers";
+import { configFromEnv, createBff, methodRefused, OVERSIGHT_PROXY_ROUTES, PROXY_ALLOW_PATHS, type BffConfig } from "./handlers";
 
 const ORIGIN = "https://console.test";
 const SECRET = "unit-test-only-challenge-seal-key-0123456789";
@@ -161,6 +161,56 @@ describe("proxy", () => {
 
   it("the allow-list is anchored", () => {
     expect(PROXY_ALLOW_PATHS.every((re) => re.source.startsWith("^") && re.source.endsWith("$"))).toBe(true);
+  });
+});
+
+describe("WP-23's routes", () => {
+  const ULID = "01J9Z8Y7X6W5V4T3S2R1Q0P9N8";
+  const req = (method: string, path: string, csrf = true) =>
+    new NextRequest(`${ORIGIN}/_bff/api${path}`, {
+      method,
+      headers: {
+        cookie: `uspace_session=header.payload.sig${csrf ? "; uspace_csrf=c1" : ""}`,
+        host: "console.test",
+        ...(csrf ? { "x-csrf-token": "c1" } : {}),
+        ...(method === "GET" ? {} : { "content-type": "application/json" }),
+      },
+      ...(method === "GET" ? {} : { body: JSON.stringify({ decision: "reviewed" }) }),
+    });
+
+  it("a read and a write of the list reach api with their method", async () => {
+    const api = fakeApi();
+    const bff = createBff(cfg(api.fetch));
+    expect((await bff.proxy(req("GET", "/v1/police/aircraft?bbox=1,2,3,4&purpose=p&case_ref=c"))).status).toBe(200);
+    expect((await bff.proxy(req("POST", `/v1/violations/${ULID}/review`))).status).toBe(200);
+    expect(api.calls.map((c) => `${c.method} ${new URL(c.url).pathname}${new URL(c.url).search}`)).toEqual([
+      "GET /v1/police/aircraft?bbox=1,2,3,4&purpose=p&case_ref=c",
+      `POST /v1/violations/${ULID}/review`,
+    ]);
+  });
+
+  it("another method on one of them is refused before api (the pair above)", async () => {
+    const api = fakeApi();
+    const bff = createBff(cfg(api.fetch));
+    const refused = await bff.proxy(req("PATCH", `/v1/violations/${ULID}/review`));
+    expect(refused.status).toBe(405);
+    expect((await bff.proxy(req("POST", "/v1/police/aircraft"))).status).toBe(405);
+    expect((await bff.proxy(req("PUT", "/v1/audit/events"))).status).toBe(405);
+    expect(api.calls).toEqual([]);
+  });
+
+  it("a write without the CSRF pair is refused before api", async () => {
+    const api = fakeApi();
+    expect((await createBff(cfg(api.fetch)).proxy(req("POST", `/v1/violations/${ULID}/review`, false))).status).toBe(403);
+    expect(api.calls).toEqual([]);
+  });
+
+  it("every route is anchored, and a path of another list is left to it", () => {
+    expect(OVERSIGHT_PROXY_ROUTES.every((r) => r.path.source.startsWith("^") && r.path.source.endsWith("$"))).toBe(true);
+    expect(methodRefused("POST", "/v1/zones")).toBe(false);
+    expect(methodRefused("POST", "/v1/violations")).toBe(true);
+    expect(PROXY_ALLOW_PATHS.some((re) => re.test(`/v1/occurrences/${ULID}/reporter`))).toBe(true);
+    expect(PROXY_ALLOW_PATHS.some((re) => re.test("/v1/occurrences/not-a-ulid/reporter"))).toBe(false);
   });
 });
 
