@@ -10,6 +10,30 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type ArchiveChunk struct {
+	Hypertable      string
+	ChunkName       string
+	RangeStart      time.Time
+	RangeEnd        time.Time
+	State           string
+	ObjectKey       string
+	ManifestKey     string
+	Rows            *int64
+	Bytes           *int64
+	Sha256          *string
+	PiiRedacted     int64
+	PayloadsDropped int64
+	Attempts        int32
+	LastError       *string
+	StartedAt       time.Time
+	ArchivedAt      *time.Time
+	DroppedAt       *time.Time
+	ArchiveAudited  bool
+	DropAudited     bool
+	ObjectDeletedAt *time.Time
+	DeleteAudited   bool
+}
+
 type GooseDbVersionTimeseries struct {
 	ID        int32
 	VersionID int64

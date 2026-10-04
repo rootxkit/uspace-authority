@@ -16,6 +16,16 @@ type AssertionJti struct {
 	ExpiresAt time.Time
 }
 
+type AuditDroppedMonth struct {
+	Month     time.Time
+	Partition string
+	Rows      int64
+	FirstID   *int64
+	LastID    *int64
+	LastHash  *string
+	DroppedAt time.Time
+}
+
 type AuthorityPolicy struct {
 	Version                      int64
 	HeightLimitAglM              float64
@@ -257,6 +267,31 @@ type IncidentNote struct {
 	Author     string
 	Body       string
 	CreatedAt  time.Time
+}
+
+type JobRun struct {
+	RunID      int64
+	Job        string
+	StartedAt  time.Time
+	FinishedAt *time.Time
+	Outcome    *string
+	Summary    []byte
+}
+
+type LegalHold struct {
+	HoldID        string
+	CaseRef       string
+	Reason        string
+	WindowFrom    *time.Time
+	WindowTo      *time.Time
+	TrackIds      []string
+	Serials       []string
+	ViolationIds  []string
+	PlacedBy      string
+	PlacedAt      time.Time
+	ReleasedBy    *string
+	ReleasedAt    *time.Time
+	ReleaseReason *string
 }
 
 type LoginChallenge struct {
@@ -673,6 +708,21 @@ type UspaceAirspace struct {
 	DesignatedTo          time.Time
 	DesignationRef        *string
 	AipRef                *string
+}
+
+type UsspDailyRecord struct {
+	UsspCode        string
+	Day             time.Time
+	State           string
+	Sha256          *string
+	SizeBytes       *int64
+	ArchiveKey      *string
+	Attempts        int32
+	LastError       *string
+	Alarmed         bool
+	FirstTried      time.Time
+	UpdatedAt       time.Time
+	ObjectDeletedAt *time.Time
 }
 
 type Violation struct {
