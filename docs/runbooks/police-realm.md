@@ -56,7 +56,8 @@ A police session is refused on every console operation, and a console
 session (an admin's included) on every police operation; a machine
 token is refused on both, whatever its scopes. The picture WebSocket
 (`picture-ws`) admits a police session read-only and leaves out the
-remote pilot position for it (WP-13); its address is checked at sign-in.
+remote pilot position for it (WP-13); its address is checked at sign-in
+only, not on the stream (see [Threats](#threats)).
 
 ## The purpose list
 
@@ -159,6 +160,42 @@ Counters on the status line and `/metrics` (`police` group):
 `police_export_not_linked` (a pack built whose agency link failed: its
 download is refused until an admin links it; investigate at once),
 `police_downloads`, `police_refusal_event_failed`, `dpo_reports`.
+
+## Threats
+
+**A police session used from an address off the allow-list.** Every
+`/v1/police/*` request compares the client's address with the account's
+`ip_allowlist` as it is at that moment and refuses one outside it (403
+`address_not_allowed`, a `police_query_refused` row). The picture
+WebSocket does not. `picture-ws` verifies the session token, takes the
+cookie only on an upgrade whose `Origin` is on
+`PICTURE_ALLOWED_ORIGINS`, and asks api's `GET /v1/auth/session`
+whether the session row is live, at the upgrade and every
+`PICTURE_SESSION_RECHECK_S`; neither step compares an address with the
+list, and on that call api sees `picture-ws`'s address, not the
+officer's. A police session cookie taken to another address therefore
+streams the live picture there: tracks, serials, the public part of
+registration numbers and identification status, never an operator's
+identity and never the remote pilot position. The stream names no
+purpose and writes no `police_queries` row; its only trace is
+`picture-ws`'s `console connected` log line with the realm and the user.
+
+What bounds it today: the session's idle and absolute expiry, and the
+admin's actions that end the account's sessions (`PUT
+/v1/users/{id}/police-access`, `POST /v1/users/{id}/disable`, a
+logout), after which `picture-ws` closes the stream with 4401 within
+`PICTURE_SESSION_RECHECK_S` (15 s). A narrowed list alone ends the
+sessions through `police-access`; a list changed in the database by
+hand does not reach an open stream.
+
+Closing the gap needs the client's address on the session check that
+`picture-ws` makes, which is the session contract shared with the
+sibling systems (`docs/runbooks/session-contract.md`, WP-2): it is a
+spec gap recorded in the WP-19 pull request, not a local rule. Until
+it is closed, tell an agency at onboarding that the address list
+guards its queries and exports but not the live picture, and look for
+police streams in `picture-ws`'s `console connected` lines, which the
+DPO report does not list.
 
 ## The DPO report
 
