@@ -210,3 +210,50 @@ func decodeLoose(data []byte) *gen.OccurrenceReport {
 	}
 	return &b
 }
+
+// G-04 under a configured, non-default pattern: a registration whose
+// head the pattern does not accept still loses an EU secret suffix (a
+// hyphen and three letters or digits) before it is stored, as does one
+// under the default pattern; one the pattern accepts is cut by it, and a
+// value without such a suffix is kept as sent (E-01 pair).
+func TestPublicPartAlwaysDropsTheSecretSuffix(t *testing.T) {
+	pattern := func() (string, bool) { return `GEO-TEST-OP-[0-9]{4}`, true }
+	pp := PublicPartOf(pattern)
+	for _, c := range []struct{ in, want string }{
+		{"FIN87astrdge12k8-xyz", "FIN87astrdge12k8"}, // the default shape, not the configured one
+		{" FIN87astrdge12k8-XY1 ", "FIN87astrdge12k8"},
+		{"TESTOP1-ab9", "TESTOP1"}, // no known shape at all
+		{"GEO-TEST-OP-0001-k2z", "GEO-TEST-OP-0001"},
+		{"GEO-TEST-OP-0001", "GEO-TEST-OP-0001"},
+		{"FIN87astrdge12k8", "FIN87astrdge12k8"},
+		{"FIN87astrdge12k8-x!z", "FIN87astrdge12k8-x!z"}, // not a secret suffix
+		{"-xyz", "-xyz"},
+	} {
+		if got := pp(c.in); got != c.want {
+			t.Errorf("PublicPart(%q) = %q, want %q", c.in, got, c.want)
+		}
+	}
+	body := mutate(t, anspBody, func(m map[string]any) {
+		m["aircraft"] = []any{map[string]any{"operator_reg": "TESTOP1-ab9"}}
+	})
+	in, err := Normalise(decode(t, body), pp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := in.Aircraft[0].OperatorReg; got != "TESTOP1" {
+		t.Fatalf("stored operator_reg %q", got)
+	}
+	o, err := OperatorOrigin(officer, "TESTOP1-ab9", pp)
+	if err != nil || o.Org != "operator:TESTOP1" {
+		t.Fatalf("operator origin %+v %v", o, err)
+	}
+}
+
+// A registration the pattern recognises is cut once: a head that itself
+// ends in three characters keeps them.
+func TestPublicPartCutsOnce(t *testing.T) {
+	pp := PublicPartOf(func() (string, bool) { return `[A-Z]{3}-[A-Z]{3}`, true })
+	if got := pp("GEO-ABC-x9z"); got != "GEO-ABC" {
+		t.Fatalf("got %q", got)
+	}
+}

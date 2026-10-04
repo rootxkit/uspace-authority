@@ -113,6 +113,15 @@ type PublicPartFunc func(string) string
 // PublicPartOf is the public part under the pattern pattern returns
 // (uspace-core regnum, G-04, G-07); without a policy yet, regnum's
 // default pattern.
+//
+// regnum strips the secret part only when the head is a registration
+// number under the pattern, and returns anything else unchanged. A
+// report is not a registration: what it names is stored and exported
+// for years, so here a trailing EU secret suffix (a hyphen and three
+// ASCII letters or digits) is dropped whatever the head looks like. The
+// price is that a number whose own last segment is three characters
+// ("GEO-OP-ABC" under a pattern that refuses "GEO-OP") is stored
+// shortened; storing a secret is the worse error (G-04).
 func PublicPartOf(pattern func() (string, bool)) PublicPartFunc {
 	return func(reg string) string {
 		p := ""
@@ -123,10 +132,26 @@ func PublicPartOf(pattern func() (string, bool)) PublicPartFunc {
 		}
 		v, err := regnum.NewValidator(p)
 		if err != nil {
-			return regnum.PublicPart(reg)
+			v, _ = regnum.NewValidator("")
 		}
-		return v.PublicPart(reg)
+		reg = strings.TrimSpace(reg)
+		if pub := v.PublicPart(reg); pub != reg {
+			return pub // the pattern recognised the head: cut once, never twice
+		}
+		return stripSecretSuffix(reg)
 	}
+}
+
+// secretSuffix is the EU secret part at the end of a registration: a
+// hyphen and three ASCII letters or digits, after something.
+var secretSuffix = regexp.MustCompile(`^(.+)-[A-Za-z0-9]{3}$`)
+
+// stripSecretSuffix drops a trailing secret suffix from a trimmed value.
+func stripSecretSuffix(reg string) string {
+	if m := secretSuffix.FindStringSubmatch(reg); m != nil {
+		return m[1]
+	}
+	return reg
 }
 
 // fieldErrs collects field errors in order.
