@@ -25,11 +25,13 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/store/storetest"
 )
 
-// relay is a loopback SMTP relay keeping the bodies it is sent.
+// relay is a loopback SMTP relay keeping the bodies it is sent; arrived
+// is signalled after each one is kept.
 type relay struct {
-	mu   sync.Mutex
-	msgs []string
-	l    net.Listener
+	mu      sync.Mutex
+	msgs    []string
+	arrived chan struct{}
+	l       net.Listener
 }
 
 func newRelay(t *testing.T) *relay {
@@ -38,7 +40,7 @@ func newRelay(t *testing.T) *relay {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r := &relay{l: l}
+	r := &relay{l: l, arrived: make(chan struct{}, 1)}
 	t.Cleanup(func() { _ = l.Close() })
 	go func() {
 		for {
@@ -78,6 +80,10 @@ func (r *relay) serve(c net.Conn) {
 			r.mu.Lock()
 			r.msgs = append(r.msgs, string(dec))
 			r.mu.Unlock()
+			select {
+			case r.arrived <- struct{}{}:
+			default: // a signal is pending already; the waiter reads the count
+			}
 			say("250 queued")
 		case "QUIT":
 			say("221 bye")
@@ -88,11 +94,13 @@ func (r *relay) serve(c net.Conn) {
 	}
 }
 
-// waitMail waits until the relay holds n messages and returns the last.
+// waitMail waits until the relay holds n messages and returns the last,
+// woken by each arrival rather than polling.
 func (r *relay) waitMail(t *testing.T, n int) string {
 	t.Helper()
-	deadline := time.Now().Add(20 * time.Second)
-	for time.Now().Before(deadline) {
+	deadline := time.NewTimer(20 * time.Second)
+	defer deadline.Stop()
+	for {
 		r.mu.Lock()
 		if len(r.msgs) >= n {
 			m := r.msgs[n-1]
@@ -100,10 +108,13 @@ func (r *relay) waitMail(t *testing.T, n int) string {
 			return m
 		}
 		r.mu.Unlock()
-		time.Sleep(20 * time.Millisecond)
+		select {
+		case <-r.arrived:
+		case <-deadline.C:
+			t.Fatalf("no message %d", n)
+			return ""
+		}
 	}
-	t.Fatalf("no message %d", n)
-	return ""
 }
 
 func linkToken(t *testing.T, body string) string {
