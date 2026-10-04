@@ -62,3 +62,28 @@ func TestIntegrationAppRoleCannotUpdatePolicyThresholds(t *testing.T) {
 		t.Fatalf("UPDATE of a threshold as %s: %v", pg.AppRole, err)
 	}
 }
+
+// A commit run after its context ended cannot say whether it committed:
+// WithTx marks it store.ErrCommitUnknown. A commit within its context
+// is not marked (the test above).
+func TestIntegrationWithTxMarksACommitCutOffAsUnknown(t *testing.T) {
+	u := storetest.Migrated(t, migrate.Relational)
+	db := open(t, u, pg.AppRole)
+	ctx, cancel := context.WithCancel(context.Background())
+	err := db.WithTx(ctx, func(q *gen.Queries) error {
+		if _, err := q.DBNow(ctx); err != nil {
+			return err
+		}
+		cancel()
+		return nil
+	})
+	if !errors.Is(err, store.ErrCommitUnknown) {
+		t.Fatalf("commit after the context ended: %v", err)
+	}
+	if err := db.WithTx(context.Background(), func(q *gen.Queries) error {
+		_, err := q.DBNow(context.Background())
+		return err
+	}); err != nil {
+		t.Fatalf("commit within its context: %v", err)
+	}
+}

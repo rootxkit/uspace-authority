@@ -73,7 +73,8 @@ func RequireSchema(ctx context.Context, q *gen.Queries) error {
 
 // WithTx runs fn in one transaction with the queries bound to it. It
 // commits when fn returns nil and rolls back otherwise (or when fn
-// panics, through the deferred rollback).
+// panics, through the deferred rollback). A commit that fails after ctx
+// ended wraps store.ErrCommitUnknown: whether it committed is unknown.
 func (d *DB) WithTx(ctx context.Context, fn func(q *gen.Queries) error) (err error) {
 	tx, err := d.pool.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
@@ -89,6 +90,9 @@ func (d *DB) WithTx(ctx context.Context, fn func(q *gen.Queries) error) (err err
 		return err
 	}
 	err = tx.Commit(ctx)
+	if err != nil && ctx.Err() != nil {
+		return fmt.Errorf("commit: %w: %w", store.ErrCommitUnknown, err)
+	}
 	if err != nil {
 		return fmt.Errorf("commit: %w", err)
 	}

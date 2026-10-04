@@ -3,6 +3,7 @@ package regimport
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -15,6 +16,7 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/audit"
 	"github.com/rootxkit/uspace-authority/internal/httpx"
 	"github.com/rootxkit/uspace-authority/internal/registry"
+	"github.com/rootxkit/uspace-authority/internal/store"
 )
 
 var registrar = audit.Actor{Type: audit.ActorUser, ID: "registrar-1", Realm: audit.RealmConsole}
@@ -30,6 +32,8 @@ type fakeRegistry struct {
 	// block makes an import wait for its context to end (a slow
 	// transaction).
 	block bool
+	// blockCommit makes it end as a commit cut off by its context does.
+	blockCommit bool
 }
 
 func (f *fakeRegistry) result(kind string, rows int, o registry.ImportOptions) registry.ImportResult {
@@ -44,8 +48,11 @@ func (f *fakeRegistry) result(kind string, rows int, o registry.ImportOptions) r
 }
 
 func (f *fakeRegistry) ImportOperators(ctx context.Context, rows []registry.ImportedOperator, o registry.ImportOptions, _ audit.Actor) (registry.ImportResult, error) {
-	if f.block {
+	if f.block || f.blockCommit {
 		<-ctx.Done()
+		if f.blockCommit {
+			return registry.ImportResult{}, fmt.Errorf("commit: %w: %w", store.ErrCommitUnknown, ctx.Err())
+		}
 		return registry.ImportResult{}, ctx.Err()
 	}
 	f.mu.Lock()
@@ -332,5 +339,27 @@ func TestRunBoundsTheTransaction(t *testing.T) {
 	reg.block = false
 	if rep, err := s.Run(context.Background(), req, registrar); err != nil || !rep.Applied() {
 		t.Fatalf("%+v %v", rep, err)
+	}
+}
+
+// A deadline that falls during the COMMIT leaves the outcome unknown:
+// the import is answered 503 import_outcome_unknown, never "rolled
+// back", is counted apart from a timeout before the commit, and stays
+// out of the ledger so the re-import runs it again.
+func TestRunReportsACommitCutOffAsUnknown(t *testing.T) {
+	s, reg, led := newService(t)
+	s.WriteTimeout = 50 * time.Millisecond
+	reg.blockCommit = true
+	req := Request{Kind: "operators", Format: FormatCSV, Body: readFile(t, "operators.csv"), Origin: OriginUpload}
+	_, err := s.Run(context.Background(), req, registrar)
+	p := httpx.ProblemFromError(err)
+	if p.Status != http.StatusServiceUnavailable || p.Slug() != SlugOutcomeUnknown || strings.Contains(p.Detail, "rolled back") {
+		t.Fatalf("%v", err)
+	}
+	if s.Counters.Get(CounterCommitUnknown) != 1 || s.Counters.Get(CounterTimeout) != 0 {
+		t.Fatalf("counters: unknown %d timeout %d", s.Counters.Get(CounterCommitUnknown), s.Counters.Get(CounterTimeout))
+	}
+	if len(led.entries) != 0 {
+		t.Fatal("an import of unknown outcome reached the ledger")
 	}
 }

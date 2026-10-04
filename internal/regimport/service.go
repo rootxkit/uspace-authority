@@ -20,6 +20,7 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/httpx"
 	"github.com/rootxkit/uspace-authority/internal/logging"
 	"github.com/rootxkit/uspace-authority/internal/registry"
+	"github.com/rootxkit/uspace-authority/internal/store"
 )
 
 // Counters of the import (status line and /metrics, E-09).
@@ -32,6 +33,7 @@ const (
 	CounterFetchUnchanged = "registry_import_fetch_unchanged" // a fetched export run to an outcome before, not run again
 	CounterFetchSkipped   = "registry_import_fetch_skipped"   // another replica held the fetch job's lock
 	CounterTimeout        = "registry_import_timeout"         // an import past REGISTRY_IMPORT_WRITE_TIMEOUT_S, rolled back
+	CounterCommitUnknown  = "registry_import_commit_unknown"  // an import whose deadline fell during its COMMIT: written or not, unknown
 )
 
 // SlugNotConfigured is the problem slug of an import without a rules
@@ -104,6 +106,10 @@ type Service struct {
 
 // SlugTimeout is the problem slug of an import past WriteTimeout.
 const SlugTimeout = "import_timeout"
+
+// SlugOutcomeUnknown is the problem slug of an import whose WriteTimeout
+// fell during its COMMIT: the database may have committed it or not.
+const SlugOutcomeUnknown = "import_outcome_unknown"
 
 func (s *Service) count(name string) {
 	if s.Counters != nil {
@@ -197,6 +203,18 @@ func (s *Service) Run(ctx context.Context, req Request, actor audit.Actor) (Repo
 		rows, problems := MapUAS(s.Rules, recs)
 		opts.Problems = slices.Concat(readProblems, problems)
 		res, err = s.Registry.ImportUAS(runCtx, rows, opts, actor)
+	}
+	if err != nil && errors.Is(err, store.ErrCommitUnknown) {
+		// Neither "rolled back" nor "applied" would be true: say so, and
+		// leave the ledger alone so the re-import runs the content again
+		// (an applied import answers it unchanged).
+		s.count(CounterCommitUnknown)
+		logging.Error(ctx, s.logger(), "registry import deadline fell during its commit; whether it was written is unknown", err,
+			slog.String("kind", req.Kind), slog.String("content_sha256", rep.SHA256))
+		return Report{}, httpx.Refuse(http.StatusServiceUnavailable, SlugOutcomeUnknown, fmt.Sprintf(
+			"the import reached its commit as its time (%s, REGISTRY_IMPORT_WRITE_TIMEOUT_S) ran out: whether it was written is unknown; "+
+				"look for a registry_imported event with content_sha256 %s before running it again (a re-run of an applied import changes nothing)",
+			s.WriteTimeout, rep.SHA256))
 	}
 	if err != nil && runCtx.Err() != nil && ctx.Err() == nil {
 		s.count(CounterTimeout)

@@ -87,6 +87,12 @@ func roleOrLogin(role string) string {
 	return "role " + role
 }
 
+// ErrCommitUnknown marks a COMMIT whose context ended while it ran: the
+// server may have committed the transaction or not, and the caller
+// cannot tell from the error. A caller reports it as unknown, never as
+// a rollback.
+var ErrCommitUnknown = errors.New("the commit's outcome is unknown: its context ended while it ran")
+
 // IsNoRows reports whether err is "no rows in result set".
 func IsNoRows(err error) bool { return errors.Is(err, pgx.ErrNoRows) }
 

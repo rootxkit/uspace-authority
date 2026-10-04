@@ -142,7 +142,11 @@ CTA-2063-A (G-06).
   value, 256 columns, and `REGISTRY_IMPORT_WRITE_TIMEOUT_S` (25 s, inside
   the listener's 30 s write timeout) on the transaction: an import past
   it is rolled back and answered `503 import_timeout`, never committed
-  after its caller was cut off. A first import of 5000 records took
+  after its caller was cut off. When the bound falls during the COMMIT
+  itself the database may have committed or not: the answer is
+  `503 import_outcome_unknown`, nothing reaches the ledger, and a
+  `registry_imported` event with the content's SHA-256 says whether it
+  was written (running it again changes nothing if it was). A first import of 5000 records took
   about 18 s on the development stack (a re-import of them, unchanged,
   about 2 s). The import holds the registry's projection lock while it
   runs, so other registry changes wait for it; split a larger export.
@@ -208,4 +212,4 @@ Counters: `registry_import_applied`, `registry_import_refused`,
 `registry_import_unreadable`, `registry_import_ledger_failed`,
 `registry_import_fetched`, `registry_import_fetch_failed`,
 `registry_import_fetch_unchanged`, `registry_import_fetch_skipped`,
-`registry_import_timeout`.
+`registry_import_timeout`, `registry_import_commit_unknown`.
