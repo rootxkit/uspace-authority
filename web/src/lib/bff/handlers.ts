@@ -20,7 +20,7 @@
 // The picture WebSocket is not proxied: the browser upgrades
 // /v1/picture/ws same-origin and the cookie rides the upgrade (M22).
 // There is no ticket route.
-import { bffHandlers, MIN_CHALLENGE_SECRET_BYTES, type BffHandlers } from "@rootxkit/uspace-ui/auth/server";
+import { BFF_API_PREFIX, bffHandlers, MIN_CHALLENGE_SECRET_BYTES, type BffHandlers } from "@rootxkit/uspace-ui/auth/server";
 import { NextResponse } from "next/server";
 
 /** api's sign-in steps and logout (api/openapi.yaml, WP-2). */
@@ -28,13 +28,73 @@ export const API_LOGIN_PATH = "/v1/auth/login";
 export const API_MFA_PATH = "/v1/auth/mfa";
 export const API_LOGOUT_PATH = "/v1/auth/logout";
 
+/** A path the proxy reaches and the methods it is reached with. */
+export interface ProxyRoute {
+  methods: readonly ("GET" | "POST" | "PUT" | "PATCH")[];
+  path: RegExp;
+}
+
+const ULID = "[0-7][0-9A-HJKMNP-TV-Z]{25}";
+const route = (methods: ProxyRoute["methods"], path: string): ProxyRoute => ({ methods, path: new RegExp(`^${path}$`) });
+
+/**
+ * WP-23's pages (api/openapi.yaml, each with its operation's method):
+ * violations, incidents and evidence packs, occurrences, sources, the
+ * audit log and the DPO report, the police realm, and the two public
+ * reads. A path here is refused with any other method before api (405).
+ */
+export const OVERSIGHT_PROXY_ROUTES: readonly ProxyRoute[] = [
+  route(["GET"], "/v1/violations"),
+  route(["GET"], `/v1/violations/${ULID}`),
+  route(["POST"], `/v1/violations/${ULID}/review`),
+  route(["GET", "POST"], "/v1/incidents"),
+  route(["GET", "PATCH"], `/v1/incidents/${ULID}`),
+  route(["POST"], `/v1/incidents/${ULID}/evidence-packs`),
+  route(["GET"], `/v1/incidents/${ULID}/evidence-packs/${ULID}`),
+  route(["GET"], `/v1/incidents/${ULID}/evidence-packs/${ULID}/download`),
+  route(["GET"], `/v1/incidents/${ULID}/evidence-packs/${ULID}/verify`),
+  route(["GET"], "/v1/occurrences"),
+  route(["POST"], "/v1/occurrences/export"),
+  route(["GET"], `/v1/occurrences/${ULID}`),
+  route(["GET"], `/v1/occurrences/${ULID}/reporter`),
+  route(["POST"], `/v1/occurrences/${ULID}/classify`),
+  route(["PATCH"], `/v1/occurrences/${ULID}/analysis`),
+  route(["GET"], "/v1/sources"),
+  route(["PUT"], "/v1/sources/(?:direct_rid|network_rid|ansp_feed)"),
+  route(["PUT"], "/v1/sources/(?:direct_rid|network_rid|ansp_feed)/[A-Za-z0-9][A-Za-z0-9_-]{0,62}"),
+  route(["GET"], "/v1/audit/events"),
+  route(["GET"], "/v1/audit/verify"),
+  route(["GET"], "/v1/audit/dpo-report"),
+  route(["GET"], "/v1/police/aircraft"),
+  route(["GET"], "/v1/police/operators/[^/]{1,64}"),
+  route(["GET"], "/v1/police/serials/[^/]{1,64}"),
+  route(["POST"], "/v1/police/exports"),
+  route(["GET"], `/v1/police/exports/${ULID}/download`),
+  route(["GET"], "/v1/registry/check"),
+  route(["GET"], "/v1/certificates/register"),
+];
+
 /**
  * What the console may reach through the proxy, and nothing else: the
- * caller's session (who is signed in, for the shell) and the published
- * zones (the inspector map's zone layer). A later page adds its paths
- * here in its own work package.
+ * caller's session (who is signed in, for the shell), the published
+ * zones (the inspector map's zone layer) and WP-23's routes. A later
+ * page adds its paths here in its own work package.
  */
-export const PROXY_ALLOW_PATHS: readonly RegExp[] = [/^\/v1\/auth\/session$/, /^\/v1\/zones$/];
+export const PROXY_ALLOW_PATHS: readonly RegExp[] = [
+  /^\/v1\/auth\/session$/,
+  /^\/v1\/zones$/,
+  ...OVERSIGHT_PROXY_ROUTES.map((r) => r.path),
+];
+
+/**
+ * True when `pathname` is one of WP-23's routes and none of them admits
+ * `method`: the proxy refuses it before api (fail closed). A path of
+ * another work package is left to its own list.
+ */
+export function methodRefused(method: string, pathname: string): boolean {
+  const routes = OVERSIGHT_PROXY_ROUTES.filter((r) => r.path.test(pathname));
+  return routes.length > 0 && !routes.some((r) => (r.methods as readonly string[]).includes(method));
+}
 
 export interface BffConfig {
   /** api as the web container reaches it (WEB_API_INTERNAL_URL). */
@@ -52,6 +112,20 @@ export interface BffConfig {
 
 /** The three handlers for one configuration. */
 export function createBff(cfg: BffConfig): BffHandlers {
+  const kit = kitHandlers(cfg);
+  return {
+    ...kit,
+    proxy: (req) => {
+      const path = req.nextUrl.pathname.startsWith(BFF_API_PREFIX) ? req.nextUrl.pathname.slice(BFF_API_PREFIX.length) : "";
+      if (methodRefused(req.method, path)) {
+        return Promise.resolve(problem(405, "method_not_allowed", "Method not allowed", `${req.method} is not served on this path`));
+      }
+      return kit.proxy(req);
+    },
+  };
+}
+
+function kitHandlers(cfg: BffConfig): BffHandlers {
   return bffHandlers({
     apiBase: cfg.apiBase,
     apiLoginPath: API_LOGIN_PATH,
@@ -61,7 +135,10 @@ export function createBff(cfg: BffConfig): BffHandlers {
     session: { secure: true, maxAgeS: cfg.sessionMaxAgeS },
     allowPaths: [...PROXY_ALLOW_PATHS],
     timeoutMs: cfg.timeoutMs,
-    ...(cfg.trustedProxyHops === undefined ? {} : { trustedProxyHops: cfg.trustedProxyHops }),
+    // Without WEB_TRUSTED_PROXY_HOPS no proxy in front of Next.js is
+    // trusted to record the client: api is sent no client address (the
+    // kit requires the choice to be said, retro-audit S6).
+    ...(cfg.trustedProxyHops === undefined ? { noTrustedProxy: true as const } : { trustedProxyHops: cfg.trustedProxyHops }),
     ...(cfg.fetch === undefined ? {} : { fetch: cfg.fetch }),
   });
 }

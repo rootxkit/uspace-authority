@@ -1,11 +1,16 @@
 // The Playwright smoke run: `next start` behind test/mock-origin.mjs, which
 // stands in for Caddy (one origin) with a stub api and a stub picture-ws
 // serving the lab's console/* examples. Run `pnpm build` first.
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig, devices } from "@playwright/test";
 
+const here = path.dirname(fileURLToPath(import.meta.url));
+
 const CI = process.env["CI"] !== undefined;
-const WEB_PORT = "3100";
-const ORIGIN_PORT = "3000";
+// Ports of this run; another checkout's run on the same machine sets its own.
+const WEB_PORT = process.env["E2E_WEB_PORT"] ?? "3100";
+const ORIGIN_PORT = process.env["E2E_ORIGIN_PORT"] ?? "3000";
 
 export default defineConfig({
   testDir: "test/e2e",
@@ -35,6 +40,8 @@ export default defineConfig({
         WEB_TRUSTED_PROXY_HOPS: "1",
         // Seals the MFA challenge cookie in this run only; a test value.
         WEB_MFA_CHALLENGE_SECRET: "playwright-run-only-challenge-seal-key",
+        // The rules page's Markdown for en only: ka shows the variable it lacks (test/e2e/public.spec.ts).
+        WEB_RULES_FILE_EN: path.join(here, "test/fixtures/rules.en.md"),
         WEB_BRAND_NAME: "Test Authority",
         WEB_BRAND_SHORT_NAME: "TA",
       },

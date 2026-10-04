@@ -2,8 +2,11 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import en from "./en.json";
-import ka from "./ka.json";
+import { en, ka } from "./catalogues";
+import enBase from "./en.json";
+import enOversight from "./oversight.en.json";
+import kaBase from "./ka.json";
+import kaOversight from "./oversight.ka.json";
 
 const GEORGIAN = /[Ⴀ-ჿᲐ-Ჿⴀ-⴯]/u;
 const web = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -19,6 +22,11 @@ function sources(dir: string): string[] {
 describe("catalogues", () => {
   it("ka and en hold the same keys", () => {
     expect(Object.keys(ka).sort()).toEqual(Object.keys(en).sort());
+  });
+
+  it("a key is in one file of a language only, never in both", () => {
+    expect(Object.keys(enOversight).filter((k) => k in enBase)).toEqual([]);
+    expect(Object.keys(kaOversight).filter((k) => k in kaBase)).toEqual([]);
   });
 
   it("a key missing from one catalogue is found", () => {

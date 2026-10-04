@@ -6,8 +6,11 @@ TypeScript strict, `output: "standalone"`) on the shared kit
 GitHub Release tarball. It renders what `api` and `picture-ws` say and
 judges nothing: no database, no NATS, no geometry or geodesy, no JWT
 library, no key (CLAUDE.md rule 10). Its only server code is the BFF's
-three routes. This WP ships the sign-in, the app shell with the
-navigation by role, and the inspector map; WP-22 to WP-24 add pages.
+three routes. WP-21 shipped the sign-in, the app shell with the
+navigation by role, and the inspector map; WP-23 adds the oversight
+pages, the police realm and the public pages (see "The oversight pages,
+the police realm and the public pages" below); WP-22 and WP-24 add
+theirs.
 
 ```
 web/app/[locale]/login/           the sign-in (password, then the TOTP code)
@@ -16,10 +19,15 @@ web/app/%5Fbff/                   the BFF: /_bff/login, /_bff/logout, /_bff/api/
 web/src/lib/bff/handlers.ts       the BFF on the kit's auth/server helpers
 web/src/picture/                  the feed, the adapter, the panels, the map
 web/src/zones/                    the published zones for the zone layer
+web/app/[locale]/(signed-in)/{violations,incidents,occurrences,sources,audit}/   WP-23's console pages
+web/app/[locale]/police/          the police realm's own layout and pages (WP-23)
+web/app/[locale]/(public)/        the public pages, no session (WP-23)
+web/src/{oversight,police,public,common}/   WP-23's components
 web/src/api/generated/            api/openapi.yaml's types (uspace-ui-gen-api)
 web/src/picture/generated/        schemas/picture/* and violation/v1 types (json-schema-to-typescript)
-web/src/i18n/{ka,en}.json         every display string
+web/src/i18n/{ka,en}.json         every display string (WP-23's in oversight.{ka,en}.json)
 web/test/mock-origin.mjs          the Playwright stand-in for Caddy, a stub api and a stub picture-ws
+web/test/mock-oversight.mjs       the stub api of WP-23's operations, with api's role, realm and purpose refusals
 web/scripts/dev-origin.mjs        the local stand-in for Caddy in front of real processes
 ```
 
@@ -170,11 +178,13 @@ once in CI and configured by its environment.
 |---|---|
 | `WEB_API_INTERNAL_URL` | api as the web container reaches it; unset, every `/_bff/*` route answers 503 naming it |
 | `WEB_MFA_CHALLENGE_SECRET` | seals the MFA challenge between the two sign-in steps (the kit's `mfaChallengeSecret`), at least 32 bytes from the deployment's secret store; unset or shorter, every `/_bff/*` route answers 503 naming it |
-| `WEB_TRUSTED_PROXY_HOPS` | reverse proxies in front of Next.js that append to `X-Forwarded-For` (1 behind Caddy); the BFF sends api exactly the address they recorded |
+| `WEB_TRUSTED_PROXY_HOPS` | reverse proxies in front of Next.js that append to `X-Forwarded-For` (1 behind Caddy); the BFF sends api exactly the address they recorded. Unset, no proxy is trusted and api is sent no client address (the kit's `noTrustedProxy`), so behind Caddy it must be set |
 | `WEB_SESSION_MAX_AGE_S` | ceiling of the session cookie's `Max-Age` (43200); api's `expires_at` shortens it |
 | `WEB_UPSTREAM_TIMEOUT_MS` | timeout of each BFF call to api (10000) |
 | `WEB_MAP_CENTER`, `WEB_MAP_ZOOM` | the inspector map's first view, `"lng,lat"` and a zoom; unset, the map names the variable instead of choosing a place (INV-03) |
 | `WEB_BRAND_NAME`, `WEB_BRAND_SHORT_NAME`, `WEB_BRAND_LOGO_URL`, `WEB_BRAND_CONTACT`, `WEB_BRAND_ACCENT` | branding (spec 08 Q15) through the kit's `brandFromEnv`; without them the name is the role ("U-space"); an accent that is not `#rrggbb` fails the page naming the variable |
+| `WEB_POLICE_PURPOSES`, `WEB_POLICE_PII_PURPOSES` | the police realm's purposes and those that release personal data, as api's `POLICE_PURPOSES` and `POLICE_PII_PURPOSES` (set them to api's values). Defaults, **pending GCAA**: `public_order,traffic_enforcement,criminal_investigation,security_threat` and `criminal_investigation,security_threat`; the realm says when the defaults are in force. A malformed list makes the realm's forms offer nothing and names the variable |
+| `WEB_RULES_FILE_KA`, `WEB_RULES_FILE_EN` | the rules page's Markdown for each language, a file of at most 256 KiB read at request time (headings, paragraphs, lists, emphasis, code, http(s) and site links; HTML stays text). Unset or unreadable, the page names the variable instead of showing rules of its own (INV-03) |
 
 ## The BFF contract
 
@@ -194,10 +204,13 @@ the kit's `bffHandlers` configured in `web/src/lib/bff/handlers.ts`.
   the token. Sign-in requires a same-origin `Origin`.
 - `/_bff/api/<path>` is forwarded to api with the cookie as
   `Authorization: Bearer`, for the paths of `PROXY_ALLOW_PATHS` only:
-  `/v1/auth/session` and `/v1/zones` in this WP. Any other path is the
-  BFF's 404 and never reaches api; only `GET` is routed. An unsafe
-  method (a later WP) needs `X-CSRF-Token` equal to `uspace_csrf`. A 401
-  from api clears both cookies.
+  `/v1/auth/session`, `/v1/zones` and WP-23's `OVERSIGHT_PROXY_ROUTES`,
+  each of which names the methods of its operations (a path of WP-23's
+  with another method is the BFF's 405 and never reaches api). Any
+  other path is the BFF's 404 and never reaches api. `GET`, `POST`,
+  `PUT` and `PATCH` are routed, `DELETE` is not; an unsafe method needs
+  `X-CSRF-Token` equal to `uspace_csrf` (the kit's check, before api).
+  A 401 from api clears both cookies.
 - `POST /_bff/logout` checks the CSRF pair, tells api
   (`POST /v1/auth/logout`) and clears both cookies whatever api answers.
 - The picture WebSocket is not proxied. The page opens
@@ -256,6 +269,59 @@ Provider track carries is dropped by the adapter before anything is
 stored, and a registration number is shown through the kit's formatter,
 which keeps an EU secret part off the screen (picture-ws sends only the
 public part; G-04).
+
+## The oversight pages, the police realm and the public pages
+
+WP-23. Every page reads api through the BFF and renders what api
+answers: a refusal is shown with its status, api's title and detail and
+the field errors; a 409 says it is final; nothing is retried. An empty
+list is api's answer for the filters, said as such. The navigation by
+role is a courtesy (M20): api refuses what a role may not read.
+
+| Page | Roles (api's x-roles) | What |
+|---|---|---|
+| `/violations`, `/violations/<id>` | inspector | the list with its filters; one violation with its facts, every number with its unit and datum, every height over the ground beside the terrain dataset, spacing and attribution (D-05), the broadcast warning (06 §2 T1, R-05), the excerpt and the review |
+| `/incidents`, `/incidents/<id>` | inspector, incident officer | the case list and opening a case (own observation, ANSP or USSP notice); the case file, aircraft, append-only notes, status and assignee; evidence packs: build (oversight, or legal with a case reference), manifest by section, hash, verify, download with a purpose |
+| `/occurrences`, `/occurrences/<id>`, `/occurrences/export` | incident officer only | the intake queue with the 72 h flag; the report, and the reporter block rendered only from api's answer to a purpose-logged read; the classification and the analysis; the de-identified export with its warning that a free-text narrative is exported as written. Another role has no navigation entry, and the pages render a refusal without reading anything (376/2014 Art. 15-16) |
+| `/sources` | admin | every switch and source: enabled or disabled by whom and why, healthy, stale, lagging (with the lag), never heard, counters; a switch confirms with a mandatory reason; "already in that state" says nothing was written |
+| `/audit` | admin, auditor | the event search (the read's purpose recorded), the month's chain verification (a month without rows is never called intact), the DPO report |
+| `/police`, `/police/exports` | police.query in the police realm | the police realm (below) |
+| `/check`, `/register`, `/rules` | none | the registration check (status and end of validity only), the public register of certified providers, the rules from `WEB_RULES_FILE_*` |
+
+**The excerpt.** `GET /v1/violations/{id}` answers `excerpt_segmenting`,
+the excerpt cut by api with the evidence packs' rule
+(`docs/runbooks/violations.md`). The page draws each segment as a line
+through its own samples and each sample as a point, lists the samples
+with a row for every hole and every cause api names, and draws nothing
+across a hole. When api did not cut the excerpt the samples are shown
+unjoined and the page says why. The console cuts nothing itself.
+
+**The police realm.** Its own layout (`app/[locale]/police/`), a colour
+band no console page has (`src/police/police.css`), and no console
+navigation: a police session that opens a console page is sent to its
+realm, and a console session that opens the realm is sent to the
+console. The purpose and the case reference are asked once per page and
+sent with every query; a query without both is not sent (and api
+refuses it anyway, 400 naming the field). An operator's identity is
+shown only when api releases it for a personal-data purpose, marked as
+a recorded read. The realm never opens the picture WebSocket: every
+view of the airspace is a police query, which api checks against the
+account's address list and records (`docs/runbooks/police-realm.md`,
+"Threats", for what this does and does not close).
+
+**Tests.** `pnpm e2e` runs `test/e2e/*.spec.ts` against
+`test/mock-origin.mjs` with `test/mock-oversight.mjs`: a violation with
+a hole renders the hole's labels and one without renders none;
+broadcast evidence is not escalated without a note, by the page and,
+with the page's check removed, by the stub as api would; an inspector
+cannot reach the occurrence routes and an incident officer can; a
+police query without a purpose is blocked by the page and refused by
+the stub without a record; the realm opens no WebSocket and a console
+session does; the public check renders the status only; and axe finds
+no WCAG 2.2 AA violation on every role's pages in English light and
+Georgian dark (the target is pending GCAA), with a page that does fail
+shown to be found. `E2E_WEB_PORT` and `E2E_ORIGIN_PORT` move the run
+off 3100 and 3000 when another run holds them.
 
 ## Generated types
 

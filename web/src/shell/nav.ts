@@ -5,6 +5,7 @@
 // refused by api and picture-ws, and a page reached by its address shows
 // what they answer.
 import type { components } from "../api/types";
+import { OVERSIGHT_NAV_ITEMS } from "./nav-oversight";
 
 export type Role = components["schemas"]["Role"];
 export type Realm = components["schemas"]["Realm"];
@@ -28,13 +29,19 @@ export interface NavItem {
 }
 
 /**
- * Every page of this work package. The inspector map reads the picture,
- * which picture-ws serves to every session of the console and police
- * realms, and the zones, which api serves to inspector, admin and viewer
- * (the map says so when the zones are refused). Later work packages
- * (WP-22 to WP-24) add their pages here with their operations' x-roles.
+ * Every page of the console realm. The inspector map reads the picture,
+ * which picture-ws serves to every session of the console realm, and
+ * the zones, which api serves to inspector, admin and viewer (the map
+ * says so when the zones are refused). The police realm has its own
+ * layout and no console navigation (WP-23, src/police/). Later work
+ * packages (WP-22 to WP-24) add their pages here with their operations'
+ * x-roles.
  */
-export const NAV_ITEMS: readonly NavItem[] = [{ path: "", labelKey: "authority.nav.map", roles: [], realms: ["console", "police"] }];
+export const NAV_ITEMS: readonly NavItem[] = [
+  { path: "", labelKey: "authority.nav.map", roles: [], realms: ["console"] },
+  // WP-23: violations, incidents, occurrences, sources, the audit log.
+  ...OVERSIGHT_NAV_ITEMS,
+];
 
 /** The items a session with `roles` in `realm` is shown; none without a session. */
 export function navFor(session: { roles: readonly string[]; realm: string } | null): NavItem[] {
