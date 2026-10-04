@@ -110,14 +110,7 @@ func newIntegration(t *testing.T) *itest {
 // passed through appURL first (the admin handle keeps the plain one).
 func newIntegrationWith(t *testing.T, appURL func(string) string) *itest {
 	t.Helper()
-	// An approval holds its connection and the application's row lock
-	// while the registry takes a second connection, and a refusal waits
-	// for the lock holding one: a pool no wider than the callers of
-	// TestIntegrationApproveAndRefuseRace (twelve) deadlocks it. pgx's
-	// default (max(4, CPUs)) is four on the CI runner, below api's
-	// PG_MAX_CONNS default of 10; the pool here is wider than the callers.
-	// The pool-exhaustion risk itself is recorded in PR #45 for WP-20.
-	return newIntegrationPool(t, appURL, 16)
+	return newIntegrationPool(t, appURL, 0)
 }
 
 // newIntegrationPool is newIntegrationWith with the relational pool
