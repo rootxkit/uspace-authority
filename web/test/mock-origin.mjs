@@ -7,7 +7,8 @@
 //
 // - api (the shapes of api/openapi.yaml): POST /v1/auth/login, POST
 //   /v1/auth/mfa, GET /v1/auth/session, POST /v1/auth/logout, GET
-//   /v1/zones. The BFF reaches these here too (WEB_API_INTERNAL_URL).
+//   /v1/zones, and WP-23's operations (test/mock-oversight.mjs). The BFF
+//   reaches these here too (WEB_API_INTERNAL_URL).
 // - picture-ws (docs/runbooks/picture.md): WS /v1/picture/ws with the
 //   same-origin and cookie rules of M22 (a foreign Origin is 403, no
 //   live session is a 4401 close), and GET /v1/picture/sources. On
@@ -28,12 +29,15 @@
 //   POST /__mock/state {nats?: "connected"|"unavailable", revoke?: true}
 //   GET  /__mock/requests                 the api requests answered: method, path, body keys
 //   GET  /__mock/subscribes               the console/subscribe/v1 bodies received
+//   GET  /__mock/oversight                the police queries the stub recorded
+//   GET  /__mock/upgrades                 the picture WebSocket upgrades: the realm of each
 //
 // The accounts and the code below are test data of this file, not
 // credentials of anything.
 import { createHash, randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import http from "node:http";
+import { oversightApi, oversightRecords, publicApi, resetOversight } from "./mock-oversight.mjs";
 
 const PORT = Number(process.env.MOCK_PORT ?? "3000");
 const UPSTREAM = new URL(process.env.MOCK_UPSTREAM ?? "http://127.0.0.1:3100");
@@ -42,8 +46,12 @@ const STATUS_PERIOD_MS = 1000;
 const TRACK_PERIOD_MS = 1000;
 const CODE = "246810";
 const ACCOUNTS = {
-  inspector1: { password: "inspector1-test-password", roles: ["inspector"] },
-  registrar1: { password: "registrar1-test-password", roles: ["registrar"] },
+  inspector1: { password: "inspector1-test-password", roles: ["inspector"], realm: "console" },
+  registrar1: { password: "registrar1-test-password", roles: ["registrar"], realm: "console" },
+  officer1: { password: "officer1-test-password", roles: ["incident_officer"], realm: "console" },
+  admin1: { password: "admin1-test-password", roles: ["admin"], realm: "console" },
+  auditor1: { password: "auditor1-test-password", roles: ["auditor"], realm: "console" },
+  police1: { password: "police1-test-password", roles: ["police.query"], realm: "police" },
 };
 
 const lab = (p) => JSON.parse(readFileSync(new URL(`../../internal/picture/testdata/lab/${p}`, import.meta.url), "utf8"));
@@ -57,13 +65,17 @@ const PROVIDER_TRACK = fixture("provider-track.json");
 let state;
 const requests = [];
 const subscribes = [];
+/** Every picture WebSocket upgrade: the realm of its session, or null without one. */
+const upgrades = [];
 const sockets = new Set();
 
 function reset() {
   state = { nats: "connected", natsSince: null, sessions: new Map(), challenges: new Map() };
   requests.length = 0;
   subscribes.length = 0;
+  upgrades.length = 0;
   for (const s of sockets) s.close(1001);
+  resetOversight();
 }
 reset();
 
@@ -117,10 +129,10 @@ function bearer(req) {
 }
 
 /** An unsigned token in the session shape (M20): the BFF never verifies, picture-ws here checks the map. */
-function issueSession(username, roles) {
+function issueSession(username, roles, realm) {
   const exp = Math.floor(Date.now() / 1000) + 3600;
   const jti = randomBytes(8).toString("hex");
-  const payload = { iss: ORIGIN, aud: "127.0.0.1", sub: `user-${username}`, scope: "session", roles, realm: "console", jti, iat: exp - 3600, exp };
+  const payload = { iss: ORIGIN, aud: "127.0.0.1", sub: `user-${username}`, scope: "session", roles, realm, jti, iat: exp - 3600, exp };
   const token = `${b64url({ alg: "none", typ: "JWT" })}.${b64url(payload)}.`;
   state.sessions.set(token, { ...payload, username });
   return { token, payload };
@@ -197,9 +209,10 @@ const ZONES = {
 };
 
 async function api(req, res, url) {
-  const body = req.method === "POST" ? await readJson(req) : {};
-  requests.push({ method: req.method, path: url.pathname, keys: Object.keys(body).sort() });
+  const body = req.method === "GET" ? {} : await readJson(req);
+  requests.push({ method: req.method, path: url.pathname, keys: Object.keys(body).sort(), query: [...url.searchParams.keys()].sort() });
   const p = url.pathname;
+  if (publicApi(req, res, url)) return;
   if (p === "/v1/auth/login" && req.method === "POST") {
     const acct = ACCOUNTS[body.username];
     if (acct === undefined || acct.password !== body.password) return problem(res, 401, "invalid_credentials", "Sign-in refused", "the username or the password is wrong");
@@ -211,7 +224,7 @@ async function api(req, res, url) {
     const username = state.challenges.get(body.mfa_token);
     if (username === undefined || body.code !== CODE) return problem(res, 401, "mfa_refused", "Code refused", "the code is wrong or the challenge is spent");
     state.challenges.delete(body.mfa_token);
-    const { token, payload } = issueSession(username, ACCOUNTS[username].roles);
+    const { token, payload } = issueSession(username, ACCOUNTS[username].roles, ACCOUNTS[username].realm);
     return json(
       res,
       200,
@@ -232,6 +245,7 @@ async function api(req, res, url) {
     if (!s.roles.some((r) => ["inspector", "admin", "viewer"].includes(r))) return problem(res, 403, "forbidden", "Forbidden", "this role does not read zones");
     return json(res, 200, ZONES);
   }
+  if (await oversightApi(req, res, url, s, body)) return;
   return problem(res, 404, "not_found", "Not found", `${req.method} ${p}`);
 }
 
@@ -357,6 +371,7 @@ function upgrade(req, socket) {
       socket.end();
     },
   };
+  upgrades.push({ realm: sessionOf(ws.token)?.realm ?? null });
   if (sessionOf(ws.token) === null) {
     ws.close(4401);
     return;
@@ -410,6 +425,8 @@ async function control(req, res, path) {
   if (path === "/__mock/health") return json(res, 200, { ok: true });
   if (path === "/__mock/requests") return json(res, 200, requests);
   if (path === "/__mock/subscribes") return json(res, 200, subscribes);
+  if (path === "/__mock/oversight") return json(res, 200, oversightRecords());
+  if (path === "/__mock/upgrades") return json(res, 200, upgrades);
   const input = await readJson(req);
   if (path === "/__mock/reset") {
     reset();
