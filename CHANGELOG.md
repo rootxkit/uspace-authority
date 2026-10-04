@@ -366,7 +366,7 @@ Unreleased; the format follows Keep a Changelog.
   query; spec gap Q-A22 (no details, identity or subscription with the
   decided scope); the no-authorisation runbook.
 - WP-27: retention, archive and record verification (`internal/retention`,
-  `internal/archive`, relational `00024_retention`, timeseries
+  `internal/archive`, relational `00025_retention`, timeseries
   `00013_archive`). The spec 08 Q8 periods as configuration, pending
   GCAA (90 days telemetry online, 2 years archive, 5 years violations,
   incidents indefinite, audit 10 years), the regulatory floor enforced by

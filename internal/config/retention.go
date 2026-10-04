@@ -12,7 +12,7 @@ import (
 // 08 Q8; plan Q-A15, Q-A18). Every period is the spec's default and is
 // pending GCAA and the DPO (spec Q8): the regulatory floor is 30 days for
 // operational records (2021/664 Art. 15(1)(g)), and the database refuses
-// a deletion inside it whatever these say (relational 00024, timeseries
+// a deletion inside it whatever these say (relational 00025, timeseries
 // 00013). The status line and GET /v1/retention/status carry them with
 // pending_gcaa: true.
 type Retention struct {

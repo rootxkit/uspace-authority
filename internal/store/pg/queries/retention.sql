@@ -1,5 +1,5 @@
 -- WP-27: retention, legal holds, the job ledger, the hash-chain anchor
--- and the USSP daily records (migration 00024_retention).
+-- and the USSP daily records (migration 00025_retention).
 
 -- name: InsertLegalHold :one
 INSERT INTO legal_holds (hold_id, case_ref, reason, window_from, window_to, track_ids, serials, violation_ids, placed_by)

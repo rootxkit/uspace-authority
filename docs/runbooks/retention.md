@@ -231,7 +231,7 @@ hypertables, the ledger, and the two functions; no `DELETE` anywhere.
 The deployment grants the login user membership, as for the other
 telemetry roles. The relational side needs nothing new for
 `authority_app`: it deletes only through the `SECURITY DEFINER`
-functions of relational `00024_retention`.
+functions of relational `00025_retention`.
 
 ## Known gaps
 

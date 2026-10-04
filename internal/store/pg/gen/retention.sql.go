@@ -410,7 +410,7 @@ type InsertLegalHoldParams struct {
 }
 
 // WP-27: retention, legal holds, the job ledger, the hash-chain anchor
-// and the USSP daily records (migration 00024_retention).
+// and the USSP daily records (migration 00025_retention).
 func (q *Queries) InsertLegalHold(ctx context.Context, arg InsertLegalHoldParams) (LegalHold, error) {
 	row := q.db.QueryRow(ctx, insertLegalHold,
 		arg.HoldID,
