@@ -317,3 +317,18 @@ Unreleased; the format follows Keep a Changelog.
   with `terrain.MappedDirOpener`, so detect, dp-poller and rid-ingest on
   one host share the grid and each tile in the page cache; the status
   line says `geoid_mapped` and, once a tile is read, `terrain_mapped`.
+- WP-19: the police realm (`internal/police`, migration `00021_police`):
+  police accounts per agency holding `police.query` alone, with an IP
+  allow-list checked at the password step, the TOTP step and every
+  query (client address behind the trusted proxies), and
+  `PUT /v1/users/{id}/police-access`; `GET /v1/police/aircraft` (now or
+  at an instant, from the tracks, with the picture's freshness and
+  writer gaps), `/operators/{reg}` and `/serials/{serial}`, each with a
+  configured purpose and a case reference, one `police_queries` row and
+  one `police_query` events row before anything personal is opened,
+  the operator's identity only for a configured personal-data purpose;
+  per-user and per-agency budgets on the database clock; legal exports
+  through WP-17's packs (an area export opens an incident
+  `police_request`) downloaded by the exporting agency only; no path to
+  occurrence reports (imports, queries, role); the monthly DPO report
+  `GET /v1/audit/dpo-report`; the police-realm runbook.
