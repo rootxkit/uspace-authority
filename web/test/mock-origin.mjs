@@ -231,7 +231,10 @@ async function api(req, res, url) {
   }
   requests.push({ method: req.method, path: url.pathname, keys: Object.keys(body).sort(), query: [...url.searchParams.keys()].sort() });
   const p = url.pathname;
-  if (publicApi(req, res, url)) return;
+  // The public reads answer WP-23's public pages (no session); a signed-in
+  // console's register preview reads WP-22's certificates instead.
+  const signedIn = sessionOf(bearer(req)) !== null;
+  if (!(signedIn && p === "/v1/certificates/register") && publicApi(req, res, url)) return;
   if (p === "/v1/auth/login" && req.method === "POST") {
     const acct = ACCOUNTS[body.username];
     if (acct === undefined || acct.password !== body.password) return problem(res, 401, "invalid_credentials", "Sign-in refused", "the username or the password is wrong");
