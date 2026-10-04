@@ -79,6 +79,14 @@ malformed or repeated code, or a personal-data purpose that is not in
 `POLICE_PURPOSES`, stops `api` at start naming the variable. The start
 line `police realm ready` prints both lists.
 
+The console offers the same lists from its own configuration,
+`WEB_POLICE_PURPOSES` and `WEB_POLICE_PII_PURPOSES` (the same defaults,
+pending GCAA, and the same rules; a malformed list makes the realm's
+forms offer nothing and says so). Set them to api's values: api decides
+every query whatever the console offers, and a purpose the console
+offers that api does not list is refused there with 400 naming
+`purpose`. The export page offers the personal-data purposes only.
+
 ## What is answered at each level
 
 | Query | Status-only purpose | Personal-data purpose |
@@ -197,6 +205,19 @@ it is closed, tell an agency at onboarding that the address list
 guards its queries and exports but not the live picture, and look for
 police streams in `picture-ws`'s `console connected` lines, which the
 DPO report does not list.
+
+**What the console does about it (WP-23).** The police realm's pages
+never open the picture WebSocket: the realm has its own layout with no
+map and no console navigation, and every view of the airspace there is
+`GET /v1/police/aircraft`, which api checks against the account's
+address list at that moment and records with its purpose and case
+reference. A police session that opens a console page is sent back to
+its realm, and the Playwright run shows that a police sign-in and every
+page of the realm open no WebSocket while a console sign-in does. So in
+the console's own flows the allow-list guards everything an officer
+sees. It does not close the gap: the cookie taken to another client, or
+a script on another address, can still upgrade `/v1/picture/ws`, and
+only the session-contract change above stops that.
 
 ## The DPO report
 

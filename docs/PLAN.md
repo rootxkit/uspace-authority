@@ -635,9 +635,11 @@ edits another's), `CHANGELOG.md` (one line per WP under Unreleased) and
   peers); dev only: `typescript`, `eslint` with `typescript-eslint`,
   `eslint-plugin-react-hooks` and `eslint-plugin-jsx-a11y` (the kit's
   lint config), `tailwindcss` with `@tailwindcss/postcss` (the kit's
-  theme), `vitest`, `@playwright/test` (the smoke run), `@types/*`, and
+  theme), `vitest`, `@playwright/test` (the smoke run), `@types/*`,
   `json-schema-to-typescript` (this repository's frame extras typed
-  from `schemas/picture/*` and `schemas/violation/v1.json`).
+  from `schemas/picture/*` and `schemas/violation/v1.json`), and
+  `axe-core` (WP-23: the accessibility check of the Playwright run, the
+  version the kit's example checks with).
 - Lint: `gofmt`, `go vet`, staticcheck and golangci-lint pinned to the
   versions `uspace-core` pins (v0.8.1, v2.14.0) with the same `.golangci.yml`
   base plus `depguard` for §3's import rules; `forbidigo` forbids `panic`,

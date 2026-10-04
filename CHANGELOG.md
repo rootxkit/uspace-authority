@@ -383,3 +383,22 @@ Unreleased; the format follows Keep a Changelog.
   monthly evidence-pack re-verification; the daily USSP records pull
   with the missing-day alarm; the `job_runs` ledger on the database
   clock; `GET /v1/retention/status`; the retention runbook.
+- WP-23: the console's oversight pages, the police realm and the public
+  pages (`web/`, on uspace-ui v0.1.0): violations with their filters and
+  the excerpt drawn in api's segments and holes, each hole labelled and
+  nothing interpolated (`GET /v1/violations/{id}` answers
+  `excerpt_segmenting`, cut by the evidence packs' rule), every AGL
+  number with its terrain dataset, spacing and attribution, the
+  broadcast warning and the review; incidents with aircraft, notes and
+  evidence packs (build with a purpose and a case reference, manifest,
+  hash, verify, download); the occurrence officer realm (incident
+  officer only: the 72 h flag, the reporter only from api's answer,
+  classification, analysis, the de-identified export and its narrative
+  warning); sources with who disabled what and a mandatory reason for
+  every switch; the audit log, the monthly chain verification and the
+  DPO report; the police realm in its own layout and colour band, a
+  purpose and a case reference on every query (the purposes as
+  configuration, defaults pending GCAA), and no picture WebSocket; the
+  registration check (status only), the public register and the rules
+  from configured Markdown; ka/en, Playwright and an axe check (WCAG 2.2
+  AA) in English light and Georgian dark.
