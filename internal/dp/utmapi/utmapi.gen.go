@@ -91,6 +91,24 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
+	// QueryOperationalIntentReferencesWithBody Query all operational intent references in the specified area/volume/time from the DSS.
+	//
+	// Note that this endpoint does not produce any mutations in the DSS despite using the HTTP POST verb.  The HTTP GET verb is traditionally used for operations like this one, but requiring or using a request body for HTTP GET requests is non-standard and not supported by some architectures.  POST is used here instead of GET to ensure robust support for the use of a request body.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /dss/v1/operational_intent_references/query (the `QueryOperationalIntentReferences` operationId).
+	QueryOperationalIntentReferencesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// QueryOperationalIntentReferences Query all operational intent references in the specified area/volume/time from the DSS.
+	//
+	// Note that this endpoint does not produce any mutations in the DSS despite using the HTTP POST verb.  The HTTP GET verb is traditionally used for operations like this one, but requiring or using a request body for HTTP GET requests is non-standard and not supported by some architectures.  POST is used here instead of GET to ensure robust support for the use of a request body.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /dss/v1/operational_intent_references/query (the `QueryOperationalIntentReferences` operationId).
+	QueryOperationalIntentReferences(ctx context.Context, body QueryOperationalIntentReferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetUssAvailability Get availability status of a USS.
 	//
 	// Corresponds with GET /dss/v1/uss_availability/{uss_id} (the `GetUssAvailability` operationId).
@@ -109,6 +127,44 @@ type ClientInterface interface {
 	//
 	// Corresponds with PUT /dss/v1/uss_availability/{uss_id} (the `SetUssAvailability` operationId).
 	SetUssAvailability(ctx context.Context, ussId string, body SetUssAvailabilityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+// QueryOperationalIntentReferencesWithBody Query all operational intent references in the specified area/volume/time from the DSS.
+//
+// Note that this endpoint does not produce any mutations in the DSS despite using the HTTP POST verb.  The HTTP GET verb is traditionally used for operations like this one, but requiring or using a request body for HTTP GET requests is non-standard and not supported by some architectures.  POST is used here instead of GET to ensure robust support for the use of a request body.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /dss/v1/operational_intent_references/query (the `QueryOperationalIntentReferences` operationId).
+func (c *StdClient) QueryOperationalIntentReferencesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewQueryOperationalIntentReferencesRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// QueryOperationalIntentReferences Query all operational intent references in the specified area/volume/time from the DSS.
+//
+// Note that this endpoint does not produce any mutations in the DSS despite using the HTTP POST verb.  The HTTP GET verb is traditionally used for operations like this one, but requiring or using a request body for HTTP GET requests is non-standard and not supported by some architectures.  POST is used here instead of GET to ensure robust support for the use of a request body.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /dss/v1/operational_intent_references/query (the `QueryOperationalIntentReferences` operationId).
+func (c *StdClient) QueryOperationalIntentReferences(ctx context.Context, body QueryOperationalIntentReferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewQueryOperationalIntentReferencesRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 // GetUssAvailability Get availability status of a USS.
@@ -158,6 +214,46 @@ func (c *StdClient) SetUssAvailability(ctx context.Context, ussId string, body S
 		return nil, err
 	}
 	return c.Client.Do(req)
+}
+
+// NewQueryOperationalIntentReferencesRequest calls the generic QueryOperationalIntentReferences builder with application/json body
+func NewQueryOperationalIntentReferencesRequest(server string, body QueryOperationalIntentReferencesJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewQueryOperationalIntentReferencesRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewQueryOperationalIntentReferencesRequestWithBody constructs an http.Request for the QueryOperationalIntentReferences method, with any body, and a specified content type
+func NewQueryOperationalIntentReferencesRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/dss/v1/operational_intent_references/query")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
 }
 
 // NewGetUssAvailabilityRequest constructs an http.Request for the GetUssAvailability method
@@ -285,6 +381,24 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
+	// QueryOperationalIntentReferencesWithBodyWithResponse Query all operational intent references in the specified area/volume/time from the DSS.
+	//
+	// Note that this endpoint does not produce any mutations in the DSS despite using the HTTP POST verb.  The HTTP GET verb is traditionally used for operations like this one, but requiring or using a request body for HTTP GET requests is non-standard and not supported by some architectures.  POST is used here instead of GET to ensure robust support for the use of a request body.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /dss/v1/operational_intent_references/query (the `QueryOperationalIntentReferences` operationId).
+	QueryOperationalIntentReferencesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*QueryOperationalIntentReferencesReply, error)
+
+	// QueryOperationalIntentReferencesWithResponse Query all operational intent references in the specified area/volume/time from the DSS.
+	//
+	// Note that this endpoint does not produce any mutations in the DSS despite using the HTTP POST verb.  The HTTP GET verb is traditionally used for operations like this one, but requiring or using a request body for HTTP GET requests is non-standard and not supported by some architectures.  POST is used here instead of GET to ensure robust support for the use of a request body.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /dss/v1/operational_intent_references/query (the `QueryOperationalIntentReferences` operationId).
+	QueryOperationalIntentReferencesWithResponse(ctx context.Context, body QueryOperationalIntentReferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*QueryOperationalIntentReferencesReply, error)
+
 	// GetUssAvailabilityWithResponse Get availability status of a USS.
 	//
 	// Returns a wrapper object for the known response body format(s).
@@ -305,6 +419,82 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with PUT /dss/v1/uss_availability/{uss_id} (the `SetUssAvailability` operationId).
 	SetUssAvailabilityWithResponse(ctx context.Context, ussId string, body SetUssAvailabilityJSONRequestBody, reqEditors ...RequestEditorFn) (*SetUssAvailabilityReply, error)
+}
+
+type QueryOperationalIntentReferencesReply struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *QueryOperationalIntentReferenceResponse
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *ErrorResponse
+	// JSON401 the response for an HTTP 401 `application/json` response
+	JSON401 *ErrorResponse
+	// JSON403 the response for an HTTP 403 `application/json` response
+	JSON403 *ErrorResponse
+	// JSON413 the response for an HTTP 413 `application/json` response
+	JSON413 *ErrorResponse
+	// JSON429 the response for an HTTP 429 `application/json` response
+	JSON429 *ErrorResponse
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r QueryOperationalIntentReferencesReply) GetJSON200() *QueryOperationalIntentReferenceResponse {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r QueryOperationalIntentReferencesReply) GetJSON400() *ErrorResponse {
+	return r.JSON400
+}
+
+// GetJSON401 returns the response for an HTTP 401 `application/json` response
+func (r QueryOperationalIntentReferencesReply) GetJSON401() *ErrorResponse {
+	return r.JSON401
+}
+
+// GetJSON403 returns the response for an HTTP 403 `application/json` response
+func (r QueryOperationalIntentReferencesReply) GetJSON403() *ErrorResponse {
+	return r.JSON403
+}
+
+// GetJSON413 returns the response for an HTTP 413 `application/json` response
+func (r QueryOperationalIntentReferencesReply) GetJSON413() *ErrorResponse {
+	return r.JSON413
+}
+
+// GetJSON429 returns the response for an HTTP 429 `application/json` response
+func (r QueryOperationalIntentReferencesReply) GetJSON429() *ErrorResponse {
+	return r.JSON429
+}
+
+// GetBody returns the raw response body bytes
+func (r QueryOperationalIntentReferencesReply) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r QueryOperationalIntentReferencesReply) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r QueryOperationalIntentReferencesReply) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r QueryOperationalIntentReferencesReply) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
 }
 
 type GetUssAvailabilityReply struct {
@@ -445,6 +635,36 @@ func (r SetUssAvailabilityReply) ContentType() string {
 	return ""
 }
 
+// QueryOperationalIntentReferencesWithBodyWithResponse Query all operational intent references in the specified area/volume/time from the DSS.
+//
+// Note that this endpoint does not produce any mutations in the DSS despite using the HTTP POST verb.  The HTTP GET verb is traditionally used for operations like this one, but requiring or using a request body for HTTP GET requests is non-standard and not supported by some architectures.  POST is used here instead of GET to ensure robust support for the use of a request body.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /dss/v1/operational_intent_references/query (the `QueryOperationalIntentReferences` operationId).
+func (c *ClientWithResponses) QueryOperationalIntentReferencesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*QueryOperationalIntentReferencesReply, error) {
+	rsp, err := c.QueryOperationalIntentReferencesWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseQueryOperationalIntentReferencesReply(rsp)
+}
+
+// QueryOperationalIntentReferencesWithResponse Query all operational intent references in the specified area/volume/time from the DSS.
+//
+// Note that this endpoint does not produce any mutations in the DSS despite using the HTTP POST verb.  The HTTP GET verb is traditionally used for operations like this one, but requiring or using a request body for HTTP GET requests is non-standard and not supported by some architectures.  POST is used here instead of GET to ensure robust support for the use of a request body.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /dss/v1/operational_intent_references/query (the `QueryOperationalIntentReferences` operationId).
+func (c *ClientWithResponses) QueryOperationalIntentReferencesWithResponse(ctx context.Context, body QueryOperationalIntentReferencesJSONRequestBody, reqEditors ...RequestEditorFn) (*QueryOperationalIntentReferencesReply, error) {
+	rsp, err := c.QueryOperationalIntentReferences(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseQueryOperationalIntentReferencesReply(rsp)
+}
+
 // GetUssAvailabilityWithResponse Get availability status of a USS.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -482,6 +702,67 @@ func (c *ClientWithResponses) SetUssAvailabilityWithResponse(ctx context.Context
 		return nil, err
 	}
 	return ParseSetUssAvailabilityReply(rsp)
+}
+
+// ParseQueryOperationalIntentReferencesReply parses an HTTP response from a QueryOperationalIntentReferencesWithResponse call
+func ParseQueryOperationalIntentReferencesReply(rsp *http.Response) (*QueryOperationalIntentReferencesReply, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &QueryOperationalIntentReferencesReply{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest QueryOperationalIntentReferenceResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	return response, nil
 }
 
 // ParseGetUssAvailabilityReply parses an HTTP response from a GetUssAvailabilityWithResponse call

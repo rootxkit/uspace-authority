@@ -2,7 +2,10 @@
 # F3548-21 operations this system calls, the DSS's USS availability
 # arbitration (GET and PUT /dss/v1/uss_availability/{uss_id}, scope
 # utm.availability_arbitration; the PUT carries the version the GET
-# read), from the pinned copy
+# read; WP-14), and the operational intent reference query (POST
+# /dss/v1/operational_intent_references/query, scope
+# utm.conformance_monitoring_sa, docs/PLAN.md Q-A5; WP-26's
+# no_authorisation detector), from the pinned copy
 # api/clients/dss-utm.yaml (api/clients/SOURCE). The types are
 # uspace-core's f3548 package, dot-imported. Run scripts/generate.sh;
 # never edit the output.
@@ -25,3 +28,4 @@ output-options:
   include-operation-ids:
     - getUssAvailability
     - setUssAvailability
+    - queryOperationalIntentReferences

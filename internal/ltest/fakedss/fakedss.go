@@ -7,7 +7,11 @@
 // Service Provider serves flights and details and posts ISA changes to
 // the subscribers the DSS lists, as F3411 has the owner of an ISA do.
 // The DSS also answers F3548 USS availability (GET and PUT
-// /dss/v1/uss_availability/{uss_id}). Faults are switches: the DSS or
+// /dss/v1/uss_availability/{uss_id}) and the operational intent
+// reference query (POST /dss/v1/operational_intent_references/query,
+// WP-26): it keeps references with their extents and lists those whose
+// time window, box and altitude range meet the area of interest, as the
+// InterUSS DSS does at its cell resolution. Faults are switches: the DSS or
 // the Service Provider down, a 413, a delay. Every bearer token is
 // recorded (its claims read unverified) so a test can check the aud and
 // the scope a call carried. Test-only (internal/ltest).
@@ -28,6 +32,7 @@ import (
 
 	"github.com/rootxkit/uspace-core/f3411"
 	"github.com/rootxkit/uspace-core/f3548"
+	"github.com/rootxkit/uspace-core/geodesy"
 
 	"github.com/rootxkit/uspace-authority/internal/dp"
 	"github.com/rootxkit/uspace-authority/internal/dp/ridapi"
@@ -60,6 +65,13 @@ type DSS struct {
 	subDeletes   int
 	claims       []Claims
 	availability map[string]f3548.UssAvailabilityStatusResponse
+	intents      map[string]intentEntry
+	oiQueries    int
+}
+
+type intentEntry struct {
+	ref    f3548.OperationalIntentReference
+	extent f3548.Volume4D
 }
 
 type isaEntry struct {
@@ -87,11 +99,13 @@ type SP struct {
 // NewDSS starts the fake DSS; its URL is the DSS base URL (F3411 under
 // /rid/v2).
 func NewDSS() *DSS {
-	d := &DSS{isas: map[string]isaEntry{}, subs: map[string]*sub{}, availability: map[string]f3548.UssAvailabilityStatusResponse{}}
+	d := &DSS{isas: map[string]isaEntry{}, subs: map[string]*sub{}, availability: map[string]f3548.UssAvailabilityStatusResponse{},
+		intents: map[string]intentEntry{}}
 	mux := http.NewServeMux()
 	ridapi.HandlerWithOptions(dssServer{d}, ridapi.StdHTTPServerOptions{BaseURL: "/rid/v2", BaseRouter: mux})
 	mux.HandleFunc("GET /dss/v1/uss_availability/{uss_id}", d.getAvailability)
 	mux.HandleFunc("PUT /dss/v1/uss_availability/{uss_id}", d.putAvailability)
+	mux.HandleFunc("POST /dss/v1/operational_intent_references/query", d.queryIntents)
 	d.srv = httptest.NewServer(d.gate(mux))
 	return d
 }
@@ -411,6 +425,82 @@ func (d *DSS) putAvailability(w http.ResponseWriter, r *http.Request) {
 		Version: strconv.FormatInt(time.Now().UnixNano(), 10)}
 	d.availability[uss] = a
 	writeJSON(w, 200, a)
+}
+
+// PutIntent stores (or replaces) an operational intent reference whose
+// 4D extent is extent, as the managing USSP's write would.
+func (d *DSS) PutIntent(ref f3548.OperationalIntentReference, extent f3548.Volume4D) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.intents[ref.Id] = intentEntry{ref: ref, extent: extent}
+}
+
+// DeleteIntent removes a reference, as its USSP ending the flight would.
+func (d *DSS) DeleteIntent(id string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	delete(d.intents, id)
+}
+
+// IntentQueries is the number of operational intent queries answered.
+func (d *DSS) IntentQueries() int {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.oiQueries
+}
+
+// queryIntents answers queryOperationalIntentReferences: the references
+// whose extent meets the area of interest in time, box and altitude.
+func (d *DSS) queryIntents(w http.ResponseWriter, r *http.Request) {
+	var body f3548.QueryOperationalIntentReferenceParameters
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.AreaOfInterest == nil {
+		writeJSON(w, 400, map[string]string{"message": "area_of_interest required"})
+		return
+	}
+	aoiBox, aoiStart, aoiEnd, err := f3548.Volume4DToZonesEnvelope(*body.AreaOfInterest)
+	if err != nil {
+		writeJSON(w, 400, map[string]string{"message": err.Error()})
+		return
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.oiQueries++
+	out := []f3548.OperationalIntentReference{}
+	for id := range d.intents {
+		e := d.intents[id]
+		box, start, end, err := f3548.Volume4DToZonesEnvelope(e.extent)
+		if err != nil || !overlaps(box, aoiBox) || !before(aoiStart, end) || !before(start, aoiEnd) ||
+			!altitudesMeet(e.extent.Volume, body.AreaOfInterest.Volume) {
+			continue
+		}
+		out = append(out, e.ref)
+	}
+	writeJSON(w, 200, f3548.QueryOperationalIntentReferenceResponse{OperationalIntentReferences: out})
+}
+
+func overlaps(a, b geodesy.BBox) bool {
+	return a.MinLat <= b.MaxLat && b.MinLat <= a.MaxLat && a.MinLon <= b.MaxLon && b.MinLon <= a.MaxLon
+}
+
+// before reports a <= b, a zero time being unbounded.
+func before(a, b time.Time) bool { return a.IsZero() || b.IsZero() || !b.Before(a) }
+
+// altitudesMeet compares the W84 ranges of two volumes, a missing limit
+// being unbounded.
+func altitudesMeet(a, b f3548.Volume3D) bool {
+	lo := func(v f3548.Volume3D) float64 {
+		if v.AltitudeLower == nil {
+			return -1e9
+		}
+		return v.AltitudeLower.Value
+	}
+	hi := func(v f3548.Volume3D) float64 {
+		if v.AltitudeUpper == nil {
+			return 1e9
+		}
+		return v.AltitudeUpper.Value
+	}
+	return lo(a) <= hi(b) && lo(b) <= hi(a)
 }
 
 // ---- Service Provider ------------------------------------------------
