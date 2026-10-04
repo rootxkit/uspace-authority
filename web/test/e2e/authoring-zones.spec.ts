@@ -157,11 +157,17 @@ test("an admin approves and publishes with the exact effect, and sees the public
   await page.getByRole("alertdialog").getByRole("button", { name: "Confirm" }).click();
   await expect(page.getByTestId("zone-facts").getByTestId("zone-state")).toHaveAttribute("data-state", "approved");
 
+  // The browser's clock is wrong (before both zones' periods); the count
+  // in force is by api's clock (its Date header), which the page names.
+  await page.clock.setSystemTime(new Date("2025-06-01T00:00:00Z"));
   await page.goto("/en/zones");
-  await expect(page.getByTestId("publish-preview-text")).toContainText("1 approved versions wait; with them 2 are in force now.");
+  await expect(page.getByTestId("publish-preview-text")).toContainText(/^1 approved versions wait; with them 2 are in force at 20\d\d-\d\d-\d\d \d\d:\d\d UTC by the API's clock\.$/);
+  await expect(page.getByTestId("publish-preview-text")).not.toContainText("2025-06-01");
   await expectAccessible(page);
   await page.getByTestId("publish").click();
-  await expect(page.getByRole("alertdialog")).toContainText("This publishes 1 approved versions and sends the CISP every geo-zone in force, 2 zones, as the next zones version.");
+  await expect(page.getByRole("alertdialog")).toContainText(
+    /This publishes TSTP001 version 3 and sends the CISP every geo-zone in force at 20\d\d-\d\d-\d\d \d\d:\d\d UTC by the API's clock, 2 zones, as the next zones version\./,
+  );
   await page.getByRole("alertdialog").getByRole("button", { name: "Confirm" }).click();
   await expect(page.getByTestId("publish-result")).toContainText("Published as zones version 8");
   const pub = page.getByTestId("publications-zones").getByTestId("publication").first();

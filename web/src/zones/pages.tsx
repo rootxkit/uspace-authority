@@ -9,7 +9,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { fmtNum, useLang, useT } from "@rootxkit/uspace-ui/i18n";
+import { fmtNum, fmtTimeUTC, useLang, useT } from "@rootxkit/uspace-ui/i18n";
 import { inputToUtc } from "@rootxkit/uspace-ui/form";
 import { DataTable, columnsFor, tableColumn } from "@rootxkit/uspace-ui/table";
 import { Badge, Button, EmptyState, Input, Label } from "@rootxkit/uspace-ui/ui";
@@ -20,7 +20,7 @@ import { mapPath } from "../shell/paths";
 import { PublicationState } from "../publications/PublicationState";
 import type { ZoneVersion } from "./adapt";
 import { localText } from "./adapt";
-import { ZONE_STATES, approve, getOne, listAll, listPage, publicationPreview, publish, versions, type Dataset, type ZoneState } from "./calls";
+import { PUBLISH_NAMED_MAX, ZONE_STATES, approve, getOne, listAll, listPage, publicationPreview, publish, versions, type Dataset, type ZoneState } from "./calls";
 import { diff } from "./diff";
 import { ZoneEditor, zonePath } from "./editor/ZoneEditor";
 import { ZonesMap } from "./ZonesMap";
@@ -161,9 +161,15 @@ function PublishPanel({ dataset, onPublished }: { dataset: Dataset; onPublished(
   const client = useConsole();
   const [round, setRound] = useState(0);
   const [result, setResult] = useState<{ version: number; published: number; features: number; state: string } | null>(null);
+  const clockVars = useClockVars();
+  const namedVersions = useNamedVersions();
   const { state } = useLoad(`${dataset}|preview|${round}`, async (c) => {
     const [approved, published] = await Promise.all([listAll(c, dataset, "approved"), listAll(c, dataset, "published")]);
-    return { ...publicationPreview(approved.rows, published.rows, Date.now()), complete: approved.complete && published.complete };
+    // In force by api's clock, never the browser's (which may be wrong);
+    // only when api sent no Date is the browser's used, and said.
+    const apiNowMs = published.serverNowMs ?? approved.serverNowMs;
+    const nowMs = apiNowMs ?? Date.now();
+    return { ...publicationPreview(approved.rows, published.rows, nowMs), nowMs, apiClock: apiNowMs !== null, complete: approved.complete && published.complete };
   });
   return (
     <section className="flex flex-col gap-2 rounded border border-[var(--us-border)] p-3" aria-label={t("authority.zone.publish_title")} data-testid="publish-panel">
@@ -172,14 +178,14 @@ function PublishPanel({ dataset, onPublished }: { dataset: Dataset; onPublished(
         {(p) => (
           <>
             <p className="m-0 text-sm" data-testid="publish-preview-text">
-              {p.approved === 0 ? t("authority.zone.publish_nothing") : t("authority.zone.publish_preview", { approved: fmtNum(p.approved, 0, undefined, lang), in_force: fmtNum(p.inForce, 0, undefined, lang) })}
+              {p.approved === 0 ? t("authority.zone.publish_nothing") : t("authority.zone.publish_preview", { approved: fmtNum(p.approved, 0, undefined, lang), in_force: fmtNum(p.inForce, 0, undefined, lang), ...clockVars(p) })}
             </p>
             {!p.complete && <p className="m-0 text-xs">{t("authority.zone.publish_incomplete")}</p>}
             <Act
               labelKey="authority.zone.publish"
               titleKey="authority.zone.publish_confirm_title"
               bodyKey={dataset === "zones" ? "authority.zone.publish_confirm_body" : "authority.uspace.publish_confirm_body"}
-              vars={{ approved: fmtNum(p.approved, 0, undefined, lang), in_force: fmtNum(p.inForce, 0, undefined, lang) }}
+              vars={{ versions: namedVersions(p.versions), in_force: fmtNum(p.inForce, 0, undefined, lang), ...clockVars(p) }}
               disabled={p.approved === 0}
               run={() => publish(client, dataset)}
               onDone={(r) => {
@@ -199,6 +205,24 @@ function PublishPanel({ dataset, onPublished }: { dataset: Dataset; onPublished(
       )}
     </section>
   );
+}
+
+/** The instant the count in force is at, and whose clock it is. */
+function useClockVars(): (p: { nowMs: number; apiClock: boolean }) => { at: string; clock: string } {
+  const t = useT();
+  const { lang } = useLang();
+  return (p) => ({ at: fmtTimeUTC(new Date(p.nowMs).toISOString(), lang), clock: t(p.apiClock ? "authority.zone.clock_api" : "authority.zone.clock_browser") });
+}
+
+/** "TSTP001 version 3, TSTP002 version 1 and 4 more": each approved version by name, at most PUBLISH_NAMED_MAX. */
+function useNamedVersions(): (vs: readonly { identifier: string; version: number }[]) => string {
+  const t = useT();
+  const { lang } = useLang();
+  return (vs) => {
+    const named = vs.slice(0, PUBLISH_NAMED_MAX).map((v) => t("authority.zone.publish_item", { id: v.identifier, version: v.version }));
+    if (vs.length > PUBLISH_NAMED_MAX) named.push(t("authority.zone.publish_more", { n: fmtNum(vs.length - PUBLISH_NAMED_MAX, 0, undefined, lang) }));
+    return new Intl.ListFormat(lang, { style: "long", type: "conjunction" }).format(named);
+  };
 }
 
 /** The ED-318 export at a time, or of the zones applying at a time; a download through the BFF. */

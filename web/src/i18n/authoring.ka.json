@@ -406,7 +406,7 @@
   "authority.uspace.h.json_object": "JSON ობიექტი. ცარიელი — არცერთი.",
   "authority.uspace.h.services_required": "მინიმუმ ოთხი.",
   "authority.uspace.new": "U-space საჰაერო სივრცის განსაზღვრა",
-  "authority.uspace.publish_confirm_body": "ეს გამოაქვეყნებს {approved} განსაზღვრულ ვერსიას და CISP-ს გაუგზავნის ყველა მოქმედ U-space სივრცეს, {in_force} სივრცეს, მომდევნო ვერსიად. პუბლიკაცია, რომელიც მასში არარსებულ მოსაზღვრე სივრცეს ასახელებს, უარყოფილია.",
+  "authority.uspace.publish_confirm_body": "ეს აქვეყნებს: {versions} და CISP-ს უგზავნის {at}-ისთვის ({clock}) მოქმედ ყველა U-space საჰაერო სივრცეს, {in_force} სივრცეს, როგორც მომდევნო ვერსიას. პუბლიკაცია, რომელიც ასახელებს მასში არარსებულ მოსაზღვრე სივრცეს, უარყოფილია.",
   "authority.uspace.service": "სერვისი",
   "authority.uspace.service.CM": "CM (შესაბამისობის მონიტორინგი)",
   "authority.uspace.service.FA": "FA (ფრენის ნებართვა)",
@@ -568,11 +568,11 @@
   "authority.zone.period_add": "პერიოდის დამატება",
   "authority.zone.period_remove": "პერიოდის წაშლა",
   "authority.zone.publish": "გამოქვეყნება",
-  "authority.zone.publish_confirm_body": "ეს გამოაქვეყნებს {approved} დამტკიცებულ ვერსიას და CISP-ს გაუგზავნის ყველა მოქმედ გეოზონას, {in_force} ზონას, ზონების მომდევნო ვერსიად. იმავე ზონების ძველი ვერსიები ჩანაცვლდება.",
+  "authority.zone.publish_confirm_body": "ეს აქვეყნებს: {versions} და CISP-ს უგზავნის {at}-ისთვის ({clock}) მოქმედ ყველა გეოზონას, {in_force} ზონას, როგორც ზონების მომდევნო ვერსიას. იმავე ზონების ძველი გამოქვეყნებული ვერსიები ჩანაცვლდება.",
   "authority.zone.publish_confirm_title": "CISP-ზე გამოქვეყნება",
   "authority.zone.publish_incomplete": "სია მთლიანად დასათვლელად ზედმეტად გრძელია; რა გამოქვეყნდა, API-ს პასუხი იტყვის.",
   "authority.zone.publish_nothing": "დამტკიცებული ვერსია არ არის: გამოსაქვეყნებელი არაფერია.",
-  "authority.zone.publish_preview": "{approved} დამტკიცებული ვერსია ელოდება; მათთან ერთად ახლა მოქმედებს {in_force}.",
+  "authority.zone.publish_preview": "{approved} დამტკიცებული ვერსია ელოდება; მათთან ერთად {at}-ისთვის ({clock}) მოქმედია {in_force}.",
   "authority.zone.publish_title": "გამოქვეყნება",
   "authority.zone.published": "გამოქვეყნდა ზონების ვერსიად {version}: {published} ვერსია, პუბლიკაციაში {features} ობიექტი; API-ს პასუხისას პუბლიკაცია იყო: {state}.",
   "authority.zone.published_as": "ზონების ვერსია {version}, {by_at}",
@@ -617,5 +617,9 @@
   "authority.zone.yesno": "კი ან არა",
   "authority.zone.yesno.NO": "NO (არა)",
   "authority.zone.yesno.YES": "YES (კი)",
-  "authority.zones.title": "გეოზონები"
+  "authority.zones.title": "გეოზონები",
+  "authority.zone.publish_item": "{id}, ვერსია {version}",
+  "authority.zone.publish_more": "კიდევ {n}",
+  "authority.zone.clock_api": "API-ს საათით",
+  "authority.zone.clock_browser": "ამ ბრაუზერის საათით, რადგან API-მ დრო არ გამოგზავნა"
 }

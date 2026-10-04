@@ -16,23 +16,41 @@ export const ZONE_PAGE_LIMIT = 500;
 /** At most this many pages are read for one count. A display bound; past it the count says it is incomplete. */
 export const ZONE_PAGES_MAX = 20;
 
-export async function listPage(c: ConsoleClient, ds: Dataset, state: ZoneState | undefined, after: string | undefined, limit = ZONE_PAGE_LIMIT) {
-  const query = { ...(state === undefined ? {} : { state }), ...(after === undefined ? {} : { after }), limit };
-  const d = ds === "zones" ? must(await c.GET("/v1/zones", { params: { query } })) : must(await c.GET("/v1/uspace", { params: { query } }));
-  return { rows: d.zones, next: d.next_after };
+/**
+ * api's clock when it answered, from the response's `Date` header (RFC
+ * 9110 section 6.6.1, whole seconds), or null when there is none or it
+ * does not parse. The browser's clock is not api's and may be wrong.
+ */
+export function serverClockMs(date: string | null | undefined): number | null {
+  if (date === null || date === undefined || date === "") return null;
+  const ms = Date.parse(date);
+  return Number.isFinite(ms) ? ms : null;
 }
 
-/** Every version in `state`, page by page, at most ZONE_PAGES_MAX pages; `complete` false past the bound. */
-export async function listAll(c: ConsoleClient, ds: Dataset, state: ZoneState): Promise<{ rows: ZoneVersion[]; complete: boolean }> {
+export async function listPage(c: ConsoleClient, ds: Dataset, state: ZoneState | undefined, after: string | undefined, limit = ZONE_PAGE_LIMIT) {
+  const query = { ...(state === undefined ? {} : { state }), ...(after === undefined ? {} : { after }), limit };
+  const r = ds === "zones" ? await c.GET("/v1/zones", { params: { query } }) : await c.GET("/v1/uspace", { params: { query } });
+  const d = must(r);
+  return { rows: d.zones, next: d.next_after, serverNowMs: serverClockMs(r.response.headers.get("date")) };
+}
+
+/**
+ * Every version in `state`, page by page, at most ZONE_PAGES_MAX pages;
+ * `complete` false past the bound; `serverNowMs` api's clock at the last
+ * page read (serverClockMs).
+ */
+export async function listAll(c: ConsoleClient, ds: Dataset, state: ZoneState): Promise<{ rows: ZoneVersion[]; complete: boolean; serverNowMs: number | null }> {
   const rows: ZoneVersion[] = [];
   let after: string | undefined;
+  let serverNowMs: number | null = null;
   for (let i = 0; i < ZONE_PAGES_MAX; i++) {
     const p = await listPage(c, ds, state, after);
     rows.push(...p.rows);
     after = p.next;
-    if (after === undefined) return { rows, complete: true };
+    serverNowMs = p.serverNowMs;
+    if (after === undefined) return { rows, complete: true, serverNowMs };
   }
-  return { rows, complete: false };
+  return { rows, complete: false, serverNowMs };
 }
 
 export async function getOne(c: ConsoleClient, ds: Dataset, identifier: string): Promise<ZoneVersion> {
@@ -56,17 +74,28 @@ export async function publish(c: ConsoleClient, ds: Dataset): Promise<ZonePublic
   return ds === "zones" ? must(await c.POST("/v1/zones/publish")) : must(await c.POST("/v1/uspace/publish"));
 }
 
+/** At most this many approved versions are named in the confirmation; the rest are counted. */
+export const PUBLISH_NAMED_MAX = 10;
+
 /**
  * What a publication would carry, from what api lists: the approved
- * versions it publishes, and the identifiers in force with them (each
- * identifier's approved version, else its published one, whose period
- * covers `nowMs`). The count of the confirmation; api's answer says
- * what was published.
+ * versions it publishes (each by identifier and version, in identifier
+ * order), and the identifiers in force with them (each identifier's
+ * approved version, else its published one, whose period covers
+ * `nowMs`, api's clock where it sent one). The count of the
+ * confirmation; api's answer says what was published.
  */
-export function publicationPreview(approved: readonly ZoneVersion[], published: readonly ZoneVersion[], nowMs: number): { approved: number; inForce: number } {
+export function publicationPreview(
+  approved: readonly ZoneVersion[],
+  published: readonly ZoneVersion[],
+  nowMs: number,
+): { approved: number; inForce: number; versions: { identifier: string; version: number }[] } {
   const covers = (z: ZoneVersion) => Date.parse(z.valid_from) <= nowMs && nowMs < Date.parse(z.valid_to);
   const byId = new Map<string, ZoneVersion>();
   for (const z of published) byId.set(z.identifier, z);
   for (const z of approved) byId.set(z.identifier, z);
-  return { approved: approved.length, inForce: [...byId.values()].filter(covers).length };
+  const versions = approved
+    .map((z) => ({ identifier: z.identifier, version: z.zone_version }))
+    .sort((a, b) => (a.identifier < b.identifier ? -1 : a.identifier > b.identifier ? 1 : a.version - b.version));
+  return { approved: approved.length, inForce: [...byId.values()].filter(covers).length, versions };
 }

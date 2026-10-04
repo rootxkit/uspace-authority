@@ -406,7 +406,7 @@
   "authority.uspace.h.json_object": "A JSON object. Leave empty for none.",
   "authority.uspace.h.services_required": "At least four.",
   "authority.uspace.new": "Designate a U-space airspace",
-  "authority.uspace.publish_confirm_body": "This publishes {approved} designated versions and sends the CISP every U-space airspace in force, {in_force} airspaces, as the next version. A publication naming an adjacent airspace that is not in it is refused.",
+  "authority.uspace.publish_confirm_body": "This publishes {versions} and sends the CISP every U-space airspace in force at {at} by {clock}, {in_force} airspaces, as the next version. A publication naming an adjacent airspace that is not in it is refused.",
   "authority.uspace.service": "Service",
   "authority.uspace.service.CM": "CM (conformance monitoring)",
   "authority.uspace.service.FA": "FA (flight authorisation)",
@@ -568,11 +568,11 @@
   "authority.zone.period_add": "Add a period",
   "authority.zone.period_remove": "Remove the period",
   "authority.zone.publish": "Publish",
-  "authority.zone.publish_confirm_body": "This publishes {approved} approved versions and sends the CISP every geo-zone in force, {in_force} zones, as the next zones version. Older published versions of the same zones are superseded.",
+  "authority.zone.publish_confirm_body": "This publishes {versions} and sends the CISP every geo-zone in force at {at} by {clock}, {in_force} zones, as the next zones version. Older published versions of the same zones are superseded.",
   "authority.zone.publish_confirm_title": "Publish to the CISP",
   "authority.zone.publish_incomplete": "The list was too long to count whole; the API's answer says what was published.",
   "authority.zone.publish_nothing": "No version is approved: there is nothing to publish.",
-  "authority.zone.publish_preview": "{approved} approved versions wait; with them {in_force} are in force now.",
+  "authority.zone.publish_preview": "{approved} approved versions wait; with them {in_force} are in force at {at} by {clock}.",
   "authority.zone.publish_title": "Publish",
   "authority.zone.published": "Published as zones version {version}: {published} versions, {features} features in the publication, which was {state} when the API answered.",
   "authority.zone.published_as": "zones version {version}, {by_at}",
@@ -617,5 +617,9 @@
   "authority.zone.yesno": "Yes or no",
   "authority.zone.yesno.NO": "NO",
   "authority.zone.yesno.YES": "YES",
-  "authority.zones.title": "Geo-zones"
+  "authority.zones.title": "Geo-zones",
+  "authority.zone.publish_item": "{id} version {version}",
+  "authority.zone.publish_more": "{n} more",
+  "authority.zone.clock_api": "the API's clock",
+  "authority.zone.clock_browser": "this browser's clock, as the API sent no time"
 }

@@ -292,8 +292,12 @@ Every page reads and writes api through the BFF and judges nothing:
 api validates, decides and records. A read that api refuses or fails
 to answer is said with its status and problem, never shown as an empty
 list (E-02). Every act that changes something confirms its exact
-effect first ("This publishes 1 approved versions and sends the CISP
-every geo-zone in force, 2 zones, as the next zones version"), takes a
+effect first ("This publishes TSTP001 version 3 and sends the CISP
+every geo-zone in force at 2026-10-05 02:00 UTC by the API's clock, 2
+zones, as the next zones version": each approved version by name, at
+most ten, and the zones in force counted at the instant of api's `Date`
+header, never the browser's clock, which is named only when api sent
+none), takes a
 reason where the operation records one, and shows api's refusal with
 every field problem by path. The edit controls follow the operations'
 `x-roles`; they are a courtesy, api refuses whatever they show.
