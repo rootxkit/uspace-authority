@@ -484,3 +484,34 @@ func (failing) Get(context.Context, string) (Report, error)  { return Report{}, 
 func (failing) List(context.Context, Filter) ([]Report, error) {
 	return nil, errBoom
 }
+
+// The purpose of a reporter read is bounded at MaxPurposeBytes and holds
+// no control character, like every text the service records: at the
+// bound it is read and audited, a byte over it is refused and nothing is
+// written (E-10 pair).
+func TestReporterPurposeIsBounded(t *testing.T) {
+	s, m := service(t, aware.Add(time.Hour), newSealer(t, "occ-test"))
+	ctx := context.Background()
+	rc, err := s.Intake(ctx, ClientOrigin(anspActor), input(t, anspBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	atBound := strings.Repeat("p", MaxPurposeBytes)
+	if v, err := s.Reporter(ctx, officer, rc.Report.ID, atBound); err != nil || v.PersonRef != "staff-0042" {
+		t.Fatalf("a purpose at the bound: %+v %v", v, err)
+	}
+	for name, purpose := range map[string]string{
+		"over the bound": strings.Repeat("p", MaxPurposeBytes+1),
+		"a control char": "follow-up\x00interview",
+		"invalid UTF-8":  "follow-up \xff",
+	} {
+		_, err := s.Reporter(ctx, officer, rc.Report.ID, purpose)
+		wantField(t, err, "purpose")
+		if n := len(m.eventsOf("occurrence_reporter_viewed")); n != 1 {
+			t.Fatalf("%s: %d reads audited, want 1", name, n)
+		}
+	}
+	if ev := m.eventsOf("occurrence_reporter_viewed"); ev[0].Purpose != atBound {
+		t.Fatalf("audited purpose %q", ev[0].Purpose)
+	}
+}

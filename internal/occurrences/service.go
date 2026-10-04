@@ -288,12 +288,17 @@ type ReporterView struct {
 }
 
 // Reporter opens the reporter of report id for actor, with purpose
-// (required). The read is an occurrence_reporter_viewed events row,
-// committed before the identity is returned (376/2014 Art. 16(1)).
+// (required, at most MaxPurposeBytes, no control character). The read
+// is an occurrence_reporter_viewed events row, committed before the
+// identity is returned (376/2014 Art. 16(1)).
 func (s *Service) Reporter(ctx context.Context, actor audit.Actor, id, purpose string) (ReporterView, error) {
 	purpose = strings.TrimSpace(purpose)
 	if purpose == "" {
 		return ReporterView{}, core.Fieldf("purpose", "required: a reporter identity is read for a stated purpose")
+	}
+	var pe fieldErrs
+	if text(&pe, "purpose", purpose, MaxPurposeBytes, false); pe.err() != nil {
+		return ReporterView{}, pe.err()
 	}
 	var v ReporterView
 	err := s.tx(ctx, func(tx Tx) error {
