@@ -1,0 +1,18 @@
+{
+  "verify_application": {
+    "subject": "Confirm your UAS operator registration application",
+    "body": "We received an application to register a UAS operator with this e-mail address.\n\nTo submit it for review, open this link before {expires}:\n{link}\n\nIf you did not apply, ignore this message: an application that is not confirmed is deleted."
+  },
+  "application_approved": {
+    "subject": "Your UAS operator registration",
+    "body": "Your application was approved and you are registered as a UAS operator.\n\nRegistration number: {number}\nSecret part: {secret}\nValid until: {valid_until}\n\nThe secret part is shown only in this message and the authority keeps no readable copy of it: keep it safe. Your full number, as your aircraft's Remote ID is loaded with it, is {number}-{secret}.\n\nThe state of your application: {link}"
+  },
+  "application_refused": {
+    "subject": "Your UAS operator registration application",
+    "body": "Your application was refused.\n\nReason: {reason}\n\nYou may apply again. The state of your application: {link}"
+  },
+  "operator_link": {
+    "subject": "Your occurrence report link",
+    "body": "A link to report an occurrence for UAS operator registration {number} was requested.\n\nOpen it before {expires}; it serves one report:\n{link}\n\nIf you did not ask for it, ignore this message."
+  }
+}
