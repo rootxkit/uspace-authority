@@ -428,3 +428,10 @@ Unreleased; the format follows Keep a Changelog.
   `403 forbidden`, and only an admitted caller hears `400 validation`.
   `apiserver.Options.Admit` left unset fails closed (401 on every
   operation that is not public).
+- WP-L7 conformance C4 (contract: additive `401` on `getPictureWS`):
+  picture-ws answers an upgrade without the `uspace_session` cookie
+  `401 unauthenticated` before it judges the upgrade or the Origin
+  (counted as `upgrade_refused_no_session`), instead of `403 origin`
+  without an Origin or a 4401 close after the upgrade with one. With
+  the cookie, a missing or foreign Origin is still `403 origin`; 4401
+  now means a refused or ended session.

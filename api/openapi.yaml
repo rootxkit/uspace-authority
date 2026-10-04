@@ -4315,10 +4315,12 @@ paths:
       tags: [picture]
       summary: The live picture over a WebSocket (picture-ws)
       description: |
-        A WebSocket upgrade, same-origin: the `Origin` header must be
-        exactly one of `PICTURE_ALLOWED_ORIGINS` (else 403 `origin`,
-        never upgraded) and the browser sends the `uspace_session`
-        cookie (M22; no ticket, nothing in the query string). The token
+        A WebSocket upgrade, same-origin: the browser sends the
+        `uspace_session` cookie (M22; no ticket, nothing in the query
+        string; without it 401 `unauthenticated`, never upgraded,
+        whatever the Origin) and the `Origin` header must be exactly one
+        of `PICTURE_ALLOWED_ORIGINS` (else 403 `origin`, never
+        upgraded). The token
         is verified by uspace-core's verifier and must be a session of
         the console or police realm whose sessions row is live (api's
         `GET /v1/auth/session`); otherwise the connection is closed
@@ -4330,8 +4332,9 @@ paths:
         layers[]}`, then `track/telemetry/v1` (with `age_s` and
         `source_state`), `track/manned/v1`, `violation/v1` and
         `source/status/v1`, and `console/status/v1` every 2 s. Refusals
-        before the upgrade: 426 `upgrade_required`, 403 `origin`, 503
-        `picture_full` with Retry-After.
+        before the upgrade, in this order: 401 `unauthenticated` (no
+        `uspace_session` cookie), 426 `upgrade_required`, 403 `origin`,
+        503 `picture_full` with Retry-After.
       security:
         - sessionCookie: []
       x-picture: true
@@ -4339,6 +4342,8 @@ paths:
       responses:
         "101":
           description: Switching protocols; the console frame follows.
+        "401":
+          $ref: "#/components/responses/Problem"
         "403":
           $ref: "#/components/responses/Problem"
         "426":
