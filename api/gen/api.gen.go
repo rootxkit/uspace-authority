@@ -7350,9 +7350,11 @@ type ClientInterface interface {
 	// `valid_until`, default `REGISTRY_APPLICATION_VALIDITY_S` from
 	// now) and queues the approval e-mail, which carries the secret
 	// part once: it is stored only as the registry's keyed hash and is
-	// in no response. A retried approval registers nobody twice. 409
-	// unless `under_review`; 409 `issuance_pattern_mismatch` when the
-	// issued shape does not match the policy's pattern.
+	// in no response. A retried approval registers nobody twice and
+	// approves what the first attempt chose: 409 when it names another
+	// `valid_until`. 409 unless `under_review`; 409
+	// `issuance_pattern_mismatch` when the issued shape does not match
+	// the policy's pattern.
 	//
 	// Takes any type of body and a specified content type.
 	//
@@ -7370,9 +7372,11 @@ type ClientInterface interface {
 	// `valid_until`, default `REGISTRY_APPLICATION_VALIDITY_S` from
 	// now) and queues the approval e-mail, which carries the secret
 	// part once: it is stored only as the registry's keyed hash and is
-	// in no response. A retried approval registers nobody twice. 409
-	// unless `under_review`; 409 `issuance_pattern_mismatch` when the
-	// issued shape does not match the policy's pattern.
+	// in no response. A retried approval registers nobody twice and
+	// approves what the first attempt chose: 409 when it names another
+	// `valid_until`. 409 unless `under_review`; 409
+	// `issuance_pattern_mismatch` when the issued shape does not match
+	// the policy's pattern.
 	//
 	// Takes a body of the `application/json` content type.
 	//
@@ -10689,9 +10693,11 @@ func (c *Client) GetRegistryApplicationStatus(ctx context.Context, applicationId
 // `valid_until`, default `REGISTRY_APPLICATION_VALIDITY_S` from
 // now) and queues the approval e-mail, which carries the secret
 // part once: it is stored only as the registry's keyed hash and is
-// in no response. A retried approval registers nobody twice. 409
-// unless `under_review`; 409 `issuance_pattern_mismatch` when the
-// issued shape does not match the policy's pattern.
+// in no response. A retried approval registers nobody twice and
+// approves what the first attempt chose: 409 when it names another
+// `valid_until`. 409 unless `under_review`; 409
+// `issuance_pattern_mismatch` when the issued shape does not match
+// the policy's pattern.
 //
 // Takes any type of body and a specified content type.
 //
@@ -10719,9 +10725,11 @@ func (c *Client) ApproveRegistryApplicationWithBody(ctx context.Context, applica
 // `valid_until`, default `REGISTRY_APPLICATION_VALIDITY_S` from
 // now) and queues the approval e-mail, which carries the secret
 // part once: it is stored only as the registry's keyed hash and is
-// in no response. A retried approval registers nobody twice. 409
-// unless `under_review`; 409 `issuance_pattern_mismatch` when the
-// issued shape does not match the policy's pattern.
+// in no response. A retried approval registers nobody twice and
+// approves what the first attempt chose: 409 when it names another
+// `valid_until`. 409 unless `under_review`; 409
+// `issuance_pattern_mismatch` when the issued shape does not match
+// the policy's pattern.
 //
 // Takes a body of the `application/json` content type.
 //
@@ -20993,9 +21001,11 @@ type ClientWithResponsesInterface interface {
 	// `valid_until`, default `REGISTRY_APPLICATION_VALIDITY_S` from
 	// now) and queues the approval e-mail, which carries the secret
 	// part once: it is stored only as the registry's keyed hash and is
-	// in no response. A retried approval registers nobody twice. 409
-	// unless `under_review`; 409 `issuance_pattern_mismatch` when the
-	// issued shape does not match the policy's pattern.
+	// in no response. A retried approval registers nobody twice and
+	// approves what the first attempt chose: 409 when it names another
+	// `valid_until`. 409 unless `under_review`; 409
+	// `issuance_pattern_mismatch` when the issued shape does not match
+	// the policy's pattern.
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -21013,9 +21023,11 @@ type ClientWithResponsesInterface interface {
 	// `valid_until`, default `REGISTRY_APPLICATION_VALIDITY_S` from
 	// now) and queues the approval e-mail, which carries the secret
 	// part once: it is stored only as the registry's keyed hash and is
-	// in no response. A retried approval registers nobody twice. 409
-	// unless `under_review`; 409 `issuance_pattern_mismatch` when the
-	// issued shape does not match the policy's pattern.
+	// in no response. A retried approval registers nobody twice and
+	// approves what the first attempt chose: 409 when it names another
+	// `valid_until`. 409 unless `under_review`; 409
+	// `issuance_pattern_mismatch` when the issued shape does not match
+	// the policy's pattern.
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
@@ -31961,9 +31973,11 @@ func (c *ClientWithResponses) GetRegistryApplicationStatusWithResponse(ctx conte
 // `valid_until`, default `REGISTRY_APPLICATION_VALIDITY_S` from
 // now) and queues the approval e-mail, which carries the secret
 // part once: it is stored only as the registry's keyed hash and is
-// in no response. A retried approval registers nobody twice. 409
-// unless `under_review`; 409 `issuance_pattern_mismatch` when the
-// issued shape does not match the policy's pattern.
+// in no response. A retried approval registers nobody twice and
+// approves what the first attempt chose: 409 when it names another
+// `valid_until`. 409 unless `under_review`; 409
+// `issuance_pattern_mismatch` when the issued shape does not match
+// the policy's pattern.
 //
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
@@ -31987,9 +32001,11 @@ func (c *ClientWithResponses) ApproveRegistryApplicationWithBodyWithResponse(ctx
 // `valid_until`, default `REGISTRY_APPLICATION_VALIDITY_S` from
 // now) and queues the approval e-mail, which carries the secret
 // part once: it is stored only as the registry's keyed hash and is
-// in no response. A retried approval registers nobody twice. 409
-// unless `under_review`; 409 `issuance_pattern_mismatch` when the
-// issued shape does not match the policy's pattern.
+// in no response. A retried approval registers nobody twice and
+// approves what the first attempt chose: 409 when it names another
+// `valid_until`. 409 unless `under_review`; 409
+// `issuance_pattern_mismatch` when the issued shape does not match
+// the policy's pattern.
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //

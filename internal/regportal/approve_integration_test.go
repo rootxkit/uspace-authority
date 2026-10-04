@@ -201,3 +201,45 @@ func TestIntegrationApproveAndRefuseRace(t *testing.T) {
 		}
 	}
 }
+
+// A retried approval approves what the first one chose: with another
+// valid_until it is 409 and nothing changes; with the same one, or none,
+// it finishes the approval with the first one's validity.
+func TestIntegrationRetriedApprovalKeepsItsValidity(t *testing.T) {
+	it := newIntegration(t)
+	ctx := context.Background()
+	reg := it.stub(t)
+	app := it.underReview(t, "192.0.2.90")
+	first := time.Now().UTC().Add(400 * 24 * time.Hour).Truncate(time.Second)
+	reg.create = func(context.Context, registry.NewOperator, audit.Actor) (registry.Operator, error) {
+		return registry.Operator{}, errors.New("registry unavailable")
+	}
+	if _, err := it.svc.Approve(ctx, app.ID, &first, registrar); err == nil {
+		t.Fatal("the approval did not fail")
+	}
+	reg.create = nil
+	other := first.Add(24 * time.Hour)
+	_, err := it.svc.Approve(ctx, app.ID, &other, registrar)
+	if p := httpx.ProblemFromError(err); p.Status != http.StatusConflict || len(p.Errors) != 1 || p.Errors[0].Field != "valid_until" {
+		t.Fatalf("retried with another valid_until: %v", err)
+	}
+	if n := it.count(t, `SELECT count(*) FROM uas_operators WHERE source_ref = $1`, app.ID); n != 0 {
+		t.Fatal("the refused retry registered the operator")
+	}
+	approved, err := it.svc.Approve(ctx, app.ID, &first, registrar)
+	if err != nil || approved.State != StateApproved || approved.ValidUntil == nil || !approved.ValidUntil.Equal(first) {
+		t.Fatalf("retried with the same valid_until %+v %v", approved, err)
+	}
+	app2 := it.underReview(t, "192.0.2.91")
+	reg.create = func(context.Context, registry.NewOperator, audit.Actor) (registry.Operator, error) {
+		return registry.Operator{}, errors.New("registry unavailable")
+	}
+	if _, err := it.svc.Approve(ctx, app2.ID, &first, registrar); err == nil {
+		t.Fatal("the approval did not fail")
+	}
+	reg.create = nil
+	approved, err = it.svc.Approve(ctx, app2.ID, nil, registrar)
+	if err != nil || approved.ValidUntil == nil || !approved.ValidUntil.Equal(first) {
+		t.Fatalf("retried without a valid_until %+v %v", approved, err)
+	}
+}

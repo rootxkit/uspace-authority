@@ -461,6 +461,12 @@ func (s *Service) chooseNumber(ctx context.Context, id string, validUntil *time.
 			return err
 		}
 		if cur.IssuedNumber != nil {
+			// A retried approval approves what the first one chose: another
+			// valid_until is a different decision, not a retry.
+			if validUntil != nil && cur.ValidUntil != nil && !validUntil.Truncate(time.Microsecond).Equal(*cur.ValidUntil) {
+				return httpx.Refuse(http.StatusConflict, httpx.SlugConflict, "an approval of this application with another validity is in progress",
+					core.Fieldf("valid_until", "is %s for the approval in progress; retry with it, or refuse the application", cur.ValidUntil.UTC().Format(time.RFC3339Nano)))
+			}
 			if err := s.open(cur.PiiKeyID, secretAAD(id), cur.SecretEnc, &secret); err != nil {
 				return err
 			}

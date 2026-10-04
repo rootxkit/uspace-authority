@@ -67,7 +67,9 @@ or `api` does not start.
    response and, once the approval commits, exists only as the
    registry's keyed hash. A number is never issued twice (the registry's
    unique compare key, drawn again on a collision). A retried approval
-   finds the operator it registered instead of registering it twice.
+   finds the operator it registered instead of registering it twice,
+   and approves what the first attempt chose: a retry with another
+   `valid_until` is 409 (retry with the same one, or none, or refuse).
    **Refuse** `POST .../{id}/refuse {"reason"}`: the reason is mailed.
 5. **Purge**: every `REGISTRY_PORTAL_PURGE_EVERY_S` the job deletes
    decided applications `REGISTRY_APPLICATIONS_RETAIN_S` after the
