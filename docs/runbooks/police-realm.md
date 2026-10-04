@@ -11,8 +11,9 @@ never changes the registry and never acts on an aircraft.
 agencies, which purposes, and which of them may see an operator's
 identity are the authority's determination under Art. 18(b)-(c) of
 2021/664 and the Law of Georgia on Personal Data Protection (spec Q8,
-owner-only). This build ships a demo default (below); the owner and the
-DPO replace it through configuration, and a DPIA precedes go-live (06
+owner-only). This build ships the spec's defaults (below), **pending
+GCAA**, which has not answered these questions; the owner and the DPO
+replace them through configuration, and a DPIA precedes go-live (06
 §5).
 
 ## Onboarding an agency
@@ -68,7 +69,7 @@ naming the field and nothing is read or recorded. `POLICE_PII_PURPOSES`
 names the purposes that release the operator's identity and allow a
 legal export.
 
-| Variable | Demo default |
+| Variable | Default (pending GCAA) |
 |---|---|
 | `POLICE_PURPOSES` | `public_order,traffic_enforcement,criminal_investigation,security_threat` |
 | `POLICE_PII_PURPOSES` | `criminal_investigation,security_threat` |
@@ -142,7 +143,7 @@ registry's `registry_pii_viewed`, the pack's `evidence_pack_built` and
 `agency` in its payload.
 
 **Budgets.** `POLICE_USER_QUERIES` per account and `POLICE_AGENCY_QUERIES`
-per agency per `POLICE_RATE_WINDOW_S` (30, 300, 60 s). They count the
+per agency per `POLICE_RATE_WINDOW_S` (30, 300, 60 s; pending GCAA). They count the
 `police_queries` rows of the window on the database clock under the
 agency's advisory lock, so every api replica shares them and a restart
 keeps them. Past one: 429 with `Retry-After` (when the oldest row leaves
