@@ -83,7 +83,9 @@ type naStack struct {
 	tokens *staticTokens
 }
 
-func newNAStack(t *testing.T) *naStack {
+// newNAStack is the stack with the policy's thresholds, mutated when
+// mutate is given.
+func newNAStack(t *testing.T, mutate func(*policy.Thresholds)) *naStack {
 	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
@@ -120,6 +122,9 @@ func newNAStack(t *testing.T) *naStack {
 	pf := policy.NewFollower(nil)
 	th := policy.Defaults()
 	th.NoAuthorisationGraceS = naGraceS
+	if mutate != nil {
+		mutate(&th)
+	}
 	pf.Apply(policy.Policy{Version: 1, Thresholds: th, Active: true})
 	srcF := sources.NewFollower()
 	shared := &detectsvc.Shared{ZoneReader: zr, Restrictions: rr, PolicyF: pf, SourcesF: srcF, Ground: g}
@@ -169,6 +174,12 @@ func newNAStack(t *testing.T) *naStack {
 // flying sends a live sample of f every 200 ms at where() until stop is
 // called; the samples carry a WGS84 height so the DSS is asked in 4D.
 func (s *naStack) flying(f flyer, where func() (lat, lon float64)) (stop func()) {
+	return s.flyingAt(f, where, 500)
+}
+
+// flyingAt is flying at altAMSL (WGS84 height 18 m above it, the test
+// geoid's 15.9 m rounded up, inside every intent's volume).
+func (s *naStack) flyingAt(f flyer, where func() (lat, lon float64), altAMSL float64) (stop func()) {
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
 	go func() {
@@ -179,7 +190,7 @@ func (s *naStack) flying(f flyer, where func() (lat, lon float64)) (stop func())
 			lat, lon := where()
 			now := time.Now()
 			airborne := f3411.Airborne
-			alt, hae := 500.0, 518.0
+			alt, hae := altAMSL, altAMSL+18
 			m, err := track.New("authority/rid-ingest", core.Times{TS: &now, RxTS: now, CapturedAt: now, Source: core.TimeBroadcast},
 				track.Body{TrackID: f.id, Trust: core.TrustBroadcast, Source: track.SourceDirectRID, SourceInstance: f.inst,
 					Position: track.Position{Lat: lat, Lng: lon}, AltAMSLM: &alt, AltWGS84M: &hae, AltSource: core.AltGeodetic, Status: &airborne,
@@ -228,7 +239,7 @@ func activated(id string) (f3548.OperationalIntentReference, f3548.Volume4D) {
 }
 
 func TestIntegrationNoAuthorisationThroughTheStack(t *testing.T) {
-	s := newNAStack(t)
+	s := newNAStack(t, nil)
 	ident := core.Identification{Status: core.IdentRegistered, Reason: core.ReasonMatched, Serial: strp("TESTNA01"),
 		OperatorReg: strp("GEO-TEST-NA1"), Basis: core.BasisAsBroadcast}
 	a := flyer{id: bustest.Name("AUTH"), inst: "rx-na", ident: ident}
@@ -326,5 +337,90 @@ func TestIntegrationNoAuthorisationThroughTheStack(t *testing.T) {
 	})
 	if s.dss.IntentQueries() == 0 {
 		t.Fatal("the DSS was never queried")
+	}
+}
+
+// clearing is a stored violation's clear reason and clearing_detail.
+func (s *naStack) clearing(id string) (reason string, matchedIntent string, authorised, leftUSpace bool) {
+	s.t.Helper()
+	var ma, au, lu *string
+	if err := s.pg.QueryRow(`SELECT clear_reason, clearing_detail->'matched_intent'->>'id', clearing_detail->>'authorised',
+		clearing_detail->>'left_uspace' FROM violations WHERE violation_id = $1`, id).Scan(&reason, &ma, &au, &lu); err != nil {
+		s.t.Fatal(err)
+	}
+	if ma != nil {
+		matchedIntent = *ma
+	}
+	return reason, matchedIntent, au != nil && *au == "true", lu != nil && *lu == "true"
+}
+
+// The two clears a match gives, through the stack, with
+// height_limit_in_uspace = skip_when_authorised: an aircraft inside the
+// U-space airspace with no intent, 200 m over the ground, raises
+// no_authorisation (after the grace) and height_120m; its USSP's intent
+// activated at it, no_authorisation clears resolved with the intent
+// matched and height_120m clears authorised, each read back with its
+// events (INV-02, E-01). An aircraft entering over 120 m with its intent
+// already active raises neither.
+func TestIntegrationNoAuthorisationAndHeightClearOnAMatch(t *testing.T) {
+	s := newNAStack(t, func(th *policy.Thresholds) { th.HeightLimitInUspace = policy.HeightSkipWhenAuthorised })
+	ident := core.Identification{Status: core.IdentRegistered, Reason: core.ReasonMatched, Serial: strp("TESTNA02"),
+		OperatorReg: strp("GEO-TEST-NA2"), Basis: core.BasisAsBroadcast}
+	c := flyer{id: bustest.Name("LATE"), inst: "rx-na", ident: ident}
+	const highAMSL = 620.0 // about 200 m over the test DEM (about 419 m here)
+
+	// 1. No intent: both raised.
+	pos := &position{lat: naLat, lon: naLon}
+	stop := s.flyingAt(c, pos.get, highAMSL)
+	defer stop()
+	waitFor(t, 20*time.Second, "no_authorisation and height_120m raised", func() bool {
+		return s.find("no_authorisation", c.id, false) != nil && s.find("height_120m", c.id, false) != nil
+	})
+	na, h := s.find("no_authorisation", c.id, false), s.find("height_120m", c.id, false)
+	if h.peak == nil || *h.peak < 150 || *h.peak > 250 {
+		t.Fatalf("height_120m peak %v", h.peak)
+	}
+
+	// 2. The intent activated at the aircraft: both clear on the match.
+	ref, ext := activated("6f1c1b8e-1d1a-4f6e-9a55-000000000002")
+	s.dss.PutIntent(ref, ext)
+	waitFor(t, 20*time.Second, "both cleared on the match", func() bool {
+		return s.find("no_authorisation", c.id, true) != nil && s.find("height_120m", c.id, true) != nil
+	})
+	if reason, matched, _, left := s.clearing(na.id); reason != "resolved" || matched != ref.Id || left {
+		t.Fatalf("no_authorisation cleared %q, matched %q, left_uspace %v", reason, matched, left)
+	}
+	if reason, _, authorised, _ := s.clearing(h.id); reason != "authorised" || !authorised {
+		t.Fatalf("height_120m cleared %q, authorised %v", reason, authorised)
+	}
+	for _, id := range []string{na.id, h.id} {
+		if got := s.events(id); !slices.Equal(got, []string{"violation_raised", "violation_cleared"}) {
+			t.Fatalf("%s events %v", id, got)
+		}
+	}
+	t.Logf("audited: %s no_authorisation cleared resolved on matching %s; %s height_120m cleared authorised", na.id, ref.Id, h.id)
+	stop()
+
+	// 3. Entering over 120 m with the intent active: neither raised, the
+	// height held through the grace and a margin.
+	d := flyer{id: bustest.Name("CAPPED"), inst: "rx-na", ident: ident}
+	stopD := s.flyingAt(d, (&position{lat: naLat, lon: naLon}).get, highAMSL)
+	defer stopD()
+	waitFor(t, 15*time.Second, "the capped aircraft matched", func() bool {
+		o, ok := s.board.Outcome(d.id)
+		return ok && o.Matched && o.VerticalChecked
+	})
+	matchedAt := time.Now()
+	waitFor(t, 15*time.Second, "grace and a margin with the match", func() bool {
+		o, ok := s.board.Outcome(d.id)
+		return ok && o.Matched && o.CheckedAt.After(matchedAt.Add((naGraceS+1)*time.Second))
+	})
+	for _, kind := range []string{"no_authorisation", "height_120m"} {
+		if r := s.find(kind, d.id, false); r != nil {
+			t.Fatalf("an authorised aircraft raised %s %+v", kind, r)
+		}
+		if r := s.find(kind, d.id, true); r != nil {
+			t.Fatalf("an authorised aircraft raised and cleared %s %+v", kind, r)
+		}
 	}
 }

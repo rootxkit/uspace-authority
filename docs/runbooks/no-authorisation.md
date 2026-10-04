@@ -122,4 +122,4 @@ outcome; counter `height_awaiting_outcome`).
 
 - Unit: `go test ./internal/intents/ ./internal/detectsvc/ -run 'NoAuth|HeightLimitLifted|HeightRaiseWaits|Board|Judge|Cache|Parse|Client'`.
 - Through the stack (NATS, TimescaleDB, PostgreSQL, the fake DSS over
-  HTTP): `INTEGRATION=1 go test -run TestIntegrationNoAuthorisationThroughTheStack ./internal/violations/`.
+  HTTP): `INTEGRATION=1 go test -run TestIntegrationNoAuthorisation ./internal/violations/`.
