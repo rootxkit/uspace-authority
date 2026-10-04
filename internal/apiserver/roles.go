@@ -24,6 +24,27 @@ const (
 // AllRoles lists the console roles.
 var AllRoles = []string{RoleViewer, RoleInspector, RoleRegistrar, RoleIncidentOfficer, RoleAdmin, RoleAuditor}
 
+// RolePoliceQuery is the one grant of the police realm (WP-2 table B:
+// police.query, held by police accounts inside a session; WP-19). A
+// police account holds no console role and a console account never
+// holds it.
+const RolePoliceQuery = "police.query"
+
+// PoliceRoles are the roles a police-realm account may hold.
+var PoliceRoles = []string{RolePoliceQuery}
+
+// RealmRoles lists the roles an account of realm may hold; nil for an
+// unknown realm.
+func RealmRoles(realm string) []string {
+	switch realm {
+	case RealmConsole:
+		return AllRoles
+	case RealmPolice:
+		return PoliceRoles
+	}
+	return nil
+}
+
 // Session realms (docs/PLAN.md §7, M20).
 const (
 	RealmConsole = "console"
@@ -55,6 +76,14 @@ var Roles = map[string][]string{
 	"ResetUserMFA":         {RoleAdmin},
 	"RevokeUserSessions":   {RoleAdmin},
 	"UnlockUserMFA":        {RoleAdmin},
+	"SetUserPoliceAccess":  {RoleAdmin},
+	"GetDPOReport":         {RoleAdmin, RoleAuditor},
+
+	"QueryPoliceAircraft":  PoliceRoles,
+	"QueryPoliceOperator":  PoliceRoles,
+	"QueryPoliceSerial":    PoliceRoles,
+	"CreatePoliceExport":   PoliceRoles,
+	"DownloadPoliceExport": PoliceRoles,
 
 	"ListRegistryOperators":           {RoleRegistrar, RoleInspector, RoleViewer},
 	"CreateRegistryOperator":          {RoleRegistrar},
@@ -149,6 +178,18 @@ var Roles = map[string][]string{
 	"LimitCertificate":              {RoleAdmin},
 	"RevokeCertificate":             {RoleAdmin},
 	"ReinstateCertificate":          {RoleAdmin},
+}
+
+// Realms names the operations of a realm other than the console's
+// (`x-realm` in the contract; a test compares the two): the police
+// operations admit a session of the police realm only, and every other
+// role operation a console session only.
+var Realms = map[string]string{
+	"QueryPoliceAircraft":  RealmPolice,
+	"QueryPoliceOperator":  RealmPolice,
+	"QueryPoliceSerial":    RealmPolice,
+	"CreatePoliceExport":   RealmPolice,
+	"DownloadPoliceExport": RealmPolice,
 }
 
 // Receiver lists the operations a Remote ID receiver calls (`x-receiver:
@@ -250,7 +291,7 @@ type Rules struct {
 
 // DefaultRules are the contract's rules.
 func DefaultRules() Rules {
-	return Rules{Public: Public, AnySession: AnySession, Roles: Roles, Scopes: Scopes}
+	return Rules{Public: Public, AnySession: AnySession, Roles: Roles, Scopes: Scopes, Realms: Realms}
 }
 
 // Identity is who makes a request: the actor of its events rows.

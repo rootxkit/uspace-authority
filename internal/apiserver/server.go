@@ -69,6 +69,7 @@ type UsersHandler interface {
 	ResetUserMFA(ctx context.Context, request gen.ResetUserMFARequestObject) (gen.ResetUserMFAResponseObject, error)
 	RevokeUserSessions(ctx context.Context, request gen.RevokeUserSessionsRequestObject) (gen.RevokeUserSessionsResponseObject, error)
 	UnlockUserMFA(ctx context.Context, request gen.UnlockUserMFARequestObject) (gen.UnlockUserMFAResponseObject, error)
+	SetUserPoliceAccess(ctx context.Context, request gen.SetUserPoliceAccessRequestObject) (gen.SetUserPoliceAccessResponseObject, error)
 }
 
 // RegistryHandler serves /v1/registry/* (api, WP-3): the registrar's
@@ -223,6 +224,21 @@ type CertificatesHandler interface {
 	ReinstateCertificate(ctx context.Context, request gen.ReinstateCertificateRequestObject) (gen.ReinstateCertificateResponseObject, error)
 }
 
+// PoliceHandler serves /v1/police/* (api, WP-19): the police realm's
+// purpose-logged queries and legal exports.
+type PoliceHandler interface {
+	QueryPoliceAircraft(ctx context.Context, request gen.QueryPoliceAircraftRequestObject) (gen.QueryPoliceAircraftResponseObject, error)
+	QueryPoliceOperator(ctx context.Context, request gen.QueryPoliceOperatorRequestObject) (gen.QueryPoliceOperatorResponseObject, error)
+	QueryPoliceSerial(ctx context.Context, request gen.QueryPoliceSerialRequestObject) (gen.QueryPoliceSerialResponseObject, error)
+	CreatePoliceExport(ctx context.Context, request gen.CreatePoliceExportRequestObject) (gen.CreatePoliceExportResponseObject, error)
+	DownloadPoliceExport(ctx context.Context, request gen.DownloadPoliceExportRequestObject) (gen.DownloadPoliceExportResponseObject, error)
+}
+
+// DPOHandler serves GET /v1/audit/dpo-report (api, WP-19).
+type DPOHandler interface {
+	GetDPOReport(ctx context.Context, request gen.GetDPOReportRequestObject) (gen.GetDPOReportResponseObject, error)
+}
+
 // Server implements gen.StrictServerInterface by delegating to one
 // handler per group. A group left nil must not be mounted.
 type Server struct {
@@ -245,6 +261,8 @@ type Server struct {
 	OccurrencesHandler
 	DPHandler
 	CertificatesHandler
+	PoliceHandler
+	DPOHandler
 }
 
 var _ gen.StrictServerInterface = Server{}

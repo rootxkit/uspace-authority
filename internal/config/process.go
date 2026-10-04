@@ -104,6 +104,29 @@ type API struct {
 	Occurrences
 	DPAdmin
 	Certificates
+	Police
+}
+
+// Police is api's police realm (WP-19, spec 02 F10, Q-A14): the purposes
+// a police query may name and which of them release personal data (the
+// owner's choice under national law, spec Q8: configuration, never
+// code), the per-user and per-agency budgets, and the bounds of every
+// answer (E-10).
+type Police struct {
+	PolicePurposes       []string `env:"POLICE_PURPOSES" default:"public_order,traffic_enforcement,criminal_investigation,security_threat" help:"the purposes a police query may name, comma-separated (1 to 64 of [a-z0-9_], starting with a letter); any other is refused 400 naming purpose (Q-A14, demo default; national law and the DPO decide)"`
+	PolicePIIPurposes    []string `env:"POLICE_PII_PURPOSES" default:"criminal_investigation,security_threat" help:"the purposes of POLICE_PURPOSES that release the operator's identity and allow a legal export; every other purpose answers status only (Q-A14)"`
+	PoliceUserQueries    int      `env:"POLICE_USER_QUERIES" default:"30" min:"1" max:"100000" help:"queries one police account may make per POLICE_RATE_WINDOW_S; past it 429 with Retry-After, counted on the database clock across replicas and restarts (E-10)"`
+	PoliceAgencyQueries  int      `env:"POLICE_AGENCY_QUERIES" default:"300" min:"1" max:"1000000" help:"queries all accounts of one agency may make per POLICE_RATE_WINDOW_S; past it 429 with Retry-After"`
+	PoliceRateWindowS    int      `env:"POLICE_RATE_WINDOW_S" default:"60" min:"1" max:"86400" help:"the window of the police budgets"`
+	PoliceLiveWindowS    int      `env:"POLICE_LIVE_WINDOW_S" default:"30" min:"1" max:"3600" help:"a track last seen within this many seconds of now is flying now (GET /v1/police/aircraft without at); a picture older than this is said degraded"`
+	PoliceAtWindowS      int      `env:"POLICE_AT_WINDOW_S" default:"60" min:"1" max:"3600" help:"GET /v1/police/aircraft?at= answers the tracks seen within this many seconds either side of at"`
+	PoliceHistoryMaxAgeS int      `env:"POLICE_HISTORY_MAX_AGE_S" default:"7776000" min:"3600" max:"315360000" help:"the oldest at a police query may name (the online retention of tracks, 90 days, 05 §4); older is refused 400"`
+	PoliceMaxBBoxDeg     float64  `env:"POLICE_MAX_BBOX_DEG" default:"1" min:"0.001" max:"10" help:"the longest side, in degrees of latitude or longitude, of a police query's box"`
+	PoliceMaxAircraft    int      `env:"POLICE_MAX_AIRCRAFT" default:"200" min:"1" max:"10000" help:"aircraft one answer holds at most; beyond, truncated: true (narrow the box)"`
+	PoliceMaxPositions   int      `env:"POLICE_MAX_POSITIONS" default:"60" min:"1" max:"10000" help:"positions per aircraft one answer holds at most (the newest); beyond, positions_truncated: true"`
+	PoliceMaxFleet       int      `env:"POLICE_MAX_FLEET" default:"200" min:"1" max:"500" help:"aircraft of an operator's fleet one answer holds at most; beyond, fleet_truncated: true"`
+	PoliceWriteTimeoutS  int      `env:"POLICE_WRITE_TIMEOUT_S" default:"10" min:"1" max:"600" help:"bound on one police query's reads and its record"`
+	DPOReportMaxRows     int      `env:"DPO_REPORT_MAX_ROWS" default:"50000" min:"1" max:"1000000" help:"rows per list of GET /v1/audit/dpo-report; beyond, truncated: true"`
 }
 
 // Certificates are api's USSP and CISP certificates (WP-16): the lapse

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"time"
 
 	"github.com/rootxkit/uspace-authority/internal/store"
@@ -53,6 +54,7 @@ func (w *Writer) Record(ctx context.Context, q *gen.Queries, ev Event) (Recorded
 	if err := w.Catalogue.Validate(ev); err != nil {
 		return Recorded{}, err
 	}
+	ev.Payload = annotate(ctx, ev.Payload)
 	payload := []byte("{}")
 	if ev.Payload != nil {
 		b, err := json.Marshal(ev.Payload)
@@ -147,4 +149,53 @@ func rowFrom(e *gen.Event) Row {
 		Purpose: e.Purpose, EntityType: e.EntityType, EntityID: e.EntityID, EventType: e.EventType,
 		Payload: e.Payload, PrevHash: e.PrevHash, Hash: e.Hash,
 	}
+}
+
+type annotationsKey struct{}
+
+// WithAnnotations returns ctx carrying members every event recorded
+// under it adds to its payload, where the payload does not set them
+// already (WP-19: the police query and the case reference a
+// personal-data read made for a police query is recorded with, whichever
+// package records it). Only a map payload (or none) is annotated.
+func WithAnnotations(ctx context.Context, members map[string]any) context.Context {
+	merged := map[string]any{}
+	if prev, ok := ctx.Value(annotationsKey{}).(map[string]any); ok {
+		maps.Copy(merged, prev)
+	}
+	maps.Copy(merged, members)
+	return context.WithValue(ctx, annotationsKey{}, merged)
+}
+
+// Annotations returns a copy of the members WithAnnotations put on ctx
+// (nil without any).
+func Annotations(ctx context.Context) map[string]any {
+	ann, ok := ctx.Value(annotationsKey{}).(map[string]any)
+	if !ok {
+		return nil
+	}
+	return maps.Clone(ann)
+}
+
+// annotate adds ctx's annotations to payload.
+func annotate(ctx context.Context, payload any) any {
+	ann, ok := ctx.Value(annotationsKey{}).(map[string]any)
+	if !ok || len(ann) == 0 {
+		return payload
+	}
+	var out map[string]any
+	switch p := payload.(type) {
+	case nil:
+		out = map[string]any{}
+	case map[string]any:
+		out = maps.Clone(p)
+	default:
+		return payload
+	}
+	for k, v := range ann {
+		if _, set := out[k]; !set {
+			out[k] = v
+		}
+	}
+	return out
 }

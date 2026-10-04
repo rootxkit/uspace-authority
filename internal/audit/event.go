@@ -236,6 +236,18 @@ const (
 	EventCertificateNotice        = "certificate_notice_recorded"
 )
 
+// Event types of WP-19's police realm (internal/police): every query,
+// export and download a police session made (with the purpose and the
+// case reference; police_queries holds the same row), every refusal of
+// one (a spent budget, an address off the allow-list), an account's
+// agency or allow-list changed, and every read of the DPO report.
+const (
+	EventPoliceQuery            = "police_query"
+	EventPoliceQueryRefused     = "police_query_refused"
+	EventUserPoliceAccessChange = "user_police_access_changed"
+	EventDPOReportViewed        = "dpo_report_viewed"
+)
+
 // DefaultCatalogue is the catalogue of this build.
 func DefaultCatalogue() Catalogue {
 	return Catalogue{
@@ -342,7 +354,25 @@ func DefaultCatalogue() Catalogue {
 		EventCertificateUpdated:       {},
 		EventCertificateStatusChanged: {},
 		EventCertificateNotice:        {},
+
+		EventPoliceQuery:            {PIIView: true},
+		EventPoliceQueryRefused:     {},
+		EventUserPoliceAccessChange: {},
+		EventDPOReportViewed:        {},
 	}
+}
+
+// PIIViewTypes lists the event types the catalogue tags as personal-data
+// reads, sorted (the DPO report reads them).
+func (c Catalogue) PIIViewTypes() []string {
+	var out []string
+	for name, k := range c {
+		if k.PIIView {
+			out = append(out, name)
+		}
+	}
+	slices.Sort(out)
+	return out
 }
 
 // Validate refuses an event the log must not hold, naming every field

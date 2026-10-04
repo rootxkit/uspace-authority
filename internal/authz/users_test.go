@@ -56,7 +56,8 @@ func TestCreateUserValidatesEveryField(t *testing.T) {
 	if _, err := f.svc.CreateUser(ctx, NewUser{Username: "Admin", Password: adminPW, Realm: "console"}, adminActor); problemOf(t, err).Status != http.StatusConflict {
 		t.Fatalf("taken username: %v", err)
 	}
-	u, err := f.svc.CreateUser(ctx, NewUser{Username: " Officer.One@Example ", Password: adminPW, Realm: "police"}, adminActor)
+	u, err := f.svc.CreateUser(ctx, NewUser{Username: " Officer.One@Example ", Password: adminPW, Realm: "police",
+		Agency: "TEST-POLICE", IPAllow: []string{"192.0.2.0/24"}}, adminActor)
 	if err != nil || u.Username != "officer.one@example" || u.Roles == nil || u.Realm != "police" {
 		t.Fatalf("accepted twin: %+v %v", u, err)
 	}

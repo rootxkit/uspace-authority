@@ -54,7 +54,7 @@ func newIncident() NewIncident {
 
 func TestCheckNew(t *testing.T) {
 	in := newIncident()
-	if err := checkNew(&in, nil); err != nil {
+	if err := checkNew(&in, nil, false); err != nil {
 		t.Fatal(err)
 	}
 	cases := map[string]func(*NewIncident){
@@ -71,14 +71,30 @@ func TestCheckNew(t *testing.T) {
 	for name, mutate := range cases {
 		in := newIncident()
 		mutate(&in)
-		if err := checkNew(&in, nil); err == nil {
+		if err := checkNew(&in, nil, false); err == nil {
 			t.Errorf("%s accepted", name)
 		}
 	}
 	notice := newIncident()
 	notice.OpenedFrom, notice.NoticeRef = FromUSSPNotice, sp("USSP-REF-1")
-	if err := checkNew(&notice, nil); err != nil {
+	if err := checkNew(&notice, nil, false); err != nil {
 		t.Fatalf("a notice with its reference: %v", err)
+	}
+	// WP-19, E-01: police_request is refused by hand and accepted from a
+	// police export; a police export never opens another origin.
+	police := newIncident()
+	police.OpenedFrom = FromPoliceRequest
+	if err := checkNew(&police, nil, false); err == nil {
+		t.Fatal("police_request opened by hand")
+	}
+	police = newIncident()
+	police.OpenedFrom = FromPoliceRequest
+	if err := checkNew(&police, nil, true); err != nil {
+		t.Fatalf("police_request from an export: %v", err)
+	}
+	other := newIncident()
+	if err := checkNew(&other, nil, true); err == nil {
+		t.Fatal("a police export opened own_observation")
 	}
 }
 

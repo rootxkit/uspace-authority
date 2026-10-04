@@ -29,17 +29,25 @@ type NewUser struct {
 	DisplayName string
 	Roles       []string
 	Realm       string
+	// Agency and IPAllow are a police account's (WP-19): required
+	// there, refused on a console account.
+	Agency  string
+	IPAllow []string
 }
 
 // MaxDisplayName bounds users.display_name.
 const MaxDisplayName = 200
 
-func validateRoles(field string, roles []string) []error {
+// validateRoles checks roles against the roles of realm: console roles
+// for a console account, police.query alone for a police account
+// (WP-19).
+func validateRoles(field, realm string, roles []string) []error {
 	var errs []error
+	allowed := apiserver.RealmRoles(realm)
 	for i, r := range roles {
 		f := field + "[" + strconv.Itoa(i) + "]"
-		if !slices.Contains(apiserver.AllRoles, r) {
-			errs = append(errs, core.Fieldf(f, "%q is not a console role", r))
+		if !slices.Contains(allowed, r) {
+			errs = append(errs, core.Fieldf(f, "%q is not a role of the %s realm", r, realm))
 		} else if slices.Index(roles, r) != i {
 			errs = append(errs, core.Fieldf(f, "%q appears twice", r))
 		}
@@ -75,7 +83,12 @@ func (s *Service) validateNewUser(in *NewUser) error {
 	if in.Realm != apiserver.RealmConsole && in.Realm != apiserver.RealmPolice {
 		errs = append(errs, core.Fieldf("realm", "must be console or police"))
 	}
-	errs = append(errs, validateRoles("roles", in.Roles)...)
+	errs = append(errs, validateRoles("roles", in.Realm, in.Roles)...)
+	agency, allow, err := checkPoliceAccess(in.Realm, in.Agency, in.IPAllow)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	in.Agency, in.IPAllow = agency, allow
 	return errors.Join(errs...)
 }
 
@@ -115,7 +128,7 @@ func (s *Service) insertUser(ctx context.Context, tx Tx, in NewUser, actor audit
 		roles = []string{}
 	}
 	u, err := tx.InsertUser(ctx, User{ID: id, Username: in.Username, DisplayName: in.DisplayName, Roles: roles, Realm: in.Realm,
-		CreatedAt: now, CreatedBy: actor.ID})
+		Agency: in.Agency, IPAllow: in.IPAllow, CreatedAt: now, CreatedBy: actor.ID})
 	if err != nil {
 		return User{}, err
 	}
@@ -124,7 +137,7 @@ func (s *Service) insertUser(ctx context.Context, tx Tx, in NewUser, actor audit
 	}
 	return u, tx.Record(ctx, audit.Event{
 		Actor: actor, EntityType: "user", EntityID: id, EventType: eventType,
-		Payload: map[string]any{"username": u.Username, "roles": roles, "realm": u.Realm},
+		Payload: map[string]any{"username": u.Username, "roles": roles, "realm": u.Realm, "agency": u.Agency, "ip_allowlist": u.IPAllow},
 	})
 }
 
@@ -188,10 +201,15 @@ func (s *Service) change(ctx context.Context, id string, actor audit.Actor, even
 
 // SetRoles replaces an account's roles and ends its sessions.
 func (s *Service) SetRoles(ctx context.Context, id string, roles []string, actor audit.Actor) (User, error) {
-	if err := errors.Join(validateRoles("roles", roles)...); err != nil {
-		return User{}, err
+	for _, r := range roles {
+		if !slices.Contains(apiserver.AllRoles, r) && !slices.Contains(apiserver.PoliceRoles, r) {
+			return User{}, errors.Join(validateRoles("roles", apiserver.RealmConsole, roles)...)
+		}
 	}
 	return s.change(ctx, id, actor, audit.EventUserRolesChanged, "roles_changed", func(tx Tx, before User) (User, error) {
+		if err := errors.Join(validateRoles("roles", before.Realm, roles)...); err != nil {
+			return User{}, err
+		}
 		if err := lastAdminGuard(ctx, tx, before, slices.Contains(roles, apiserver.RoleAdmin)); err != nil {
 			return User{}, err
 		}

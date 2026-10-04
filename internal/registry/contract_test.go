@@ -147,8 +147,13 @@ func TestPersonalDataReachesNoPublicViewerOrMachineResponse(t *testing.T) {
 		// An occurrence reporter is read by incident officers only, never
 		// by the registry's PII roles (376/2014 Art. 15-16, WP-18).
 		allowed := apiserver.PIIRoles
-		if occurrenceReporterOps[op.id] {
+		switch {
+		case occurrenceReporterOps[op.id]:
 			allowed = apiserver.OccurrenceReporterRoles
+		case policeIdentityOps[op.id]:
+			// WP-19: the police realm's answers carry the operator's
+			// identity only for a purpose that releases it (internal/police).
+			allowed = apiserver.PoliceRoles
 		}
 		for _, r := range op.roles {
 			if !slices.Contains(allowed, r) {
@@ -164,6 +169,18 @@ func TestPersonalDataReachesNoPublicViewerOrMachineResponse(t *testing.T) {
 		}
 	}
 	for _, op := range []string{"GetOccurrence", "ListOccurrences", "CreateOccurrence", "ClassifyOccurrence", "UpdateOccurrenceAnalysis", "ExportOccurrences"} {
+		if piiOps[op] {
+			t.Errorf("%s returns personal data", op)
+		}
+	}
+	// E-01 for WP-19: the police answers that may carry an identity are
+	// found, and the export and the DPO report carry none.
+	for op := range policeIdentityOps {
+		if !piiOps[op] {
+			t.Errorf("%s: no personal property found; the check is blind", op)
+		}
+	}
+	for _, op := range []string{"CreatePoliceExport", "DownloadPoliceExport", "GetDPOReport"} {
 		if piiOps[op] {
 			t.Errorf("%s returns personal data", op)
 		}
@@ -194,6 +211,25 @@ func TestContractCheckFindsAPlantedName(t *testing.T) {
 	ops := operations("paths:\n  /x:\n    get:\n      operationId: getX\n      x-scope: registry.validate\n      responses:\n        \"200\":\n          content:\n            application/json:\n              schema:\n                $ref: \"#/components/schemas/Clean\"\n        default:\n          $ref: \"#/components/schemas/Problem\"\n")
 	if len(ops) != 1 || ops[0].scope != "registry.validate" || !slices.Equal(ops[0].responses, []string{"Clean"}) {
 		t.Fatalf("ops %+v", ops)
+	}
+}
+
+// policeIdentityOps may return an operator's identity to the police
+// realm (WP-19).
+var policeIdentityOps = map[string]bool{"QueryPoliceAircraft": true, "QueryPoliceOperator": true, "QueryPoliceSerial": true}
+
+// The police identity operations are held to the police realm's grant
+// in code, and that grant is no console role.
+func TestPoliceIdentityIsHeldToThePoliceRealm(t *testing.T) {
+	for op := range policeIdentityOps {
+		if !slices.Equal(apiserver.Roles[op], apiserver.PoliceRoles) || apiserver.Realms[op] != apiserver.RealmPolice {
+			t.Errorf("%s: roles %v realm %q", op, apiserver.Roles[op], apiserver.Realms[op])
+		}
+	}
+	for _, r := range apiserver.PoliceRoles {
+		if slices.Contains(apiserver.AllRoles, r) {
+			t.Errorf("%s is also a console role", r)
+		}
 	}
 }
 

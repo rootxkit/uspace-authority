@@ -408,6 +408,33 @@ func (e DPAvailabilityResultAvailability) Valid() bool {
 	}
 }
 
+// Defines values for DPOPoliceQueryKind.
+const (
+	DPOPoliceQueryKindAircraft DPOPoliceQueryKind = "aircraft"
+	DPOPoliceQueryKindDownload DPOPoliceQueryKind = "download"
+	DPOPoliceQueryKindExport   DPOPoliceQueryKind = "export"
+	DPOPoliceQueryKindOperator DPOPoliceQueryKind = "operator"
+	DPOPoliceQueryKindSerial   DPOPoliceQueryKind = "serial"
+)
+
+// Valid indicates whether the value is a known member of the DPOPoliceQueryKind enum.
+func (e DPOPoliceQueryKind) Valid() bool {
+	switch e {
+	case DPOPoliceQueryKindAircraft:
+		return true
+	case DPOPoliceQueryKindDownload:
+		return true
+	case DPOPoliceQueryKindExport:
+		return true
+	case DPOPoliceQueryKindOperator:
+		return true
+	case DPOPoliceQueryKindSerial:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DPProviderDss.
 const (
 	DPProviderDssDssUnavailable  DPProviderDss = "dss_unavailable"
@@ -631,6 +658,7 @@ func (e IncidentKind) Valid() bool {
 const (
 	IncidentOpenedFromAnspNotice     IncidentOpenedFrom = "ansp_notice"
 	IncidentOpenedFromOwnObservation IncidentOpenedFrom = "own_observation"
+	IncidentOpenedFromPoliceRequest  IncidentOpenedFrom = "police_request"
 	IncidentOpenedFromUsspNotice     IncidentOpenedFrom = "ussp_notice"
 	IncidentOpenedFromViolation      IncidentOpenedFrom = "violation"
 )
@@ -641,6 +669,8 @@ func (e IncidentOpenedFrom) Valid() bool {
 	case IncidentOpenedFromAnspNotice:
 		return true
 	case IncidentOpenedFromOwnObservation:
+		return true
+	case IncidentOpenedFromPoliceRequest:
 		return true
 	case IncidentOpenedFromUsspNotice:
 		return true
@@ -1056,6 +1086,48 @@ func (e PictureSourcesNats) Valid() bool {
 	}
 }
 
+// Defines values for PoliceAircraftIdentificationStatus.
+const (
+	PoliceAircraftIdentificationStatusRegistered      PoliceAircraftIdentificationStatus = "registered"
+	PoliceAircraftIdentificationStatusSuspended       PoliceAircraftIdentificationStatus = "suspended"
+	PoliceAircraftIdentificationStatusUnidentified    PoliceAircraftIdentificationStatus = "unidentified"
+	PoliceAircraftIdentificationStatusUnknownOperator PoliceAircraftIdentificationStatus = "unknown_operator"
+)
+
+// Valid indicates whether the value is a known member of the PoliceAircraftIdentificationStatus enum.
+func (e PoliceAircraftIdentificationStatus) Valid() bool {
+	switch e {
+	case PoliceAircraftIdentificationStatusRegistered:
+		return true
+	case PoliceAircraftIdentificationStatusSuspended:
+		return true
+	case PoliceAircraftIdentificationStatusUnidentified:
+		return true
+	case PoliceAircraftIdentificationStatusUnknownOperator:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PoliceAircraftAnswerMode.
+const (
+	PoliceAircraftAnswerModeAt   PoliceAircraftAnswerMode = "at"
+	PoliceAircraftAnswerModeLive PoliceAircraftAnswerMode = "live"
+)
+
+// Valid indicates whether the value is a known member of the PoliceAircraftAnswerMode enum.
+func (e PoliceAircraftAnswerMode) Valid() bool {
+	switch e {
+	case PoliceAircraftAnswerModeAt:
+		return true
+	case PoliceAircraftAnswerModeLive:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PolicyHeightLimitInUspace.
 const (
 	PolicyHeightLimitInUspaceEvaluate           PolicyHeightLimitInUspace = "evaluate"
@@ -1461,6 +1533,7 @@ const (
 	RoleAuditor         Role = "auditor"
 	RoleIncidentOfficer Role = "incident_officer"
 	RoleInspector       Role = "inspector"
+	RolePoliceQuery     Role = "police.query"
 	RoleRegistrar       Role = "registrar"
 	RoleViewer          Role = "viewer"
 )
@@ -1475,6 +1548,8 @@ func (e Role) Valid() bool {
 	case RoleIncidentOfficer:
 		return true
 	case RoleInspector:
+		return true
+	case RolePoliceQuery:
 		return true
 	case RoleRegistrar:
 		return true
@@ -2457,6 +2532,55 @@ type DPAvailabilityResult struct {
 // DPAvailabilityResultAvailability defines model for DPAvailabilityResult.Availability.
 type DPAvailabilityResultAvailability string
 
+// DPOPIIView defines model for DPOPIIView.
+type DPOPIIView struct {
+	ActorId       string    `json:"actor_id"`
+	ActorType     string    `json:"actor_type"`
+	Agency        *string   `json:"agency,omitempty"`
+	CaseRef       *string   `json:"case_ref,omitempty"`
+	EntityId      *string   `json:"entity_id,omitempty"`
+	EntityType    string    `json:"entity_type"`
+	EventId       int64     `json:"event_id"`
+	EventType     string    `json:"event_type"`
+	PoliceQueryId *string   `json:"police_query_id,omitempty"`
+	Purpose       *string   `json:"purpose,omitempty"`
+	Realm         *string   `json:"realm,omitempty"`
+	Ts            time.Time `json:"ts"`
+}
+
+// DPOPoliceQuery defines model for DPOPoliceQuery.
+type DPOPoliceQuery struct {
+	Agency      string                 `json:"agency"`
+	At          time.Time              `json:"at"`
+	CaseRef     string                 `json:"case_ref"`
+	Id          string                 `json:"id"`
+	Kind        DPOPoliceQueryKind     `json:"kind"`
+	Pii         bool                   `json:"pii"`
+	Purpose     string                 `json:"purpose"`
+	Query       map[string]interface{} `json:"query"`
+	RemoteIp    string                 `json:"remote_ip"`
+	ResultCount int                    `json:"result_count"`
+	UserId      string                 `json:"user_id"`
+}
+
+// DPOPoliceQueryKind defines model for DPOPoliceQuery.Kind.
+type DPOPoliceQueryKind string
+
+// DPOReport defines model for DPOReport.
+type DPOReport struct {
+	From          time.Time        `json:"from"`
+	Month         string           `json:"month"`
+	PiiViews      []DPOPIIView     `json:"pii_views"`
+	PoliceQueries []DPOPoliceQuery `json:"police_queries"`
+	To            time.Time        `json:"to"`
+	Totals        struct {
+		PiiViews             int `json:"pii_views"`
+		PoliceQueries        int `json:"police_queries"`
+		PoliceQueriesWithPii int `json:"police_queries_with_pii"`
+	} `json:"totals"`
+	Truncated bool `json:"truncated"`
+}
+
 // DPProvider defines model for DPProvider.
 type DPProvider struct {
 	// AgeS Seconds since its last successful poll.
@@ -2673,24 +2797,26 @@ type HealthStatus string
 
 // Incident defines model for Incident.
 type Incident struct {
-	Aircraft          []IncidentAircraft    `json:"aircraft"`
-	Assignee          *string               `json:"assignee,omitempty"`
-	ClosedAt          *time.Time            `json:"closed_at,omitempty"`
-	CreatedAt         time.Time             `json:"created_at"`
-	EvidencePacks     []EvidencePackSummary `json:"evidence_packs"`
-	IncidentId        string                `json:"incident_id"`
-	IntentRefs        []string              `json:"intent_refs"`
-	Kind              IncidentKind          `json:"kind"`
-	Narrative         string                `json:"narrative"`
-	Notes             []IncidentNote        `json:"notes"`
-	NoticeRef         *string               `json:"notice_ref,omitempty"`
-	OccurredAt        time.Time             `json:"occurred_at"`
-	OpenedBy          string                `json:"opened_by"`
-	OpenedFrom        IncidentOpenedFrom    `json:"opened_from"`
-	Severity          IncidentSeverity      `json:"severity"`
-	SourceViolationId *string               `json:"source_violation_id,omitempty"`
-	Status            IncidentStatus        `json:"status"`
-	UpdatedAt         time.Time             `json:"updated_at"`
+	Aircraft      []IncidentAircraft    `json:"aircraft"`
+	Assignee      *string               `json:"assignee,omitempty"`
+	ClosedAt      *time.Time            `json:"closed_at,omitempty"`
+	CreatedAt     time.Time             `json:"created_at"`
+	EvidencePacks []EvidencePackSummary `json:"evidence_packs"`
+	IncidentId    string                `json:"incident_id"`
+	IntentRefs    []string              `json:"intent_refs"`
+	Kind          IncidentKind          `json:"kind"`
+	Narrative     string                `json:"narrative"`
+	Notes         []IncidentNote        `json:"notes"`
+	NoticeRef     *string               `json:"notice_ref,omitempty"`
+	OccurredAt    time.Time             `json:"occurred_at"`
+	OpenedBy      string                `json:"opened_by"`
+
+	// OpenedFrom police_request is set by POST /v1/police/exports only (WP-19); an incident opened by hand naming it is refused.
+	OpenedFrom        IncidentOpenedFrom `json:"opened_from"`
+	Severity          IncidentSeverity   `json:"severity"`
+	SourceViolationId *string            `json:"source_violation_id,omitempty"`
+	Status            IncidentStatus     `json:"status"`
+	UpdatedAt         time.Time          `json:"updated_at"`
 }
 
 // IncidentAircraft defines model for IncidentAircraft.
@@ -2736,8 +2862,10 @@ type IncidentInput struct {
 	Narrative  *string                  `json:"narrative,omitempty"`
 
 	// NoticeRef The ANSP's or USSP's reference of the notice.
-	NoticeRef  *string            `json:"notice_ref,omitempty"`
-	OccurredAt time.Time          `json:"occurred_at"`
+	NoticeRef  *string   `json:"notice_ref,omitempty"`
+	OccurredAt time.Time `json:"occurred_at"`
+
+	// OpenedFrom police_request is set by POST /v1/police/exports only (WP-19); an incident opened by hand naming it is refused.
 	OpenedFrom IncidentOpenedFrom `json:"opened_from"`
 	Severity   IncidentSeverity   `json:"severity"`
 }
@@ -2753,7 +2881,7 @@ type IncidentNote struct {
 	Id        int64     `json:"id"`
 }
 
-// IncidentOpenedFrom defines model for IncidentOpenedFrom.
+// IncidentOpenedFrom police_request is set by POST /v1/police/exports only (WP-19); an incident opened by hand naming it is refused.
 type IncidentOpenedFrom string
 
 // IncidentPage defines model for IncidentPage.
@@ -2785,12 +2913,14 @@ type IncidentStatus string
 
 // IncidentSummary defines model for IncidentSummary.
 type IncidentSummary struct {
-	Assignee          *string            `json:"assignee,omitempty"`
-	ClosedAt          *time.Time         `json:"closed_at,omitempty"`
-	CreatedAt         time.Time          `json:"created_at"`
-	IncidentId        string             `json:"incident_id"`
-	Kind              IncidentKind       `json:"kind"`
-	OccurredAt        time.Time          `json:"occurred_at"`
+	Assignee   *string      `json:"assignee,omitempty"`
+	ClosedAt   *time.Time   `json:"closed_at,omitempty"`
+	CreatedAt  time.Time    `json:"created_at"`
+	IncidentId string       `json:"incident_id"`
+	Kind       IncidentKind `json:"kind"`
+	OccurredAt time.Time    `json:"occurred_at"`
+
+	// OpenedFrom police_request is set by POST /v1/police/exports only (WP-19); an incident opened by hand naming it is refused.
 	OpenedFrom        IncidentOpenedFrom `json:"opened_from"`
 	Severity          IncidentSeverity   `json:"severity"`
 	SourceViolationId *string            `json:"source_violation_id,omitempty"`
@@ -3292,6 +3422,208 @@ type PilotValidity struct {
 	// Pilot As asked.
 	Pilot  string                 `json:"pilot"`
 	Status RegistryValidityStatus `json:"status"`
+}
+
+// PoliceAccessInput defines model for PoliceAccessInput.
+type PoliceAccessInput struct {
+	Agency      string   `json:"agency"`
+	IpAllowlist []string `json:"ip_allowlist"`
+}
+
+// PoliceAircraft defines model for PoliceAircraft.
+type PoliceAircraft struct {
+	Emergency            bool                               `json:"emergency"`
+	FirstSeen            time.Time                          `json:"first_seen"`
+	IdentificationBasis  string                             `json:"identification_basis"`
+	IdentificationReason *string                            `json:"identification_reason,omitempty"`
+	IdentificationStatus PoliceAircraftIdentificationStatus `json:"identification_status"`
+	LastSeen             time.Time                          `json:"last_seen"`
+
+	// Operator Released only for a purpose of POLICE_PII_PURPOSES; each read is a registry_pii_viewed events row.
+	Operator *PoliceOperatorIdentity `json:"operator,omitempty"`
+
+	// OperatorUnresolved Why a personal-data purpose found no identity for this aircraft (not identified, not in the registry, ambiguous).
+	OperatorUnresolved *string          `json:"operator_unresolved,omitempty"`
+	Positions          []PolicePosition `json:"positions"`
+	PositionsTruncated bool             `json:"positions_truncated"`
+
+	// RegistrationNumber The operator registration's public part as identified (the registry's when matched).
+	RegistrationNumber *string `json:"registration_number,omitempty"`
+	Serial             *string `json:"serial,omitempty"`
+	Source             string  `json:"source"`
+	TrackId            string  `json:"track_id"`
+	Trust              string  `json:"trust"`
+}
+
+// PoliceAircraftIdentificationStatus defines model for PoliceAircraft.IdentificationStatus.
+type PoliceAircraftIdentificationStatus string
+
+// PoliceAircraftAnswer defines model for PoliceAircraftAnswer.
+type PoliceAircraftAnswer struct {
+	Aircraft []PoliceAircraft         `json:"aircraft"`
+	AsOf     time.Time                `json:"as_of"`
+	CaseRef  string                   `json:"case_ref"`
+	Mode     PoliceAircraftAnswerMode `json:"mode"`
+
+	// PiiReleased Whether the purpose allowed personal data and any was returned.
+	PiiReleased bool   `json:"pii_released"`
+	Purpose     string `json:"purpose"`
+
+	// QueryId The police_queries row of this query.
+	QueryId string               `json:"query_id"`
+	Sources PolicePictureSources `json:"sources"`
+
+	// Truncated More than POLICE_MAX_AIRCRAFT aircraft; narrow the box.
+	Truncated  bool      `json:"truncated"`
+	WindowFrom time.Time `json:"window_from"`
+	WindowTo   time.Time `json:"window_to"`
+}
+
+// PoliceAircraftAnswerMode defines model for PoliceAircraftAnswer.Mode.
+type PoliceAircraftAnswerMode string
+
+// PoliceExport defines model for PoliceExport.
+type PoliceExport struct {
+	CaseRef     string    `json:"case_ref"`
+	ContentHash string    `json:"content_hash"`
+	CreatedAt   time.Time `json:"created_at"`
+
+	// Download The path of the download operation.
+	Download   string    `json:"download"`
+	From       time.Time `json:"from"`
+	IncidentId string    `json:"incident_id"`
+
+	// IncidentOpened True when the export opened an incident (opened_from police_request).
+	IncidentOpened bool   `json:"incident_opened"`
+	PackId         string `json:"pack_id"`
+
+	// PiiReleased Whether the purpose allowed personal data and any was returned.
+	PiiReleased bool   `json:"pii_released"`
+	Purpose     string `json:"purpose"`
+
+	// QueryId The police_queries row of this query.
+	QueryId      string    `json:"query_id"`
+	Signature    *string   `json:"signature,omitempty"`
+	SignatureKid *string   `json:"signature_kid,omitempty"`
+	SizeBytes    int64     `json:"size_bytes"`
+	To           time.Time `json:"to"`
+}
+
+// PoliceExportInput Exactly one of incident_id and query.
+type PoliceExportInput struct {
+	CaseRef    string    `json:"case_ref"`
+	From       time.Time `json:"from"`
+	IncidentId *string   `json:"incident_id,omitempty"`
+	Purpose    string    `json:"purpose"`
+	Query      *struct {
+		// Bbox min_lon,min_lat,max_lon,max_lat (WGS84 degrees).
+		Bbox string `json:"bbox"`
+	} `json:"query,omitempty"`
+	To time.Time `json:"to"`
+}
+
+// PoliceOperatorAnswer defines model for PoliceOperatorAnswer.
+type PoliceOperatorAnswer struct {
+	CaseRef        string      `json:"case_ref"`
+	Fleet          []PoliceUAS `json:"fleet"`
+	FleetTruncated bool        `json:"fleet_truncated"`
+
+	// Identity Released only for a purpose of POLICE_PII_PURPOSES; each read is a registry_pii_viewed events row.
+	Identity *PoliceOperatorIdentity `json:"identity,omitempty"`
+	Operator PoliceRegistration      `json:"operator"`
+
+	// PiiReleased Whether the purpose allowed personal data and any was returned.
+	PiiReleased bool   `json:"pii_released"`
+	Purpose     string `json:"purpose"`
+
+	// QueryId The police_queries row of this query.
+	QueryId string `json:"query_id"`
+}
+
+// PoliceOperatorIdentity Released only for a purpose of POLICE_PII_PURPOSES; each read is a registry_pii_viewed events row.
+type PoliceOperatorIdentity struct {
+	ContactEmail  *string `json:"contact_email,omitempty"`
+	ContactPhone  *string `json:"contact_phone,omitempty"`
+	FullName      *string `json:"full_name,omitempty"`
+	LegalName     *string `json:"legal_name,omitempty"`
+	OperatorId    string  `json:"operator_id"`
+	OperatorType  string  `json:"operator_type"`
+	PostalAddress *string `json:"postal_address,omitempty"`
+}
+
+// PolicePictureSources defines model for PolicePictureSources.
+type PolicePictureSources struct {
+	// Degraded True when the picture is older than the live window or a recorded gap falls in the window.
+	Degraded        bool     `json:"degraded"`
+	NewestTrackAgeS *float64 `json:"newest_track_age_s"`
+
+	// NewestTrackAt The newest sample of the picture anywhere (null when none within a day).
+	NewestTrackAt   *time.Time `json:"newest_track_at,omitempty"`
+	WriterGapCauses []string   `json:"writer_gap_causes"`
+
+	// WriterGaps Recorded writer gaps of the tracks table in the window.
+	WriterGaps int `json:"writer_gaps"`
+}
+
+// PolicePosition defines model for PolicePosition.
+type PolicePosition struct {
+	AltAmslM  *float64  `json:"alt_amsl_m,omitempty"`
+	AltSource string    `json:"alt_source"`
+	At        time.Time `json:"at"`
+	HeightM   *float64  `json:"height_m,omitempty"`
+	HeightRef *string   `json:"height_ref,omitempty"`
+	LatDeg    float64   `json:"lat_deg"`
+	LonDeg    float64   `json:"lon_deg"`
+	SpeedMs   *float64  `json:"speed_ms,omitempty"`
+	TrackDeg  *float64  `json:"track_deg,omitempty"`
+}
+
+// PoliceQueryMeta defines model for PoliceQueryMeta.
+type PoliceQueryMeta struct {
+	CaseRef string `json:"case_ref"`
+
+	// PiiReleased Whether the purpose allowed personal data and any was returned.
+	PiiReleased bool   `json:"pii_released"`
+	Purpose     string `json:"purpose"`
+
+	// QueryId The police_queries row of this query.
+	QueryId string `json:"query_id"`
+}
+
+// PoliceRegistration defines model for PoliceRegistration.
+type PoliceRegistration struct {
+	OperatorType       string         `json:"operator_type"`
+	RegistrationNumber string         `json:"registration_number"`
+	Status             RegistryStatus `json:"status"`
+	ValidFrom          time.Time      `json:"valid_from"`
+	ValidUntil         time.Time      `json:"valid_until"`
+}
+
+// PoliceSerialAnswer defines model for PoliceSerialAnswer.
+type PoliceSerialAnswer struct {
+	CaseRef string `json:"case_ref"`
+
+	// Identity Released only for a purpose of POLICE_PII_PURPOSES; each read is a registry_pii_viewed events row.
+	Identity *PoliceOperatorIdentity `json:"identity,omitempty"`
+	Operator PoliceRegistration      `json:"operator"`
+
+	// PiiReleased Whether the purpose allowed personal data and any was returned.
+	PiiReleased bool   `json:"pii_released"`
+	Purpose     string `json:"purpose"`
+
+	// QueryId The police_queries row of this query.
+	QueryId string    `json:"query_id"`
+	Uas     PoliceUAS `json:"uas"`
+}
+
+// PoliceUAS defines model for PoliceUAS.
+type PoliceUAS struct {
+	ClassLabel       *string        `json:"class_label,omitempty"`
+	Manufacturer     *string        `json:"manufacturer,omitempty"`
+	Model            *string        `json:"model,omitempty"`
+	RegistrationMark *string        `json:"registration_mark,omitempty"`
+	Serial           string         `json:"serial"`
+	Status           RegistryStatus `json:"status"`
 }
 
 // Policy defines model for Policy.
@@ -4086,7 +4418,7 @@ type Revoked struct {
 	Revoked int `json:"revoked"`
 }
 
-// Role defines model for Role.
+// Role The console roles, and `police.query`, the one grant of the police realm (WP-19).
 type Role string
 
 // RolesInput defines model for RolesInput.
@@ -4343,10 +4675,15 @@ type USpaceDraftInput struct {
 
 // User defines model for User.
 type User struct {
+	// Agency Police realm only.
+	Agency      *string   `json:"agency,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
 	CreatedBy   string    `json:"created_by"`
 	DisplayName string    `json:"display_name"`
 	Id          string    `json:"id"`
+
+	// IpAllowlist Police realm only; the CIDRs a sign-in and a police query may come from.
+	IpAllowlist *[]string `json:"ip_allowlist,omitempty"`
 	MfaEnrolled bool      `json:"mfa_enrolled"`
 
 	// MfaFailures Consecutive wrong MFA codes.
@@ -4368,13 +4705,21 @@ type User struct {
 // UserStatus defines model for User.Status.
 type UserStatus string
 
-// UserInput defines model for UserInput.
+// UserInput A console account holds console roles only; a police account
+// (WP-19) holds `police.query` only, names its `agency` and the
+// CIDRs of `ip_allowlist` it signs in and queries from (an empty
+// list admits no address). A console account carries neither.
 type UserInput struct {
+	// Agency Police realm only: the agency, 1 to 100 of letters, digits, space . _ -.
+	Agency      *string `json:"agency,omitempty"`
 	DisplayName *string `json:"display_name,omitempty"`
-	Password    string  `json:"password"`
-	Realm       Realm   `json:"realm"`
-	Roles       []Role  `json:"roles"`
-	Username    string  `json:"username"`
+
+	// IpAllowlist Police realm only, required there; CIDRs or single addresses.
+	IpAllowlist *[]string `json:"ip_allowlist,omitempty"`
+	Password    string    `json:"password"`
+	Realm       Realm     `json:"realm"`
+	Roles       []Role    `json:"roles"`
+	Username    string    `json:"username"`
 }
 
 // UserList defines model for UserList.
@@ -4651,6 +4996,11 @@ type OAuthError = OAuthProblem
 // was cut.
 type RateLimited = Problem
 
+// GetDPOReportParams defines parameters for GetDPOReport.
+type GetDPOReportParams struct {
+	Month string `form:"month" json:"month"`
+}
+
 // ListAuditEventsParams defines parameters for ListAuditEvents.
 type ListAuditEventsParams struct {
 	EntityType *string `form:"entity_type,omitempty" json:"entity_type,omitempty"`
@@ -4721,6 +5071,33 @@ type ListOccurrencesParams struct {
 // GetOccurrenceReporterParams defines parameters for GetOccurrenceReporter.
 type GetOccurrenceReporterParams struct {
 	Purpose string `form:"purpose" json:"purpose"`
+}
+
+// QueryPoliceAircraftParams defines parameters for QueryPoliceAircraft.
+type QueryPoliceAircraftParams struct {
+	// Bbox min_lon,min_lat,max_lon,max_lat (WGS84 degrees), each side at most POLICE_MAX_BBOX_DEG.
+	Bbox    string     `form:"bbox" json:"bbox"`
+	At      *time.Time `form:"at,omitempty" json:"at,omitempty"`
+	Purpose string     `form:"purpose" json:"purpose"`
+	CaseRef string     `form:"case_ref" json:"case_ref"`
+}
+
+// DownloadPoliceExportParams defines parameters for DownloadPoliceExport.
+type DownloadPoliceExportParams struct {
+	Purpose string `form:"purpose" json:"purpose"`
+	CaseRef string `form:"case_ref" json:"case_ref"`
+}
+
+// QueryPoliceOperatorParams defines parameters for QueryPoliceOperator.
+type QueryPoliceOperatorParams struct {
+	Purpose string `form:"purpose" json:"purpose"`
+	CaseRef string `form:"case_ref" json:"case_ref"`
+}
+
+// QueryPoliceSerialParams defines parameters for QueryPoliceSerial.
+type QueryPoliceSerialParams struct {
+	Purpose string `form:"purpose" json:"purpose"`
+	CaseRef string `form:"case_ref" json:"case_ref"`
 }
 
 // ListPublicationsParams defines parameters for ListPublications.
@@ -4961,6 +5338,9 @@ type UpdateOccurrenceAnalysisJSONRequestBody = OccurrenceAnalysisPatch
 // ClassifyOccurrenceJSONRequestBody defines body for ClassifyOccurrence for application/json ContentType.
 type ClassifyOccurrenceJSONRequestBody = OccurrenceClassification
 
+// CreatePoliceExportJSONRequestBody defines body for CreatePoliceExport for application/json ContentType.
+type CreatePoliceExportJSONRequestBody = PoliceExportInput
+
 // CreatePolicyJSONRequestBody defines body for CreatePolicy for application/json ContentType.
 type CreatePolicyJSONRequestBody = PolicyInput
 
@@ -5017,6 +5397,9 @@ type SwitchSourceInstanceJSONRequestBody = SourceSwitchInput
 
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
 type CreateUserJSONRequestBody = UserInput
+
+// SetUserPoliceAccessJSONRequestBody defines body for SetUserPoliceAccess for application/json ContentType.
+type SetUserPoliceAccessJSONRequestBody = PoliceAccessInput
 
 // SetUserRolesJSONRequestBody defines body for SetUserRoles for application/json ContentType.
 type SetUserRolesJSONRequestBody = RolesInput
@@ -5365,6 +5748,23 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /readyz (the `GetReadyz` operationId).
 	GetReadyz(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetDPOReport The month's personal-data views and exports, for the data protection officer
+	//
+	// WP-19 (spec 06 §5, accountability). Every police query, export
+	// and download of the month (police_queries: user, agency,
+	// purpose, case reference, what was asked, how many results,
+	// whether personal data was released) and every events row of a
+	// personal-data read of the month (the audit catalogue's PII view
+	// types: registry personal data, raw frames, evidence packs built
+	// and downloaded, occurrence reporters), with the actor, the
+	// purpose, the entity and, for a police read, the case reference.
+	// `month` is a UTC calendar month (YYYY-MM). At most
+	// `DPO_REPORT_MAX_ROWS` rows per list, `truncated` beyond. The read
+	// is itself a `dpo_report_viewed` events row.
+	//
+	// Corresponds with GET /v1/audit/dpo-report (the `GetDPOReport` operationId).
+	GetDPOReport(ctx context.Context, params *GetDPOReportParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListAuditEvents Audit events, newest first
 	//
@@ -6315,6 +6715,98 @@ type ClientInterface interface {
 	// Corresponds with GET /v1/occurrences/{occurrence_id}/reporter (the `GetOccurrenceReporter` operationId).
 	GetOccurrenceReporter(ctx context.Context, occurrenceId string, params *GetOccurrenceReporterParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// QueryPoliceAircraft Who is flying in a box now, or was at an instant
+	//
+	// Without `at`: the tracks of the authority's picture last seen
+	// within `POLICE_LIVE_WINDOW_S` of now (the telemetry database's
+	// clock). With `at`: the tracks seen within `POLICE_AT_WINDOW_S`
+	// either side of it; an `at` older than `POLICE_HISTORY_MAX_AGE_S`
+	// (the online retention) or in the future is refused. Each
+	// aircraft: its serial and the operator registration's public part
+	// as identified, the identification status, the trust, the first
+	// and last time seen and its positions in the box (the newest
+	// `POLICE_MAX_POSITIONS`, `positions_truncated` beyond). The remote
+	// pilot position is never returned. The operator's identity is
+	// added only when `purpose` is one of `POLICE_PII_PURPOSES`, each
+	// read a `registry_pii_viewed` events row carrying the case
+	// reference. `sources` says how fresh the picture is and which
+	// recorded writer gaps fall in the window: an empty answer from a
+	// stale or gapped picture is not an empty sky.
+	//
+	// Corresponds with GET /v1/police/aircraft (the `QueryPoliceAircraft` operationId).
+	QueryPoliceAircraft(ctx context.Context, params *QueryPoliceAircraftParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreatePoliceExportWithBody A legal evidence pack for an incident or for an area and a window
+	//
+	// Builds a `legal` evidence pack through WP-17's builder (hash
+	// sealed, the seal statement signed by the publication key, stored
+	// sealed at rest) for [from, to): of `incident_id`, or of the
+	// aircraft the picture held in `query.bbox` over the window, for
+	// which an incident `opened_from: police_request` is opened (at
+	// most 32 aircraft, 413 beyond: narrow the query; 422 when there is
+	// none). A legal pack carries personal data, so `purpose` must be
+	// one of `POLICE_PII_PURPOSES` (403 otherwise). The export is a
+	// police_queries row before the build, and the pack's
+	// `evidence_pack_built` row carries the purpose and the case
+	// reference. Only the requesting agency downloads it.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/police/exports (the `CreatePoliceExport` operationId).
+	CreatePoliceExportWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreatePoliceExport A legal evidence pack for an incident or for an area and a window
+	//
+	// Builds a `legal` evidence pack through WP-17's builder (hash
+	// sealed, the seal statement signed by the publication key, stored
+	// sealed at rest) for [from, to): of `incident_id`, or of the
+	// aircraft the picture held in `query.bbox` over the window, for
+	// which an incident `opened_from: police_request` is opened (at
+	// most 32 aircraft, 413 beyond: narrow the query; 422 when there is
+	// none). A legal pack carries personal data, so `purpose` must be
+	// one of `POLICE_PII_PURPOSES` (403 otherwise). The export is a
+	// police_queries row before the build, and the pack's
+	// `evidence_pack_built` row carries the purpose and the case
+	// reference. Only the requesting agency downloads it.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/police/exports (the `CreatePoliceExport` operationId).
+	CreatePoliceExport(ctx context.Context, body CreatePoliceExportJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DownloadPoliceExport The sealed archive of an export of this agency (audited)
+	//
+	// Only a pack exported for the caller's agency (404 otherwise).
+	// The download is a police_queries row, and WP-17's download
+	// checks the hash before a byte is served and records
+	// `evidence_pack_downloaded` with the purpose and the case
+	// reference. `purpose` must be one of `POLICE_PII_PURPOSES`.
+	//
+	// Corresponds with GET /v1/police/exports/{pack_id}/download (the `DownloadPoliceExport` operationId).
+	DownloadPoliceExport(ctx context.Context, packId string, params *DownloadPoliceExportParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// QueryPoliceOperator An operator's registry status and fleet
+	//
+	// The registration as the registry holds it (status, validity),
+	// its fleet (at most `POLICE_MAX_FLEET`, `fleet_truncated`
+	// beyond), and the operator's identity only when `purpose` allows
+	// personal data. An unknown number is a 404 after the query is
+	// recorded with `result_count` 0.
+	//
+	// Corresponds with GET /v1/police/operators/{reg} (the `QueryPoliceOperator` operationId).
+	QueryPoliceOperator(ctx context.Context, reg string, params *QueryPoliceOperatorParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// QueryPoliceSerial An aircraft's registry status and its operator
+	//
+	// The aircraft the serial names under uspace-core's matching
+	// (exact, else a unique folded match), its status and its
+	// operator's registration; the operator's identity only when
+	// `purpose` allows personal data. An unknown serial is a 404 after
+	// the query is recorded with `result_count` 0.
+	//
+	// Corresponds with GET /v1/police/serials/{serial} (the `QueryPoliceSerial` operationId).
+	QueryPoliceSerial(ctx context.Context, serial string, params *QueryPoliceSerialParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetPolicy The active policy
 	//
 	// The one active policy version and its thresholds.
@@ -6955,6 +7447,28 @@ type ClientInterface interface {
 	// Corresponds with POST /v1/users/{user_id}/mfa/unlock (the `UnlockUserMFA` operationId).
 	UnlockUserMFA(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// SetUserPoliceAccessWithBody Replace the agency and the IP allow-list of a police account
+	//
+	// WP-19. Police realm accounts only (409 for a console account).
+	// Revokes the account's sessions, so the new allow-list applies at
+	// once; every police query checks the address again.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /v1/users/{user_id}/police-access (the `SetUserPoliceAccess` operationId).
+	SetUserPoliceAccessWithBody(ctx context.Context, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetUserPoliceAccess Replace the agency and the IP allow-list of a police account
+	//
+	// WP-19. Police realm accounts only (409 for a console account).
+	// Revokes the account's sessions, so the new allow-list applies at
+	// once; every police query checks the address again.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /v1/users/{user_id}/police-access (the `SetUserPoliceAccess` operationId).
+	SetUserPoliceAccess(ctx context.Context, userId string, body SetUserPoliceAccessJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// SetUserRolesWithBody Replace the roles of an account
 	//
 	// Revokes the sessions of the account, so the new roles apply at the next sign-in. The last active admin cannot lose the role (409).
@@ -7439,6 +7953,33 @@ func (c *Client) RequestTokenWithFormdataBody(ctx context.Context, body RequestT
 // Corresponds with GET /readyz (the `GetReadyz` operationId).
 func (c *Client) GetReadyz(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetReadyzRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetDPOReport The month's personal-data views and exports, for the data protection officer
+//
+// WP-19 (spec 06 §5, accountability). Every police query, export
+// and download of the month (police_queries: user, agency,
+// purpose, case reference, what was asked, how many results,
+// whether personal data was released) and every events row of a
+// personal-data read of the month (the audit catalogue's PII view
+// types: registry personal data, raw frames, evidence packs built
+// and downloaded, occurrence reporters), with the actor, the
+// purpose, the entity and, for a police read, the case reference.
+// `month` is a UTC calendar month (YYYY-MM). At most
+// `DPO_REPORT_MAX_ROWS` rows per list, `truncated` beyond. The read
+// is itself a `dpo_report_viewed` events row.
+//
+// Corresponds with GET /v1/audit/dpo-report (the `GetDPOReport` operationId).
+func (c *Client) GetDPOReport(ctx context.Context, params *GetDPOReportParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDPOReportRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9078,6 +9619,158 @@ func (c *Client) GetOccurrenceReporter(ctx context.Context, occurrenceId string,
 	return c.Client.Do(req)
 }
 
+// QueryPoliceAircraft Who is flying in a box now, or was at an instant
+//
+// Without `at`: the tracks of the authority's picture last seen
+// within `POLICE_LIVE_WINDOW_S` of now (the telemetry database's
+// clock). With `at`: the tracks seen within `POLICE_AT_WINDOW_S`
+// either side of it; an `at` older than `POLICE_HISTORY_MAX_AGE_S`
+// (the online retention) or in the future is refused. Each
+// aircraft: its serial and the operator registration's public part
+// as identified, the identification status, the trust, the first
+// and last time seen and its positions in the box (the newest
+// `POLICE_MAX_POSITIONS`, `positions_truncated` beyond). The remote
+// pilot position is never returned. The operator's identity is
+// added only when `purpose` is one of `POLICE_PII_PURPOSES`, each
+// read a `registry_pii_viewed` events row carrying the case
+// reference. `sources` says how fresh the picture is and which
+// recorded writer gaps fall in the window: an empty answer from a
+// stale or gapped picture is not an empty sky.
+//
+// Corresponds with GET /v1/police/aircraft (the `QueryPoliceAircraft` operationId).
+func (c *Client) QueryPoliceAircraft(ctx context.Context, params *QueryPoliceAircraftParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewQueryPoliceAircraftRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreatePoliceExportWithBody A legal evidence pack for an incident or for an area and a window
+//
+// Builds a `legal` evidence pack through WP-17's builder (hash
+// sealed, the seal statement signed by the publication key, stored
+// sealed at rest) for [from, to): of `incident_id`, or of the
+// aircraft the picture held in `query.bbox` over the window, for
+// which an incident `opened_from: police_request` is opened (at
+// most 32 aircraft, 413 beyond: narrow the query; 422 when there is
+// none). A legal pack carries personal data, so `purpose` must be
+// one of `POLICE_PII_PURPOSES` (403 otherwise). The export is a
+// police_queries row before the build, and the pack's
+// `evidence_pack_built` row carries the purpose and the case
+// reference. Only the requesting agency downloads it.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/police/exports (the `CreatePoliceExport` operationId).
+func (c *Client) CreatePoliceExportWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePoliceExportRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreatePoliceExport A legal evidence pack for an incident or for an area and a window
+//
+// Builds a `legal` evidence pack through WP-17's builder (hash
+// sealed, the seal statement signed by the publication key, stored
+// sealed at rest) for [from, to): of `incident_id`, or of the
+// aircraft the picture held in `query.bbox` over the window, for
+// which an incident `opened_from: police_request` is opened (at
+// most 32 aircraft, 413 beyond: narrow the query; 422 when there is
+// none). A legal pack carries personal data, so `purpose` must be
+// one of `POLICE_PII_PURPOSES` (403 otherwise). The export is a
+// police_queries row before the build, and the pack's
+// `evidence_pack_built` row carries the purpose and the case
+// reference. Only the requesting agency downloads it.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/police/exports (the `CreatePoliceExport` operationId).
+func (c *Client) CreatePoliceExport(ctx context.Context, body CreatePoliceExportJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreatePoliceExportRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DownloadPoliceExport The sealed archive of an export of this agency (audited)
+//
+// Only a pack exported for the caller's agency (404 otherwise).
+// The download is a police_queries row, and WP-17's download
+// checks the hash before a byte is served and records
+// `evidence_pack_downloaded` with the purpose and the case
+// reference. `purpose` must be one of `POLICE_PII_PURPOSES`.
+//
+// Corresponds with GET /v1/police/exports/{pack_id}/download (the `DownloadPoliceExport` operationId).
+func (c *Client) DownloadPoliceExport(ctx context.Context, packId string, params *DownloadPoliceExportParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDownloadPoliceExportRequest(c.Server, packId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// QueryPoliceOperator An operator's registry status and fleet
+//
+// The registration as the registry holds it (status, validity),
+// its fleet (at most `POLICE_MAX_FLEET`, `fleet_truncated`
+// beyond), and the operator's identity only when `purpose` allows
+// personal data. An unknown number is a 404 after the query is
+// recorded with `result_count` 0.
+//
+// Corresponds with GET /v1/police/operators/{reg} (the `QueryPoliceOperator` operationId).
+func (c *Client) QueryPoliceOperator(ctx context.Context, reg string, params *QueryPoliceOperatorParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewQueryPoliceOperatorRequest(c.Server, reg, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// QueryPoliceSerial An aircraft's registry status and its operator
+//
+// The aircraft the serial names under uspace-core's matching
+// (exact, else a unique folded match), its status and its
+// operator's registration; the operator's identity only when
+// `purpose` allows personal data. An unknown serial is a 404 after
+// the query is recorded with `result_count` 0.
+//
+// Corresponds with GET /v1/police/serials/{serial} (the `QueryPoliceSerial` operationId).
+func (c *Client) QueryPoliceSerial(ctx context.Context, serial string, params *QueryPoliceSerialParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewQueryPoliceSerialRequest(c.Server, serial, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // GetPolicy The active policy
 //
 // The one active policy version and its thresholds.
@@ -10348,6 +11041,48 @@ func (c *Client) UnlockUserMFA(ctx context.Context, userId string, reqEditors ..
 	return c.Client.Do(req)
 }
 
+// SetUserPoliceAccessWithBody Replace the agency and the IP allow-list of a police account
+//
+// WP-19. Police realm accounts only (409 for a console account).
+// Revokes the account's sessions, so the new allow-list applies at
+// once; every police query checks the address again.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /v1/users/{user_id}/police-access (the `SetUserPoliceAccess` operationId).
+func (c *Client) SetUserPoliceAccessWithBody(ctx context.Context, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetUserPoliceAccessRequestWithBody(c.Server, userId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// SetUserPoliceAccess Replace the agency and the IP allow-list of a police account
+//
+// WP-19. Police realm accounts only (409 for a console account).
+// Revokes the account's sessions, so the new allow-list applies at
+// once; every police query checks the address again.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /v1/users/{user_id}/police-access (the `SetUserPoliceAccess` operationId).
+func (c *Client) SetUserPoliceAccess(ctx context.Context, userId string, body SetUserPoliceAccessJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetUserPoliceAccessRequest(c.Server, userId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 // SetUserRolesWithBody Replace the roles of an account
 //
 // Revokes the sessions of the account, so the new roles apply at the next sign-in. The last active admin cannot lose the role (409).
@@ -11152,6 +11887,56 @@ func NewGetReadyzRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetDPOReportRequest constructs an http.Request for the GetDPOReport method
+func NewGetDPOReportRequest(server string, params *GetDPOReportParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/audit/dpo-report")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "month", params.Month, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -13239,6 +14024,319 @@ func NewGetOccurrenceReporterRequest(server string, occurrenceId string, params 
 		var rawQueryFragments []string
 
 		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "purpose", params.Purpose, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewQueryPoliceAircraftRequest constructs an http.Request for the QueryPoliceAircraft method
+func NewQueryPoliceAircraftRequest(server string, params *QueryPoliceAircraftParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/police/aircraft")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "bbox", params.Bbox, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if params.At != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "at", *params.At, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "purpose", params.Purpose, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "case_ref", params.CaseRef, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreatePoliceExportRequest calls the generic CreatePoliceExport builder with application/json body
+func NewCreatePoliceExportRequest(server string, body CreatePoliceExportJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreatePoliceExportRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreatePoliceExportRequestWithBody constructs an http.Request for the CreatePoliceExport method, with any body, and a specified content type
+func NewCreatePoliceExportRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/police/exports")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDownloadPoliceExportRequest constructs an http.Request for the DownloadPoliceExport method
+func NewDownloadPoliceExportRequest(server string, packId string, params *DownloadPoliceExportParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "pack_id", packId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/police/exports/%s/download", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "purpose", params.Purpose, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "case_ref", params.CaseRef, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewQueryPoliceOperatorRequest constructs an http.Request for the QueryPoliceOperator method
+func NewQueryPoliceOperatorRequest(server string, reg string, params *QueryPoliceOperatorParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "reg", reg, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/police/operators/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "purpose", params.Purpose, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "case_ref", params.CaseRef, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewQueryPoliceSerialRequest constructs an http.Request for the QueryPoliceSerial method
+func NewQueryPoliceSerialRequest(server string, serial string, params *QueryPoliceSerialParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "serial", serial, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/police/serials/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "purpose", params.Purpose, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "case_ref", params.CaseRef, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 			return nil, err
 		} else {
 			for _, qp := range strings.Split(queryFrag, "&") {
@@ -15478,6 +16576,53 @@ func NewUnlockUserMFARequest(server string, userId string) (*http.Request, error
 	return req, nil
 }
 
+// NewSetUserPoliceAccessRequest calls the generic SetUserPoliceAccess builder with application/json body
+func NewSetUserPoliceAccessRequest(server string, userId string, body SetUserPoliceAccessJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetUserPoliceAccessRequestWithBody(server, userId, "application/json", bodyReader)
+}
+
+// NewSetUserPoliceAccessRequestWithBody constructs an http.Request for the SetUserPoliceAccess method, with any body, and a specified content type
+func NewSetUserPoliceAccessRequestWithBody(server string, userId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "user_id", userId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/users/%s/police-access", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewSetUserRolesRequest calls the generic SetUserRoles builder with application/json body
 func NewSetUserRolesRequest(server string, userId string, body SetUserRolesJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -16852,6 +17997,25 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /readyz (the `GetReadyz` operationId).
 	GetReadyzWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetReadyzResponse, error)
 
+	// GetDPOReportWithResponse The month's personal-data views and exports, for the data protection officer
+	//
+	// WP-19 (spec 06 §5, accountability). Every police query, export
+	// and download of the month (police_queries: user, agency,
+	// purpose, case reference, what was asked, how many results,
+	// whether personal data was released) and every events row of a
+	// personal-data read of the month (the audit catalogue's PII view
+	// types: registry personal data, raw frames, evidence packs built
+	// and downloaded, occurrence reporters), with the actor, the
+	// purpose, the entity and, for a police read, the case reference.
+	// `month` is a UTC calendar month (YYYY-MM). At most
+	// `DPO_REPORT_MAX_ROWS` rows per list, `truncated` beyond. The read
+	// is itself a `dpo_report_viewed` events row.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/audit/dpo-report (the `GetDPOReport` operationId).
+	GetDPOReportWithResponse(ctx context.Context, params *GetDPOReportParams, reqEditors ...RequestEditorFn) (*GetDPOReportResponse, error)
+
 	// ListAuditEventsWithResponse Audit events, newest first
 	//
 	// Every filter is optional; pages are cut by `before_id` (the
@@ -17845,6 +19009,106 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /v1/occurrences/{occurrence_id}/reporter (the `GetOccurrenceReporter` operationId).
 	GetOccurrenceReporterWithResponse(ctx context.Context, occurrenceId string, params *GetOccurrenceReporterParams, reqEditors ...RequestEditorFn) (*GetOccurrenceReporterResponse, error)
 
+	// QueryPoliceAircraftWithResponse Who is flying in a box now, or was at an instant
+	//
+	// Without `at`: the tracks of the authority's picture last seen
+	// within `POLICE_LIVE_WINDOW_S` of now (the telemetry database's
+	// clock). With `at`: the tracks seen within `POLICE_AT_WINDOW_S`
+	// either side of it; an `at` older than `POLICE_HISTORY_MAX_AGE_S`
+	// (the online retention) or in the future is refused. Each
+	// aircraft: its serial and the operator registration's public part
+	// as identified, the identification status, the trust, the first
+	// and last time seen and its positions in the box (the newest
+	// `POLICE_MAX_POSITIONS`, `positions_truncated` beyond). The remote
+	// pilot position is never returned. The operator's identity is
+	// added only when `purpose` is one of `POLICE_PII_PURPOSES`, each
+	// read a `registry_pii_viewed` events row carrying the case
+	// reference. `sources` says how fresh the picture is and which
+	// recorded writer gaps fall in the window: an empty answer from a
+	// stale or gapped picture is not an empty sky.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/police/aircraft (the `QueryPoliceAircraft` operationId).
+	QueryPoliceAircraftWithResponse(ctx context.Context, params *QueryPoliceAircraftParams, reqEditors ...RequestEditorFn) (*QueryPoliceAircraftResponse, error)
+
+	// CreatePoliceExportWithBodyWithResponse A legal evidence pack for an incident or for an area and a window
+	//
+	// Builds a `legal` evidence pack through WP-17's builder (hash
+	// sealed, the seal statement signed by the publication key, stored
+	// sealed at rest) for [from, to): of `incident_id`, or of the
+	// aircraft the picture held in `query.bbox` over the window, for
+	// which an incident `opened_from: police_request` is opened (at
+	// most 32 aircraft, 413 beyond: narrow the query; 422 when there is
+	// none). A legal pack carries personal data, so `purpose` must be
+	// one of `POLICE_PII_PURPOSES` (403 otherwise). The export is a
+	// police_queries row before the build, and the pack's
+	// `evidence_pack_built` row carries the purpose and the case
+	// reference. Only the requesting agency downloads it.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/police/exports (the `CreatePoliceExport` operationId).
+	CreatePoliceExportWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePoliceExportResponse, error)
+
+	// CreatePoliceExportWithResponse A legal evidence pack for an incident or for an area and a window
+	//
+	// Builds a `legal` evidence pack through WP-17's builder (hash
+	// sealed, the seal statement signed by the publication key, stored
+	// sealed at rest) for [from, to): of `incident_id`, or of the
+	// aircraft the picture held in `query.bbox` over the window, for
+	// which an incident `opened_from: police_request` is opened (at
+	// most 32 aircraft, 413 beyond: narrow the query; 422 when there is
+	// none). A legal pack carries personal data, so `purpose` must be
+	// one of `POLICE_PII_PURPOSES` (403 otherwise). The export is a
+	// police_queries row before the build, and the pack's
+	// `evidence_pack_built` row carries the purpose and the case
+	// reference. Only the requesting agency downloads it.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/police/exports (the `CreatePoliceExport` operationId).
+	CreatePoliceExportWithResponse(ctx context.Context, body CreatePoliceExportJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePoliceExportResponse, error)
+
+	// DownloadPoliceExportWithResponse The sealed archive of an export of this agency (audited)
+	//
+	// Only a pack exported for the caller's agency (404 otherwise).
+	// The download is a police_queries row, and WP-17's download
+	// checks the hash before a byte is served and records
+	// `evidence_pack_downloaded` with the purpose and the case
+	// reference. `purpose` must be one of `POLICE_PII_PURPOSES`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/police/exports/{pack_id}/download (the `DownloadPoliceExport` operationId).
+	DownloadPoliceExportWithResponse(ctx context.Context, packId string, params *DownloadPoliceExportParams, reqEditors ...RequestEditorFn) (*DownloadPoliceExportResponse, error)
+
+	// QueryPoliceOperatorWithResponse An operator's registry status and fleet
+	//
+	// The registration as the registry holds it (status, validity),
+	// its fleet (at most `POLICE_MAX_FLEET`, `fleet_truncated`
+	// beyond), and the operator's identity only when `purpose` allows
+	// personal data. An unknown number is a 404 after the query is
+	// recorded with `result_count` 0.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/police/operators/{reg} (the `QueryPoliceOperator` operationId).
+	QueryPoliceOperatorWithResponse(ctx context.Context, reg string, params *QueryPoliceOperatorParams, reqEditors ...RequestEditorFn) (*QueryPoliceOperatorResponse, error)
+
+	// QueryPoliceSerialWithResponse An aircraft's registry status and its operator
+	//
+	// The aircraft the serial names under uspace-core's matching
+	// (exact, else a unique folded match), its status and its
+	// operator's registration; the operator's identity only when
+	// `purpose` allows personal data. An unknown serial is a 404 after
+	// the query is recorded with `result_count` 0.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/police/serials/{serial} (the `QueryPoliceSerial` operationId).
+	QueryPoliceSerialWithResponse(ctx context.Context, serial string, params *QueryPoliceSerialParams, reqEditors ...RequestEditorFn) (*QueryPoliceSerialResponse, error)
+
 	// GetPolicyWithResponse The active policy
 	//
 	// The one active policy version and its thresholds.
@@ -18535,6 +19799,28 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /v1/users/{user_id}/mfa/unlock (the `UnlockUserMFA` operationId).
 	UnlockUserMFAWithResponse(ctx context.Context, userId string, reqEditors ...RequestEditorFn) (*UnlockUserMFAResponse, error)
 
+	// SetUserPoliceAccessWithBodyWithResponse Replace the agency and the IP allow-list of a police account
+	//
+	// WP-19. Police realm accounts only (409 for a console account).
+	// Revokes the account's sessions, so the new allow-list applies at
+	// once; every police query checks the address again.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /v1/users/{user_id}/police-access (the `SetUserPoliceAccess` operationId).
+	SetUserPoliceAccessWithBodyWithResponse(ctx context.Context, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetUserPoliceAccessResponse, error)
+
+	// SetUserPoliceAccessWithResponse Replace the agency and the IP allow-list of a police account
+	//
+	// WP-19. Police realm accounts only (409 for a console account).
+	// Revokes the account's sessions, so the new allow-list applies at
+	// once; every police query checks the address again.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /v1/users/{user_id}/police-access (the `SetUserPoliceAccess` operationId).
+	SetUserPoliceAccessWithResponse(ctx context.Context, userId string, body SetUserPoliceAccessJSONRequestBody, reqEditors ...RequestEditorFn) (*SetUserPoliceAccessResponse, error)
+
 	// SetUserRolesWithBodyWithResponse Replace the roles of an account
 	//
 	// Revokes the sessions of the account, so the new roles apply at the next sign-in. The last active admin cannot lose the role (409).
@@ -19199,6 +20485,61 @@ func (r GetReadyzResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetReadyzResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetDPOReportResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *DPOReport
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetDPOReportResponse) GetJSON200() *DPOReport {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r GetDPOReportResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetDPOReportResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetDPOReportResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetDPOReportResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetDPOReportResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetDPOReportResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -21940,6 +23281,450 @@ func (r GetOccurrenceReporterResponse) ContentType() string {
 	return ""
 }
 
+// QueryPoliceAircraftResponse429Headers the declared response headers of an HTTP 429 response for QueryPoliceAircraft
+type QueryPoliceAircraftResponse429Headers struct {
+	RetryAfter *int
+}
+
+type QueryPoliceAircraftResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PoliceAircraftAnswer
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON403 the response for an HTTP 403 `application/problem+json` response
+	ApplicationproblemJSON403 *Problem
+	// ApplicationproblemJSON429 the response for an HTTP 429 `application/problem+json` response
+	ApplicationproblemJSON429 *RateLimited
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *QueryPoliceAircraftResponse429Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r QueryPoliceAircraftResponse) GetJSON200() *PoliceAircraftAnswer {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r QueryPoliceAircraftResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON403 returns the response for an HTTP 403 `application/problem+json` response
+func (r QueryPoliceAircraftResponse) GetApplicationproblemJSON403() *Problem {
+	return r.ApplicationproblemJSON403
+}
+
+// GetApplicationproblemJSON429 returns the response for an HTTP 429 `application/problem+json` response
+func (r QueryPoliceAircraftResponse) GetApplicationproblemJSON429() *RateLimited {
+	return r.ApplicationproblemJSON429
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r QueryPoliceAircraftResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r QueryPoliceAircraftResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r QueryPoliceAircraftResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r QueryPoliceAircraftResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r QueryPoliceAircraftResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r QueryPoliceAircraftResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// CreatePoliceExportResponse429Headers the declared response headers of an HTTP 429 response for CreatePoliceExport
+type CreatePoliceExportResponse429Headers struct {
+	RetryAfter *int
+}
+
+type CreatePoliceExportResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *PoliceExport
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON403 the response for an HTTP 403 `application/problem+json` response
+	ApplicationproblemJSON403 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON413 the response for an HTTP 413 `application/problem+json` response
+	ApplicationproblemJSON413 *Problem
+	// ApplicationproblemJSON422 the response for an HTTP 422 `application/problem+json` response
+	ApplicationproblemJSON422 *Problem
+	// ApplicationproblemJSON429 the response for an HTTP 429 `application/problem+json` response
+	ApplicationproblemJSON429 *RateLimited
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *CreatePoliceExportResponse429Headers
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreatePoliceExportResponse) GetJSON201() *PoliceExport {
+	return r.JSON201
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r CreatePoliceExportResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON403 returns the response for an HTTP 403 `application/problem+json` response
+func (r CreatePoliceExportResponse) GetApplicationproblemJSON403() *Problem {
+	return r.ApplicationproblemJSON403
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r CreatePoliceExportResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON413 returns the response for an HTTP 413 `application/problem+json` response
+func (r CreatePoliceExportResponse) GetApplicationproblemJSON413() *Problem {
+	return r.ApplicationproblemJSON413
+}
+
+// GetApplicationproblemJSON422 returns the response for an HTTP 422 `application/problem+json` response
+func (r CreatePoliceExportResponse) GetApplicationproblemJSON422() *Problem {
+	return r.ApplicationproblemJSON422
+}
+
+// GetApplicationproblemJSON429 returns the response for an HTTP 429 `application/problem+json` response
+func (r CreatePoliceExportResponse) GetApplicationproblemJSON429() *RateLimited {
+	return r.ApplicationproblemJSON429
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r CreatePoliceExportResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r CreatePoliceExportResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreatePoliceExportResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreatePoliceExportResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreatePoliceExportResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreatePoliceExportResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// DownloadPoliceExportResponse200Headers the declared response headers of an HTTP 200 response for DownloadPoliceExport
+type DownloadPoliceExportResponse200Headers struct {
+	XContentSHA256     *string
+	XEvidenceSignature *string
+}
+
+// DownloadPoliceExportResponse429Headers the declared response headers of an HTTP 429 response for DownloadPoliceExport
+type DownloadPoliceExportResponse429Headers struct {
+	RetryAfter *int
+}
+
+type DownloadPoliceExportResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON403 the response for an HTTP 403 `application/problem+json` response
+	ApplicationproblemJSON403 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *Problem
+	// ApplicationproblemJSON429 the response for an HTTP 429 `application/problem+json` response
+	ApplicationproblemJSON429 *RateLimited
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *DownloadPoliceExportResponse200Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *DownloadPoliceExportResponse429Headers
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r DownloadPoliceExportResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON403 returns the response for an HTTP 403 `application/problem+json` response
+func (r DownloadPoliceExportResponse) GetApplicationproblemJSON403() *Problem {
+	return r.ApplicationproblemJSON403
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r DownloadPoliceExportResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r DownloadPoliceExportResponse) GetApplicationproblemJSON409() *Problem {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSON429 returns the response for an HTTP 429 `application/problem+json` response
+func (r DownloadPoliceExportResponse) GetApplicationproblemJSON429() *RateLimited {
+	return r.ApplicationproblemJSON429
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r DownloadPoliceExportResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r DownloadPoliceExportResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DownloadPoliceExportResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DownloadPoliceExportResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DownloadPoliceExportResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// QueryPoliceOperatorResponse429Headers the declared response headers of an HTTP 429 response for QueryPoliceOperator
+type QueryPoliceOperatorResponse429Headers struct {
+	RetryAfter *int
+}
+
+type QueryPoliceOperatorResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PoliceOperatorAnswer
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON403 the response for an HTTP 403 `application/problem+json` response
+	ApplicationproblemJSON403 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON429 the response for an HTTP 429 `application/problem+json` response
+	ApplicationproblemJSON429 *RateLimited
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *QueryPoliceOperatorResponse429Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r QueryPoliceOperatorResponse) GetJSON200() *PoliceOperatorAnswer {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r QueryPoliceOperatorResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON403 returns the response for an HTTP 403 `application/problem+json` response
+func (r QueryPoliceOperatorResponse) GetApplicationproblemJSON403() *Problem {
+	return r.ApplicationproblemJSON403
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r QueryPoliceOperatorResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON429 returns the response for an HTTP 429 `application/problem+json` response
+func (r QueryPoliceOperatorResponse) GetApplicationproblemJSON429() *RateLimited {
+	return r.ApplicationproblemJSON429
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r QueryPoliceOperatorResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r QueryPoliceOperatorResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r QueryPoliceOperatorResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r QueryPoliceOperatorResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r QueryPoliceOperatorResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// QueryPoliceSerialResponse429Headers the declared response headers of an HTTP 429 response for QueryPoliceSerial
+type QueryPoliceSerialResponse429Headers struct {
+	RetryAfter *int
+}
+
+type QueryPoliceSerialResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *PoliceSerialAnswer
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON403 the response for an HTTP 403 `application/problem+json` response
+	ApplicationproblemJSON403 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON429 the response for an HTTP 429 `application/problem+json` response
+	ApplicationproblemJSON429 *RateLimited
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *QueryPoliceSerialResponse429Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r QueryPoliceSerialResponse) GetJSON200() *PoliceSerialAnswer {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r QueryPoliceSerialResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON403 returns the response for an HTTP 403 `application/problem+json` response
+func (r QueryPoliceSerialResponse) GetApplicationproblemJSON403() *Problem {
+	return r.ApplicationproblemJSON403
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r QueryPoliceSerialResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON429 returns the response for an HTTP 429 `application/problem+json` response
+func (r QueryPoliceSerialResponse) GetApplicationproblemJSON429() *RateLimited {
+	return r.ApplicationproblemJSON429
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r QueryPoliceSerialResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r QueryPoliceSerialResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r QueryPoliceSerialResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r QueryPoliceSerialResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r QueryPoliceSerialResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type GetPolicyResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -24171,6 +25956,54 @@ func (r UnlockUserMFAResponse) ContentType() string {
 	return ""
 }
 
+type SetUserPoliceAccessResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *User
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r SetUserPoliceAccessResponse) GetJSON200() *User {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r SetUserPoliceAccessResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r SetUserPoliceAccessResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r SetUserPoliceAccessResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetUserPoliceAccessResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetUserPoliceAccessResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type SetUserRolesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -25474,6 +27307,31 @@ func (c *ClientWithResponses) GetReadyzWithResponse(ctx context.Context, reqEdit
 		return nil, err
 	}
 	return ParseGetReadyzResponse(rsp)
+}
+
+// GetDPOReportWithResponse The month's personal-data views and exports, for the data protection officer
+//
+// WP-19 (spec 06 §5, accountability). Every police query, export
+// and download of the month (police_queries: user, agency,
+// purpose, case reference, what was asked, how many results,
+// whether personal data was released) and every events row of a
+// personal-data read of the month (the audit catalogue's PII view
+// types: registry personal data, raw frames, evidence packs built
+// and downloaded, occurrence reporters), with the actor, the
+// purpose, the entity and, for a police read, the case reference.
+// `month` is a UTC calendar month (YYYY-MM). At most
+// `DPO_REPORT_MAX_ROWS` rows per list, `truncated` beyond. The read
+// is itself a `dpo_report_viewed` events row.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/audit/dpo-report (the `GetDPOReport` operationId).
+func (c *ClientWithResponses) GetDPOReportWithResponse(ctx context.Context, params *GetDPOReportParams, reqEditors ...RequestEditorFn) (*GetDPOReportResponse, error) {
+	rsp, err := c.GetDPOReport(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetDPOReportResponse(rsp)
 }
 
 // ListAuditEventsWithResponse Audit events, newest first
@@ -26877,6 +28735,142 @@ func (c *ClientWithResponses) GetOccurrenceReporterWithResponse(ctx context.Cont
 	return ParseGetOccurrenceReporterResponse(rsp)
 }
 
+// QueryPoliceAircraftWithResponse Who is flying in a box now, or was at an instant
+//
+// Without `at`: the tracks of the authority's picture last seen
+// within `POLICE_LIVE_WINDOW_S` of now (the telemetry database's
+// clock). With `at`: the tracks seen within `POLICE_AT_WINDOW_S`
+// either side of it; an `at` older than `POLICE_HISTORY_MAX_AGE_S`
+// (the online retention) or in the future is refused. Each
+// aircraft: its serial and the operator registration's public part
+// as identified, the identification status, the trust, the first
+// and last time seen and its positions in the box (the newest
+// `POLICE_MAX_POSITIONS`, `positions_truncated` beyond). The remote
+// pilot position is never returned. The operator's identity is
+// added only when `purpose` is one of `POLICE_PII_PURPOSES`, each
+// read a `registry_pii_viewed` events row carrying the case
+// reference. `sources` says how fresh the picture is and which
+// recorded writer gaps fall in the window: an empty answer from a
+// stale or gapped picture is not an empty sky.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/police/aircraft (the `QueryPoliceAircraft` operationId).
+func (c *ClientWithResponses) QueryPoliceAircraftWithResponse(ctx context.Context, params *QueryPoliceAircraftParams, reqEditors ...RequestEditorFn) (*QueryPoliceAircraftResponse, error) {
+	rsp, err := c.QueryPoliceAircraft(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseQueryPoliceAircraftResponse(rsp)
+}
+
+// CreatePoliceExportWithBodyWithResponse A legal evidence pack for an incident or for an area and a window
+//
+// Builds a `legal` evidence pack through WP-17's builder (hash
+// sealed, the seal statement signed by the publication key, stored
+// sealed at rest) for [from, to): of `incident_id`, or of the
+// aircraft the picture held in `query.bbox` over the window, for
+// which an incident `opened_from: police_request` is opened (at
+// most 32 aircraft, 413 beyond: narrow the query; 422 when there is
+// none). A legal pack carries personal data, so `purpose` must be
+// one of `POLICE_PII_PURPOSES` (403 otherwise). The export is a
+// police_queries row before the build, and the pack's
+// `evidence_pack_built` row carries the purpose and the case
+// reference. Only the requesting agency downloads it.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/police/exports (the `CreatePoliceExport` operationId).
+func (c *ClientWithResponses) CreatePoliceExportWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePoliceExportResponse, error) {
+	rsp, err := c.CreatePoliceExportWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreatePoliceExportResponse(rsp)
+}
+
+// CreatePoliceExportWithResponse A legal evidence pack for an incident or for an area and a window
+//
+// Builds a `legal` evidence pack through WP-17's builder (hash
+// sealed, the seal statement signed by the publication key, stored
+// sealed at rest) for [from, to): of `incident_id`, or of the
+// aircraft the picture held in `query.bbox` over the window, for
+// which an incident `opened_from: police_request` is opened (at
+// most 32 aircraft, 413 beyond: narrow the query; 422 when there is
+// none). A legal pack carries personal data, so `purpose` must be
+// one of `POLICE_PII_PURPOSES` (403 otherwise). The export is a
+// police_queries row before the build, and the pack's
+// `evidence_pack_built` row carries the purpose and the case
+// reference. Only the requesting agency downloads it.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/police/exports (the `CreatePoliceExport` operationId).
+func (c *ClientWithResponses) CreatePoliceExportWithResponse(ctx context.Context, body CreatePoliceExportJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePoliceExportResponse, error) {
+	rsp, err := c.CreatePoliceExport(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreatePoliceExportResponse(rsp)
+}
+
+// DownloadPoliceExportWithResponse The sealed archive of an export of this agency (audited)
+//
+// Only a pack exported for the caller's agency (404 otherwise).
+// The download is a police_queries row, and WP-17's download
+// checks the hash before a byte is served and records
+// `evidence_pack_downloaded` with the purpose and the case
+// reference. `purpose` must be one of `POLICE_PII_PURPOSES`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/police/exports/{pack_id}/download (the `DownloadPoliceExport` operationId).
+func (c *ClientWithResponses) DownloadPoliceExportWithResponse(ctx context.Context, packId string, params *DownloadPoliceExportParams, reqEditors ...RequestEditorFn) (*DownloadPoliceExportResponse, error) {
+	rsp, err := c.DownloadPoliceExport(ctx, packId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDownloadPoliceExportResponse(rsp)
+}
+
+// QueryPoliceOperatorWithResponse An operator's registry status and fleet
+//
+// The registration as the registry holds it (status, validity),
+// its fleet (at most `POLICE_MAX_FLEET`, `fleet_truncated`
+// beyond), and the operator's identity only when `purpose` allows
+// personal data. An unknown number is a 404 after the query is
+// recorded with `result_count` 0.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/police/operators/{reg} (the `QueryPoliceOperator` operationId).
+func (c *ClientWithResponses) QueryPoliceOperatorWithResponse(ctx context.Context, reg string, params *QueryPoliceOperatorParams, reqEditors ...RequestEditorFn) (*QueryPoliceOperatorResponse, error) {
+	rsp, err := c.QueryPoliceOperator(ctx, reg, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseQueryPoliceOperatorResponse(rsp)
+}
+
+// QueryPoliceSerialWithResponse An aircraft's registry status and its operator
+//
+// The aircraft the serial names under uspace-core's matching
+// (exact, else a unique folded match), its status and its
+// operator's registration; the operator's identity only when
+// `purpose` allows personal data. An unknown serial is a 404 after
+// the query is recorded with `result_count` 0.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/police/serials/{serial} (the `QueryPoliceSerial` operationId).
+func (c *ClientWithResponses) QueryPoliceSerialWithResponse(ctx context.Context, serial string, params *QueryPoliceSerialParams, reqEditors ...RequestEditorFn) (*QueryPoliceSerialResponse, error) {
+	rsp, err := c.QueryPoliceSerial(ctx, serial, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseQueryPoliceSerialResponse(rsp)
+}
+
 // GetPolicyWithResponse The active policy
 //
 // The one active policy version and its thresholds.
@@ -27945,6 +29939,40 @@ func (c *ClientWithResponses) UnlockUserMFAWithResponse(ctx context.Context, use
 	return ParseUnlockUserMFAResponse(rsp)
 }
 
+// SetUserPoliceAccessWithBodyWithResponse Replace the agency and the IP allow-list of a police account
+//
+// WP-19. Police realm accounts only (409 for a console account).
+// Revokes the account's sessions, so the new allow-list applies at
+// once; every police query checks the address again.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /v1/users/{user_id}/police-access (the `SetUserPoliceAccess` operationId).
+func (c *ClientWithResponses) SetUserPoliceAccessWithBodyWithResponse(ctx context.Context, userId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetUserPoliceAccessResponse, error) {
+	rsp, err := c.SetUserPoliceAccessWithBody(ctx, userId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetUserPoliceAccessResponse(rsp)
+}
+
+// SetUserPoliceAccessWithResponse Replace the agency and the IP allow-list of a police account
+//
+// WP-19. Police realm accounts only (409 for a console account).
+// Revokes the account's sessions, so the new allow-list applies at
+// once; every police query checks the address again.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /v1/users/{user_id}/police-access (the `SetUserPoliceAccess` operationId).
+func (c *ClientWithResponses) SetUserPoliceAccessWithResponse(ctx context.Context, userId string, body SetUserPoliceAccessJSONRequestBody, reqEditors ...RequestEditorFn) (*SetUserPoliceAccessResponse, error) {
+	rsp, err := c.SetUserPoliceAccess(ctx, userId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetUserPoliceAccessResponse(rsp)
+}
+
 // SetUserRolesWithBodyWithResponse Replace the roles of an account
 //
 // Revokes the sessions of the account, so the new roles apply at the next sign-in. The last active admin cannot lose the role (409).
@@ -28745,6 +30773,46 @@ func ParseGetReadyzResponse(rsp *http.Response) (*GetReadyzResponse, error) {
 			return nil, err
 		}
 		response.JSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetDPOReportResponse parses an HTTP response from a GetDPOReportWithResponse call
+func ParseGetDPOReportResponse(rsp *http.Response) (*GetDPOReportResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetDPOReportResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DPOReport
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
 		var dest Problem
@@ -30872,6 +32940,414 @@ func ParseGetOccurrenceReporterResponse(rsp *http.Response) (*GetOccurrenceRepor
 	return response, nil
 }
 
+// ParseQueryPoliceAircraftResponse parses an HTTP response from a QueryPoliceAircraftWithResponse call
+func ParseQueryPoliceAircraftResponse(rsp *http.Response) (*QueryPoliceAircraftResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &QueryPoliceAircraftResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PoliceAircraftAnswer
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers QueryPoliceAircraftResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseCreatePoliceExportResponse parses an HTTP response from a CreatePoliceExportWithResponse call
+func ParseCreatePoliceExportResponse(rsp *http.Response) (*CreatePoliceExportResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreatePoliceExportResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest PoliceExport
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers CreatePoliceExportResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseDownloadPoliceExportResponse parses an HTTP response from a DownloadPoliceExportWithResponse call
+func ParseDownloadPoliceExportResponse(rsp *http.Response) (*DownloadPoliceExportResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DownloadPoliceExportResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers DownloadPoliceExportResponse200Headers
+		if values := rsp.Header.Values("X-Content-SHA256"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Content-SHA256", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XContentSHA256 = &value
+		}
+		if values := rsp.Header.Values("X-Evidence-Signature"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Evidence-Signature", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XEvidenceSignature = &value
+		}
+		response.Headers200 = &headers
+	case rsp.StatusCode == 429:
+		var headers DownloadPoliceExportResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseQueryPoliceOperatorResponse parses an HTTP response from a QueryPoliceOperatorWithResponse call
+func ParseQueryPoliceOperatorResponse(rsp *http.Response) (*QueryPoliceOperatorResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &QueryPoliceOperatorResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PoliceOperatorAnswer
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers QueryPoliceOperatorResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
+// ParseQueryPoliceSerialResponse parses an HTTP response from a QueryPoliceSerialWithResponse call
+func ParseQueryPoliceSerialResponse(rsp *http.Response) (*QueryPoliceSerialResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &QueryPoliceSerialResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PoliceSerialAnswer
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 429:
+		var headers QueryPoliceSerialResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
+	}
+
+	return response, nil
+}
+
 // ParseGetPolicyResponse parses an HTTP response from a GetPolicyWithResponse call
 func ParseGetPolicyResponse(rsp *http.Response) (*GetPolicyResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -32482,6 +34958,39 @@ func ParseUnlockUserMFAResponse(rsp *http.Response) (*UnlockUserMFAResponse, err
 	return response, nil
 }
 
+// ParseSetUserPoliceAccessResponse parses an HTTP response from a SetUserPoliceAccessWithResponse call
+func ParseSetUserPoliceAccessResponse(rsp *http.Response) (*SetUserPoliceAccessResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetUserPoliceAccessResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest User
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseSetUserRolesResponse parses an HTTP response from a SetUserRolesWithResponse call
 func ParseSetUserRolesResponse(rsp *http.Response) (*SetUserRolesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -33328,6 +35837,9 @@ type ServerInterface interface {
 	// GetReadyz Readiness
 	// (GET /readyz)
 	GetReadyz(w http.ResponseWriter, r *http.Request)
+	// GetDPOReport The month's personal-data views and exports, for the data protection officer
+	// (GET /v1/audit/dpo-report)
+	GetDPOReport(w http.ResponseWriter, r *http.Request, params GetDPOReportParams)
 	// ListAuditEvents Audit events, newest first
 	// (GET /v1/audit/events)
 	ListAuditEvents(w http.ResponseWriter, r *http.Request, params ListAuditEventsParams)
@@ -33463,6 +35975,21 @@ type ServerInterface interface {
 	// GetOccurrenceReporter The reporter of an occurrence (incident officers only; purpose required, audited)
 	// (GET /v1/occurrences/{occurrence_id}/reporter)
 	GetOccurrenceReporter(w http.ResponseWriter, r *http.Request, occurrenceId string, params GetOccurrenceReporterParams)
+	// QueryPoliceAircraft Who is flying in a box now, or was at an instant
+	// (GET /v1/police/aircraft)
+	QueryPoliceAircraft(w http.ResponseWriter, r *http.Request, params QueryPoliceAircraftParams)
+	// CreatePoliceExport A legal evidence pack for an incident or for an area and a window
+	// (POST /v1/police/exports)
+	CreatePoliceExport(w http.ResponseWriter, r *http.Request)
+	// DownloadPoliceExport The sealed archive of an export of this agency (audited)
+	// (GET /v1/police/exports/{pack_id}/download)
+	DownloadPoliceExport(w http.ResponseWriter, r *http.Request, packId string, params DownloadPoliceExportParams)
+	// QueryPoliceOperator An operator's registry status and fleet
+	// (GET /v1/police/operators/{reg})
+	QueryPoliceOperator(w http.ResponseWriter, r *http.Request, reg string, params QueryPoliceOperatorParams)
+	// QueryPoliceSerial An aircraft's registry status and its operator
+	// (GET /v1/police/serials/{serial})
+	QueryPoliceSerial(w http.ResponseWriter, r *http.Request, serial string, params QueryPoliceSerialParams)
 	// GetPolicy The active policy
 	// (GET /v1/policy)
 	GetPolicy(w http.ResponseWriter, r *http.Request)
@@ -33595,6 +36122,9 @@ type ServerInterface interface {
 	// UnlockUserMFA Clear the MFA lock of an account
 	// (POST /v1/users/{user_id}/mfa/unlock)
 	UnlockUserMFA(w http.ResponseWriter, r *http.Request, userId string)
+	// SetUserPoliceAccess Replace the agency and the IP allow-list of a police account
+	// (PUT /v1/users/{user_id}/police-access)
+	SetUserPoliceAccess(w http.ResponseWriter, r *http.Request, userId string)
 	// SetUserRoles Replace the roles of an account
 	// (PUT /v1/users/{user_id}/roles)
 	SetUserRoles(w http.ResponseWriter, r *http.Request, userId string)
@@ -33736,6 +36266,39 @@ func (siw *ServerInterfaceWrapper) GetReadyz(w http.ResponseWriter, r *http.Requ
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetReadyz(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetDPOReport operation middleware
+func (siw *ServerInterfaceWrapper) GetDPOReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetDPOReportParams
+
+	// ------------- Required query parameter "month" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "month", r.URL.Query(), &params.Month, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "month"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "month", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDPOReport(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -35031,6 +37594,257 @@ func (siw *ServerInterfaceWrapper) GetOccurrenceReporter(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetOccurrenceReporter(w, r, occurrenceId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// QueryPoliceAircraft operation middleware
+func (siw *ServerInterfaceWrapper) QueryPoliceAircraft(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params QueryPoliceAircraftParams
+
+	// ------------- Required query parameter "bbox" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "bbox", r.URL.Query(), &params.Bbox, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "bbox"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "bbox", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "at" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "at", r.URL.Query(), &params.At, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "at"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "at", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "purpose" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "purpose", r.URL.Query(), &params.Purpose, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "purpose"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "purpose", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "case_ref" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "case_ref", r.URL.Query(), &params.CaseRef, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "case_ref"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "case_ref", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.QueryPoliceAircraft(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreatePoliceExport operation middleware
+func (siw *ServerInterfaceWrapper) CreatePoliceExport(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreatePoliceExport(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DownloadPoliceExport operation middleware
+func (siw *ServerInterfaceWrapper) DownloadPoliceExport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "pack_id" -------------
+	var packId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "pack_id", r.PathValue("pack_id"), &packId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pack_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DownloadPoliceExportParams
+
+	// ------------- Required query parameter "purpose" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "purpose", r.URL.Query(), &params.Purpose, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "purpose"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "purpose", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "case_ref" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "case_ref", r.URL.Query(), &params.CaseRef, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "case_ref"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "case_ref", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DownloadPoliceExport(w, r, packId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// QueryPoliceOperator operation middleware
+func (siw *ServerInterfaceWrapper) QueryPoliceOperator(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "reg" -------------
+	var reg string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "reg", r.PathValue("reg"), &reg, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "reg", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params QueryPoliceOperatorParams
+
+	// ------------- Required query parameter "purpose" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "purpose", r.URL.Query(), &params.Purpose, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "purpose"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "purpose", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "case_ref" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "case_ref", r.URL.Query(), &params.CaseRef, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "case_ref"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "case_ref", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.QueryPoliceOperator(w, r, reg, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// QueryPoliceSerial operation middleware
+func (siw *ServerInterfaceWrapper) QueryPoliceSerial(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "serial" -------------
+	var serial string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "serial", r.PathValue("serial"), &serial, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "serial", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params QueryPoliceSerialParams
+
+	// ------------- Required query parameter "purpose" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "purpose", r.URL.Query(), &params.Purpose, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "purpose"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "purpose", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "case_ref" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "case_ref", r.URL.Query(), &params.CaseRef, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "case_ref"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "case_ref", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.QueryPoliceSerial(w, r, serial, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -36519,6 +39333,32 @@ func (siw *ServerInterfaceWrapper) UnlockUserMFA(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// SetUserPoliceAccess operation middleware
+func (siw *ServerInterfaceWrapper) SetUserPoliceAccess(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "user_id" -------------
+	var userId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", r.PathValue("user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "user_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetUserPoliceAccess(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // SetUserRoles operation middleware
 func (siw *ServerInterfaceWrapper) SetUserRoles(w http.ResponseWriter, r *http.Request) {
 
@@ -37474,6 +40314,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/policy", wrapper.CreatePolicy)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/policy/{version}/activate", wrapper.ActivatePolicy)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/audit/events", wrapper.ListAuditEvents)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/audit/dpo-report", wrapper.GetDPOReport)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/auth/login", wrapper.Login)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/auth/mfa", wrapper.VerifyMFA)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/auth/session", wrapper.GetSession)
@@ -37487,6 +40328,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/users/{user_id}/mfa/reset", wrapper.ResetUserMFA)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/users/{user_id}/mfa/unlock", wrapper.UnlockUserMFA)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/users/{user_id}/sessions/revoke", wrapper.RevokeUserSessions)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/v1/users/{user_id}/police-access", wrapper.SetUserPoliceAccess)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/oauth/token", wrapper.RequestToken)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/.well-known/jwks.json", wrapper.GetJWKS)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/.well-known/openid-configuration", wrapper.GetIssuerMetadata)
@@ -37585,6 +40427,11 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/dp/views", wrapper.CreateDPView)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/dp/providers", wrapper.ListDPProviders)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/v1/dp/providers/{uss_id}/availability", wrapper.SetDPProviderAvailability)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/police/aircraft", wrapper.QueryPoliceAircraft)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/police/operators/{reg}", wrapper.QueryPoliceOperator)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/police/serials/{serial}", wrapper.QueryPoliceSerial)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/police/exports", wrapper.CreatePoliceExport)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/police/exports/{pack_id}/download", wrapper.DownloadPoliceExport)
 
 	return m
 }
@@ -37884,6 +40731,61 @@ type GetReadyzdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response GetReadyzdefaultApplicationProblemPlusJSONResponse) VisitGetReadyzResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDPOReportRequestObject struct {
+	Params GetDPOReportParams
+}
+
+type GetDPOReportResponseObject interface {
+	VisitGetDPOReportResponse(w http.ResponseWriter) error
+}
+
+type GetDPOReport200JSONResponse DPOReport
+
+func (response GetDPOReport200JSONResponse) VisitGetDPOReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDPOReport400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetDPOReport400ApplicationProblemPlusJSONResponse) VisitGetDPOReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDPOReportdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetDPOReportdefaultApplicationProblemPlusJSONResponse) VisitGetDPOReportResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -40845,6 +43747,593 @@ func (response GetOccurrenceReporterdefaultApplicationProblemPlusJSONResponse) V
 	return err
 }
 
+type QueryPoliceAircraftRequestObject struct {
+	Params QueryPoliceAircraftParams
+}
+
+type QueryPoliceAircraftResponseObject interface {
+	VisitQueryPoliceAircraftResponse(w http.ResponseWriter) error
+}
+
+type QueryPoliceAircraft200JSONResponse PoliceAircraftAnswer
+
+func (response QueryPoliceAircraft200JSONResponse) VisitQueryPoliceAircraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type QueryPoliceAircraft400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response QueryPoliceAircraft400ApplicationProblemPlusJSONResponse) VisitQueryPoliceAircraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type QueryPoliceAircraft403ApplicationProblemPlusJSONResponse Problem
+
+func (response QueryPoliceAircraft403ApplicationProblemPlusJSONResponse) VisitQueryPoliceAircraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type QueryPoliceAircraft429ApplicationProblemPlusJSONResponse struct {
+	RateLimitedApplicationProblemPlusJSONResponse
+}
+
+func (response QueryPoliceAircraft429ApplicationProblemPlusJSONResponse) VisitQueryPoliceAircraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type QueryPoliceAircraft503ApplicationProblemPlusJSONResponse Problem
+
+func (response QueryPoliceAircraft503ApplicationProblemPlusJSONResponse) VisitQueryPoliceAircraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type QueryPoliceAircraftdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response QueryPoliceAircraftdefaultApplicationProblemPlusJSONResponse) VisitQueryPoliceAircraftResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePoliceExportRequestObject struct {
+	Body *CreatePoliceExportJSONRequestBody
+}
+
+type CreatePoliceExportResponseObject interface {
+	VisitCreatePoliceExportResponse(w http.ResponseWriter) error
+}
+
+type CreatePoliceExport201JSONResponse PoliceExport
+
+func (response CreatePoliceExport201JSONResponse) VisitCreatePoliceExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePoliceExport400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response CreatePoliceExport400ApplicationProblemPlusJSONResponse) VisitCreatePoliceExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePoliceExport403ApplicationProblemPlusJSONResponse Problem
+
+func (response CreatePoliceExport403ApplicationProblemPlusJSONResponse) VisitCreatePoliceExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePoliceExport404ApplicationProblemPlusJSONResponse Problem
+
+func (response CreatePoliceExport404ApplicationProblemPlusJSONResponse) VisitCreatePoliceExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePoliceExport413ApplicationProblemPlusJSONResponse Problem
+
+func (response CreatePoliceExport413ApplicationProblemPlusJSONResponse) VisitCreatePoliceExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(413)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePoliceExport422ApplicationProblemPlusJSONResponse Problem
+
+func (response CreatePoliceExport422ApplicationProblemPlusJSONResponse) VisitCreatePoliceExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePoliceExport429ApplicationProblemPlusJSONResponse struct {
+	RateLimitedApplicationProblemPlusJSONResponse
+}
+
+func (response CreatePoliceExport429ApplicationProblemPlusJSONResponse) VisitCreatePoliceExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePoliceExport503ApplicationProblemPlusJSONResponse Problem
+
+func (response CreatePoliceExport503ApplicationProblemPlusJSONResponse) VisitCreatePoliceExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePoliceExportdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreatePoliceExportdefaultApplicationProblemPlusJSONResponse) VisitCreatePoliceExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadPoliceExportRequestObject struct {
+	PackId string `json:"pack_id"`
+	Params DownloadPoliceExportParams
+}
+
+type DownloadPoliceExportResponseObject interface {
+	VisitDownloadPoliceExportResponse(w http.ResponseWriter) error
+}
+
+type DownloadPoliceExport200ResponseHeaders struct {
+	XContentSHA256     *string
+	XEvidenceSignature *string
+}
+
+type DownloadPoliceExport200ApplicationzipResponse struct {
+	Body          io.Reader
+	Headers       DownloadPoliceExport200ResponseHeaders
+	ContentLength int64
+}
+
+func (response DownloadPoliceExport200ApplicationzipResponse) VisitDownloadPoliceExportResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/zip")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.XContentSHA256 != nil {
+		w.Header().Set("X-Content-SHA256", fmt.Sprint(*response.Headers.XContentSHA256))
+	}
+	if response.Headers.XEvidenceSignature != nil {
+		w.Header().Set("X-Evidence-Signature", fmt.Sprint(*response.Headers.XEvidenceSignature))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type DownloadPoliceExport400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response DownloadPoliceExport400ApplicationProblemPlusJSONResponse) VisitDownloadPoliceExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadPoliceExport403ApplicationProblemPlusJSONResponse Problem
+
+func (response DownloadPoliceExport403ApplicationProblemPlusJSONResponse) VisitDownloadPoliceExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadPoliceExport404ApplicationProblemPlusJSONResponse Problem
+
+func (response DownloadPoliceExport404ApplicationProblemPlusJSONResponse) VisitDownloadPoliceExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadPoliceExport409ApplicationProblemPlusJSONResponse Problem
+
+func (response DownloadPoliceExport409ApplicationProblemPlusJSONResponse) VisitDownloadPoliceExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadPoliceExport429ApplicationProblemPlusJSONResponse struct {
+	RateLimitedApplicationProblemPlusJSONResponse
+}
+
+func (response DownloadPoliceExport429ApplicationProblemPlusJSONResponse) VisitDownloadPoliceExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadPoliceExportdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response DownloadPoliceExportdefaultApplicationProblemPlusJSONResponse) VisitDownloadPoliceExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type QueryPoliceOperatorRequestObject struct {
+	Reg    string `json:"reg"`
+	Params QueryPoliceOperatorParams
+}
+
+type QueryPoliceOperatorResponseObject interface {
+	VisitQueryPoliceOperatorResponse(w http.ResponseWriter) error
+}
+
+type QueryPoliceOperator200JSONResponse PoliceOperatorAnswer
+
+func (response QueryPoliceOperator200JSONResponse) VisitQueryPoliceOperatorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type QueryPoliceOperator400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response QueryPoliceOperator400ApplicationProblemPlusJSONResponse) VisitQueryPoliceOperatorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type QueryPoliceOperator403ApplicationProblemPlusJSONResponse Problem
+
+func (response QueryPoliceOperator403ApplicationProblemPlusJSONResponse) VisitQueryPoliceOperatorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type QueryPoliceOperator404ApplicationProblemPlusJSONResponse Problem
+
+func (response QueryPoliceOperator404ApplicationProblemPlusJSONResponse) VisitQueryPoliceOperatorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type QueryPoliceOperator429ApplicationProblemPlusJSONResponse struct {
+	RateLimitedApplicationProblemPlusJSONResponse
+}
+
+func (response QueryPoliceOperator429ApplicationProblemPlusJSONResponse) VisitQueryPoliceOperatorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type QueryPoliceOperatordefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response QueryPoliceOperatordefaultApplicationProblemPlusJSONResponse) VisitQueryPoliceOperatorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type QueryPoliceSerialRequestObject struct {
+	Serial string `json:"serial"`
+	Params QueryPoliceSerialParams
+}
+
+type QueryPoliceSerialResponseObject interface {
+	VisitQueryPoliceSerialResponse(w http.ResponseWriter) error
+}
+
+type QueryPoliceSerial200JSONResponse PoliceSerialAnswer
+
+func (response QueryPoliceSerial200JSONResponse) VisitQueryPoliceSerialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type QueryPoliceSerial400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response QueryPoliceSerial400ApplicationProblemPlusJSONResponse) VisitQueryPoliceSerialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type QueryPoliceSerial403ApplicationProblemPlusJSONResponse Problem
+
+func (response QueryPoliceSerial403ApplicationProblemPlusJSONResponse) VisitQueryPoliceSerialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type QueryPoliceSerial404ApplicationProblemPlusJSONResponse Problem
+
+func (response QueryPoliceSerial404ApplicationProblemPlusJSONResponse) VisitQueryPoliceSerialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type QueryPoliceSerial429ApplicationProblemPlusJSONResponse struct {
+	RateLimitedApplicationProblemPlusJSONResponse
+}
+
+func (response QueryPoliceSerial429ApplicationProblemPlusJSONResponse) VisitQueryPoliceSerialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type QueryPoliceSerialdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response QueryPoliceSerialdefaultApplicationProblemPlusJSONResponse) VisitQueryPoliceSerialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetPolicyRequestObject struct {
 }
 
@@ -42828,6 +46317,46 @@ func (response UnlockUserMFAdefaultApplicationProblemPlusJSONResponse) VisitUnlo
 	return err
 }
 
+type SetUserPoliceAccessRequestObject struct {
+	UserId string `json:"user_id"`
+	Body   *SetUserPoliceAccessJSONRequestBody
+}
+
+type SetUserPoliceAccessResponseObject interface {
+	VisitSetUserPoliceAccessResponse(w http.ResponseWriter) error
+}
+
+type SetUserPoliceAccess200JSONResponse User
+
+func (response SetUserPoliceAccess200JSONResponse) VisitSetUserPoliceAccessResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetUserPoliceAccessdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response SetUserPoliceAccessdefaultApplicationProblemPlusJSONResponse) VisitSetUserPoliceAccessResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type SetUserRolesRequestObject struct {
 	UserId string `json:"user_id"`
 	Body   *SetUserRolesJSONRequestBody
@@ -43906,6 +47435,9 @@ type StrictServerInterface interface {
 	// GetReadyz Readiness
 	// (GET /readyz)
 	GetReadyz(ctx context.Context, request GetReadyzRequestObject) (GetReadyzResponseObject, error)
+	// GetDPOReport The month's personal-data views and exports, for the data protection officer
+	// (GET /v1/audit/dpo-report)
+	GetDPOReport(ctx context.Context, request GetDPOReportRequestObject) (GetDPOReportResponseObject, error)
 	// ListAuditEvents Audit events, newest first
 	// (GET /v1/audit/events)
 	ListAuditEvents(ctx context.Context, request ListAuditEventsRequestObject) (ListAuditEventsResponseObject, error)
@@ -44041,6 +47573,21 @@ type StrictServerInterface interface {
 	// GetOccurrenceReporter The reporter of an occurrence (incident officers only; purpose required, audited)
 	// (GET /v1/occurrences/{occurrence_id}/reporter)
 	GetOccurrenceReporter(ctx context.Context, request GetOccurrenceReporterRequestObject) (GetOccurrenceReporterResponseObject, error)
+	// QueryPoliceAircraft Who is flying in a box now, or was at an instant
+	// (GET /v1/police/aircraft)
+	QueryPoliceAircraft(ctx context.Context, request QueryPoliceAircraftRequestObject) (QueryPoliceAircraftResponseObject, error)
+	// CreatePoliceExport A legal evidence pack for an incident or for an area and a window
+	// (POST /v1/police/exports)
+	CreatePoliceExport(ctx context.Context, request CreatePoliceExportRequestObject) (CreatePoliceExportResponseObject, error)
+	// DownloadPoliceExport The sealed archive of an export of this agency (audited)
+	// (GET /v1/police/exports/{pack_id}/download)
+	DownloadPoliceExport(ctx context.Context, request DownloadPoliceExportRequestObject) (DownloadPoliceExportResponseObject, error)
+	// QueryPoliceOperator An operator's registry status and fleet
+	// (GET /v1/police/operators/{reg})
+	QueryPoliceOperator(ctx context.Context, request QueryPoliceOperatorRequestObject) (QueryPoliceOperatorResponseObject, error)
+	// QueryPoliceSerial An aircraft's registry status and its operator
+	// (GET /v1/police/serials/{serial})
+	QueryPoliceSerial(ctx context.Context, request QueryPoliceSerialRequestObject) (QueryPoliceSerialResponseObject, error)
 	// GetPolicy The active policy
 	// (GET /v1/policy)
 	GetPolicy(ctx context.Context, request GetPolicyRequestObject) (GetPolicyResponseObject, error)
@@ -44173,6 +47720,9 @@ type StrictServerInterface interface {
 	// UnlockUserMFA Clear the MFA lock of an account
 	// (POST /v1/users/{user_id}/mfa/unlock)
 	UnlockUserMFA(ctx context.Context, request UnlockUserMFARequestObject) (UnlockUserMFAResponseObject, error)
+	// SetUserPoliceAccess Replace the agency and the IP allow-list of a police account
+	// (PUT /v1/users/{user_id}/police-access)
+	SetUserPoliceAccess(ctx context.Context, request SetUserPoliceAccessRequestObject) (SetUserPoliceAccessResponseObject, error)
 	// SetUserRoles Replace the roles of an account
 	// (PUT /v1/users/{user_id}/roles)
 	SetUserRoles(ctx context.Context, request SetUserRolesRequestObject) (SetUserRolesResponseObject, error)
@@ -44407,6 +47957,32 @@ func (sh *strictHandler) GetReadyz(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetReadyzResponseObject); ok {
 		if err := validResponse.VisitGetReadyzResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetDPOReport operation middleware
+func (sh *strictHandler) GetDPOReport(w http.ResponseWriter, r *http.Request, params GetDPOReportParams) {
+	var request GetDPOReportRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDPOReport(ctx, request.(GetDPOReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDPOReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDPOReportResponseObject); ok {
+		if err := validResponse.VisitGetDPOReportResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -45714,6 +49290,144 @@ func (sh *strictHandler) GetOccurrenceReporter(w http.ResponseWriter, r *http.Re
 	}
 }
 
+// QueryPoliceAircraft operation middleware
+func (sh *strictHandler) QueryPoliceAircraft(w http.ResponseWriter, r *http.Request, params QueryPoliceAircraftParams) {
+	var request QueryPoliceAircraftRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.QueryPoliceAircraft(ctx, request.(QueryPoliceAircraftRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "QueryPoliceAircraft")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(QueryPoliceAircraftResponseObject); ok {
+		if err := validResponse.VisitQueryPoliceAircraftResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreatePoliceExport operation middleware
+func (sh *strictHandler) CreatePoliceExport(w http.ResponseWriter, r *http.Request) {
+	var request CreatePoliceExportRequestObject
+
+	var body CreatePoliceExportJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreatePoliceExport(ctx, request.(CreatePoliceExportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreatePoliceExport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreatePoliceExportResponseObject); ok {
+		if err := validResponse.VisitCreatePoliceExportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DownloadPoliceExport operation middleware
+func (sh *strictHandler) DownloadPoliceExport(w http.ResponseWriter, r *http.Request, packId string, params DownloadPoliceExportParams) {
+	var request DownloadPoliceExportRequestObject
+
+	request.PackId = packId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DownloadPoliceExport(ctx, request.(DownloadPoliceExportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DownloadPoliceExport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DownloadPoliceExportResponseObject); ok {
+		if err := validResponse.VisitDownloadPoliceExportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// QueryPoliceOperator operation middleware
+func (sh *strictHandler) QueryPoliceOperator(w http.ResponseWriter, r *http.Request, reg string, params QueryPoliceOperatorParams) {
+	var request QueryPoliceOperatorRequestObject
+
+	request.Reg = reg
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.QueryPoliceOperator(ctx, request.(QueryPoliceOperatorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "QueryPoliceOperator")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(QueryPoliceOperatorResponseObject); ok {
+		if err := validResponse.VisitQueryPoliceOperatorResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// QueryPoliceSerial operation middleware
+func (sh *strictHandler) QueryPoliceSerial(w http.ResponseWriter, r *http.Request, serial string, params QueryPoliceSerialParams) {
+	var request QueryPoliceSerialRequestObject
+
+	request.Serial = serial
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.QueryPoliceSerial(ctx, request.(QueryPoliceSerialRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "QueryPoliceSerial")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(QueryPoliceSerialResponseObject); ok {
+		if err := validResponse.VisitQueryPoliceSerialResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetPolicy operation middleware
 func (sh *strictHandler) GetPolicy(w http.ResponseWriter, r *http.Request) {
 	var request GetPolicyRequestObject
@@ -46971,6 +50685,39 @@ func (sh *strictHandler) UnlockUserMFA(w http.ResponseWriter, r *http.Request, u
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UnlockUserMFAResponseObject); ok {
 		if err := validResponse.VisitUnlockUserMFAResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetUserPoliceAccess operation middleware
+func (sh *strictHandler) SetUserPoliceAccess(w http.ResponseWriter, r *http.Request, userId string) {
+	var request SetUserPoliceAccessRequestObject
+
+	request.UserId = userId
+
+	var body SetUserPoliceAccessJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetUserPoliceAccess(ctx, request.(SetUserPoliceAccessRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetUserPoliceAccess")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetUserPoliceAccessResponseObject); ok {
+		if err := validResponse.VisitSetUserPoliceAccessResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

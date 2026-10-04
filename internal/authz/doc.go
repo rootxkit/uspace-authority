@@ -11,6 +11,17 @@
 // the system without an active admin. The first admin comes from
 // BOOTSTRAP_ADMIN_USERNAME on an empty users table, once.
 //
+// Police accounts (police.go, WP-19): an account of the police realm
+// holds police.query alone (never a console role, and a console account
+// never holds it), names its agency and an IP allow-list of CIDRs
+// (ParseAllowList, at most MaxAllowList, canonical). Its password step
+// and its TOTP step from an address outside the list (AddressAllowed,
+// the client address behind the trusted proxies; an empty list admits
+// nothing) are refused with the answer of a wrong password and recorded
+// with reason address_not_allowed. SetPoliceAccess replaces the agency
+// and the list and ends the account's sessions; internal/police checks
+// the list again on every query.
+//
 // Sign-in (service.go): POST /v1/auth/login checks the password
 // (argon2id, internal/passhash) and opens a short, single-use challenge
 // (only its SHA-256 is stored); an unknown user, a disabled user and a
