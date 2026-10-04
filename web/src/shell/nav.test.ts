@@ -12,16 +12,16 @@ describe("navFor", () => {
   });
 
   it("an inspector and a viewer see the registry and the zones", () => {
-    expect(paths(["inspector"])).toEqual(["", "/registry/operators", "/zones"]);
+    expect(paths(["inspector"])).toEqual(["", "/registry/operators", "/zones", "/violations", "/incidents"]);
     expect(paths(["viewer"])).toEqual(["", "/registry/operators", "/zones"]);
   });
 
   it("an admin sees the zones, U-space airspaces and certificates, not the registry", () => {
-    expect(paths(["admin"])).toEqual(["", "/zones", "/uspace", "/certificates"]);
+    expect(paths(["admin"])).toEqual(["", "/zones", "/uspace", "/certificates", "/sources", "/audit"]);
   });
 
-  it("the police realm sees none of the authoring pages, whatever its roles", () => {
-    expect(paths(["admin", "registrar"], "police")).toEqual([""]);
+  it("the police realm sees no console navigation, whatever its roles (WP-23: its own layout)", () => {
+    expect(paths(["admin", "registrar"], "police")).toEqual([]);
   });
 
   it("no session sees nothing", () => {

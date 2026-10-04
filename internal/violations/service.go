@@ -10,6 +10,7 @@ import (
 
 	"github.com/rootxkit/uspace-core/core"
 
+	apigen "github.com/rootxkit/uspace-authority/api/gen"
 	"github.com/rootxkit/uspace-authority/internal/audit"
 	"github.com/rootxkit/uspace-authority/internal/bus"
 	"github.com/rootxkit/uspace-authority/internal/httpx"
@@ -62,6 +63,12 @@ type Service struct {
 	// incidents.Service.OpenFromViolation). Nil leaves the request
 	// (incident_requested) for incidents' backfill job.
 	OnEscalate func(ctx context.Context, q *gen.Queries, actor audit.Actor, v *gen.GetViolationForUpdateRow) (string, error)
+	// CutExcerpt cuts an excerpt into segments and holes by the evidence
+	// packs' rule for the console (WP-17's incidents.ExcerptCutter, B-13);
+	// read after the violation's row, never inside a transaction. Nil:
+	// GET answers the segmenting unavailable, and the console draws the
+	// samples unjoined.
+	CutExcerpt func(ctx context.Context, excerpt []map[string]any) apigen.ViolationExcerptSegmenting
 }
 
 func (s *Service) logger() *slog.Logger {

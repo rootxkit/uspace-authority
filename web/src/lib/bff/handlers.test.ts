@@ -7,7 +7,7 @@
 // acceptance it differs from (E-01).
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { configFromEnv, createBff, DEFAULT_PROXY_MAX_BODY_BYTES, PROXY_ALLOW_PATHS, type BffConfig } from "./handlers";
+import { configFromEnv, createBff, DEFAULT_PROXY_MAX_BODY_BYTES, methodRefused, OVERSIGHT_PROXY_ROUTES, PROXY_ALLOW_PATHS, type BffConfig } from "./handlers";
 
 const ORIGIN = "https://console.test";
 const SECRET = "unit-test-only-challenge-seal-key-0123456789";
@@ -124,6 +124,34 @@ describe("proxy", () => {
     expect(api.calls[0]?.auth).toBe("Bearer header.payload.sig");
   });
 
+  it("with one trusted hop, api is sent the address that proxy recorded", async () => {
+    let xff: string | null = "unset";
+    const f: typeof fetch = async (_input, init) => {
+      xff = new Headers(init?.headers).get("x-forwarded-for");
+      return Response.json({});
+    };
+    const req = new NextRequest(`${ORIGIN}/_bff/api/v1/auth/session`, {
+      method: "GET",
+      headers: { cookie: "uspace_session=header.payload.sig", host: "console.test", "x-forwarded-for": "198.51.100.9, 192.0.2.7" },
+    });
+    await createBff({ ...cfg(f), trustedProxyHops: 1 }).proxy(req);
+    expect(xff).toBe("192.0.2.7");
+  });
+
+  it("without a trusted hop, a client-written X-Forwarded-For never reaches api (the pair above)", async () => {
+    let xff: string | null = "unset";
+    const f: typeof fetch = async (_input, init) => {
+      xff = new Headers(init?.headers).get("x-forwarded-for");
+      return Response.json({});
+    };
+    const req = new NextRequest(`${ORIGIN}/_bff/api/v1/auth/session`, {
+      method: "GET",
+      headers: { cookie: "uspace_session=header.payload.sig", host: "console.test", "x-forwarded-for": "198.51.100.9" },
+    });
+    await createBff(cfg(f)).proxy(req);
+    expect(xff).toBeNull();
+  });
+
   it("refuses a path outside the allow-list before api (fail closed)", async () => {
     const api = fakeApi();
     for (const p of [
@@ -131,10 +159,10 @@ describe("proxy", () => {
       "/v1/zones/TSTP0012",
       "/v1/auth/sessionx",
       "/v1/picture/ws",
-      // The registry's machine and public operations are not the console's (WP-22).
+      // The registry's machine operations are not the console's (WP-22);
+      // the public check is WP-23's public page's.
       "/v1/registry/validate",
       "/v1/registry/changes",
-      "/v1/registry/check",
       "/v1/registry/operators/a/b",
       "/v1/registry/applications/x/verify",
       "/v1/certificates/abc/status",
@@ -218,6 +246,58 @@ describe("proxy", () => {
 
   it("the allow-list is anchored", () => {
     expect(PROXY_ALLOW_PATHS.every((re) => re.source.startsWith("^") && re.source.endsWith("$"))).toBe(true);
+  });
+});
+
+describe("WP-23's routes", () => {
+  const ULID = "01J9Z8Y7X6W5V4T3S2R1Q0P9N8";
+  // A write announces its length, as the browser's fetch does (WP-22's body bound).
+  const BODY = JSON.stringify({ decision: "reviewed" });
+  const req = (method: string, path: string, csrf = true) =>
+    new NextRequest(`${ORIGIN}/_bff/api${path}`, {
+      method,
+      headers: {
+        cookie: `uspace_session=header.payload.sig${csrf ? "; uspace_csrf=c1" : ""}`,
+        host: "console.test",
+        ...(csrf ? { "x-csrf-token": "c1" } : {}),
+        ...(method === "GET" ? {} : { "content-type": "application/json", "content-length": String(BODY.length) }),
+      },
+      ...(method === "GET" ? {} : { body: BODY }),
+    });
+
+  it("a read and a write of the list reach api with their method", async () => {
+    const api = fakeApi();
+    const bff = createBff(cfg(api.fetch));
+    expect((await bff.proxy(req("GET", "/v1/police/aircraft?bbox=1,2,3,4&purpose=p&case_ref=c"))).status).toBe(200);
+    expect((await bff.proxy(req("POST", `/v1/violations/${ULID}/review`))).status).toBe(200);
+    expect(api.calls.map((c) => `${c.method} ${new URL(c.url).pathname}${new URL(c.url).search}`)).toEqual([
+      "GET /v1/police/aircraft?bbox=1,2,3,4&purpose=p&case_ref=c",
+      `POST /v1/violations/${ULID}/review`,
+    ]);
+  });
+
+  it("another method on one of them is refused before api (the pair above)", async () => {
+    const api = fakeApi();
+    const bff = createBff(cfg(api.fetch));
+    const refused = await bff.proxy(req("PATCH", `/v1/violations/${ULID}/review`));
+    expect(refused.status).toBe(405);
+    expect((await bff.proxy(req("POST", "/v1/police/aircraft"))).status).toBe(405);
+    expect((await bff.proxy(req("PUT", "/v1/audit/events"))).status).toBe(405);
+    expect(api.calls).toEqual([]);
+  });
+
+  it("a write without the CSRF pair is refused before api", async () => {
+    const api = fakeApi();
+    expect((await createBff(cfg(api.fetch)).proxy(req("POST", `/v1/violations/${ULID}/review`, false))).status).toBe(403);
+    expect(api.calls).toEqual([]);
+  });
+
+  it("every route is anchored, and a path of another list is left to it", () => {
+    expect(OVERSIGHT_PROXY_ROUTES.every((r) => r.path.source.startsWith("^") && r.path.source.endsWith("$"))).toBe(true);
+    expect(methodRefused("POST", "/v1/zones")).toBe(false);
+    expect(methodRefused("POST", "/v1/violations")).toBe(true);
+    expect(PROXY_ALLOW_PATHS.some((re) => re.test(`/v1/occurrences/${ULID}/reporter`))).toBe(true);
+    expect(PROXY_ALLOW_PATHS.some((re) => re.test("/v1/occurrences/not-a-ulid/reporter"))).toBe(false);
   });
 });
 

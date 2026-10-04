@@ -4,12 +4,11 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import authoringEn from "./authoring.en.json";
 import authoringKa from "./authoring.ka.json";
-import { catalogues } from "./catalogues";
-import baseEn from "./en.json";
-import baseKa from "./ka.json";
-
-const en = catalogues.en as Record<string, string>;
-const ka = catalogues.ka as Record<string, string>;
+import { en, ka } from "./catalogues";
+import enBase from "./en.json";
+import kaBase from "./ka.json";
+import enOversight from "./oversight.en.json";
+import kaOversight from "./oversight.ka.json";
 
 const GEORGIAN = /[Ⴀ-ჿᲐ-Ჿⴀ-⴯]/u;
 const web = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -29,9 +28,14 @@ describe("catalogues", () => {
   });
 
   it("the two files of a language never hold the same key (one would hide the other)", () => {
-    expect(Object.keys(authoringEn).filter((k) => k in baseEn)).toEqual([]);
-    expect(Object.keys(authoringKa).filter((k) => k in baseKa)).toEqual([]);
-    expect(Object.keys(en)).toHaveLength(Object.keys(baseEn).length + Object.keys(authoringEn).length);
+    expect(Object.keys(authoringEn).filter((k) => k in enBase || k in enOversight)).toEqual([]);
+    expect(Object.keys(authoringKa).filter((k) => k in kaBase || k in kaOversight)).toEqual([]);
+    expect(Object.keys(en)).toHaveLength(Object.keys(enBase).length + Object.keys(enOversight).length + Object.keys(authoringEn).length);
+  });
+
+  it("a key is in one file of a language only, never in both", () => {
+    expect(Object.keys(enOversight).filter((k) => k in enBase)).toEqual([]);
+    expect(Object.keys(kaOversight).filter((k) => k in kaBase)).toEqual([]);
   });
 
   it("a key missing from one catalogue is found", () => {

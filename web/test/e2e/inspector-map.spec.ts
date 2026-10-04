@@ -132,8 +132,12 @@ test("the BFF proxy reaches only its allow-list; the pair reaches api", async ({
   const calls = (await (await request.get("/__mock/requests")).json()) as { path: string }[];
   expect(calls.some((c) => c.path === "/v1/auth/session")).toBe(true);
   expect(calls.some((c) => c.path === "/v1/users")).toBe(false);
-  // A write without the CSRF pair is refused by the BFF before api (WP-22 routes writes),
-  // and a method no console operation uses is not routed at all.
-  expect(await page.evaluate(async () => (await fetch("/_bff/api/v1/zones", { method: "POST", body: "{}" })).status)).toBe(403);
-  expect(await page.evaluate(async () => (await fetch("/_bff/api/v1/zones", { method: "DELETE" })).status)).toBe(405);
+  // DELETE is not routed at all; a write without the CSRF pair is refused
+  // by the BFF; a method a WP-23 path does not take is refused by the BFF.
+  const method = (m: string, p: string) => page.evaluate(async ([mm, pp]) => (await fetch(pp ?? "", { method: mm })).status, [m, p]);
+  expect(await method("DELETE", "/_bff/api/v1/zones")).toBe(405);
+  expect(await method("POST", "/_bff/api/v1/zones")).toBe(403);
+  expect(await method("POST", "/_bff/api/v1/violations")).toBe(405);
+  const after = (await (await request.get("/__mock/requests")).json()) as { method: string; path: string }[];
+  expect(after.some((c) => c.method !== "GET" && (c.path === "/v1/zones" || c.path === "/v1/violations"))).toBe(false);
 });

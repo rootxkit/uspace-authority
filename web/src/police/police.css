@@ -1,0 +1,28 @@
+/* The police realm's colour band (WP-23): a colour no console page uses,
+   so an officer always knows which realm a page is. Both pairs pass
+   WCAG 2.2 AA for text (the axe check in test/e2e/police.spec.ts). */
+:root,
+[data-theme="light"] {
+  --authority-police-band: #3d1466;
+  --authority-on-police-band: #ffffff;
+}
+
+[data-theme="dark"] {
+  --authority-police-band: #d9c2f2;
+  --authority-on-police-band: #111418;
+}
+
+.police-band {
+  background: var(--authority-police-band);
+  color: var(--authority-on-police-band);
+}
+
+.police-band a {
+  color: inherit;
+}
+
+/* A control on the band keeps the kit's own surface and text colours. */
+.police-band button {
+  background: var(--us-surface-raised);
+  color: var(--us-text);
+}
