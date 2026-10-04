@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"sync/atomic"
 	"time"
 
 	"github.com/rootxkit/uspace-core/core"
@@ -33,8 +34,12 @@ const (
 // IndexFile is the name of the tile index inside GROUND_DIR.
 const IndexFile = "index.json"
 
-// Bounds of the files read at start (E-10). The EGM2008 2.5' grid is
-// 8640 x 4321 16-bit samples, about 75 MB; a GLO-30 tile about 26 MB.
+// Bounds of the files read (E-10). The EGM2008 2.5' grid is 8640 x 4321
+// 16-bit samples, about 75 MB; a GLO-30 tile about 26 MB. Both are mapped
+// read-only where the platform can (geoid.LoadMapped,
+// terrain.MappedDirOpener; WP-19), so the processes on one host share one
+// copy in the page cache: a file must be replaced by renaming a new one
+// over it, never rewritten in place.
 const (
 	MaxGeoidBytes = 128 << 20
 	MaxTileBytes  = 64 << 20
@@ -109,7 +114,17 @@ type Service struct {
 	geoidWhy   string
 	retryAfter time.Duration
 	counters   *core.Counters
+	// tileMapped is the Mapped() of the last tile read: tileUnread before
+	// the first, then tileInMemory or tileMappedFile.
+	tileMapped atomic.Int32
 }
+
+// The values of Service.tileMapped.
+const (
+	tileUnread int32 = iota
+	tileInMemory
+	tileMappedFile
+)
 
 // New loads what o names. It never fails: an input that is not
 // configured or cannot be read is reported by StatusAttrs, Log and
@@ -126,7 +141,7 @@ func New(o Options) *Service {
 		if err != nil {
 			s.terrain, s.terrainWhy = StateUnavailable, err.Error()
 		} else {
-			s.setTerrain(idx, terrain.DirOpener(o.Dir, MaxTileBytes))
+			s.setTerrain(idx, terrain.MappedDirOpener(o.Dir, MaxTileBytes))
 		}
 	}
 	if o.GeoidFile != "" {
@@ -140,12 +155,25 @@ func New(o Options) *Service {
 	return s
 }
 
-// setTerrain builds the store over idx, reading tiles through open.
-func (s *Service) setTerrain(idx terrain.Index, open func(string) ([]byte, error)) {
+// setTerrain builds the store over idx, reading tiles through openTile
+// (terrain.MappedDirOpener in New) and noting whether each is mapped.
+func (s *Service) setTerrain(idx terrain.Index, openTile func(string) (*terrain.Tile, error)) {
 	s.index = idx
-	s.store = terrain.NewStore(idx, terrain.StoreOptions{
-		MaxTiles: s.o.MaxTiles, RetryAfter: s.retryAfter, Open: open, Now: s.o.Now,
-	})
+	opts := terrain.StoreOptions{MaxTiles: s.o.MaxTiles, RetryAfter: s.retryAfter, Now: s.o.Now}
+	if openTile != nil {
+		opts.OpenTile = func(cell string) (*terrain.Tile, error) {
+			t, err := openTile(cell)
+			if err == nil && t != nil {
+				if t.Mapped() {
+					s.tileMapped.Store(tileMappedFile)
+				} else {
+					s.tileMapped.Store(tileInMemory)
+				}
+			}
+			return t, err
+		}
+	}
+	s.store = terrain.NewStore(idx, opts)
 	s.terrain = StateLoaded
 }
 
@@ -175,21 +203,23 @@ func readIndex(dir string) (terrain.Index, error) {
 	return idx, nil
 }
 
-// readGeoid reads the grid at path, bounded, and parses it with core.
+// readGeoid loads the grid at path with core's geoid.LoadMapped, refusing
+// first a file that is not a regular file or is larger than
+// MaxGeoidBytes. The grid answers bit for bit what geoid.Parse's would;
+// Grid.Mapped says whether it is a memory map or bytes in memory.
 func readGeoid(path string) (*geoid.Grid, error) {
-	f, err := os.Open(filepath.Clean(path))
+	path = filepath.Clean(path)
+	fi, err := os.Stat(path)
 	if err != nil {
 		return nil, fmt.Errorf("GEOID_FILE: %w", err)
 	}
-	defer func() { _ = f.Close() }()
-	data, err := io.ReadAll(io.LimitReader(f, MaxGeoidBytes+1))
-	if err != nil {
-		return nil, fmt.Errorf("GEOID_FILE: %w", err)
+	if !fi.Mode().IsRegular() {
+		return nil, fmt.Errorf("GEOID_FILE: not a regular file")
 	}
-	if len(data) > MaxGeoidBytes {
+	if fi.Size() > MaxGeoidBytes {
 		return nil, fmt.Errorf("GEOID_FILE: larger than %d bytes", MaxGeoidBytes)
 	}
-	g, err := geoid.Parse(data)
+	g, err := geoid.LoadMapped(path)
 	if err != nil {
 		return nil, fmt.Errorf("GEOID_FILE: %w", err)
 	}
@@ -303,6 +333,25 @@ func (s *Service) GeoidDescription() string {
 	return s.grid.Description()
 }
 
+// GeoidMapped reports whether the loaded grid is a read-only memory map
+// of GEOID_FILE (linux and darwin) rather than bytes in memory; false
+// without a grid.
+func (s *Service) GeoidMapped() bool {
+	return s.grid != nil && s.grid.Mapped()
+}
+
+// TerrainMapped reports whether the last tile read is a read-only memory
+// map of its file; known is false until a tile has been read.
+func (s *Service) TerrainMapped() (mapped, known bool) {
+	switch s.tileMapped.Load() {
+	case tileMappedFile:
+		return true, true
+	case tileInMemory:
+		return false, true
+	}
+	return false, false
+}
+
 // Problems lists the inputs that cannot be used and what is therefore
 // not judged (Z-09). Empty when terrain and geoid are both loaded.
 func (s *Service) Problems() []Problem {
@@ -320,7 +369,9 @@ func (s *Service) Problems() []Problem {
 
 // StatusAttrs are the status-line attributes (E-09, SC-22): the state of
 // each input, the datasets and their attribution, the tile cache and the
-// retry interval, the geoid's description.
+// retry interval, the geoid's description, and whether the grid and the
+// last tile read are memory-mapped (geoid_mapped, terrain_mapped; the
+// latter only once a tile has been read).
 func (s *Service) StatusAttrs() []slog.Attr {
 	var out []slog.Attr
 	if !s.o.GeoidOnly {
@@ -332,11 +383,15 @@ func (s *Service) StatusAttrs() []slog.Attr {
 				slog.Int("terrain_tiles_cached", len(s.store.Cached())),
 				slog.Float64("terrain_retry_after_s", s.retryAfter.Seconds()),
 				slog.String("terrain_attribution", terrain.Attribution))
+			if mapped, known := s.TerrainMapped(); known {
+				out = append(out, slog.Bool("terrain_mapped", mapped))
+			}
 		}
 	}
 	out = append(out, slog.String("geoid", s.geoid))
 	if s.grid != nil {
-		out = append(out, slog.String("geoid_description", s.grid.Description()))
+		out = append(out, slog.String("geoid_description", s.grid.Description()),
+			slog.Bool("geoid_mapped", s.grid.Mapped()))
 	}
 	return out
 }

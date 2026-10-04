@@ -40,13 +40,21 @@ Each process says so at start and on every status line:
 {"msg":"ground datasets","terrain":"loaded","terrain_datasets":["COP-DEM GLO-30"],
  "terrain_cells":21,"terrain_tiles_cached":0,"terrain_retry_after_s":60,
  "terrain_attribution":"Produced using Copernicus WorldDEM-30 ...",
- "geoid":"loaded","geoid_description":"WGS84 EGM2008, 2.5-minute grid"}
+ "geoid":"loaded","geoid_description":"WGS84 EGM2008, 2.5-minute grid","geoid_mapped":true}
 {"level":"WARN","msg":"terrain not configured: AGL zone limits are not judged (limit_not_judged) and the height limit is not evaluated", ...}
 {"level":"WARN","msg":"geoid unavailable: no AMSL altitude from a geodetic (HAE) one: ...","reason":"GEOID_FILE: open ...: no such file or directory"}
 ```
 
 The states are `loaded`, `not configured` and `unavailable` (with the
-reason). The counters on the status line and `/metrics`:
+reason). `geoid_mapped` and `terrain_mapped` say whether the grid and
+the last tile read are read-only memory maps of their files (uspace-core
+`geoid.LoadMapped`, `terrain.MappedDirOpener`): `true` on linux, so the
+processes on one host (detect, dp-poller, rid-ingest) share one copy of
+EGM2008 and of each tile in the page cache; `false` where core reads the
+file into memory instead. `terrain_mapped` appears once a tile has been
+read; dp-poller and rid-ingest say `geoid_mapped` beside `geoid_grid`.
+A mapped file must be replaced by renaming a new one over it, never
+rewritten in place (the process would fault). The counters on the status line and `/metrics`:
 
 | Component | Counter | Meaning |
 |---|---|---|
