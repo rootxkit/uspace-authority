@@ -1,0 +1,137 @@
+{
+  "feature": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            44.76,
+            41.69
+          ],
+          [
+            44.8,
+            41.69
+          ],
+          [
+            44.8,
+            41.73
+          ],
+          [
+            44.76,
+            41.73
+          ],
+          [
+            44.76,
+            41.69
+          ]
+        ]
+      ],
+      "layer": {
+        "upper": 120,
+        "upperReference": "AGL",
+        "lower": 0,
+        "lowerReference": "AGL",
+        "uom": "m"
+      }
+    },
+    "properties": {
+      "identifier": "TSTE001",
+      "country": "GEO",
+      "name": [
+        {
+          "text": "Test editor zone",
+          "lang": "en-GB"
+        },
+        {
+          "text": "სატესტო ზონა",
+          "lang": "ka-GE"
+        }
+      ],
+      "type": "REQ_AUTHORIZATION",
+      "variant": "COMMON",
+      "restrictionConditions": "Permission of the test authority",
+      "region": 1,
+      "reason": [
+        "AIR_TRAFFIC",
+        "NATURE"
+      ],
+      "otherReasonInfo": [
+        {
+          "text": "A test reserve",
+          "lang": "en-GB"
+        }
+      ],
+      "regulationExemption": "NO",
+      "message": [
+        {
+          "text": "Ask before flying",
+          "lang": "en-GB"
+        }
+      ],
+      "extendedProperties": {
+        "note": "test"
+      },
+      "limitedApplicability": [
+        {
+          "startDateTime": "2026-10-01T00:00:00Z",
+          "endDateTime": "2027-09-30T23:59:59Z",
+          "schedule": [
+            {
+              "day": [
+                "MON",
+                "TUE"
+              ],
+              "startEvent": "SR",
+              "endEvent": "SS"
+            },
+            {
+              "day": [
+                "SAT"
+              ],
+              "startTime": "08:00:00Z",
+              "endTime": "16:00:00Z"
+            }
+          ]
+        }
+      ],
+      "zoneAuthority": [
+        {
+          "name": [
+            {
+              "text": "Test authority",
+              "lang": "en-GB"
+            }
+          ],
+          "service": [
+            {
+              "text": "Zone office",
+              "lang": "en-GB"
+            }
+          ],
+          "contactName": [
+            {
+              "text": "Duty officer",
+              "lang": "en-GB"
+            }
+          ],
+          "siteURL": "https://authority.test/zones",
+          "email": "zones@authority.test",
+          "phone": "+995000000000",
+          "purpose": "AUTHORIZATION",
+          "intervalBefore": "P2D"
+        }
+      ],
+      "dataSource": {
+        "creationDateTime": "2026-09-01T00:00:00Z",
+        "updateDateTime": "2026-09-02T00:00:00Z",
+        "originator": {
+          "text": "Test authority",
+          "lang": "en-GB"
+        }
+      }
+    }
+  },
+  "valid_from": "2026-10-01T00:00:00Z",
+  "valid_to": "2027-10-01T00:00:00Z"
+}
