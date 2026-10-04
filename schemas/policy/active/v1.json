@@ -18,7 +18,7 @@
                    "broadcast_tolerance_s", "max_latency_s", "live_max_age_s", "clear_after_s", "stale_after_s",
                    "dp_view_diagonal_km", "dp_poll_hz", "cis_stale_bound_s", "height_limit_in_uspace",
                    "registration_number_pattern", "certificate_lapse_unused_months", "certificate_lapse_ceased_months",
-                   "activated_at"],
+                   "no_authorisation_grace_s", "no_authorisation_severity", "activated_at"],
       "properties": {
         "version": { "type": "integer", "minimum": 1 },
         "height_limit_agl_m": { "$ref": "#/$defs/positive" },
@@ -42,6 +42,8 @@
         "registration_number_pattern": { "type": "string", "minLength": 1, "maxLength": 256 },
         "certificate_lapse_unused_months": { "type": "integer", "minimum": 1, "maximum": 120 },
         "certificate_lapse_ceased_months": { "type": "integer", "minimum": 1, "maximum": 120 },
+        "no_authorisation_grace_s": { "$ref": "#/$defs/positive" },
+        "no_authorisation_severity": { "$ref": "#/$defs/severity" },
         "activated_at": { "type": ["string", "null"], "format": "date-time" }
       }
     }

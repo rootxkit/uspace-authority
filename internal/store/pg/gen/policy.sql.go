@@ -14,7 +14,7 @@ const activatePolicy = `-- name: ActivatePolicy :one
 UPDATE authority_policy
 SET active = true, activated_at = $1, activated_by = $2
 WHERE version = $3
-RETURNING version, height_limit_agl_m, pressure_uncertainty_m, zone_conditional_severity, mismatch_severity, identification_severity, spoof_distance_m, identity_ttl_s, max_gap_s, identify_within_s, broadcast_tolerance_s, max_latency_s, live_max_age_s, clear_after_s, stale_after_s, dp_view_diagonal_km, dp_poll_hz, cis_stale_bound_s, height_limit_in_uspace, note, active, created_at, created_by, activated_at, activated_by, registration_number_pattern, certificate_lapse_unused_months, certificate_lapse_ceased_months
+RETURNING version, height_limit_agl_m, pressure_uncertainty_m, zone_conditional_severity, mismatch_severity, identification_severity, spoof_distance_m, identity_ttl_s, max_gap_s, identify_within_s, broadcast_tolerance_s, max_latency_s, live_max_age_s, clear_after_s, stale_after_s, dp_view_diagonal_km, dp_poll_hz, cis_stale_bound_s, height_limit_in_uspace, note, active, created_at, created_by, activated_at, activated_by, registration_number_pattern, certificate_lapse_unused_months, certificate_lapse_ceased_months, no_authorisation_grace_s, no_authorisation_severity
 `
 
 type ActivatePolicyParams struct {
@@ -55,12 +55,14 @@ func (q *Queries) ActivatePolicy(ctx context.Context, arg ActivatePolicyParams) 
 		&i.RegistrationNumberPattern,
 		&i.CertificateLapseUnusedMonths,
 		&i.CertificateLapseCeasedMonths,
+		&i.NoAuthorisationGraceS,
+		&i.NoAuthorisationSeverity,
 	)
 	return i, err
 }
 
 const activePolicy = `-- name: ActivePolicy :one
-SELECT version, height_limit_agl_m, pressure_uncertainty_m, zone_conditional_severity, mismatch_severity, identification_severity, spoof_distance_m, identity_ttl_s, max_gap_s, identify_within_s, broadcast_tolerance_s, max_latency_s, live_max_age_s, clear_after_s, stale_after_s, dp_view_diagonal_km, dp_poll_hz, cis_stale_bound_s, height_limit_in_uspace, note, active, created_at, created_by, activated_at, activated_by, registration_number_pattern, certificate_lapse_unused_months, certificate_lapse_ceased_months FROM authority_policy WHERE active
+SELECT version, height_limit_agl_m, pressure_uncertainty_m, zone_conditional_severity, mismatch_severity, identification_severity, spoof_distance_m, identity_ttl_s, max_gap_s, identify_within_s, broadcast_tolerance_s, max_latency_s, live_max_age_s, clear_after_s, stale_after_s, dp_view_diagonal_km, dp_poll_hz, cis_stale_bound_s, height_limit_in_uspace, note, active, created_at, created_by, activated_at, activated_by, registration_number_pattern, certificate_lapse_unused_months, certificate_lapse_ceased_months, no_authorisation_grace_s, no_authorisation_severity FROM authority_policy WHERE active
 `
 
 func (q *Queries) ActivePolicy(ctx context.Context) (AuthorityPolicy, error) {
@@ -95,6 +97,8 @@ func (q *Queries) ActivePolicy(ctx context.Context) (AuthorityPolicy, error) {
 		&i.RegistrationNumberPattern,
 		&i.CertificateLapseUnusedMonths,
 		&i.CertificateLapseCeasedMonths,
+		&i.NoAuthorisationGraceS,
+		&i.NoAuthorisationSeverity,
 	)
 	return i, err
 }
@@ -116,6 +120,7 @@ INSERT INTO authority_policy (
     broadcast_tolerance_s, max_latency_s, live_max_age_s, clear_after_s,
     stale_after_s, dp_view_diagonal_km, dp_poll_hz, cis_stale_bound_s,
     height_limit_in_uspace, registration_number_pattern, certificate_lapse_unused_months, certificate_lapse_ceased_months,
+    no_authorisation_grace_s, no_authorisation_severity,
     note, created_at, created_by
 ) VALUES (
     $1, $2, $3,
@@ -124,9 +129,10 @@ INSERT INTO authority_policy (
     $11, $12, $13, $14,
     $15, $16, $17, $18,
     $19, $20,
-    $21, $22, $23, $24, $25
+    $21, $22,
+    $23, $24, $25, $26, $27
 )
-RETURNING version, height_limit_agl_m, pressure_uncertainty_m, zone_conditional_severity, mismatch_severity, identification_severity, spoof_distance_m, identity_ttl_s, max_gap_s, identify_within_s, broadcast_tolerance_s, max_latency_s, live_max_age_s, clear_after_s, stale_after_s, dp_view_diagonal_km, dp_poll_hz, cis_stale_bound_s, height_limit_in_uspace, note, active, created_at, created_by, activated_at, activated_by, registration_number_pattern, certificate_lapse_unused_months, certificate_lapse_ceased_months
+RETURNING version, height_limit_agl_m, pressure_uncertainty_m, zone_conditional_severity, mismatch_severity, identification_severity, spoof_distance_m, identity_ttl_s, max_gap_s, identify_within_s, broadcast_tolerance_s, max_latency_s, live_max_age_s, clear_after_s, stale_after_s, dp_view_diagonal_km, dp_poll_hz, cis_stale_bound_s, height_limit_in_uspace, note, active, created_at, created_by, activated_at, activated_by, registration_number_pattern, certificate_lapse_unused_months, certificate_lapse_ceased_months, no_authorisation_grace_s, no_authorisation_severity
 `
 
 type InsertPolicyParams struct {
@@ -152,6 +158,8 @@ type InsertPolicyParams struct {
 	RegistrationNumberPattern    string
 	CertificateLapseUnusedMonths int32
 	CertificateLapseCeasedMonths int32
+	NoAuthorisationGraceS        float64
+	NoAuthorisationSeverity      string
 	Note                         string
 	CreatedAt                    time.Time
 	CreatedBy                    string
@@ -181,6 +189,8 @@ func (q *Queries) InsertPolicy(ctx context.Context, arg InsertPolicyParams) (Aut
 		arg.RegistrationNumberPattern,
 		arg.CertificateLapseUnusedMonths,
 		arg.CertificateLapseCeasedMonths,
+		arg.NoAuthorisationGraceS,
+		arg.NoAuthorisationSeverity,
 		arg.Note,
 		arg.CreatedAt,
 		arg.CreatedBy,
@@ -215,12 +225,14 @@ func (q *Queries) InsertPolicy(ctx context.Context, arg InsertPolicyParams) (Aut
 		&i.RegistrationNumberPattern,
 		&i.CertificateLapseUnusedMonths,
 		&i.CertificateLapseCeasedMonths,
+		&i.NoAuthorisationGraceS,
+		&i.NoAuthorisationSeverity,
 	)
 	return i, err
 }
 
 const listPolicies = `-- name: ListPolicies :many
-SELECT version, height_limit_agl_m, pressure_uncertainty_m, zone_conditional_severity, mismatch_severity, identification_severity, spoof_distance_m, identity_ttl_s, max_gap_s, identify_within_s, broadcast_tolerance_s, max_latency_s, live_max_age_s, clear_after_s, stale_after_s, dp_view_diagonal_km, dp_poll_hz, cis_stale_bound_s, height_limit_in_uspace, note, active, created_at, created_by, activated_at, activated_by, registration_number_pattern, certificate_lapse_unused_months, certificate_lapse_ceased_months FROM authority_policy ORDER BY version DESC LIMIT $1
+SELECT version, height_limit_agl_m, pressure_uncertainty_m, zone_conditional_severity, mismatch_severity, identification_severity, spoof_distance_m, identity_ttl_s, max_gap_s, identify_within_s, broadcast_tolerance_s, max_latency_s, live_max_age_s, clear_after_s, stale_after_s, dp_view_diagonal_km, dp_poll_hz, cis_stale_bound_s, height_limit_in_uspace, note, active, created_at, created_by, activated_at, activated_by, registration_number_pattern, certificate_lapse_unused_months, certificate_lapse_ceased_months, no_authorisation_grace_s, no_authorisation_severity FROM authority_policy ORDER BY version DESC LIMIT $1
 `
 
 func (q *Queries) ListPolicies(ctx context.Context, pageSize int32) ([]AuthorityPolicy, error) {
@@ -261,6 +273,8 @@ func (q *Queries) ListPolicies(ctx context.Context, pageSize int32) ([]Authority
 			&i.RegistrationNumberPattern,
 			&i.CertificateLapseUnusedMonths,
 			&i.CertificateLapseCeasedMonths,
+			&i.NoAuthorisationGraceS,
+			&i.NoAuthorisationSeverity,
 		); err != nil {
 			return nil, err
 		}
@@ -284,7 +298,7 @@ func (q *Queries) MaxPolicyVersion(ctx context.Context) (int64, error) {
 }
 
 const policyByVersion = `-- name: PolicyByVersion :one
-SELECT version, height_limit_agl_m, pressure_uncertainty_m, zone_conditional_severity, mismatch_severity, identification_severity, spoof_distance_m, identity_ttl_s, max_gap_s, identify_within_s, broadcast_tolerance_s, max_latency_s, live_max_age_s, clear_after_s, stale_after_s, dp_view_diagonal_km, dp_poll_hz, cis_stale_bound_s, height_limit_in_uspace, note, active, created_at, created_by, activated_at, activated_by, registration_number_pattern, certificate_lapse_unused_months, certificate_lapse_ceased_months FROM authority_policy WHERE version = $1
+SELECT version, height_limit_agl_m, pressure_uncertainty_m, zone_conditional_severity, mismatch_severity, identification_severity, spoof_distance_m, identity_ttl_s, max_gap_s, identify_within_s, broadcast_tolerance_s, max_latency_s, live_max_age_s, clear_after_s, stale_after_s, dp_view_diagonal_km, dp_poll_hz, cis_stale_bound_s, height_limit_in_uspace, note, active, created_at, created_by, activated_at, activated_by, registration_number_pattern, certificate_lapse_unused_months, certificate_lapse_ceased_months, no_authorisation_grace_s, no_authorisation_severity FROM authority_policy WHERE version = $1
 `
 
 func (q *Queries) PolicyByVersion(ctx context.Context, version int64) (AuthorityPolicy, error) {
@@ -319,6 +333,8 @@ func (q *Queries) PolicyByVersion(ctx context.Context, version int64) (Authority
 		&i.RegistrationNumberPattern,
 		&i.CertificateLapseUnusedMonths,
 		&i.CertificateLapseCeasedMonths,
+		&i.NoAuthorisationGraceS,
+		&i.NoAuthorisationSeverity,
 	)
 	return i, err
 }

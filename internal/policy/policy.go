@@ -50,6 +50,12 @@ type Thresholds struct {
 	// issued under.
 	CertificateLapseUnusedMonths int `json:"certificate_lapse_unused_months"`
 	CertificateLapseCeasedMonths int `json:"certificate_lapse_ceased_months"`
+	// NoAuthorisationGraceS is how long an aircraft inside a U-space
+	// airspace may show no matching operational intent before
+	// no_authorisation is raised, and NoAuthorisationSeverity what it is
+	// raised at (WP-26; spec 04 §3.3, Art. 6(4); pending GCAA, spec Q2).
+	NoAuthorisationGraceS   float64       `json:"no_authorisation_grace_s"`
+	NoAuthorisationSeverity core.Severity `json:"no_authorisation_severity"`
 }
 
 // Defaults are the documented defaults, equal to the predecessor's and
@@ -80,8 +86,18 @@ func Defaults() Thresholds {
 		// Reg. 2021/664 Art. 16(2).
 		CertificateLapseUnusedMonths: DefaultLapseUnusedMonths,
 		CertificateLapseCeasedMonths: DefaultLapseCeasedMonths,
+		// WP-26, pending GCAA (spec Q2): migration 00022.
+		NoAuthorisationGraceS:   DefaultNoAuthorisationGraceS,
+		NoAuthorisationSeverity: DefaultNoAuthorisationSeverity,
 	}
 }
+
+// The no_authorisation defaults (migration 00022_no_authorisation_policy;
+// pending GCAA, spec Q2).
+const (
+	DefaultNoAuthorisationGraceS                 = 10
+	DefaultNoAuthorisationSeverity core.Severity = core.SeverityWarning
+)
 
 // The Art. 16(2) periods and their bounds (the column CHECK of
 // migration 00018_certificates).
@@ -114,6 +130,7 @@ func (t Thresholds) numbers() []struct {
 		{"dp_view_diagonal_km", t.DPViewDiagonalKM},
 		{"dp_poll_hz", t.DPPollHz},
 		{"cis_stale_bound_s", t.CISStaleBoundS},
+		{"no_authorisation_grace_s", t.NoAuthorisationGraceS},
 	}
 }
 
@@ -140,6 +157,7 @@ func (t Thresholds) Validate() error {
 		{"zone_conditional_severity", t.ZoneConditionalSeverity},
 		{"mismatch_severity", t.MismatchSeverity},
 		{"identification_severity", t.IdentificationSeverity},
+		{"no_authorisation_severity", t.NoAuthorisationSeverity},
 	} {
 		if !slices.Contains(severities, s.value) {
 			errs = append(errs, core.Fieldf(s.field, "must be info, warning or critical"))
@@ -210,6 +228,8 @@ func fromRow(r gen.AuthorityPolicy) Policy {
 			RegistrationNumberPattern:    r.RegistrationNumberPattern,
 			CertificateLapseUnusedMonths: int(r.CertificateLapseUnusedMonths),
 			CertificateLapseCeasedMonths: int(r.CertificateLapseCeasedMonths),
+			NoAuthorisationGraceS:        r.NoAuthorisationGraceS,
+			NoAuthorisationSeverity:      core.Severity(r.NoAuthorisationSeverity),
 		},
 		Note:        r.Note,
 		Active:      r.Active,
@@ -247,6 +267,8 @@ func insertParams(version int64, t Thresholds, note, by string, at time.Time) ge
 		RegistrationNumberPattern:    t.RegistrationNumberPattern,
 		CertificateLapseUnusedMonths: int32(t.CertificateLapseUnusedMonths),
 		CertificateLapseCeasedMonths: int32(t.CertificateLapseCeasedMonths),
+		NoAuthorisationGraceS:        t.NoAuthorisationGraceS,
+		NoAuthorisationSeverity:      string(t.NoAuthorisationSeverity),
 		Note:                         note,
 		CreatedAt:                    at,
 		CreatedBy:                    by,

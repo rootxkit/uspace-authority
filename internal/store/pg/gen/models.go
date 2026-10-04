@@ -45,6 +45,8 @@ type AuthorityPolicy struct {
 	RegistrationNumberPattern    string
 	CertificateLapseUnusedMonths int32
 	CertificateLapseCeasedMonths int32
+	NoAuthorisationGraceS        float64
+	NoAuthorisationSeverity      string
 }
 
 type Certificate struct {

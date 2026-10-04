@@ -18,6 +18,7 @@ INSERT INTO authority_policy (
     broadcast_tolerance_s, max_latency_s, live_max_age_s, clear_after_s,
     stale_after_s, dp_view_diagonal_km, dp_poll_hz, cis_stale_bound_s,
     height_limit_in_uspace, registration_number_pattern, certificate_lapse_unused_months, certificate_lapse_ceased_months,
+    no_authorisation_grace_s, no_authorisation_severity,
     note, created_at, created_by
 ) VALUES (
     sqlc.arg(version), sqlc.arg(height_limit_agl_m), sqlc.arg(pressure_uncertainty_m),
@@ -26,7 +27,8 @@ INSERT INTO authority_policy (
     sqlc.arg(broadcast_tolerance_s), sqlc.arg(max_latency_s), sqlc.arg(live_max_age_s), sqlc.arg(clear_after_s),
     sqlc.arg(stale_after_s), sqlc.arg(dp_view_diagonal_km), sqlc.arg(dp_poll_hz), sqlc.arg(cis_stale_bound_s),
     sqlc.arg(height_limit_in_uspace), sqlc.arg(registration_number_pattern),
-    sqlc.arg(certificate_lapse_unused_months), sqlc.arg(certificate_lapse_ceased_months), sqlc.arg(note), sqlc.arg(created_at), sqlc.arg(created_by)
+    sqlc.arg(certificate_lapse_unused_months), sqlc.arg(certificate_lapse_ceased_months),
+    sqlc.arg(no_authorisation_grace_s), sqlc.arg(no_authorisation_severity), sqlc.arg(note), sqlc.arg(created_at), sqlc.arg(created_by)
 )
 RETURNING *;
 
