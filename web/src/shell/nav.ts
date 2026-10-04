@@ -39,6 +39,13 @@ export interface NavItem {
  */
 export const NAV_ITEMS: readonly NavItem[] = [
   { path: "", labelKey: "authority.nav.map", roles: [], realms: ["console"] },
+  // WP-22: the registry, zone and U-space authoring, certificates. The
+  // roles are each page's read operation's x-roles (listRegistryOperators,
+  // listZones, listUSpaceAirspaces, listCertificates).
+  { path: "/registry/operators", labelKey: "authority.nav.registry", roles: ["registrar", "inspector", "viewer"], realms: ["console"] },
+  { path: "/zones", labelKey: "authority.nav.zones", roles: ["inspector", "admin", "viewer"], realms: ["console"] },
+  { path: "/uspace", labelKey: "authority.nav.uspace", roles: ["admin"], realms: ["console"] },
+  { path: "/certificates", labelKey: "authority.nav.certificates", roles: ["admin"], realms: ["console"] },
   // WP-23: violations, incidents, occurrences, sources, the audit log.
   ...OVERSIGHT_NAV_ITEMS,
 ];

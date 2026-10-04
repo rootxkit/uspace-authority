@@ -1,0 +1,61 @@
+{
+  "feature": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [
+        44.85,
+        41.7
+      ],
+      "extent": {
+        "subType": "Circle",
+        "radius": 500
+      },
+      "layer": {
+        "upper": 60,
+        "upperReference": "AGL",
+        "lower": 0,
+        "lowerReference": "AGL",
+        "uom": "m"
+      }
+    },
+    "properties": {
+      "identifier": "TSTE002",
+      "country": "GEO",
+      "name": [
+        {
+          "text": "Test editor zone",
+          "lang": "en-GB"
+        },
+        {
+          "text": "სატესტო ზონა",
+          "lang": "ka-GE"
+        }
+      ],
+      "type": "PROHIBITED",
+      "variant": "COMMON",
+      "restrictionConditions": "Permission of the test authority",
+      "region": 1,
+      "regulationExemption": "NO",
+      "message": [
+        {
+          "text": "Ask before flying",
+          "lang": "en-GB"
+        }
+      ],
+      "zoneAuthority": [
+        {
+          "name": [
+            {
+              "text": "Test authority",
+              "lang": "en-GB"
+            }
+          ],
+          "purpose": "INFORMATION"
+        }
+      ]
+    }
+  },
+  "valid_from": "2026-10-01T00:00:00Z",
+  "valid_to": "2027-10-01T00:00:00Z"
+}

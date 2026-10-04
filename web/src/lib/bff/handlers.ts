@@ -13,14 +13,18 @@
 // - proxy: /_bff/api/<path> is forwarded to api with the session cookie
 //   as the bearer, for the paths in PROXY_ALLOW_PATHS only (fail closed:
 //   anything else is a 404 of the BFF and never reaches api); an unsafe
-//   method needs X-CSRF-Token equal to the CSRF cookie.
+//   method needs X-CSRF-Token equal to the CSRF cookie and a body of at
+//   most WEB_PROXY_MAX_BODY_BYTES that announces its length. A method a
+//   WP-23 route does not take is a 405, but only to a signed-in caller
+//   with the CSRF pair: anyone else is refused first (401, 403), so the
+//   405 never tells an anonymous caller which methods a route takes.
 // - logout: the kit's CSRF check, POST /v1/auth/logout with the bearer,
 //   and both cookies cleared whatever api answers.
 //
 // The picture WebSocket is not proxied: the browser upgrades
 // /v1/picture/ws same-origin and the cookie rides the upgrade (M22).
 // There is no ticket route.
-import { BFF_API_PREFIX, bffHandlers, MIN_CHALLENGE_SECRET_BYTES, type BffHandlers } from "@rootxkit/uspace-ui/auth/server";
+import { BFF_API_PREFIX, bffHandlers, checkCsrf, MIN_CHALLENGE_SECRET_BYTES, readSessionToken, type BffHandlers } from "@rootxkit/uspace-ui/auth/server";
 import { NextResponse } from "next/server";
 
 /** api's sign-in steps and logout (api/openapi.yaml, WP-2). */
@@ -35,6 +39,15 @@ export interface ProxyRoute {
 }
 
 const ULID = "[0-7][0-9A-HJKMNP-TV-Z]{25}";
+
+/**
+ * A geo-zone's or U-space airspace's identifier: the pattern
+ * api/openapi.yaml pins on every /v1/zones/{identifier} and
+ * /v1/uspace/{identifier} operation (ED-318's seven characters; the
+ * characters this project's identifiers use). zone-identifier.test.ts
+ * reads the spec and fails when the two differ.
+ */
+export const ZONE_IDENTIFIER = "[A-Za-z0-9_-]{1,7}";
 const route = (methods: ProxyRoute["methods"], path: string): ProxyRoute => ({ methods, path: new RegExp(`^${path}$`) });
 
 /**
@@ -76,15 +89,64 @@ export const OVERSIGHT_PROXY_ROUTES: readonly ProxyRoute[] = [
 
 /**
  * What the console may reach through the proxy, and nothing else: the
- * caller's session (who is signed in, for the shell), the published
- * zones (the inspector map's zone layer) and WP-23's routes. A later
- * page adds its paths here in its own work package.
+ * caller's session (who is signed in, for the shell), the zones (the
+ * inspector map's zone layer), WP-22's authoring operations and WP-23's
+ * routes. A later page adds its paths here in its own work package.
+ * Every pattern is anchored; an identifier segment admits only the
+ * characters api's identifiers use.
  */
 export const PROXY_ALLOW_PATHS: readonly RegExp[] = [
   /^\/v1\/auth\/session$/,
   /^\/v1\/zones$/,
+  // WP-22: the registry, zone and U-space authoring, publications and
+  // certificates (api/openapi.yaml). The registry's machine and public
+  // operations (validate, changes, check, the portal's submit and
+  // verify, operator links) are not the console's and are not here.
+  /^\/v1\/registry\/(operators|uas|pilots)$/,
+  /^\/v1\/registry\/(operators|uas|pilots)\/[A-Za-z0-9_-]{1,64}(\/(status|personal-data|competencies))?$/,
+  /^\/v1\/registry\/import$/,
+  /^\/v1\/registry\/applications$/,
+  /^\/v1\/registry\/applications\/[A-Za-z0-9_-]{1,64}\/(personal-data|review|approve|refuse)$/,
+  /^\/v1\/zones\/(export|import|publish)$/,
+  new RegExp(`^/v1/zones/${ZONE_IDENTIFIER}(/(approve|versions|applies))?$`),
+  /^\/v1\/uspace(\/publish)?$/,
+  new RegExp(`^/v1/uspace/${ZONE_IDENTIFIER}(/(designate|versions))?$`),
+  /^\/v1\/publications$/,
+  /^\/v1\/certificates(\/(register|publish-list))?$/,
+  /^\/v1\/certificates\/[0-9a-f]{32}(\/(status-notices|suspend|limit|revoke|reinstate))?$/,
   ...OVERSIGHT_PROXY_ROUTES.map((r) => r.path),
 ];
+
+/**
+ * The largest request body the proxy forwards, bytes
+ * (WEB_PROXY_MAX_BODY_BYTES): api's own largest, the registry import's
+ * REGISTRY_IMPORT_MAX_BYTES default. A larger body is the BFF's 413 and
+ * never reaches api; api still bounds each operation itself.
+ */
+export const DEFAULT_PROXY_MAX_BODY_BYTES = 8 * 1024 * 1024;
+
+const UNSAFE = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+/**
+ * The proxy with its body bound: an unsafe method must announce its
+ * length (411 otherwise) and stay within `maxBytes` (413 otherwise),
+ * checked before api is called. The browser's fetch announces the length
+ * of every body the console sends. It runs after the allow-list
+ * (`createBff`): a path outside it is the 404, whatever its body.
+ */
+export function boundedProxy(proxy: BffHandlers["proxy"], maxBytes: number): BffHandlers["proxy"] {
+  return (req) => {
+    if (!UNSAFE.has(req.method)) return proxy(req);
+    const declared = req.headers.get("content-length");
+    if (declared === null) {
+      return Promise.resolve(problem(411, "length_required", "Length required", "a request body must announce its Content-Length"));
+    }
+    if (!/^\d+$/.test(declared.trim()) || Number(declared) > maxBytes) {
+      return Promise.resolve(problem(413, "body_too_large", "Request body too large", `at most ${maxBytes} bytes (WEB_PROXY_MAX_BODY_BYTES)`));
+    }
+    return proxy(req);
+  };
+}
 
 /**
  * True when `pathname` is one of WP-23's routes and none of them admits
@@ -107,23 +169,41 @@ export interface BffConfig {
   trustedProxyHops?: number;
   /** Seals the MFA challenge cookie (WEB_MFA_CHALLENGE_SECRET, at least 32 bytes). */
   mfaChallengeSecret: string;
+  /** The largest body the proxy forwards (WEB_PROXY_MAX_BODY_BYTES); DEFAULT_PROXY_MAX_BODY_BYTES when absent. */
+  proxyMaxBodyBytes?: number;
   fetch?: typeof fetch;
 }
 
 /** The three handlers for one configuration. */
 export function createBff(cfg: BffConfig): BffHandlers {
   const kit = kitHandlers(cfg);
+  const bounded = boundedProxy(kit.proxy, cfg.proxyMaxBodyBytes ?? DEFAULT_PROXY_MAX_BODY_BYTES);
   return {
     ...kit,
     proxy: (req) => {
       const path = req.nextUrl.pathname.startsWith(BFF_API_PREFIX) ? req.nextUrl.pathname.slice(BFF_API_PREFIX.length) : "";
+      // The allow-list first: the kit answers its 404 (and counts it)
+      // without calling api, so an unknown path is never the bound's 411
+      // or 413.
+      if (!PROXY_ALLOW_PATHS.some((re) => re.test(path))) return kit.proxy(req);
       if (methodRefused(req.method, path)) {
+        // Unauthenticated first: an anonymous caller is told only that,
+        // whatever the method (api's own 401, with api's slug).
+        if (readSessionToken(req, SESSION) === null) {
+          return Promise.resolve(problem(401, "unauthenticated", "Unauthenticated", "no session"));
+        }
+        if (!checkCsrf(req, SESSION)) {
+          return Promise.resolve(problem(403, "csrf_refused", "CSRF check failed", "send the uspace_csrf cookie's value as X-CSRF-Token"));
+        }
         return Promise.resolve(problem(405, "method_not_allowed", "Method not allowed", `${req.method} is not served on this path`));
       }
-      return kit.proxy(req);
+      return bounded(req);
     },
   };
 }
+
+/** The session and CSRF cookies' names: the contract's defaults, which kitHandlers keeps (it names neither). */
+const SESSION = {};
 
 function kitHandlers(cfg: BffConfig): BffHandlers {
   return bffHandlers({
@@ -177,12 +257,14 @@ export function configFromEnv(env: Env): BffConfig | { problem: string } {
   const timeout = positiveInt(env, "WEB_UPSTREAM_TIMEOUT_MS", 10_000);
   const hopsRaw = env["WEB_TRUSTED_PROXY_HOPS"];
   const hops = hopsRaw === undefined || hopsRaw === "" ? undefined : positiveInt(env, "WEB_TRUSTED_PROXY_HOPS", 1);
-  for (const v of [maxAge, timeout, hops]) if (typeof v === "string") return { problem: v };
+  const maxBody = positiveInt(env, "WEB_PROXY_MAX_BODY_BYTES", DEFAULT_PROXY_MAX_BODY_BYTES);
+  for (const v of [maxAge, timeout, hops, maxBody]) if (typeof v === "string") return { problem: v };
   return {
     apiBase,
     mfaChallengeSecret: secret,
     sessionMaxAgeS: maxAge as number,
     timeoutMs: timeout as number,
+    proxyMaxBodyBytes: maxBody as number,
     ...(hops === undefined ? {} : { trustedProxyHops: hops as number }),
   };
 }

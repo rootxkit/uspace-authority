@@ -63,6 +63,9 @@ jobs:
               - '.golangci.yml'
               - 'Dockerfile'
               - 'internal/**/testdata/**'
+              # The zone editor's request bodies, which internal/zonesvc
+              # validates with core (WP-22).
+              - 'web/test/fixtures/zone-editor/**'
               - 'deploy/fetch-ground.sh'
               - '.github/workflows/ci.yml'
             # web/ (WP-21) and what it reads from the rest of the

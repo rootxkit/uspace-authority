@@ -635,7 +635,10 @@ edits another's), `CHANGELOG.md` (one line per WP under Unreleased) and
   peers); dev only: `typescript`, `eslint` with `typescript-eslint`,
   `eslint-plugin-react-hooks` and `eslint-plugin-jsx-a11y` (the kit's
   lint config), `tailwindcss` with `@tailwindcss/postcss` (the kit's
-  theme), `vitest`, `@playwright/test` (the smoke run), `@types/*`,
+  theme), `vitest`, `@playwright/test` (the smoke run),
+  `@axe-core/playwright` (WP-22: the accessibility check of every page
+  in the smoke run, on the `axe-core` the kit names as its peer),
+  `@types/*`,
   `json-schema-to-typescript` (this repository's frame extras typed
   from `schemas/picture/*` and `schemas/violation/v1.json`), and
   `axe-core` (WP-23: the accessibility check of the Playwright run, the

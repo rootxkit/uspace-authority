@@ -6,8 +6,10 @@
 //   MOCK_PORT=3000 MOCK_UPSTREAM=http://127.0.0.1:3100 node test/mock-origin.mjs
 //
 // - api (the shapes of api/openapi.yaml): POST /v1/auth/login, POST
-//   /v1/auth/mfa, GET /v1/auth/session, POST /v1/auth/logout, GET
-//   /v1/zones, and WP-23's operations (test/mock-oversight.mjs). The BFF
+//   /v1/auth/mfa, GET /v1/auth/session, POST /v1/auth/logout, the
+//   registry, zone, U-space, publication and certificate operations of
+//   test/mock/authoring.mjs (WP-22), which holds the zones too, and
+//   WP-23's operations (test/mock-oversight.mjs). The BFF
 //   reaches these here too (WEB_API_INTERNAL_URL).
 // - picture-ws (docs/runbooks/picture.md): WS /v1/picture/ws with the
 //   same-origin and cookie rules of M22 (a foreign Origin is 403, no
@@ -29,6 +31,7 @@
 //   POST /__mock/state {nats?: "connected"|"unavailable", revoke?: true}
 //   GET  /__mock/requests                 the api requests answered: method, path, body keys
 //   GET  /__mock/subscribes               the console/subscribe/v1 bodies received
+//   /__mock/authoring/*                   test/mock/authoring.mjs's controls
 //   GET  /__mock/oversight                the police queries the stub recorded
 //   GET  /__mock/upgrades                 the picture WebSocket upgrades: the realm of each
 //
@@ -37,6 +40,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import http from "node:http";
+import { AUTHORING_ACCOUNTS, createAuthoring } from "./mock/authoring.mjs";
 import { oversightApi, oversightRecords, publicApi, resetOversight } from "./mock-oversight.mjs";
 
 const PORT = Number(process.env.MOCK_PORT ?? "3000");
@@ -46,6 +50,8 @@ const STATUS_PERIOD_MS = 1000;
 const TRACK_PERIOD_MS = 1000;
 const CODE = "246810";
 const ACCOUNTS = {
+  // WP-22's accounts (viewer1, admin1) in the console realm; the list below wins on a name.
+  ...Object.fromEntries(Object.entries(AUTHORING_ACCOUNTS).map(([name, a]) => [name, { ...a, realm: "console" }])),
   inspector1: { password: "inspector1-test-password", roles: ["inspector"], realm: "console" },
   registrar1: { password: "registrar1-test-password", roles: ["registrar"], realm: "console" },
   officer1: { password: "officer1-test-password", roles: ["incident_officer"], realm: "console" },
@@ -63,6 +69,7 @@ const VIOLATION = fixture("violation.json");
 const PROVIDER_TRACK = fixture("provider-track.json");
 
 let state;
+let authoring = null;
 const requests = [];
 const subscribes = [];
 /** Every picture WebSocket upgrade: the realm of its session, or null without one. */
@@ -71,6 +78,7 @@ const sockets = new Set();
 
 function reset() {
   state = { nats: "connected", natsSince: null, sessions: new Map(), challenges: new Map() };
+  authoring?.reset();
   requests.length = 0;
   subscribes.length = 0;
   upgrades.length = 0;
@@ -94,18 +102,21 @@ function problem(res, status, slug, title, detail) {
   json(res, status, { type: `https://schemas.uspace.ge/problems/${slug}`, title, status, detail }, { "Content-Type": "application/problem+json" });
 }
 
-function readJson(req) {
+function readText(req) {
   return new Promise((resolve) => {
     let text = "";
     req.on("data", (c) => (text += c));
-    req.on("end", () => {
-      try {
-        resolve(text === "" ? {} : JSON.parse(text));
-      } catch {
-        resolve({});
-      }
-    });
+    req.on("end", () => resolve(text));
   });
+}
+
+async function readJson(req) {
+  const text = await readText(req);
+  try {
+    return text === "" ? {} : JSON.parse(text);
+  } catch {
+    return {};
+  }
 }
 
 function cookie(req, name) {
@@ -208,11 +219,22 @@ const ZONES = {
   ],
 };
 
+authoring = createAuthoring({ zonesSeed: ZONES.zones });
+
 async function api(req, res, url) {
-  const body = req.method === "GET" ? {} : await readJson(req);
+  const raw = req.method === "GET" ? "" : await readText(req);
+  let body = {};
+  try {
+    body = raw === "" ? {} : JSON.parse(raw);
+  } catch {
+    body = {};
+  }
   requests.push({ method: req.method, path: url.pathname, keys: Object.keys(body).sort(), query: [...url.searchParams.keys()].sort() });
   const p = url.pathname;
-  if (publicApi(req, res, url)) return;
+  // The public reads answer WP-23's public pages (no session); a signed-in
+  // console's register preview reads WP-22's certificates instead.
+  const signedIn = sessionOf(bearer(req)) !== null;
+  if (!(signedIn && p === "/v1/certificates/register") && publicApi(req, res, url)) return;
   if (p === "/v1/auth/login" && req.method === "POST") {
     const acct = ACCOUNTS[body.username];
     if (acct === undefined || acct.password !== body.password) return problem(res, 401, "invalid_credentials", "Sign-in refused", "the username or the password is wrong");
@@ -241,10 +263,8 @@ async function api(req, res, url) {
     res.writeHead(204);
     return res.end();
   }
-  if (p === "/v1/zones" && req.method === "GET") {
-    if (!s.roles.some((r) => ["inspector", "admin", "viewer"].includes(r))) return problem(res, 403, "forbidden", "Forbidden", "this role does not read zones");
-    return json(res, 200, ZONES);
-  }
+  // The registry, zones, U-space, publications and certificates (WP-22).
+  if (authoring.handle(req, res, url, s, body, raw)) return;
   if (await oversightApi(req, res, url, s, body)) return;
   return problem(res, 404, "not_found", "Not found", `${req.method} ${p}`);
 }
@@ -423,6 +443,10 @@ function pictureSources(req, res) {
 
 async function control(req, res, path) {
   if (path === "/__mock/health") return json(res, 200, { ok: true });
+  if (path.startsWith("/__mock/authoring/")) {
+    const out = authoring.control(path.slice("/__mock/authoring/".length), req.method === "POST" ? await readJson(req) : {});
+    return out === null ? json(res, 404, { error: "unknown control" }) : json(res, 200, out);
+  }
   if (path === "/__mock/requests") return json(res, 200, requests);
   if (path === "/__mock/subscribes") return json(res, 200, subscribes);
   if (path === "/__mock/oversight") return json(res, 200, oversightRecords());

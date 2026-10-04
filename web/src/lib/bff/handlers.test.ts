@@ -7,7 +7,7 @@
 // acceptance it differs from (E-01).
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { configFromEnv, createBff, methodRefused, OVERSIGHT_PROXY_ROUTES, PROXY_ALLOW_PATHS, type BffConfig } from "./handlers";
+import { configFromEnv, createBff, DEFAULT_PROXY_MAX_BODY_BYTES, methodRefused, OVERSIGHT_PROXY_ROUTES, PROXY_ALLOW_PATHS, type BffConfig } from "./handlers";
 
 const ORIGIN = "https://console.test";
 const SECRET = "unit-test-only-challenge-seal-key-0123456789";
@@ -16,6 +16,7 @@ interface Call {
   url: string;
   method: string;
   auth: string | null;
+  xff: string | null;
   body: unknown;
 }
 
@@ -25,7 +26,7 @@ function fakeApi(): { fetch: typeof fetch; calls: Call[] } {
     const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
     const headers = new Headers(init?.headers);
     const text = typeof init?.body === "string" ? init.body : null;
-    calls.push({ url, method: init?.method ?? "GET", auth: headers.get("authorization"), body: text === null ? null : JSON.parse(text) });
+    calls.push({ url, method: init?.method ?? "GET", auth: headers.get("authorization"), xff: headers.get("x-forwarded-for"), body: text === null ? null : JSON.parse(text) });
     const path = new URL(url).pathname;
     const exp = new Date(Date.now() + 3600_000).toISOString();
     if (path === "/v1/auth/login") return Response.json({ mfa_token: "challenge-1", expires_at: new Date(Date.now() + 300_000).toISOString() });
@@ -153,9 +154,112 @@ describe("proxy", () => {
 
   it("refuses a path outside the allow-list before api (fail closed)", async () => {
     const api = fakeApi();
-    for (const p of ["/v1/users", "/v1/zones/TSTP001", "/v1/auth/sessionx", "/v1/picture/ws"]) {
+    for (const p of [
+      "/v1/users",
+      "/v1/zones/TSTP0012",
+      "/v1/auth/sessionx",
+      "/v1/picture/ws",
+      // The registry's machine operations are not the console's (WP-22);
+      // the public check is WP-23's public page's.
+      "/v1/registry/validate",
+      "/v1/registry/changes",
+      "/v1/registry/operators/a/b",
+      "/v1/registry/applications/x/verify",
+      "/v1/certificates/abc/status",
+      "/v1/zones/import/airspace-gov-ge",
+    ]) {
       expect((await createBff(cfg(api.fetch)).proxy(get(p))).status, p).toBe(404);
     }
+    expect(api.calls).toEqual([]);
+  });
+
+  it("without WEB_TRUSTED_PROXY_HOPS api gets no client address, whatever the client wrote", async () => {
+    const api = fakeApi();
+    const req = new NextRequest(`${ORIGIN}/_bff/api/v1/auth/session`, {
+      method: "GET",
+      headers: { cookie: "uspace_session=header.payload.sig", host: "console.test", "x-forwarded-for": "198.51.100.7, 203.0.113.9" },
+    });
+    expect((await createBff(cfg(api.fetch)).proxy(req)).status).toBe(200);
+    expect(api.calls[0]?.xff).toBeNull();
+  });
+
+  it("with one trusted hop api gets the address that hop recorded, not the client's own entry (the pair above)", async () => {
+    const api = fakeApi();
+    const req = new NextRequest(`${ORIGIN}/_bff/api/v1/auth/session`, {
+      method: "GET",
+      headers: { cookie: "uspace_session=header.payload.sig", host: "console.test", "x-forwarded-for": "198.51.100.7, 203.0.113.9" },
+    });
+    expect((await createBff({ ...cfg(api.fetch), trustedProxyHops: 1 }).proxy(req)).status).toBe(200);
+    expect(api.calls[0]?.xff).toBe("203.0.113.9");
+  });
+
+  it("forwards each console page's operation (the pair of the refusals above)", async () => {
+    const api = fakeApi();
+    const paths = [
+      "/v1/registry/operators",
+      "/v1/registry/operators/op-1/personal-data",
+      "/v1/registry/uas/u-1/status",
+      "/v1/registry/pilots/p-1/competencies",
+      "/v1/registry/import",
+      "/v1/registry/applications",
+      "/v1/registry/applications/a-1/approve",
+      "/v1/zones/TSTP001",
+      "/v1/zones/TSTP001/versions",
+      "/v1/zones/publish",
+      "/v1/uspace/TSU001/designate",
+      "/v1/publications",
+      "/v1/certificates/register",
+      "/v1/certificates/0123456789abcdef0123456789abcdef/suspend",
+    ];
+    for (const p of paths) expect((await createBff(cfg(api.fetch)).proxy(get(p))).status, p).toBe(200);
+    expect(api.calls.map((c) => new URL(c.url).pathname)).toEqual(paths);
+  });
+
+  const write = (method: string, body: string | null, headers: Record<string, string> = {}, path = "/v1/registry/operators") =>
+    new NextRequest(`${ORIGIN}/_bff/api${path}`, {
+      method,
+      headers: { cookie: "uspace_session=header.payload.sig; uspace_csrf=proxy-csrf-1", "x-csrf-token": "proxy-csrf-1", host: "console.test", origin: ORIGIN, ...headers },
+      ...(body === null ? {} : { body }),
+    });
+
+  it("forwards a write within the body bound (the pair of the two below)", async () => {
+    const api = fakeApi();
+    const res = await createBff({ ...cfg(api.fetch), proxyMaxBodyBytes: 16 }).proxy(write("POST", "0123456789abcdef", { "content-length": "16" }));
+    expect(res.status).toBe(200);
+    expect(api.calls).toHaveLength(1);
+  });
+
+  it("refuses a write past the body bound with 413 before api (E-10)", async () => {
+    const api = fakeApi();
+    const res = await createBff({ ...cfg(api.fetch), proxyMaxBodyBytes: 16 }).proxy(write("POST", "0123456789abcdefg", { "content-length": "17" }));
+    expect(res.status).toBe(413);
+    expect(api.calls).toEqual([]);
+  });
+
+  it("refuses a write that does not announce its length with 411 before api", async () => {
+    const api = fakeApi();
+    const req = write("PATCH", null);
+    expect(req.headers.get("content-length")).toBeNull();
+    expect((await createBff(cfg(api.fetch)).proxy(req)).status).toBe(411);
+    expect(api.calls).toEqual([]);
+  });
+
+  it("forwards a body-less POST that announces content-length: 0 (the pair of the refusals around it)", async () => {
+    const api = fakeApi();
+    const req = write("POST", null, { "content-length": "0" });
+    expect(req.headers.get("content-length")).toBe("0");
+    expect((await createBff(cfg(api.fetch)).proxy(req)).status).toBe(200);
+    expect(api.calls.map((c) => `${c.method} ${new URL(c.url).pathname}`)).toEqual(["POST /v1/registry/operators"]);
+  });
+
+  it("a write to a path outside the allow-list is its 404, never the body bound's 411 or 413", async () => {
+    const api = fakeApi();
+    const bff = createBff({ ...cfg(api.fetch), proxyMaxBodyBytes: 16 });
+    const unannounced = write("POST", null, {}, "/v1/users");
+    expect(unannounced.headers.get("content-length")).toBeNull();
+    expect((await bff.proxy(unannounced)).status).toBe(404);
+    expect((await bff.proxy(write("PUT", "0123456789abcdefg", { "content-length": "17" }, "/v1/users"))).status).toBe(404);
+    expect((await bff.proxy(write("PATCH", "{}", { "content-length": "2" }, "/v1/zones/TSTP0012"))).status).toBe(404);
     expect(api.calls).toEqual([]);
   });
 
@@ -166,6 +270,8 @@ describe("proxy", () => {
 
 describe("WP-23's routes", () => {
   const ULID = "01J9Z8Y7X6W5V4T3S2R1Q0P9N8";
+  // A write announces its length, as the browser's fetch does (WP-22's body bound).
+  const BODY = JSON.stringify({ decision: "reviewed" });
   const req = (method: string, path: string, csrf = true) =>
     new NextRequest(`${ORIGIN}/_bff/api${path}`, {
       method,
@@ -173,9 +279,9 @@ describe("WP-23's routes", () => {
         cookie: `uspace_session=header.payload.sig${csrf ? "; uspace_csrf=c1" : ""}`,
         host: "console.test",
         ...(csrf ? { "x-csrf-token": "c1" } : {}),
-        ...(method === "GET" ? {} : { "content-type": "application/json" }),
+        ...(method === "GET" ? {} : { "content-type": "application/json", "content-length": String(BODY.length) }),
       },
-      ...(method === "GET" ? {} : { body: JSON.stringify({ decision: "reviewed" }) }),
+      ...(method === "GET" ? {} : { body: BODY }),
     });
 
   it("a read and a write of the list reach api with their method", async () => {
@@ -199,6 +305,35 @@ describe("WP-23's routes", () => {
     expect(api.calls).toEqual([]);
   });
 
+  it("an anonymous caller is refused as unauthenticated, never told which methods a route takes", async () => {
+    const api = fakeApi();
+    const bff = createBff(cfg(api.fetch));
+    // Without a session, even with a CSRF pair of its own making.
+    const anon = (method: string, path: string) =>
+      new NextRequest(`${ORIGIN}/_bff/api${path}`, {
+        method,
+        headers: { cookie: "uspace_csrf=c1", "x-csrf-token": "c1", host: "console.test", ...(method === "GET" ? {} : { "content-length": "2" }) },
+        ...(method === "GET" ? {} : { body: "{}" }),
+      });
+    for (const [method, path] of [
+      ["PATCH", `/v1/violations/${ULID}/review`],
+      ["GET", "/v1/police/exports"],
+      ["PUT", "/v1/audit/events"],
+    ] as const) {
+      const res = await bff.proxy(anon(method, path));
+      expect(res.status, `${method} ${path}`).toBe(401);
+      expect(((await res.json()) as { type: string }).type).toBe("https://schemas.uspace.ge/problems/unauthenticated");
+    }
+    expect(api.calls).toEqual([]);
+  });
+
+  it("a signed-in write of another method without the CSRF pair is the CSRF refusal, not the 405", async () => {
+    const api = fakeApi();
+    const res = await createBff(cfg(api.fetch)).proxy(req("PATCH", `/v1/violations/${ULID}/review`, false));
+    expect(res.status).toBe(403);
+    expect(api.calls).toEqual([]);
+  });
+
   it("a write without the CSRF pair is refused before api", async () => {
     const api = fakeApi();
     expect((await createBff(cfg(api.fetch)).proxy(req("POST", `/v1/violations/${ULID}/review`, false))).status).toBe(403);
@@ -218,13 +353,15 @@ describe("configuration", () => {
   const good = { WEB_API_INTERNAL_URL: "http://api:8080", WEB_MFA_CHALLENGE_SECRET: SECRET };
 
   it("a complete environment is a configuration (the pair of the refusals below)", () => {
-    expect(configFromEnv(good)).toMatchObject({ apiBase: "http://api:8080", sessionMaxAgeS: 43200, timeoutMs: 10000 });
+    expect(configFromEnv(good)).toMatchObject({ apiBase: "http://api:8080", sessionMaxAgeS: 43200, timeoutMs: 10000, proxyMaxBodyBytes: DEFAULT_PROXY_MAX_BODY_BYTES });
+    expect(configFromEnv({ ...good, WEB_PROXY_MAX_BODY_BYTES: "1024" })).toMatchObject({ proxyMaxBodyBytes: 1024 });
   });
 
   it("names what is missing or wrong", () => {
     expect(configFromEnv({ ...good, WEB_API_INTERNAL_URL: "" })).toEqual({ problem: "WEB_API_INTERNAL_URL is not set" });
     expect(configFromEnv({ ...good, WEB_API_INTERNAL_URL: "ftp://x" })).toHaveProperty("problem");
     expect(configFromEnv({ ...good, WEB_MFA_CHALLENGE_SECRET: "short" })).toHaveProperty("problem");
+    expect(configFromEnv({ ...good, WEB_PROXY_MAX_BODY_BYTES: "-1" })).toHaveProperty("problem");
     expect(configFromEnv({ ...good, WEB_TRUSTED_PROXY_HOPS: "0" })).toEqual({
       problem: 'WEB_TRUSTED_PROXY_HOPS: want a whole number of at least 1, got "0"',
     });

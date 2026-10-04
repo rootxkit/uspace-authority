@@ -1,0 +1,129 @@
+{
+  "feature": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            44.76,
+            41.69
+          ],
+          [
+            44.8,
+            41.69
+          ],
+          [
+            44.8,
+            41.73
+          ],
+          [
+            44.76,
+            41.73
+          ],
+          [
+            44.76,
+            41.69
+          ]
+        ]
+      ],
+      "layer": {
+        "upper": 120,
+        "upperReference": "AGL",
+        "lower": 0,
+        "lowerReference": "AGL",
+        "uom": "m"
+      }
+    },
+    "properties": {
+      "identifier": "TSU001",
+      "country": "GEO",
+      "name": [
+        {
+          "text": "Test editor zone",
+          "lang": "en-GB"
+        },
+        {
+          "text": "სატესტო ზონა",
+          "lang": "ka-GE"
+        }
+      ],
+      "type": "USPACE",
+      "variant": "COMMON",
+      "restrictionConditions": "Permission of the test authority",
+      "region": 1,
+      "regulationExemption": "NO",
+      "message": [
+        {
+          "text": "Ask before flying",
+          "lang": "en-GB"
+        }
+      ],
+      "zoneAuthority": [
+        {
+          "name": [
+            {
+              "text": "Test authority",
+              "lang": "en-GB"
+            }
+          ],
+          "service": [
+            {
+              "text": "Zone office",
+              "lang": "en-GB"
+            }
+          ],
+          "contactName": [
+            {
+              "text": "Duty officer",
+              "lang": "en-GB"
+            }
+          ],
+          "siteURL": "https://authority.test/zones",
+          "email": "zones@authority.test",
+          "phone": "+995000000000",
+          "purpose": "AUTHORIZATION",
+          "intervalBefore": "P2D"
+        }
+      ],
+      "dataSource": {
+        "creationDateTime": "2026-09-01T00:00:00Z",
+        "updateDateTime": "2026-09-02T00:00:00Z",
+        "originator": {
+          "text": "Test authority",
+          "lang": "en-GB"
+        }
+      }
+    }
+  },
+  "designated_from": "2026-10-01T00:00:00Z",
+  "designated_to": "2027-10-01T00:00:00Z",
+  "designation": {
+    "airspace_name": "Test U-space",
+    "services_required": [
+      "NID",
+      "GEO",
+      "FA",
+      "TI"
+    ],
+    "uas_requirements": {
+      "rid": "network"
+    },
+    "service_performance": {
+      "nid_update_hz": 1,
+      "ti_update_hz": 1,
+      "cis_latency_s": 5
+    },
+    "operational_conditions": {},
+    "airspace_constraints": {
+      "max_height_agl_m": 120
+    },
+    "in_controlled_airspace": true,
+    "adjacent_ids": [],
+    "risk_assessment_ref": "TEST-RA-1",
+    "ats_provider_id": "ANSP-TEST",
+    "cisp_id": "CISP-TEST",
+    "designation_ref": "TEST-DES-1",
+    "aip_ref": "TEST-AIP-1"
+  }
+}
