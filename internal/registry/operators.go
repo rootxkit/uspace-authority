@@ -16,74 +16,98 @@ import (
 // the personal data is sealed. The registration, its change-feed entry,
 // its events row and its projection row commit together.
 func (s *Service) CreateOperator(ctx context.Context, in NewOperator, actor audit.Actor) (Operator, error) {
-	v, err := s.validator()
+	p, err := s.prepareOperator(&in)
 	if err != nil {
 		return Operator{}, err
 	}
+	var out Operator
+	err = s.change(ctx, func(tx Tx, cs *changeSet) error {
+		var err error
+		out, err = s.insertOperator(ctx, tx, cs, &in, &p, actor)
+		return err
+	})
+	return out, err
+}
+
+// preparedOperator is what a registration computes before its
+// transaction: the number's public part and compare key, the id, the
+// sealed personal data and the secret part's salted hash.
+type preparedOperator struct {
+	public, key, id string
+	sealed          SealedOperator
+	salt            []byte
+	hash            string
+}
+
+// prepareOperator checks a registration under the active policy and
+// computes what it stores; a refusal is counted.
+func (s *Service) prepareOperator(in *NewOperator) (preparedOperator, error) {
+	v, err := s.validator()
+	if err != nil {
+		return preparedOperator{}, err
+	}
 	now := s.now()
-	public, key, err := checkNewOperator(v, &in, now)
+	public, key, err := checkNewOperator(v, in, now)
 	if err == nil && in.ValidFrom.After(now) {
 		err = core.Fieldf("valid_from", "must not be in the future")
 	}
 	if err != nil {
-		return Operator{}, s.refused(err)
+		return preparedOperator{}, s.refused(err)
 	}
-	id, err := newID()
-	if err != nil {
-		return Operator{}, err
+	p := preparedOperator{public: public, key: key}
+	if p.id, err = newID(); err != nil {
+		return preparedOperator{}, err
 	}
-	sealed, err := s.sealOperator(id, &in.PII)
-	if err != nil {
-		return Operator{}, err
+	if p.sealed, err = s.sealOperator(p.id, &in.PII); err != nil {
+		return preparedOperator{}, err
 	}
-	var salt []byte
-	var hash string
 	if in.SecretPart != "" {
-		if salt, hash, err = s.Hasher.NewSecretPart(in.SecretPart); err != nil {
-			return Operator{}, err
+		if p.salt, p.hash, err = s.Hasher.NewSecretPart(in.SecretPart); err != nil {
+			return preparedOperator{}, err
 		}
 	}
-	var out Operator
-	err = s.change(ctx, func(tx Tx, cs *changeSet) error {
-		dup := conflict("this registration number is registered already",
-			core.Fieldf("registration_number", "%q is registered already (compared on its public part, ignoring case)", public))
-		if _, err := tx.OperatorByKey(ctx, key); err == nil {
-			return dup
-		} else if !errors.Is(err, ErrNotFound) {
-			return err
-		}
-		r, err := tx.InsertOperator(ctx, OperatorRecord{
-			Operator: Operator{
-				ID: id, OperatorType: in.OperatorType, RegistrationNumber: public, CompetencyConfirmation: in.CompetencyConfirmation,
-				Authorisations: in.Authorisations, Status: StatusActive, ValidFrom: in.ValidFrom.UTC(), ValidUntil: in.ValidUntil.UTC(),
-				Source: in.Source, SourceRef: in.SourceRef, RegistryVersion: cs.version, CreatedAt: cs.at, CreatedBy: actor.ID, UpdatedAt: cs.at, UpdatedBy: actor.ID,
-			},
-			Key: key, SecretSalt: salt, SecretHash: hash, Sealed: sealed,
-		})
-		if errors.Is(err, ErrDuplicate) {
-			return dup
-		}
-		if err != nil {
-			return err
-		}
-		if err := s.feed(ctx, tx, EntityOperator, id, public, StatusActive, cs.at); err != nil {
-			return err
-		}
-		if err := tx.Record(ctx, audit.Event{
-			Actor: actor, EntityType: EntityOperator, EntityID: id, EventType: audit.EventOperatorRegistered,
-			Payload: map[string]any{
-				"registration_number": public, "operator_type": in.OperatorType, "source": in.Source,
-				"has_secret_part": hash != "", "valid_until": in.ValidUntil.UTC(), "registry_version": cs.version,
-			},
-		}); err != nil {
-			return err
-		}
-		cs.ops = append(cs.ops, projectOperator(&r.Operator))
-		cs.loosening = true // a new registration
-		out = r.Operator
-		return nil
+	return p, nil
+}
+
+// insertOperator writes a prepared registration, its change-feed entry
+// and its events row in tx, and adds its projection row to cs.
+func (s *Service) insertOperator(ctx context.Context, tx Tx, cs *changeSet, in *NewOperator, p *preparedOperator, actor audit.Actor) (Operator, error) {
+	dup := conflict("this registration number is registered already",
+		core.Fieldf("registration_number", "%q is registered already (compared on its public part, ignoring case)", p.public))
+	if _, err := tx.OperatorByKey(ctx, p.key); err == nil {
+		return Operator{}, dup
+	} else if !errors.Is(err, ErrNotFound) {
+		return Operator{}, err
+	}
+	r, err := tx.InsertOperator(ctx, OperatorRecord{
+		Operator: Operator{
+			ID: p.id, OperatorType: in.OperatorType, RegistrationNumber: p.public, CompetencyConfirmation: in.CompetencyConfirmation,
+			Authorisations: in.Authorisations, Status: StatusActive, ValidFrom: in.ValidFrom.UTC(), ValidUntil: in.ValidUntil.UTC(),
+			Source: in.Source, SourceRef: in.SourceRef, RegistryVersion: cs.version, CreatedAt: cs.at, CreatedBy: actor.ID, UpdatedAt: cs.at, UpdatedBy: actor.ID,
+		},
+		Key: p.key, SecretSalt: p.salt, SecretHash: p.hash, Sealed: p.sealed,
 	})
-	return out, err
+	if errors.Is(err, ErrDuplicate) {
+		return Operator{}, dup
+	}
+	if err != nil {
+		return Operator{}, err
+	}
+	if err := s.feed(ctx, tx, EntityOperator, p.id, p.public, StatusActive, cs.at); err != nil {
+		return Operator{}, err
+	}
+	if err := tx.Record(ctx, audit.Event{
+		Actor: actor, EntityType: EntityOperator, EntityID: p.id, EventType: audit.EventOperatorRegistered,
+		Payload: map[string]any{
+			"registration_number": p.public, "operator_type": in.OperatorType, "source": in.Source,
+			"has_secret_part": p.hash != "", "valid_until": in.ValidUntil.UTC(), "registry_version": cs.version,
+		},
+	}); err != nil {
+		return Operator{}, err
+	}
+	cs.ops = append(cs.ops, projectOperator(&r.Operator))
+	cs.loosening = true // a new registration
+	return r.Operator, nil
 }
 
 // feed writes one change-feed entry (F8: ids and statuses only).

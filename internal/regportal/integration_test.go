@@ -27,6 +27,7 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/store"
 	"github.com/rootxkit/uspace-authority/internal/store/migrate"
 	"github.com/rootxkit/uspace-authority/internal/store/pg"
+	pggen "github.com/rootxkit/uspace-authority/internal/store/pg/gen"
 	"github.com/rootxkit/uspace-authority/internal/store/storetest"
 )
 
@@ -109,10 +110,17 @@ func newIntegration(t *testing.T) *itest {
 // passed through appURL first (the admin handle keeps the plain one).
 func newIntegrationWith(t *testing.T, appURL func(string) string) *itest {
 	t.Helper()
+	return newIntegrationPool(t, appURL, 0)
+}
+
+// newIntegrationPool is newIntegrationWith with the relational pool
+// bounded to maxConns connections (0 keeps pgxpool's default).
+func newIntegrationPool(t *testing.T, appURL func(string) string, maxConns int) *itest {
+	t.Helper()
 	ctx := context.Background()
 	pgURL := storetest.Migrated(t, migrate.Relational)
 	tsURL := storetest.Migrated(t, migrate.Timeseries)
-	db, err := pg.Open(ctx, store.PoolOptions{URL: appURL(pgURL), Role: pg.AppRole, ApplicationName: "uspace-authority-test"})
+	db, err := pg.Open(ctx, store.PoolOptions{URL: appURL(pgURL), Role: pg.AppRole, ApplicationName: "uspace-authority-test", MaxConns: maxConns})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -296,7 +304,13 @@ func TestIntegrationApplicationEndToEnd(t *testing.T) {
 	// A retried registration finds the operator the approval made.
 	a := Application{ID: app.ID, IssuedNumber: approved.IssuedNumber, ValidUntil: approved.ValidUntil}
 	in := applicant()
-	again, collided, err := it.svc.registerOperator(ctx, &a, &in, secret[1], registrar)
+	var again registry.Operator
+	var collided bool
+	err = it.reg.Service.Change(ctx, func(_ *pggen.Queries, w registry.Within) error {
+		var err error
+		again, collided, err = it.svc.registerOperator(ctx, w, &a, &in, secret[1], registrar)
+		return err
+	})
 	if err != nil || collided || again.ID != approved.OperatorID {
 		t.Fatalf("retried registration %+v %v", again, err)
 	}

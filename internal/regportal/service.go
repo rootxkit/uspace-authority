@@ -69,13 +69,26 @@ const (
 	applicationTableName = "registry_applications"
 )
 
-// Registry is what the portal needs of internal/registry.
+// Registry is what the portal needs of internal/registry. What an
+// application's step asks while it holds the application's row lock is
+// asked through Read or Change, on the connection holding the lock:
+// there is no method here that would take a second one.
 type Registry interface {
 	CheckNumber(ctx context.Context, number string) (registry.PublicCheck, error)
-	NumberFree(ctx context.Context, number string) (public string, free bool, err error)
-	CreateOperator(ctx context.Context, in registry.NewOperator, actor audit.Actor) (registry.Operator, error)
-	OperatorBySource(ctx context.Context, source, ref string) (registry.Operator, bool, error)
 	ContactForLink(ctx context.Context, number string) (registry.OperatorContact, bool, error)
+	// Read runs fn in one relational transaction with a registry reader
+	// over it: what the portal asks of the registry while it holds an
+	// application's row lock is asked on that same connection.
+	Read(ctx context.Context, fn func(q *gen.Queries, r registry.Reader) error) error
+	// Change runs fn in one registry change: the approval's statements
+	// and the operator's registration commit together, on one connection.
+	Change(ctx context.Context, fn func(q *gen.Queries, w registry.Within) error) error
+}
+
+// NumberChecker answers whether a registration number is free (the
+// registry, or its reader inside a transaction).
+type NumberChecker interface {
+	NumberFree(ctx context.Context, number string) (public string, free bool, err error)
 }
 
 // Occurrences is WP-18's intake as the operator path uses it.
@@ -226,7 +239,7 @@ func draw(n int) (string, error) {
 // compare key, G-04). A number the pattern refuses is refused at once
 // (the configuration and the policy disagree: a retry cannot help); a
 // number held already is drawn again, at most a few times.
-func IssueNumber(ctx context.Context, reg Registry, prefix string, randomLen int, taken func()) (string, error) {
+func IssueNumber(ctx context.Context, reg NumberChecker, prefix string, randomLen int, taken func()) (string, error) {
 	for range maxIssueAttempts {
 		tail, err := draw(randomLen)
 		if err != nil {
