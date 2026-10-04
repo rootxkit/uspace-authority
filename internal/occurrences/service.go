@@ -3,6 +3,7 @@ package occurrences
 import (
 	"context"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 	"errors"
 	"log/slog"
@@ -181,7 +182,8 @@ func (s *Service) Refused() { s.inc(CounterInvalid) }
 
 // Intake stores a report from o, idempotently on (o.Org, report_ref): the
 // same report again answers the first receipt (Replayed), another report
-// under the same reference is 409. A late report is stored and flagged.
+// under the same reference, also one that differs only in its person
+// reference, is 409. A late report is stored and flagged.
 // A person reference without the occurrence key is 503, never stored in
 // clear. Every new report is one occurrence_received events row without
 // the reporter's identity, in the transaction that stores it.
@@ -241,7 +243,11 @@ func (s *Service) Intake(ctx context.Context, o Origin, in Input) (Receipt, erro
 			if err != nil {
 				return err
 			}
-			if held.ContentHash != nr.ContentHash {
+			same, err := s.samePerson(&held, in.PersonRef)
+			if err != nil {
+				return err
+			}
+			if held.ContentHash != nr.ContentHash || !same {
 				s.inc(CounterRefRefused)
 				return httpx.Refuse(http.StatusConflict, SlugRefConflict,
 					"another report was received under this report_ref from this reporter; a report_ref names one report",
@@ -271,6 +277,30 @@ func (s *Service) Intake(ctx context.Context, o Origin, in Input) (Receipt, erro
 		s.inc(CounterLate)
 	}
 	return out, nil
+}
+
+// samePerson reports whether the person reference sealed in held is
+// personRef. The content hash leaves the reference out (a short one is
+// guessable from its hash) and records only whether one was sent, so a
+// report under a held report_ref with another reference hashes the same
+// and is told apart here, by opening the held one. A held reference the
+// key does not open is refused: it is neither a replay nor a conflict.
+func (s *Service) samePerson(held *Report, personRef string) (bool, error) {
+	if len(held.PersonSealed) == 0 || personRef == "" {
+		return len(held.PersonSealed) == 0 && personRef == "", nil
+	}
+	if s.Sealer == nil {
+		s.inc(CounterKeyUnavailable)
+		return false, httpx.Refuse(http.StatusServiceUnavailable, SlugKeyUnavailable,
+			"the held reporter reference cannot be compared: OCCURRENCE_KEY_FILE is not configured on this instance; retry later")
+	}
+	p, err := s.Sealer.Open(held.PersonKeyID, held.PersonSealed, []byte(held.ID))
+	if err != nil {
+		s.inc(CounterReporterUnopened)
+		return false, httpx.Refuse(http.StatusInternalServerError, SlugReporterUnknown,
+			"the held reporter reference does not open under the configured occurrence key, so a replay cannot be told from another report")
+	}
+	return subtle.ConstantTimeCompare(p, []byte(personRef)) == 1, nil
 }
 
 // Get is one report.

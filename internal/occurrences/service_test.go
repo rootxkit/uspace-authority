@@ -628,3 +628,44 @@ func TestReporterThatDoesNotOpenIsStillAudited(t *testing.T) {
 		t.Fatalf("an unopened row holds the reporter: %s", raw)
 	}
 }
+
+// The content hash leaves the person reference out (a short one is
+// guessable from its hash), so a report delivered again under a held
+// report_ref with another person_ref hashes the same; it is another
+// report and is refused 409 report_ref_conflict, not answered as a
+// replay. The same person_ref again is a replay (E-01 pair). A held
+// reference that the configured key cannot open is not taken for either.
+func TestReplayWithAnotherPersonIsAConflict(t *testing.T) {
+	s, m := service(t, aware.Add(time.Hour), newSealer(t, "occ-test"))
+	ctx := context.Background()
+	first, err := s.Intake(ctx, ClientOrigin(anspActor), input(t, anspBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	again, err := s.Intake(ctx, ClientOrigin(anspActor), input(t, anspBody))
+	if err != nil || !again.Replayed || again.Report.ID != first.Report.ID {
+		t.Fatalf("the same report: %+v %v", again, err)
+	}
+	other := mutate(t, anspBody, func(m map[string]any) {
+		m["reporter"] = map[string]any{"org": "ansp-01", "person_ref": "staff-0043"}
+	})
+	if ContentHash(new(input(t, other))) != ContentHash(new(input(t, anspBody))) {
+		t.Fatal("the hashes differ: this test no longer tests the person check")
+	}
+	_, err = s.Intake(ctx, ClientOrigin(anspActor), input(t, other))
+	wantProblem(t, err, http.StatusConflict, SlugRefConflict)
+	wantField(t, err, "report_ref")
+	if strings.Contains(err.Error(), "staff-004") {
+		t.Fatalf("the refusal echoes a person reference: %v", err)
+	}
+	s.Sealer = newSealer(t, "occ-test")
+	_, err = s.Intake(ctx, ClientOrigin(anspActor), input(t, anspBody))
+	wantProblem(t, err, http.StatusInternalServerError, SlugReporterUnknown)
+	if len(m.reports) != 1 || len(m.eventsOf("occurrence_received")) != 1 {
+		t.Fatalf("%d reports, %d received rows", len(m.reports), len(m.eventsOf("occurrence_received")))
+	}
+	snap := s.Counters.Snapshot()
+	if snap[CounterReplayed] != 1 || snap[CounterRefRefused] != 1 || snap[CounterReporterUnopened] != 1 {
+		t.Fatalf("counters %v", snap)
+	}
+}

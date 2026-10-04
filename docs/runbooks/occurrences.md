@@ -39,8 +39,11 @@ the two together). What the intake does:
   nothing; another report under a held reference is 409
   `report_ref_conflict` (a sender's reference names one report). The
   replay check is the SHA-256 of the report as normalised; the reporter's
-  person reference is not hashed (only whether one was sent), so the
-  first delivery's reference is the one kept.
+  person reference is not hashed (only whether one was sent), so it is
+  compared by opening the held one: a delivery that differs only in its
+  person reference is 409 as well, and one the occurrence key cannot
+  open is 500 `reporter_unreadable`. The conflict is permanent: the
+  sender does not retry it.
 - **Late reports are accepted.** `received_at` is the database clock;
   `within_72h` is computed by the database from it, `became_aware_at`
   and the deadline in force at intake (`OCCURRENCES_REPORT_DEADLINE_S`,
