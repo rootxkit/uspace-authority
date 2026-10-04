@@ -14,6 +14,7 @@ import (
 
 	"github.com/rootxkit/uspace-core/core"
 
+	"github.com/rootxkit/uspace-authority/internal/audit"
 	"github.com/rootxkit/uspace-authority/internal/httpx"
 )
 
@@ -582,5 +583,48 @@ func TestExportByteBoundAndNoOpenTransaction(t *testing.T) {
 	snap := s.Counters.Snapshot()
 	if snap[CounterExportTooLarge] != 1 || snap[CounterExports] != 2 || spy.inTx {
 		t.Fatalf("counters %v, built in a transaction %v", snap, spy.inTx)
+	}
+}
+
+// 376/2014 Art. 16(1): an attempt to read a reporter that cannot be
+// opened (no occurrence key, or a key that does not open the row) is
+// refused and still audited, with the actor, the purpose and why, as an
+// occurrence_reporter_unopened row; it is not a read, so no
+// occurrence_reporter_viewed row is written. A read that opens is
+// audited as a read only (E-01 pair).
+func TestReporterThatDoesNotOpenIsStillAudited(t *testing.T) {
+	s, m := service(t, aware.Add(time.Hour), newSealer(t, "occ-test"))
+	ctx := context.Background()
+	rc, err := s.Intake(ctx, ClientOrigin(anspActor), input(t, anspBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Reporter(ctx, officer, rc.Report.ID, "follow-up interview"); err != nil {
+		t.Fatal(err)
+	}
+	if n := len(m.eventsOf(audit.EventOccurrenceReporterUnopened)); n != 0 {
+		t.Fatalf("%d unopened rows after a read that opened", n)
+	}
+	s.Sealer = newSealer(t, "occ-test")
+	_, err = s.Reporter(ctx, officer, rc.Report.ID, "wrong key")
+	wantProblem(t, err, http.StatusInternalServerError, SlugReporterUnknown)
+	s.Sealer = nil
+	_, err = s.Reporter(ctx, officer, rc.Report.ID, "no key")
+	wantProblem(t, err, http.StatusServiceUnavailable, SlugKeyUnavailable)
+	ev := m.eventsOf(audit.EventOccurrenceReporterUnopened)
+	if len(ev) != 2 {
+		t.Fatalf("%d unopened rows, want 2", len(ev))
+	}
+	for i, want := range []struct{ purpose, reason string }{{"wrong key", "does_not_open"}, {"no key", "key_unavailable"}} {
+		if ev[i].Actor != officer || ev[i].Purpose != want.purpose || ev[i].EntityID != rc.Report.ID || ev[i].Payload.(map[string]any)["reason"] != want.reason {
+			t.Fatalf("row %d %+v", i, ev[i])
+		}
+	}
+	if n := len(m.eventsOf(audit.EventOccurrenceReporterViewed)); n != 1 {
+		t.Fatalf("%d viewed rows, want 1", n)
+	}
+	raw, _ := json.Marshal(ev)
+	if strings.Contains(string(raw), "staff-0042") {
+		t.Fatalf("an unopened row holds the reporter: %s", raw)
 	}
 }

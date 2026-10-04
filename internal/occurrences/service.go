@@ -291,7 +291,9 @@ type ReporterView struct {
 // Reporter opens the reporter of report id for actor, with purpose
 // (required, at most MaxPurposeBytes, no control character). The read
 // is an occurrence_reporter_viewed events row, committed before the
-// identity is returned (376/2014 Art. 16(1)).
+// identity is returned (376/2014 Art. 16(1)). An attempt whose sealed
+// reference cannot be opened is refused and still committed, as an
+// occurrence_reporter_unopened events row with the purpose and why.
 func (s *Service) Reporter(ctx context.Context, actor audit.Actor, id, purpose string) (ReporterView, error) {
 	purpose = strings.TrimSpace(purpose)
 	if purpose == "" {
@@ -301,7 +303,10 @@ func (s *Service) Reporter(ctx context.Context, actor audit.Actor, id, purpose s
 	if text(&pe, "purpose", purpose, MaxPurposeBytes, false); pe.err() != nil {
 		return ReporterView{}, pe.err()
 	}
-	var v ReporterView
+	var (
+		v       ReporterView
+		refusal error
+	)
 	err := s.tx(ctx, func(tx Tx) error {
 		r, err := tx.Get(ctx, id)
 		if err != nil {
@@ -309,24 +314,34 @@ func (s *Service) Reporter(ctx context.Context, actor audit.Actor, id, purpose s
 		}
 		v = ReporterView{OccurrenceID: r.ID, ReporterOrg: r.ReporterOrg, ReportRef: r.ReportRef, HasPerson: len(r.PersonSealed) > 0}
 		if v.HasPerson {
+			reason := ""
 			if s.Sealer == nil {
 				s.inc(CounterKeyUnavailable)
-				return httpx.Refuse(http.StatusServiceUnavailable, SlugKeyUnavailable,
+				reason, refusal = "key_unavailable", httpx.Refuse(http.StatusServiceUnavailable, SlugKeyUnavailable,
 					"the reporter reference is sealed and OCCURRENCE_KEY_FILE is not configured on this instance")
-			}
-			p, err := s.Sealer.Open(r.PersonKeyID, r.PersonSealed, []byte(r.ID))
-			if err != nil {
+			} else if p, err := s.Sealer.Open(r.PersonKeyID, r.PersonSealed, []byte(r.ID)); err != nil {
 				s.inc(CounterReporterUnopened)
-				return httpx.Refuse(http.StatusInternalServerError, SlugReporterUnknown,
+				reason, refusal = "does_not_open", httpx.Refuse(http.StatusInternalServerError, SlugReporterUnknown,
 					"the reporter reference does not open under the configured occurrence key (another key id or a changed row)")
+			} else {
+				v.PersonRef = string(p)
 			}
-			v.PersonRef = string(p)
+			if refusal != nil {
+				// The attempt is audited and committed, and the refusal
+				// returned after it: an officer who asked for a reporter
+				// with a purpose is on the record whether or not it opened.
+				return tx.Audit(ctx, audit.Event{Actor: actor, Purpose: purpose, EntityType: EntityOccurrence, EntityID: r.ID,
+					EventType: audit.EventOccurrenceReporterUnopened, Payload: map[string]any{"reason": reason, "key_id": r.PersonKeyID}})
+			}
 		}
 		return tx.Audit(ctx, audit.Event{Actor: actor, Purpose: purpose, EntityType: EntityOccurrence, EntityID: r.ID,
 			EventType: audit.EventOccurrenceReporterViewed, Payload: map[string]any{"has_reporter_person": v.HasPerson}})
 	})
 	if err != nil {
 		return ReporterView{}, err
+	}
+	if refusal != nil {
+		return ReporterView{}, refusal
 	}
 	s.inc(CounterReporterViewed)
 	return v, nil

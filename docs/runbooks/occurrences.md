@@ -80,7 +80,7 @@ reporter and cannot read it (403), nor change a report.
 | Step | Operation | Role | Audit |
 |---|---|---|---|
 | Read | `GET /v1/occurrences` (filters `state`, `category`, `channel`, `from`/`to` on `received_at`, cursor), `GET /v1/occurrences/{id}` | `incident_officer`, `inspector` | none; the answers hold no reporter organisation, reference or person (`has_reporter_person` only) |
-| Reporter | `GET /v1/occurrences/{id}/reporter?purpose=...` | `incident_officer` only | `occurrence_reporter_viewed` with the purpose (a PII read), committed before the identity is returned; `Cache-Control: no-store` |
+| Reporter | `GET /v1/occurrences/{id}/reporter?purpose=...` | `incident_officer` only | `occurrence_reporter_viewed` with the purpose (a PII read), committed before the identity is returned; an attempt the key cannot open (503 `occurrence_key_unavailable`, 500 `reporter_unreadable`) is committed as `occurrence_reporter_unopened` with the purpose and the reason; `Cache-Control: no-store` |
 | Classify | `POST /v1/occurrences/{id}/classify` `{risk_classification}` | `incident_officer` | `occurrence_classified` (from, to) |
 | Analyse | `PATCH /v1/occurrences/{id}/analysis` `{analysis, follow_up, state}` | `incident_officer` | `occurrence_analysis_updated` naming what changed, never the text |
 | Export | `POST /v1/occurrences/export` `{from, to, format}` | `incident_officer` | `occurrence_export_created` with the hash |

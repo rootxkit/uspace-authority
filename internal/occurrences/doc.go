@@ -40,7 +40,9 @@
 // inspectors; the reporter (organisation, reference, person) is its own
 // operation for incident officers only, each read an
 // occurrence_reporter_viewed events row with the purpose, committed
-// before the identity is returned. Classify records the safety risk
+// before the identity is returned; an attempt that cannot open the
+// sealed reference is refused and committed as an
+// occurrence_reporter_unopened row with the purpose. Classify records the safety risk
 // class from the configured scheme (Art. 7(2)); UpdateAnalysis records
 // the analysis and follow-up and moves a report received -> classified
 // -> analysed -> closed. Every change is one events row naming what

@@ -206,11 +206,12 @@ const (
 // every de-identified export with its hash. No payload holds the
 // reporter's identity or the report's text.
 const (
-	EventOccurrenceReceived        = "occurrence_received"
-	EventOccurrenceClassified      = "occurrence_classified"
-	EventOccurrenceAnalysisUpdated = "occurrence_analysis_updated"
-	EventOccurrenceReporterViewed  = "occurrence_reporter_viewed"
-	EventOccurrenceExportCreated   = "occurrence_export_created"
+	EventOccurrenceReceived         = "occurrence_received"
+	EventOccurrenceClassified       = "occurrence_classified"
+	EventOccurrenceAnalysisUpdated  = "occurrence_analysis_updated"
+	EventOccurrenceReporterViewed   = "occurrence_reporter_viewed"
+	EventOccurrenceReporterUnopened = "occurrence_reporter_unopened"
+	EventOccurrenceExportCreated    = "occurrence_export_created"
 )
 
 // The F3411 Display Provider's events (WP-14): an oversight area added,
@@ -325,11 +326,12 @@ func DefaultCatalogue() Catalogue {
 		EventEvidencePackDownloaded: {PIIView: true},
 		EventEvidencePackVerified:   {},
 
-		EventOccurrenceReceived:        {},
-		EventOccurrenceClassified:      {},
-		EventOccurrenceAnalysisUpdated: {},
-		EventOccurrenceReporterViewed:  {PIIView: true},
-		EventOccurrenceExportCreated:   {},
+		EventOccurrenceReceived:         {},
+		EventOccurrenceClassified:       {},
+		EventOccurrenceAnalysisUpdated:  {},
+		EventOccurrenceReporterViewed:   {PIIView: true},
+		EventOccurrenceReporterUnopened: {PIIView: true},
+		EventOccurrenceExportCreated:    {},
 
 		EventDPViewCreated:           {},
 		EventDPAvailabilityRequested: {},
