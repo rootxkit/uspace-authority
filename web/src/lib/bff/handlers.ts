@@ -119,7 +119,8 @@ const UNSAFE = new Set(["POST", "PUT", "PATCH", "DELETE"]);
  * The proxy with its body bound: an unsafe method must announce its
  * length (411 otherwise) and stay within `maxBytes` (413 otherwise),
  * checked before api is called. The browser's fetch announces the length
- * of every body the console sends.
+ * of every body the console sends. It runs after the allow-list
+ * (`createBff`): a path outside it is the 404, whatever its body.
  */
 export function boundedProxy(proxy: BffHandlers["proxy"], maxBytes: number): BffHandlers["proxy"] {
   return (req) => {
@@ -169,6 +170,10 @@ export function createBff(cfg: BffConfig): BffHandlers {
     ...kit,
     proxy: (req) => {
       const path = req.nextUrl.pathname.startsWith(BFF_API_PREFIX) ? req.nextUrl.pathname.slice(BFF_API_PREFIX.length) : "";
+      // The allow-list first: the kit answers its 404 (and counts it)
+      // without calling api, so an unknown path is never the bound's 411
+      // or 413.
+      if (!PROXY_ALLOW_PATHS.some((re) => re.test(path))) return kit.proxy(req);
       if (methodRefused(req.method, path)) {
         return Promise.resolve(problem(405, "method_not_allowed", "Method not allowed", `${req.method} is not served on this path`));
       }

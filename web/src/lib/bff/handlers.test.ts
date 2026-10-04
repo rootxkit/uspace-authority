@@ -215,8 +215,8 @@ describe("proxy", () => {
     expect(api.calls.map((c) => new URL(c.url).pathname)).toEqual(paths);
   });
 
-  const write = (method: string, body: string | null, headers: Record<string, string> = {}) =>
-    new NextRequest(`${ORIGIN}/_bff/api/v1/registry/operators`, {
+  const write = (method: string, body: string | null, headers: Record<string, string> = {}, path = "/v1/registry/operators") =>
+    new NextRequest(`${ORIGIN}/_bff/api${path}`, {
       method,
       headers: { cookie: "uspace_session=header.payload.sig; uspace_csrf=proxy-csrf-1", "x-csrf-token": "proxy-csrf-1", host: "console.test", origin: ORIGIN, ...headers },
       ...(body === null ? {} : { body }),
@@ -241,6 +241,25 @@ describe("proxy", () => {
     const req = write("PATCH", null);
     expect(req.headers.get("content-length")).toBeNull();
     expect((await createBff(cfg(api.fetch)).proxy(req)).status).toBe(411);
+    expect(api.calls).toEqual([]);
+  });
+
+  it("forwards a body-less POST that announces content-length: 0 (the pair of the refusals around it)", async () => {
+    const api = fakeApi();
+    const req = write("POST", null, { "content-length": "0" });
+    expect(req.headers.get("content-length")).toBe("0");
+    expect((await createBff(cfg(api.fetch)).proxy(req)).status).toBe(200);
+    expect(api.calls.map((c) => `${c.method} ${new URL(c.url).pathname}`)).toEqual(["POST /v1/registry/operators"]);
+  });
+
+  it("a write to a path outside the allow-list is its 404, never the body bound's 411 or 413", async () => {
+    const api = fakeApi();
+    const bff = createBff({ ...cfg(api.fetch), proxyMaxBodyBytes: 16 });
+    const unannounced = write("POST", null, {}, "/v1/users");
+    expect(unannounced.headers.get("content-length")).toBeNull();
+    expect((await bff.proxy(unannounced)).status).toBe(404);
+    expect((await bff.proxy(write("PUT", "0123456789abcdefg", { "content-length": "17" }, "/v1/users"))).status).toBe(404);
+    expect((await bff.proxy(write("PATCH", "{}", { "content-length": "2" }, "/v1/zones/TSTP0012"))).status).toBe(404);
     expect(api.calls).toEqual([]);
   });
 
