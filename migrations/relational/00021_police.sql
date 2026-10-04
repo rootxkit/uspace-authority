@@ -37,6 +37,25 @@ ALTER TABLE users ADD CONSTRAINT users_roles_check CHECK (
     (realm = 'console' AND roles <@ ARRAY['viewer', 'inspector', 'registrar', 'incident_officer', 'admin', 'auditor']::text[])
     OR (realm = 'police' AND roles <@ ARRAY['police.query']::text[])
 );
+-- 00005 admitted the police realm without an agency. An account made
+-- before this migration that breaks the agency rule stops it here,
+-- naming the account and the remedy, instead of with a bare constraint
+-- violation; no agency is guessed and no account is changed.
+-- +goose StatementBegin
+DO $$
+DECLARE
+    bad text;
+BEGIN
+    SELECT string_agg(id, ', ' ORDER BY id) INTO bad FROM users
+    WHERE (realm = 'police') <> (agency IS NOT NULL)
+       OR (agency IS NOT NULL AND agency !~ '^[A-Za-z0-9][A-Za-z0-9 ._-]{0,99}$');
+    IF bad IS NOT NULL THEN
+        RAISE EXCEPTION 'users_police_agency: set the agency of these police accounts (or clear it on these console accounts) before migrating: %', bad
+            USING ERRCODE = 'check_violation';
+    END IF;
+END
+$$;
+-- +goose StatementEnd
 ALTER TABLE users ADD CONSTRAINT users_police_agency CHECK (
     (realm = 'police') = (agency IS NOT NULL)
     AND (agency IS NULL OR (agency ~ '^[A-Za-z0-9][A-Za-z0-9 ._-]{0,99}$'))

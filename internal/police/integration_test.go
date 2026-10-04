@@ -303,6 +303,37 @@ func TestIntegrationUsersConstraintsFollowTheRealm(t *testing.T) {
 	}
 }
 
+// 00021 meets a police account made before it (00005 admitted the realm
+// without an agency): the migration stops naming the account and the
+// remedy, rather than with a bare constraint violation; once the agency
+// is set, it applies.
+func TestIntegrationPoliceMigrationNamesAnAccountWithoutAgency(t *testing.T) {
+	ctx := context.Background()
+	u := storetest.Migrated(t, migrate.Relational)
+	db := storetest.Open(t, u)
+	if err := migrate.DownTo(ctx, db, migrate.Relational, 20); err != nil {
+		t.Fatal(err)
+	}
+	const early = "00000000000000000000000000000abc"
+	if _, err := db.Exec(`INSERT INTO users (id, username, roles, realm, created_at, created_by, updated_at, updated_by)
+		VALUES ($1, 'early.officer', '{}', 'police', now(), 't', now(), 't')`, early); err != nil {
+		t.Fatal(err)
+	}
+	_, err := migrate.Up(ctx, db, migrate.Relational, nil)
+	if err == nil || !strings.Contains(err.Error(), early) || !strings.Contains(err.Error(), "set the agency") {
+		t.Fatalf("00021 over a police account without an agency: %v", err)
+	}
+	if v, verr := migrate.Version(ctx, db, migrate.Relational); verr != nil || v != 20 {
+		t.Fatalf("version %d after the refusal: %v", v, verr)
+	}
+	if _, err := db.Exec(`UPDATE users SET agency = 'TEST-POLICE' WHERE id = $1`, early); err != nil {
+		t.Fatal(err)
+	}
+	if v, err := migrate.Up(ctx, db, migrate.Relational, nil); err != nil || v != 21 {
+		t.Fatalf("00021 once the agency is set: %d %v", v, err)
+	}
+}
+
 // The account's row decides the address on every query, through the
 // real accounts store: an allow-list changed in the database applies
 // at once.
