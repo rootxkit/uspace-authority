@@ -98,6 +98,28 @@ type RegistryHandler interface {
 	ValidateRegistryBatch(ctx context.Context, request gen.ValidateRegistryBatchRequestObject) (gen.ValidateRegistryBatchResponseObject, error)
 }
 
+// RegistryImportHandler serves POST /v1/registry/import (api, WP-20):
+// the uas.gov.ge import under the rules file.
+type RegistryImportHandler interface {
+	ImportRegistry(ctx context.Context, request gen.ImportRegistryRequestObject) (gen.ImportRegistryResponseObject, error)
+}
+
+// RegistryPortalHandler serves the public check, the registration
+// applications and the operator's occurrence link (api, WP-20).
+type RegistryPortalHandler interface {
+	CheckRegistration(ctx context.Context, request gen.CheckRegistrationRequestObject) (gen.CheckRegistrationResponseObject, error)
+	SubmitRegistryApplication(ctx context.Context, request gen.SubmitRegistryApplicationRequestObject) (gen.SubmitRegistryApplicationResponseObject, error)
+	ListRegistryApplications(ctx context.Context, request gen.ListRegistryApplicationsRequestObject) (gen.ListRegistryApplicationsResponseObject, error)
+	GetRegistryApplicationStatus(ctx context.Context, request gen.GetRegistryApplicationStatusRequestObject) (gen.GetRegistryApplicationStatusResponseObject, error)
+	VerifyRegistryApplication(ctx context.Context, request gen.VerifyRegistryApplicationRequestObject) (gen.VerifyRegistryApplicationResponseObject, error)
+	GetRegistryApplicationPersonalData(ctx context.Context, request gen.GetRegistryApplicationPersonalDataRequestObject) (gen.GetRegistryApplicationPersonalDataResponseObject, error)
+	StartRegistryApplicationReview(ctx context.Context, request gen.StartRegistryApplicationReviewRequestObject) (gen.StartRegistryApplicationReviewResponseObject, error)
+	ApproveRegistryApplication(ctx context.Context, request gen.ApproveRegistryApplicationRequestObject) (gen.ApproveRegistryApplicationResponseObject, error)
+	RefuseRegistryApplication(ctx context.Context, request gen.RefuseRegistryApplicationRequestObject) (gen.RefuseRegistryApplicationResponseObject, error)
+	RequestOperatorLink(ctx context.Context, request gen.RequestOperatorLinkRequestObject) (gen.RequestOperatorLinkResponseObject, error)
+	CreateOperatorOccurrence(ctx context.Context, request gen.CreateOperatorOccurrenceRequestObject) (gen.CreateOperatorOccurrenceResponseObject, error)
+}
+
 // RIDReceiversHandler serves the admin operations of /v1/rid/receivers*
 // and the raw frames /v1/rid/frames* (api, WP-7). The receivers' own
 // config and heartbeat endpoints are x-receiver operations served
@@ -250,6 +272,8 @@ type Server struct {
 	AuthHandler
 	UsersHandler
 	RegistryHandler
+	RegistryImportHandler
+	RegistryPortalHandler
 	RIDReceiversHandler
 	CellsHandler
 	SourcesHandler
