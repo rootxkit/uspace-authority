@@ -900,6 +900,58 @@ type Detect struct {
 	WorkerID string `env:"DETECT_WORKER_ID" default:"detect-1" help:"this worker's id in the cell ownership map (KV cells, PUT /v1/cells)"`
 	Cells    string `env:"CELLS" enum:"all" help:"all: judge every cell whatever the ownership map says (the demo); empty: the cells the map gives DETECT_WORKER_ID, and refuse to start with none"`
 	DetectTuning
+	DetectIntents
+}
+
+// DetectIntents is the no_authorisation detector's access to the DSS
+// (WP-26; spec 04 §3.3, 02 F6; docs/PLAN.md Q-A5): POST
+// /dss/v1/operational_intent_references/query with a token for the DSS's
+// host granting utm.conformance_monitoring_sa, from this system's client
+// at its own token service. Without DSS_BASE_URL and a client secret
+// nothing is read, and while a U-space airspace is in force every status
+// line says no_authorisation is not judged (E-02). The thresholds of the
+// judgement (no_authorisation_grace_s, no_authorisation_severity,
+// height_limit_in_uspace) are authority_policy columns (INV-03); these
+// are the bounds and periods of the reads.
+type DetectIntents struct {
+	DSSBaseURL         string  `env:"DSS_BASE_URL" kind:"url" help:"InterUSS DSS base URL (F3548 under /dss/v1); its host is the audience of the tokens towards it (M18); unset: no_authorisation is not judged"`
+	IssuerURL          string  `env:"ISSUER_URL" kind:"url" help:"this system's issuer, whose /oauth/token the detector asks for its DSS token (unless DETECT_TOKEN_URL)"`
+	ClientID           string  `env:"DETECT_CLIENT_ID" default:"authority-01" help:"this system's client id at its own token service for the detector's DSS reads (M24)"`
+	ClientSecretFile   string  `env:"DETECT_CLIENT_SECRET_FILE" help:"file holding that client's secret (client_secret_post); unset: no DSS read is made and no_authorisation is not judged"`
+	DetectTokenURL     string  `env:"DETECT_TOKEN_URL" kind:"url" help:"the token endpoint the detector asks; default ISSUER_URL + /oauth/token"`
+	IntentRequeryS     int     `env:"DETECT_INTENT_REQUERY_S" default:"5" min:"1" max:"3600" help:"period of the read of every U-space airspace in force (F3548 subscriptions need utm.strategic_coordination, which the authority does not hold, Q-A5: the period stands in for them)"`
+	IntentHorizonS     int     `env:"DETECT_INTENT_HORIZON_S" default:"3600" min:"60" max:"86400" help:"how far ahead an airspace is read (the next hour)"`
+	IntentRecheckMS    int     `env:"DETECT_INTENT_RECHECK_MS" default:"2000" min:"100" max:"60000" help:"least time between two reads of one aircraft's position"`
+	IntentChecksPerS   int     `env:"DETECT_INTENT_CHECKS_PER_S" default:"20" min:"1" max:"1000" help:"aircraft positions read from the DSS per second at most; the rest wait (counted intent_checks_deferred)"`
+	IntentRadiusM      float64 `env:"DETECT_INTENT_CHECK_RADIUS_M" default:"10" min:"1" max:"1000" help:"radius of the area asked around an aircraft's position"`
+	IntentVMarginM     float64 `env:"DETECT_INTENT_VERTICAL_MARGIN_M" default:"10" min:"0" max:"1000" help:"each way around an aircraft's WGS84 height in the area asked"`
+	IntentOutcomeMaxS  int     `env:"DETECT_INTENT_OUTCOME_MAX_AGE_S" default:"10" min:"1" max:"600" help:"how long an aircraft's last judgement stands; past it the aircraft is suspended (neither raised nor cleared)"`
+	IntentMaxAircraft  int     `env:"DETECT_INTENT_MAX_AIRCRAFT" default:"10000" min:"1" max:"1000000" help:"aircraft inside U-space airspace held for no_authorisation; past it a new one is refused and counted (E-10)"`
+	IntentMaxZones     int     `env:"DETECT_INTENT_MAX_ZONES" default:"64" min:"1" max:"10000" help:"U-space airspaces read; past it the rest are counted and not judged"`
+	IntentMaxCached    int     `env:"DETECT_INTENT_MAX_CACHED" default:"10000" min:"1" max:"1000000" help:"operational intent references held; past it the oldest withdrawn, else the one seen longest ago, is dropped and counted (E-10); none is kept past 24 h"`
+	IntentMaxRefs      int     `env:"DETECT_INTENT_MAX_REFS" default:"1000" min:"1" max:"100000" help:"references taken from one DSS answer; a larger answer is refused whole and the detector suspended"`
+	IntentMaxBodyBytes int     `env:"DETECT_INTENT_MAX_BODY_BYTES" default:"1048576" min:"1024" max:"4194304" help:"largest DSS answer read"`
+	IntentTimeoutMS    int     `env:"DETECT_INTENT_REQUEST_TIMEOUT_MS" default:"5000" min:"100" max:"60000" help:"deadline of one DSS read"`
+}
+
+// TokenURL is DETECT_TOKEN_URL, or ISSUER_URL's /oauth/token, or "".
+func (c *DetectIntents) TokenURL() string {
+	if c.DetectTokenURL != "" {
+		return c.DetectTokenURL
+	}
+	if c.IssuerURL == "" {
+		return ""
+	}
+	return strings.TrimSuffix(c.IssuerURL, "/") + "/oauth/token"
+}
+
+// Validate checks what the tags cannot: a client secret needs a token
+// endpoint.
+func (c *Detect) Validate() error {
+	if c.ClientSecretFile != "" && c.TokenURL() == "" {
+		return core.Fieldf("DETECT_TOKEN_URL", "required with DETECT_CLIENT_SECRET_FILE when ISSUER_URL is unset")
+	}
+	return nil
 }
 
 // DetectTuning are detect's bounds and periods (WP-12). The judgement's

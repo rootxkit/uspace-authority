@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -164,5 +165,32 @@ func TestIntegrationDetectSaysWhatItCannotJudge(t *testing.T) {
 	}
 	if !errorStatus {
 		t.Fatalf("no status line at error level:\n%s", out.b.String())
+	}
+}
+
+// WP-26, E-02: detect says at start whether it judges no_authorisation.
+// Without a DSS it says so at error level; with a DSS and a client secret
+// it names its reads; a secret it cannot read refuses to start, naming
+// the variable.
+func TestIntegrationDetectSaysWhetherItJudgesNoAuthorisation(t *testing.T) {
+	l, code, out := run(t, map[string]string{"CELLS": "all"}, "no DSS for the detector: no_authorisation is not judged and height_limit_in_uspace skip_when_authorised has no effect while a U-space airspace is in force")
+	if code != proc.ExitOK || l == nil || l["level"] != "ERROR" {
+		t.Fatalf("no DSS: exit %d %v\n%s", code, l, out.b.String())
+	}
+
+	secret := filepath.Join(t.TempDir(), "detect-client")
+	if err := os.WriteFile(secret, []byte("test-secret\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	l, code, out = run(t, map[string]string{"CELLS": "all", "DSS_BASE_URL": "http://127.0.0.1:1", "ISSUER_URL": "http://127.0.0.1:1",
+		"DETECT_CLIENT_SECRET_FILE": secret}, "no_authorisation detector reads the DSS (utm.conformance_monitoring_sa, Q-A5)")
+	if code != proc.ExitOK || l == nil || l["requery"] == nil || l["checks_per_s"] != 20.0 {
+		t.Fatalf("with a DSS: exit %d %v\n%s", code, l, out.b.String())
+	}
+
+	l, code, out = run(t, map[string]string{"CELLS": "all", "DSS_BASE_URL": "http://127.0.0.1:1", "ISSUER_URL": "http://127.0.0.1:1",
+		"DETECT_CLIENT_SECRET_FILE": filepath.Join(t.TempDir(), "missing")}, "process failed")
+	if code != proc.ExitFailed || l == nil || !strings.Contains(l["error"].(string), "DETECT_CLIENT_SECRET_FILE") {
+		t.Fatalf("unreadable secret: exit %d %v\n%s", code, l, out.b.String())
 	}
 }

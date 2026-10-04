@@ -3971,7 +3971,15 @@ type Policy struct {
 	// MaxLatencyS Default 5.
 	MaxLatencyS      float64  `json:"max_latency_s"`
 	MismatchSeverity Severity `json:"mismatch_severity"`
-	Note             string   `json:"note"`
+
+	// NoAuthorisationGraceS WP-26: how long an aircraft inside a U-space airspace may show
+	// no matching operational intent before no_authorisation is
+	// raised (default 10; pending GCAA, spec Q2).
+	// no_authorisation_severity (default warning, pending GCAA) is
+	// the severity it is raised at.
+	NoAuthorisationGraceS   float64  `json:"no_authorisation_grace_s"`
+	NoAuthorisationSeverity Severity `json:"no_authorisation_severity"`
+	Note                    string   `json:"note"`
 
 	// PressureUncertaintyM Pressure-altitude margin (default 250).
 	PressureUncertaintyM float64 `json:"pressure_uncertainty_m"`
@@ -4041,7 +4049,15 @@ type PolicyInput struct {
 	// MaxLatencyS Default 5.
 	MaxLatencyS      float64  `json:"max_latency_s"`
 	MismatchSeverity Severity `json:"mismatch_severity"`
-	Note             *string  `json:"note,omitempty"`
+
+	// NoAuthorisationGraceS WP-26: how long an aircraft inside a U-space airspace may show
+	// no matching operational intent before no_authorisation is
+	// raised (default 10; pending GCAA, spec Q2).
+	// no_authorisation_severity (default warning, pending GCAA) is
+	// the severity it is raised at.
+	NoAuthorisationGraceS   *float64  `json:"no_authorisation_grace_s,omitempty"`
+	NoAuthorisationSeverity *Severity `json:"no_authorisation_severity,omitempty"`
+	Note                    *string   `json:"note,omitempty"`
 
 	// PressureUncertaintyM Pressure-altitude margin (default 250).
 	PressureUncertaintyM float64 `json:"pressure_uncertainty_m"`

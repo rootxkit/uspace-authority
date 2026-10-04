@@ -93,6 +93,7 @@
   "authority.tracks.title": "საჰაერო ხომალდები",
   "authority.tracks.unverified": "როგორც მაუწყებლობით, დაუდასტურებელი",
   "authority.tracks.unverified_provider": "როგორც პროვაიდერის მიერ მოწოდებული, დაუდასტურებელი",
+  "authority.violation.clear.authorised": "ავტორიზაცია ზღუდავს სიმაღლეს (U-space საჰაერო სივრცე)",
   "authority.violation.clear.flight_ended": "ფრენა დასრულდა",
   "authority.violation.clear.landed": "საჰაერო ხომალდი დაეშვა",
   "authority.violation.clear.reconfigured": "ზონები ან პოლიტიკა შეიცვალა",

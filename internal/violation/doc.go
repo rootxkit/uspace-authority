@@ -5,7 +5,9 @@
 // consumer persists (internal/violations). It holds the wire types, their
 // validation and the subject, and nothing that judges.
 //
-// One violation per raise of an uspace-core alerting key: raised once,
+// One violation per raise of an uspace-core alerting key (or, for
+// no_authorisation, per case of an aircraft in a U-space airspace,
+// WP-26): raised once,
 // republished every second as updated while it holds (C-08), and
 // cleared once with the reason (C-14). Each carries the policy_version
 // it was judged with, the captured_at of the triggering sample, the

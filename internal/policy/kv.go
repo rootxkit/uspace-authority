@@ -54,6 +54,11 @@ func Encode(p Policy, producer string, now time.Time) ([]byte, error) {
 // refused, naming the field: a follower never takes them (E-15).
 func Decode(raw []byte) (Policy, error) {
 	var env bus.Envelope[ActiveBody]
+	// A value an api older than WP-26 wrote has no no_authorisation
+	// members: it carries their defaults, as migration 00024 gave every
+	// stored version, rather than being refused for a zero grace.
+	env.Body.NoAuthorisationGraceS = DefaultNoAuthorisationGraceS
+	env.Body.NoAuthorisationSeverity = DefaultNoAuthorisationSeverity
 	if err := json.Unmarshal(raw, &env); err != nil {
 		return Policy{}, &core.FieldError{Field: "body", Reason: "not a policy/active/v1 message"}
 	}

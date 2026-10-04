@@ -2,23 +2,69 @@ package detectsvc
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/rootxkit/uspace-core/core"
+	"github.com/rootxkit/uspace-core/zones"
 
 	"github.com/rootxkit/uspace-authority/internal/bus"
 	"github.com/rootxkit/uspace-authority/internal/cell"
 	"github.com/rootxkit/uspace-authority/internal/config"
 	"github.com/rootxkit/uspace-authority/internal/ground"
+	"github.com/rootxkit/uspace-authority/internal/intents"
 	"github.com/rootxkit/uspace-authority/internal/policy"
 	"github.com/rootxkit/uspace-authority/internal/proc"
 	"github.com/rootxkit/uspace-authority/internal/sources"
 	"github.com/rootxkit/uspace-authority/internal/store"
+	"github.com/rootxkit/uspace-authority/internal/tokens"
 	"github.com/rootxkit/uspace-authority/internal/zonesvc"
 )
+
+// IntentsBoard is the no_authorisation detector's board over the DSS
+// of c, or nil (said at error level) without a DSS or a client secret.
+func IntentsBoard(rt *proc.Runtime, c *config.DetectIntents, zs func() []*zones.Zone) (*intents.Board, error) {
+	if c.DSSBaseURL == "" || c.ClientSecretFile == "" {
+		rt.Logger.Error("no DSS for the detector: no_authorisation is not judged and height_limit_in_uspace skip_when_authorised has no effect while a U-space airspace is in force",
+			slog.Bool("dss_base_url_set", c.DSSBaseURL != ""), slog.Bool("client_secret_set", c.ClientSecretFile != ""))
+		return nil, nil
+	}
+	raw, err := os.ReadFile(c.ClientSecretFile)
+	if err != nil {
+		return nil, fmt.Errorf("DETECT_CLIENT_SECRET_FILE: cannot be read: %w", err)
+	}
+	tc, err := tokens.NewClient(tokens.ClientConfig{TokenURL: c.TokenURL(), ClientID: c.ClientID, ClientSecret: strings.TrimSpace(string(raw))})
+	if err != nil {
+		return nil, err
+	}
+	rt.AddCounters("detect_token_client", tc.Counters())
+	return NewIntentsBoard(rt, c, &intents.Client{Tokens: tc, DSS: c.DSSBaseURL, MaxBody: int64(c.IntentMaxBodyBytes), MaxRefs: c.IntentMaxRefs}, zs), nil
+}
+
+// NewIntentsBoard is the board of c over dss, its counters on the status
+// line.
+func NewIntentsBoard(rt *proc.Runtime, c *config.DetectIntents, dss intents.DSS, zs func() []*zones.Zone) *intents.Board {
+	s := intents.DefaultSettings()
+	s.Requery, s.Horizon = time.Duration(c.IntentRequeryS)*time.Second, time.Duration(c.IntentHorizonS)*time.Second
+	s.Recheck, s.ChecksPerStep = time.Duration(c.IntentRecheckMS)*time.Millisecond, c.IntentChecksPerS
+	s.CheckRadiusM, s.VerticalMarginM = c.IntentRadiusM, c.IntentVMarginM
+	s.OutcomeMaxAge = time.Duration(c.IntentOutcomeMaxS) * time.Second
+	s.MaxTracks, s.MaxZones, s.MaxCached = c.IntentMaxAircraft, c.IntentMaxZones, c.IntentMaxCached
+	s.Timeout = time.Duration(c.IntentTimeoutMS) * time.Millisecond
+	counters := &core.Counters{}
+	rt.AddCounters("intents", counters)
+	b := intents.NewBoard(s, dss, zs, counters)
+	b.Logger, b.Limiter = rt.Logger, rt.Limiter
+	rt.Logger.Info("no_authorisation detector reads the DSS (utm.conformance_monitoring_sa, Q-A5)",
+		slog.Duration("requery", s.Requery), slog.Duration("horizon", s.Horizon), slog.Int("checks_per_s", s.ChecksPerStep),
+		slog.Float64("check_radius_m", s.CheckRadiusM), slog.Int("max_aircraft", s.MaxTracks), slog.Int("max_cached", s.MaxCached))
+	return b
+}
 
 // Run is detect's body once the bus, the ground and the claim are in
 // hand (cmd/detect): it follows the source switches, the zones and
@@ -64,6 +110,18 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.Detect, bp *bus.Proc
 	wg.Go(func() { kv.Follow(ctx, pf, time.Duration(cfg.PolicyRereadS)*time.Second, rt.Logger) })
 
 	shared := &Shared{ZoneReader: zr, Restrictions: rr, PolicyF: pf, SourcesF: srcF, Ground: g}
+	// no_authorisation (WP-26): the operational intents of every U-space
+	// airspace in force, read from the DSS; without one the detector is
+	// unconfigured and says so while an airspace is in force (E-02).
+	board, err := IntentsBoard(rt, &cfg.DetectIntents, func() []*zones.Zone { return shared.Zones().Zones })
+	if err != nil {
+		return err
+	}
+	if board != nil {
+		shared.Intents = board
+		rt.AddStatus(board.StatusAttrs)
+		wg.Go(func() { board.Run(ctx, time.Second) })
+	}
 	rt.AddStatus(shared.StatusAttrs)
 	rt.AddStatusLevel(shared.Level)
 

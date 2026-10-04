@@ -33,6 +33,11 @@
 //     aircraft of a source switched off as source_disabled (B-11, SC-08).
 //   - The ground (internal/ground): zones.Env at each track's position,
 //     never 0 m for an unknown ground (D-04).
+//   - The operational intents (internal/intents Board, WP-26): every
+//     U-space airspace in force read from the DSS, and each aircraft
+//     inside one asked at its position; nil without DSS_BASE_URL and
+//     DETECT_CLIENT_SECRET_FILE, and then no_authorisation is not judged
+//     (counted, at error level while an airspace is in force).
 //
 // A new zone set or policy rebuilds the monitor (core's Monitor takes both
 // at construction) and observes each aircraft's last live sample again,
@@ -56,12 +61,39 @@
 // height_agl_m, the DEM dataset in terrain_source), zone -> zone_incursion
 // (except a USPACE zone: presence, recorded as in_uspace on the aircraft's
 // violations), identification -> unregistered, identification_mismatch ->
-// identification_mismatch. A severity change is published as updated under
+// identification_mismatch, and the no_authorisation detector below. A
+// severity change is published as updated under
 // the same violation_id (C-07). Each raise copies the last
 // DETECT_EXCERPT_WINDOW_S of the aircraft's samples into evidence_excerpt
 // (bounded, E-10); every open violation is republished every second with
 // its current numbers and the samples since (C-08); a clear carries its
 // reason and the numbers at clearing (C-14).
+//
+// # no_authorisation and the 120 m rule in U-space (WP-26)
+//
+// Each presence of an aircraft in a U-space airspace (the monitor's
+// USPACE zone raise) is a case; its live samples ask the board for the
+// intents at the aircraft (alt_wgs84_m as the height when the source is
+// geodetic or network). Every tick a case with no outcome standing (the
+// DSS unavailable, not checked yet) is suspended: its grace restarts and
+// nothing is raised or cleared on a match. An unmatched outcome for
+// longer than the policy's no_authorisation_grace_s raises
+// no_authorisation (severity no_authorisation_severity; key
+// no_authorisation:<country>:<identifier>:<aircraft>; zone the airspace;
+// detail the candidates considered and why each failed, the DSS state,
+// and identity not_exposed). A match for clear_after_s clears it
+// resolved; leaving the airspace clears it with the presence's reason
+// (resolved after the monitor's hysteresis, stale, landed,
+// source_disabled); a rebuild that no longer raises the presence clears
+// it reconfigured. It is republished every second while open (C-08).
+//
+// With height_limit_in_uspace skip_when_authorised, height_120m is not
+// published for an aircraft inside U-space airspace whose last outcome
+// matched with its height checked (spec 01 §7: the authorised volume
+// caps it): a raise is held, an open one clears authorised, and a held
+// one is raised the moment the match is lost while the monitor still
+// holds the condition. Unmatched or unknown aircraft are judged against
+// 120 m. With evaluate (the default) nothing changes.
 //
 // # Never silent
 //

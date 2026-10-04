@@ -352,6 +352,19 @@ Unreleased; the format follows Keep a Changelog.
   `REGISTRY_OPERATOR_REPORTS=on`; the mail outbox sent after the commit
   with bounded retries and `en`/`ka` catalogues; the registry-import
   and registry-portal runbooks. Defaults pending GCAA.
+- WP-26: the `no_authorisation` detector (`internal/intents`,
+  `internal/detectsvc/noauth.go`, migration `00024_no_authorisation_policy`):
+  every U-space airspace in force read from the DSS
+  (`queryOperationalIntentReferences`, `utm.conformance_monitoring_sa`)
+  into a bounded cache never older than 24 h, each aircraft inside one
+  asked at its position; unmatched past `no_authorisation_grace_s`
+  raises with the candidates and why each failed, a match or the exit
+  clears it, the DSS down suspends it (never a clear); with
+  `height_limit_in_uspace = skip_when_authorised` the 120 m rule is
+  lifted for a matched aircraft whose height was checked (clear reason
+  `authorised`); policy defaults pending GCAA; the fake DSS answers the
+  query; spec gap Q-A22 (no details, identity or subscription with the
+  decided scope); the no-authorisation runbook.
 - WP-27: retention, archive and record verification (`internal/retention`,
   `internal/archive`, relational `00024_retention`, timeseries
   `00013_archive`). The spec 08 Q8 periods as configuration, pending

@@ -179,18 +179,20 @@ const VIOLATION_KINDS: readonly ViolationBody["kind"][] = [
   "zone_incursion",
   "unregistered",
   "identification_mismatch",
+  "no_authorisation",
 ];
 const VIOLATION_STATES: readonly ViolationBody["state"][] = ["raised", "updated", "cleared"];
 const KIT_CLEAR_REASONS: readonly ClearReason[] = ["resolved", "stale", "source_disabled", "flight_ended", "landed"];
 const WIRE_CLEAR_REASONS: readonly NonNullable<ViolationBody["clear_reason"]>[] = [
   ...(KIT_CLEAR_REASONS as readonly NonNullable<ViolationBody["clear_reason"]>[]),
   "reconfigured",
+  "authorised",
 ];
 
 /** A violation as the console keeps it: the kit's alert, with the members the panel shows. */
 export interface AdaptedViolation {
   alert: AlertInput;
-  /** The clear reason as sent; `reconfigured` has no kit word and is kept here. */
+  /** The clear reason as sent; `reconfigured` and `authorised` have no kit word and are kept here. */
   clearReason: ViolationBody["clear_reason"];
   serial: string | null;
   /** The public part of the registration number only, as sent (G-04). */
