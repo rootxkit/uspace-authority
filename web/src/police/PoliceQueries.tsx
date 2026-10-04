@@ -147,9 +147,19 @@ function Fleet({ fleet, truncated }: { fleet: readonly S["PoliceUAS"][]; truncat
   );
 }
 
+/**
+ * One React key per position row. Two positions may share their time
+ * (two sources, a repeated broadcast), so the time alone is not a key;
+ * the row's place in api's answer, which never reorders, makes it one.
+ */
+export function positionRowKeys(positions: readonly { at: string }[]): string[] {
+  return positions.map((p, i) => `${i}|${p.at}`);
+}
+
 function PositionsTable({ a }: { a: S["PoliceAircraft"] }) {
   const t = useT();
   const { lang } = useLang();
+  const keys = positionRowKeys(a.positions);
   return (
     <Table>
       <TableCaption>{t("authority.police.positions", { track: a.track_id })}</TableCaption>
@@ -164,8 +174,8 @@ function PositionsTable({ a }: { a: S["PoliceAircraft"] }) {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {a.positions.map((p) => (
-          <TableRow key={p.at}>
+        {a.positions.map((p, i) => (
+          <TableRow key={keys[i]}>
             <TableCell>{fmtTimeUTC(p.at, lang, { seconds: true })}</TableCell>
             <TableCell className="font-mono">{`${fmtNum(p.lat_deg, 6)}, ${fmtNum(p.lon_deg, 6)}`}</TableCell>
             <TableCell>{p.alt_source === "pressure" ? fmtAltitude(null, "pressure", lang) : fmtAltitude(p.alt_amsl_m ?? null, "AMSL", lang)}</TableCell>
