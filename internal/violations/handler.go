@@ -211,7 +211,20 @@ func (h Handler) GetViolation(ctx context.Context, req gen.GetViolationRequestOb
 	if err != nil {
 		return nil, err
 	}
+	seg := h.Service.Segmenting(ctx, v.EvidenceExcerpt)
+	v.ExcerptSegmenting = &seg
 	return gen.GetViolation200JSONResponse(v), nil
+}
+
+// Segmenting is the excerpt's segments and holes (CutExcerpt), or why
+// there are none.
+func (s *Service) Segmenting(ctx context.Context, excerpt []map[string]any) gen.ViolationExcerptSegmenting {
+	if s.CutExcerpt == nil {
+		why := "the excerpt is not cut by this process: its samples are shown unjoined"
+		return gen.ViolationExcerptSegmenting{State: gen.ViolationExcerptSegmentingStateUnavailable, Reason: &why,
+			Segments: []gen.ViolationExcerptSegment{}, Holes: []gen.ViolationExcerptHole{}, Unplaced: []int{}}
+	}
+	return s.CutExcerpt(ctx, excerpt)
 }
 
 // ReviewViolation records an inspector's decision.

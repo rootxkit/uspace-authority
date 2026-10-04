@@ -6848,6 +6848,68 @@ components:
             reviewed_by: {type: [string, "null"]}
             review_note: {type: [string, "null"]}
             incident_requested: {type: boolean}
+            excerpt_segmenting:
+              $ref: "#/components/schemas/ViolationExcerptSegmenting"
+    # WP-23: the excerpt cut into segments and holes for the console, by
+    # the rule of the evidence packs (WP-17, B-13), so the console draws
+    # holes as holes and never judges where one is.
+    ViolationExcerptSegmenting:
+      type: object
+      description: |
+        The evidence excerpt cut as an evidence pack cuts a track
+        (docs/runbooks/incidents.md, B-13): at every silence longer than
+        the active policy's `max_gap_s`, every writer gap recorded in the
+        window and every sample without a position; each hole carries
+        every cause known of it and nothing is interpolated across it.
+        Present on `GET /v1/violations/{violation_id}` only. `unavailable`
+        (with `reason`) when the policy cannot be read: the console then
+        draws the samples unjoined. `writer_gaps_read: false` when the
+        recorded gaps could not be read: a silence is then labelled
+        `writer_gaps_unread`, never `no recorded cause`.
+      required: [state, segments, holes, unplaced]
+      properties:
+        state: {type: string, enum: [cut, unavailable]}
+        reason: {type: string, description: Why the excerpt was not cut (state unavailable).}
+        max_gap_s: {type: number, format: double, description: The active policy's max_gap_s that cut it.}
+        policy_version: {type: integer, format: int64}
+        writer_gaps_read: {type: boolean}
+        segments:
+          type: array
+          items:
+            $ref: "#/components/schemas/ViolationExcerptSegment"
+        holes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ViolationExcerptHole"
+        unplaced:
+          type: array
+          description: Indexes of excerpt samples without a readable captured_at, left out of the cut.
+          items: {type: integer}
+    ViolationExcerptSegment:
+      type: object
+      required: [from, to, sample_indexes]
+      properties:
+        from: {type: string, format: date-time}
+        to: {type: string, format: date-time}
+        sample_indexes:
+          type: array
+          description: Indexes into evidence_excerpt, oldest first.
+          items: {type: integer}
+    ViolationExcerptHole:
+      type: object
+      required: [from, to, duration_s, causes, recorded]
+      properties:
+        from: {type: string, format: date-time}
+        to: {type: string, format: date-time}
+        duration_s: {type: number, format: double}
+        causes:
+          type: array
+          description: silence, no recorded cause, writer_gap, sample_without_position, writer_gaps_unread.
+          items: {type: string}
+        recorded:
+          type: array
+          description: The recorded writer gaps inside the hole, as an evidence pack words them.
+          items: {type: string}
     ViolationPage:
       type: object
       required: [violations]

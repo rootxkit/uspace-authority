@@ -2073,6 +2073,24 @@ func (e ViolationSeverity) Valid() bool {
 	}
 }
 
+// Defines values for ViolationExcerptSegmentingState.
+const (
+	ViolationExcerptSegmentingStateCut         ViolationExcerptSegmentingState = "cut"
+	ViolationExcerptSegmentingStateUnavailable ViolationExcerptSegmentingState = "unavailable"
+)
+
+// Valid indicates whether the value is a known member of the ViolationExcerptSegmentingState enum.
+func (e ViolationExcerptSegmentingState) Valid() bool {
+	switch e {
+	case ViolationExcerptSegmentingStateCut:
+		return true
+	case ViolationExcerptSegmentingStateUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ViolationKind.
 const (
 	ViolationKindHeight120m             ViolationKind = "height_120m"
@@ -5292,6 +5310,18 @@ type Violation struct {
 	EvidenceTrust    ViolationEvidenceTrust   `json:"evidence_trust"`
 	ExcerptSamples   int                      `json:"excerpt_samples"`
 
+	// ExcerptSegmenting The evidence excerpt cut as an evidence pack cuts a track
+	// (docs/runbooks/incidents.md, B-13): at every silence longer than
+	// the active policy's `max_gap_s`, every writer gap recorded in the
+	// window and every sample without a position; each hole carries
+	// every cause known of it and nothing is interpolated across it.
+	// Present on `GET /v1/violations/{violation_id}` only. `unavailable`
+	// (with `reason`) when the policy cannot be read: the console then
+	// draws the samples unjoined. `writer_gaps_read: false` when the
+	// recorded gaps could not be read: a silence is then labelled
+	// `writer_gaps_unread`, never `no recorded cause`.
+	ExcerptSegmenting *ViolationExcerptSegmenting `json:"excerpt_segmenting,omitempty"`
+
 	// ExcerptTruncated Samples past the bound were left out.
 	ExcerptTruncated  bool          `json:"excerpt_truncated"`
 	InUspace          bool          `json:"in_uspace"`
@@ -5335,6 +5365,57 @@ type ViolationEvidenceTrust string
 
 // ViolationSeverity defines model for Violation.Severity.
 type ViolationSeverity string
+
+// ViolationExcerptHole defines model for ViolationExcerptHole.
+type ViolationExcerptHole struct {
+	// Causes silence, no recorded cause, writer_gap, sample_without_position, writer_gaps_unread.
+	Causes    []string  `json:"causes"`
+	DurationS float64   `json:"duration_s"`
+	From      time.Time `json:"from"`
+
+	// Recorded The recorded writer gaps inside the hole, as an evidence pack words them.
+	Recorded []string  `json:"recorded"`
+	To       time.Time `json:"to"`
+}
+
+// ViolationExcerptSegment defines model for ViolationExcerptSegment.
+type ViolationExcerptSegment struct {
+	From time.Time `json:"from"`
+
+	// SampleIndexes Indexes into evidence_excerpt, oldest first.
+	SampleIndexes []int     `json:"sample_indexes"`
+	To            time.Time `json:"to"`
+}
+
+// ViolationExcerptSegmenting The evidence excerpt cut as an evidence pack cuts a track
+// (docs/runbooks/incidents.md, B-13): at every silence longer than
+// the active policy's `max_gap_s`, every writer gap recorded in the
+// window and every sample without a position; each hole carries
+// every cause known of it and nothing is interpolated across it.
+// Present on `GET /v1/violations/{violation_id}` only. `unavailable`
+// (with `reason`) when the policy cannot be read: the console then
+// draws the samples unjoined. `writer_gaps_read: false` when the
+// recorded gaps could not be read: a silence is then labelled
+// `writer_gaps_unread`, never `no recorded cause`.
+type ViolationExcerptSegmenting struct {
+	Holes []ViolationExcerptHole `json:"holes"`
+
+	// MaxGapS The active policy's max_gap_s that cut it.
+	MaxGapS       *float64 `json:"max_gap_s,omitempty"`
+	PolicyVersion *int64   `json:"policy_version,omitempty"`
+
+	// Reason Why the excerpt was not cut (state unavailable).
+	Reason   *string                         `json:"reason,omitempty"`
+	Segments []ViolationExcerptSegment       `json:"segments"`
+	State    ViolationExcerptSegmentingState `json:"state"`
+
+	// Unplaced Indexes of excerpt samples without a readable captured_at, left out of the cut.
+	Unplaced       []int `json:"unplaced"`
+	WriterGapsRead *bool `json:"writer_gaps_read,omitempty"`
+}
+
+// ViolationExcerptSegmentingState defines model for ViolationExcerptSegmenting.State.
+type ViolationExcerptSegmentingState string
 
 // ViolationKind defines model for ViolationKind.
 type ViolationKind string

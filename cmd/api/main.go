@@ -296,6 +296,8 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 			rt.AddCounters("records_token_client", inc.RecordTokens)
 		}
 		vio.Service.OnEscalate = inc.Service.OpenFromViolation
+		// The console's excerpt is cut by the packs' rule (WP-23, B-13).
+		vio.Service.CutExcerpt = inc.ExcerptCutter().Cut
 		wg.Go(func() { vio.Run(ctx) })
 		wg.Go(func() { inc.Run(ctx) })
 

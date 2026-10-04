@@ -40,6 +40,7 @@ are later detectors (WP-26, plan Q-A6).
 | `evidence_trust` | `broadcast` (direct Remote ID: as broadcast and unverified) or `provider` (network Remote ID). |
 | `evidence_refs`, `evidence_track_ids` | The track, the receiver or USSP it came through, the zone and version. |
 | `evidence_excerpt` | The track samples copied at the raise (the last `DETECT_EXCERPT_WINDOW_S`, 10 s) and appended while it held, up to `VIOLATIONS_EXCERPT_MAX_SAMPLES` (`excerpt_truncated` beyond). The Display Provider cache is disposed of within 24 h; this copy is the record. |
+| `excerpt_segmenting` | `GET /v1/violations/{id}` only (WP-23): the excerpt cut by the evidence packs' rule (`docs/runbooks/incidents.md`, B-13) with the active policy's `max_gap_s`: `segments` (indexes into `evidence_excerpt`) and `holes`, each with every cause known of it (`silence`, `no recorded cause`, `writer_gap` with the recorded lines, `sample_without_position`). `writer_gaps_read: false` when the writer gaps could not be read in full: a silence then says `writer_gaps_unread`, never `no recorded cause`. `state: unavailable` with the reason when the policy cannot be read: the console then draws the samples unjoined. The console draws what this says and cuts nothing itself. |
 | `status` | The review: `new`, `reviewed`, `dismissed`, `escalated`. |
 
 ## Reviewing
