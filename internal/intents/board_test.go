@@ -274,3 +274,49 @@ func TestBoardCountsAnAirspaceWithoutABox(t *testing.T) {
 		t.Fatalf("%d %v", zoneQ, r.b.Counters.Snapshot())
 	}
 }
+
+// An aircraft in a U-space airspace the board does not read (its box
+// is not an area, or it is past MaxZones) has no outcome: it would be
+// judged from an empty cache and raised falsely. It is suspended and
+// counted, never read from the DSS; the aircraft in the airspace read
+// beside it is judged (E-01).
+func TestBoardSuspendsAnAircraftInAnAirspaceItDoesNotRead(t *testing.T) {
+	r := newBoardRig(t, func(s *Settings) { s.MaxZones = 1 })
+	r.zs = append(r.zs, uspaceZone("U2", uLat+1, uLon))
+	r.at(0)
+	r.want("IN", uLat, uLon, nil)
+	r.b.Want(Query{TrackID: "PAST", ZoneKey: "GEO/U2", Pos: core.LatLon{LatDeg: uLat + 1, LonDeg: uLon}, At: r.clk.Now()})
+	r.at(1)
+	if o, ok := r.b.Outcome("IN"); !ok || o.Matched {
+		t.Fatalf("the aircraft in the airspace read: %+v %v", o, ok)
+	}
+	if o, ok := r.b.Outcome("PAST"); ok {
+		t.Fatalf("judged in an airspace past MaxZones: %+v", o)
+	}
+	if r.b.Counters.Get(CounterChecksNotWatched) != 1 {
+		t.Fatalf("counters %v", r.b.Counters.Snapshot())
+	}
+
+	u := newBoardRig(t, nil)
+	u.zs[0].BBox.MaxLat = u.zs[0].BBox.MinLat
+	u.at(0)
+	if st, _ := u.b.State(); st != StateAvailable {
+		t.Fatalf("state %s", st)
+	}
+	u.want("A", uLat, uLon, nil)
+	u.at(1)
+	if o, ok := u.b.Outcome("A"); ok {
+		t.Fatalf("judged in an airspace without a box: %+v", o)
+	}
+	if zoneQ, pointQ := u.dss.counts(); zoneQ != 0 || pointQ != 0 || u.b.Counters.Get(CounterChecksNotWatched) != 1 {
+		t.Fatalf("reads %d %d %v", zoneQ, pointQ, u.b.Counters.Snapshot())
+	}
+	// The box mended: read, and the aircraft judged.
+	u.zs[0] = uspaceZone("U1", uLat, uLon)
+	u.at(6)
+	u.want("A", uLat, uLon, nil)
+	u.at(9)
+	if _, ok := u.b.Outcome("A"); !ok {
+		t.Fatal("not judged once the airspace was read")
+	}
+}

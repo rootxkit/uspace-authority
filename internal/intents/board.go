@@ -3,6 +3,7 @@ package intents
 import (
 	"context"
 	"log/slog"
+	"maps"
 	"slices"
 	"strings"
 	"sync"
@@ -49,6 +50,7 @@ const (
 	CounterWantsExpired      = "intent_checks_expired"       // an aircraft no worker asked about for WantTTL: forgotten
 	CounterZoneNotBounded    = "uspace_zone_not_bounded"     // a U-space airspace whose box cannot be read as an area: not watched
 	CounterOutcomesTruncated = "intent_candidates_truncated" // an outcome with more candidates than MaxCandidates
+	CounterChecksNotWatched  = "intent_checks_not_watched"   // an aircraft in a U-space airspace the board does not read (no box, past MaxZones, not read yet): suspended, not judged
 )
 
 // Settings bound a Board (config.DetectIntents).
@@ -140,6 +142,10 @@ type Board struct {
 	since    time.Time
 	lastErr  string
 	watched  []string
+	// read are the watched airspaces whose last read was answered: an
+	// aircraft in any other one (no box, past MaxZones, not read yet) is
+	// suspended, never judged from an empty cache.
+	read     map[string]bool
 	nextZone time.Time
 }
 
@@ -149,7 +155,7 @@ func NewBoard(s Settings, dss DSS, zs func() []*zones.Zone, counters *core.Count
 		counters = &core.Counters{}
 	}
 	return &Board{S: s, DSS: dss, Zones: zs, Counters: counters, cache: NewCache(s.MaxCached, s.EndedKeep, counters),
-		wants: map[string]*want{}, outcomes: map[string]Outcome{}, state: StateStarting}
+		wants: map[string]*want{}, outcomes: map[string]Outcome{}, read: map[string]bool{}, state: StateStarting}
 }
 
 func (b *Board) now() time.Time {
@@ -196,6 +202,9 @@ func (b *Board) Outcome(trackID string) (Outcome, bool) {
 		return Outcome{}, false
 	}
 	o, ok := b.outcomes[trackID]
+	if w := b.wants[trackID]; w == nil || !b.read[w.q.ZoneKey] {
+		ok = false
+	}
 	if !ok || now.Sub(o.CheckedAt) > b.S.OutcomeMaxAge {
 		return Outcome{}, false
 	}
@@ -241,9 +250,12 @@ func (b *Board) Step(ctx context.Context) {
 	zs := b.uspaceZones()
 	b.mu.Lock()
 	b.watched = b.watched[:0]
+	watched := make(map[string]bool, len(zs))
 	for _, z := range zs {
 		b.watched = append(b.watched, z.key)
+		watched[z.key] = true
 	}
+	maps.DeleteFunc(b.read, func(k string, _ bool) bool { return !watched[k] })
 	b.cache.Purge(now)
 	b.expireWants(now)
 	switch {
@@ -342,6 +354,9 @@ func (b *Board) readZones(ctx context.Context, zs []zoneEntry, now time.Time) bo
 		aoi, ok := zoneArea(z.zone, now, now.Add(b.S.Horizon))
 		if !ok {
 			b.Counters.Inc(CounterZoneNotBounded)
+			b.mu.Lock()
+			delete(b.read, z.key)
+			b.mu.Unlock()
 			continue
 		}
 		refs, err := b.query(ctx, aoi)
@@ -352,6 +367,7 @@ func (b *Board) readZones(ctx context.Context, zs []zoneEntry, now time.Time) bo
 		b.Counters.Inc(CounterZoneReads)
 		b.mu.Lock()
 		b.cache.Sync(z.key, refs, now)
+		b.read[z.key] = true
 		b.mu.Unlock()
 	}
 	return true
@@ -441,6 +457,17 @@ func (b *Board) checkPositions(ctx context.Context, now time.Time) {
 	}
 	for _, q := range b.due(now) {
 		b.mu.Lock()
+		if !b.read[q.ZoneKey] {
+			// Not read: nothing is known of its intents, so the aircraft
+			// is suspended rather than judged from an empty cache.
+			delete(b.outcomes, q.TrackID)
+			if w, ok := b.wants[q.TrackID]; ok {
+				w.checkedAt = now
+			}
+			b.mu.Unlock()
+			b.Counters.Inc(CounterChecksNotWatched)
+			continue
+		}
 		inZone := b.cache.InZone(q.ZoneKey)
 		b.mu.Unlock()
 		possible := slices.ContainsFunc(inZone, func(e Entry) bool { return couldMatch(&e, q.At) })

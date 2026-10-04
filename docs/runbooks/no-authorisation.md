@@ -89,6 +89,12 @@ GCAA**):
   `detail.suspended: true`. It resumes, with the grace starting over,
   when the DSS answers. This is never shown as "clear" (E-02).
 
+An aircraft in an airspace the board does not read (its box is not an
+area, `uspace_zone_not_bounded`; past `DETECT_INTENT_MAX_ZONES`,
+`uspace_zones_not_watched`; not read yet) is suspended the same way and
+counted `intent_checks_not_watched`: with nothing known of that
+airspace's intents it is never judged unauthorised.
+
 Per worker: `uspace_aircraft`, `no_authorisation_open`,
 `no_authorisation_unknown` (suspended cases), `no_authorisation_matched`,
 `no_authorisation_grace_running`, `height_lifted`,
