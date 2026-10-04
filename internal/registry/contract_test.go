@@ -144,10 +144,28 @@ func TestPersonalDataReachesNoPublicViewerOrMachineResponse(t *testing.T) {
 		if op.public || op.scope != "" || len(op.roles) == 0 {
 			t.Errorf("%s returns %v to a public or machine caller", op.id, found)
 		}
+		// An occurrence reporter is read by incident officers only, never
+		// by the registry's PII roles (376/2014 Art. 15-16, WP-18).
+		allowed := apiserver.PIIRoles
+		if occurrenceReporterOps[op.id] {
+			allowed = apiserver.OccurrenceReporterRoles
+		}
 		for _, r := range op.roles {
-			if !slices.Contains(apiserver.PIIRoles, r) {
+			if !slices.Contains(allowed, r) {
 				t.Errorf("%s returns %v to role %s", op.id, found, r)
 			}
+		}
+	}
+	// E-01 for WP-18: the reporter operation carries the person
+	// reference, and the reads an inspector may make carry none.
+	for op := range occurrenceReporterOps {
+		if !piiOps[op] {
+			t.Errorf("%s: no personal property found; the check is blind", op)
+		}
+	}
+	for _, op := range []string{"GetOccurrence", "ListOccurrences", "CreateOccurrence", "ClassifyOccurrence", "UpdateOccurrenceAnalysis", "ExportOccurrences"} {
+		if piiOps[op] {
+			t.Errorf("%s returns personal data", op)
 		}
 	}
 	// E-01: the check finds personal data where it is (the personal-data
@@ -176,6 +194,25 @@ func TestContractCheckFindsAPlantedName(t *testing.T) {
 	ops := operations("paths:\n  /x:\n    get:\n      operationId: getX\n      x-scope: registry.validate\n      responses:\n        \"200\":\n          content:\n            application/json:\n              schema:\n                $ref: \"#/components/schemas/Clean\"\n        default:\n          $ref: \"#/components/schemas/Problem\"\n")
 	if len(ops) != 1 || ops[0].scope != "registry.validate" || !slices.Equal(ops[0].responses, []string{"Clean"}) {
 		t.Fatalf("ops %+v", ops)
+	}
+}
+
+// occurrenceReporterOps return an occurrence reporter's identity.
+var occurrenceReporterOps = map[string]bool{"GetOccurrenceReporter": true}
+
+// The occurrence reporter is held to the incident officers in code, and
+// no registry PII role (inspector) is one of them.
+func TestOccurrenceReporterIsHeldToIncidentOfficers(t *testing.T) {
+	for op := range occurrenceReporterOps {
+		if !slices.Equal(apiserver.Roles[op], apiserver.OccurrenceReporterRoles) {
+			t.Errorf("%s: roles %v, want %v", op, apiserver.Roles[op], apiserver.OccurrenceReporterRoles)
+		}
+	}
+	if !slices.Equal(apiserver.OccurrenceReporterRoles, []string{apiserver.RoleIncidentOfficer}) {
+		t.Errorf("occurrence reporter roles %v", apiserver.OccurrenceReporterRoles)
+	}
+	if !slices.Contains(apiserver.Roles["GetOccurrence"], apiserver.RoleInspector) {
+		t.Error("an inspector no longer reads occurrence reports: the pair above proves nothing")
 	}
 }
 

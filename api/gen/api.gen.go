@@ -831,6 +831,144 @@ func (e OAuthProblemError) Valid() bool {
 	}
 }
 
+// Defines values for OccurrenceOrigin.
+const (
+	OccurrenceOriginClient   OccurrenceOrigin = "client"
+	OccurrenceOriginOperator OccurrenceOrigin = "operator"
+)
+
+// Valid indicates whether the value is a known member of the OccurrenceOrigin enum.
+func (e OccurrenceOrigin) Valid() bool {
+	switch e {
+	case OccurrenceOriginClient:
+		return true
+	case OccurrenceOriginOperator:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OccurrenceAnalysisPatchState.
+const (
+	OccurrenceAnalysisPatchStateAnalysed OccurrenceAnalysisPatchState = "analysed"
+	OccurrenceAnalysisPatchStateClosed   OccurrenceAnalysisPatchState = "closed"
+)
+
+// Valid indicates whether the value is a known member of the OccurrenceAnalysisPatchState enum.
+func (e OccurrenceAnalysisPatchState) Valid() bool {
+	switch e {
+	case OccurrenceAnalysisPatchStateAnalysed:
+		return true
+	case OccurrenceAnalysisPatchStateClosed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OccurrenceCategory.
+const (
+	OccurrenceCategoryAirprox                    OccurrenceCategory = "airprox"
+	OccurrenceCategoryEmergency                  OccurrenceCategory = "emergency"
+	OccurrenceCategoryLostLinkInUspace           OccurrenceCategory = "lost_link_in_uspace"
+	OccurrenceCategoryNonconformanceInProhibited OccurrenceCategory = "nonconformance_in_prohibited"
+	OccurrenceCategoryOther                      OccurrenceCategory = "other"
+)
+
+// Valid indicates whether the value is a known member of the OccurrenceCategory enum.
+func (e OccurrenceCategory) Valid() bool {
+	switch e {
+	case OccurrenceCategoryAirprox:
+		return true
+	case OccurrenceCategoryEmergency:
+		return true
+	case OccurrenceCategoryLostLinkInUspace:
+		return true
+	case OccurrenceCategoryNonconformanceInProhibited:
+		return true
+	case OccurrenceCategoryOther:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OccurrenceChannel.
+const (
+	OccurrenceChannelMandatory OccurrenceChannel = "mandatory"
+	OccurrenceChannelVoluntary OccurrenceChannel = "voluntary"
+)
+
+// Valid indicates whether the value is a known member of the OccurrenceChannel enum.
+func (e OccurrenceChannel) Valid() bool {
+	switch e {
+	case OccurrenceChannelMandatory:
+		return true
+	case OccurrenceChannelVoluntary:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OccurrenceReportSchema.
+const (
+	OccurrenceReportSchemaOccurrencev1 OccurrenceReportSchema = "occurrence/v1"
+)
+
+// Valid indicates whether the value is a known member of the OccurrenceReportSchema enum.
+func (e OccurrenceReportSchema) Valid() bool {
+	switch e {
+	case OccurrenceReportSchemaOccurrencev1:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OccurrenceState.
+const (
+	OccurrenceStateAnalysed   OccurrenceState = "analysed"
+	OccurrenceStateClassified OccurrenceState = "classified"
+	OccurrenceStateClosed     OccurrenceState = "closed"
+	OccurrenceStateReceived   OccurrenceState = "received"
+)
+
+// Valid indicates whether the value is a known member of the OccurrenceState enum.
+func (e OccurrenceState) Valid() bool {
+	switch e {
+	case OccurrenceStateAnalysed:
+		return true
+	case OccurrenceStateClassified:
+		return true
+	case OccurrenceStateClosed:
+		return true
+	case OccurrenceStateReceived:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OccurrenceSummaryOrigin.
+const (
+	OccurrenceSummaryOriginClient   OccurrenceSummaryOrigin = "client"
+	OccurrenceSummaryOriginOperator OccurrenceSummaryOrigin = "operator"
+)
+
+// Valid indicates whether the value is a known member of the OccurrenceSummaryOrigin enum.
+func (e OccurrenceSummaryOrigin) Valid() bool {
+	switch e {
+	case OccurrenceSummaryOriginClient:
+		return true
+	case OccurrenceSummaryOriginOperator:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OperatorType.
 const (
 	OperatorTypeLegal   OperatorType = "legal"
@@ -2828,6 +2966,245 @@ type OAuthProblem struct {
 // OAuthProblemError defines model for OAuthProblem.Error.
 type OAuthProblemError string
 
+// Occurrence A report without its reporter's identity (GET .../reporter has it, for incident officers only).
+type Occurrence struct {
+	Aircraft      []OccurrenceAircraft `json:"aircraft"`
+	Analysis      string               `json:"analysis"`
+	BecameAwareAt time.Time            `json:"became_aware_at"`
+
+	// Category The 376/2014 Art. 4(1) class of the report (spec 04 §3.3; the UAS classes of 2015/1018 are unverified, Q9).
+	Category OccurrenceCategory `json:"category"`
+
+	// Channel mandatory (376 Art. 4) or voluntary (Art. 5); an operator's report (2019/947 Art. 19(2)) is mandatory.
+	Channel           OccurrenceChannel     `json:"channel"`
+	ClassifiedAt      *time.Time            `json:"classified_at,omitempty"`
+	ClassifiedBy      *string               `json:"classified_by,omitempty"`
+	ClosedAt          *time.Time            `json:"closed_at,omitempty"`
+	EvidenceUrls      []string              `json:"evidence_urls"`
+	FollowUp          string                `json:"follow_up"`
+	HasReporterPerson bool                  `json:"has_reporter_person"`
+	IntentRefs        []string              `json:"intent_refs"`
+	Manned            []OccurrenceManned    `json:"manned"`
+	MinSeparation     *OccurrenceSeparation `json:"min_separation,omitempty"`
+	Narrative         string                `json:"narrative"`
+	OccurredAt        time.Time             `json:"occurred_at"`
+	OccurrenceId      string                `json:"occurrence_id"`
+	Origin            OccurrenceOrigin      `json:"origin"`
+	ReceivedAt        time.Time             `json:"received_at"`
+
+	// ReportDeadlineS The reporting deadline in force at intake.
+	ReportDeadlineS    int             `json:"report_deadline_s"`
+	ReportedAt         *time.Time      `json:"reported_at,omitempty"`
+	RiskClassification *string         `json:"risk_classification,omitempty"`
+	State              OccurrenceState `json:"state"`
+	UpdatedAt          time.Time       `json:"updated_at"`
+	UpdatedBy          *string         `json:"updated_by,omitempty"`
+	Within72h          bool            `json:"within_72h"`
+}
+
+// OccurrenceOrigin defines model for Occurrence.Origin.
+type OccurrenceOrigin string
+
+// OccurrenceAircraft defines model for OccurrenceAircraft.
+type OccurrenceAircraft struct {
+	AuthorisationNumber *string `json:"authorisation_number,omitempty"`
+	FlightId            *string `json:"flight_id,omitempty"`
+
+	// OperatorReg The registration number's public part.
+	OperatorReg *string `json:"operator_reg,omitempty"`
+	Serial      *string `json:"serial,omitempty"`
+}
+
+// OccurrenceAircraftInput One UAS of the report. An operator registration's secret part is dropped, never stored.
+type OccurrenceAircraftInput struct {
+	AuthorisationNumber *string `json:"authorisation_number,omitempty"`
+	FlightId            *string `json:"flight_id,omitempty"`
+	OperatorReg         *string `json:"operator_reg,omitempty"`
+	Serial              *string `json:"serial,omitempty"`
+}
+
+// OccurrenceAnalysisPatch defines model for OccurrenceAnalysisPatch.
+type OccurrenceAnalysisPatch struct {
+	Analysis *string                       `json:"analysis,omitempty"`
+	FollowUp *string                       `json:"follow_up,omitempty"`
+	State    *OccurrenceAnalysisPatchState `json:"state,omitempty"`
+}
+
+// OccurrenceAnalysisPatchState defines model for OccurrenceAnalysisPatch.State.
+type OccurrenceAnalysisPatchState string
+
+// OccurrenceCategory The 376/2014 Art. 4(1) class of the report (spec 04 §3.3; the UAS classes of 2015/1018 are unverified, Q9).
+type OccurrenceCategory string
+
+// OccurrenceChannel mandatory (376 Art. 4) or voluntary (Art. 5); an operator's report (2019/947 Art. 19(2)) is mandatory.
+type OccurrenceChannel string
+
+// OccurrenceClassification defines model for OccurrenceClassification.
+type OccurrenceClassification struct {
+	RiskClassification string `json:"risk_classification"`
+}
+
+// OccurrenceExport defines model for OccurrenceExport.
+type OccurrenceExport struct {
+	// Content The de-identified document exactly as sealed (JSON text for eccairs-compatible-draft).
+	Content string `json:"content"`
+
+	// ContentHash sha256:<64 hex> of the UTF-8 bytes of content.
+	ContentHash string    `json:"content_hash"`
+	CreatedAt   time.Time `json:"created_at"`
+	ExportId    string    `json:"export_id"`
+	Format      string    `json:"format"`
+	RecordCount int       `json:"record_count"`
+	SizeBytes   int64     `json:"size_bytes"`
+}
+
+// OccurrenceExportInput defines model for OccurrenceExportInput.
+type OccurrenceExportInput struct {
+	// Format Default eccairs-compatible-draft (OCCURRENCES_EXPORT_FORMAT).
+	Format *string `json:"format,omitempty"`
+
+	// From Received at or after.
+	From time.Time `json:"from"`
+
+	// To Received before.
+	To time.Time `json:"to"`
+}
+
+// OccurrenceManned One manned aircraft of the report.
+type OccurrenceManned struct {
+	Callsign *string `json:"callsign,omitempty"`
+	Icao24   *string `json:"icao24,omitempty"`
+}
+
+// OccurrencePage defines model for OccurrencePage.
+type OccurrencePage struct {
+	// NextCursor Pass as cursor for the next page; absent on the last page.
+	NextCursor  *string             `json:"next_cursor,omitempty"`
+	Occurrences []OccurrenceSummary `json:"occurrences"`
+}
+
+// OccurrenceReceipt The acknowledgement of a report. It holds no reporter identity.
+type OccurrenceReceipt struct {
+	// OccurrenceId The authority's id of the report (ULID).
+	OccurrenceId string `json:"occurrence_id"`
+
+	// ReceivedAt The authority's database clock at intake.
+	ReceivedAt time.Time `json:"received_at"`
+
+	// Replayed True when this answers a report received before.
+	Replayed  bool            `json:"replayed"`
+	ReportRef string          `json:"report_ref"`
+	State     OccurrenceState `json:"state"`
+
+	// Within72h Received within the reporting deadline after became_aware_at; false: late, accepted and flagged.
+	Within72h bool `json:"within_72h"`
+}
+
+// OccurrenceReport `occurrence/v1` (spec 04 §3.3), the request body of POST
+// /v1/occurrences; schemas/occurrence/v1.json is the same shape
+// with examples. Members this version does not know are ignored
+// (02 §1).
+type OccurrenceReport struct {
+	Aircraft *[]OccurrenceAircraftInput `json:"aircraft,omitempty"`
+
+	// BecameAwareAt When the reporter became aware; the 72 h of 376 Art. 4(7)-(8) run from it.
+	BecameAwareAt time.Time `json:"became_aware_at"`
+
+	// Category The 376/2014 Art. 4(1) class of the report (spec 04 §3.3; the UAS classes of 2015/1018 are unverified, Q9).
+	Category OccurrenceCategory `json:"category"`
+
+	// Channel mandatory (376 Art. 4) or voluntary (Art. 5); an operator's report (2019/947 Art. 19(2)) is mandatory.
+	Channel      OccurrenceChannel   `json:"channel"`
+	EvidenceUrls *[]string           `json:"evidence_urls,omitempty"`
+	IntentRefs   *[]string           `json:"intent_refs,omitempty"`
+	Manned       *[]OccurrenceManned `json:"manned,omitempty"`
+
+	// MinSeparation The minimum separation observed, in metres (horizontal, vertical) and when.
+	MinSeparation *OccurrenceSeparation `json:"min_separation,omitempty"`
+
+	// Narrative At most 20000 bytes of UTF-8.
+	Narrative  *string   `json:"narrative,omitempty"`
+	OccurredAt time.Time `json:"occurred_at"`
+
+	// ReportRef The sender's reference: with the sender, the idempotency key.
+	ReportRef string `json:"report_ref"`
+
+	// ReportedAt When the sender recorded the report.
+	ReportedAt *time.Time `json:"reported_at,omitempty"`
+
+	// Reporter Who reports. `org` is informational: the authority records the
+	// token's `sub`. `person_ref` is the reporter's opaque reference
+	// in the sender's system, sent in clear over TLS (M13) and sealed
+	// at rest here; it is shown to incident officers only and never
+	// exported (376 Art. 16).
+	Reporter *OccurrenceReporterInput `json:"reporter,omitempty"`
+	Schema   OccurrenceReportSchema   `json:"schema"`
+}
+
+// OccurrenceReportSchema defines model for OccurrenceReport.Schema.
+type OccurrenceReportSchema string
+
+// OccurrenceReporter The reporter of an occurrence, for incident officers only (376 Art. 16).
+type OccurrenceReporter struct {
+	OccurrenceId string `json:"occurrence_id"`
+
+	// PersonRef The reporter's reference in the sender's system; null when none was sent.
+	PersonRef *string `json:"person_ref,omitempty"`
+	ReportRef string  `json:"report_ref"`
+
+	// ReporterOrg The sender's client id, or operator:<registration public part>.
+	ReporterOrg string `json:"reporter_org"`
+}
+
+// OccurrenceReporterInput Who reports. `org` is informational: the authority records the
+// token's `sub`. `person_ref` is the reporter's opaque reference
+// in the sender's system, sent in clear over TLS (M13) and sealed
+// at rest here; it is shown to incident officers only and never
+// exported (376 Art. 16).
+type OccurrenceReporterInput struct {
+	Org       *string `json:"org,omitempty"`
+	PersonRef *string `json:"person_ref,omitempty"`
+}
+
+// OccurrenceSeparation The minimum separation observed, in metres (horizontal, vertical) and when.
+type OccurrenceSeparation struct {
+	At *time.Time `json:"at,omitempty"`
+	HM *float64   `json:"h_m,omitempty"`
+	VM *float64   `json:"v_m,omitempty"`
+}
+
+// OccurrenceState defines model for OccurrenceState.
+type OccurrenceState string
+
+// OccurrenceSummary A report without its reporter's identity.
+type OccurrenceSummary struct {
+	BecameAwareAt time.Time `json:"became_aware_at"`
+
+	// Category The 376/2014 Art. 4(1) class of the report (spec 04 §3.3; the UAS classes of 2015/1018 are unverified, Q9).
+	Category OccurrenceCategory `json:"category"`
+
+	// Channel mandatory (376 Art. 4) or voluntary (Art. 5); an operator's report (2019/947 Art. 19(2)) is mandatory.
+	Channel  OccurrenceChannel `json:"channel"`
+	ClosedAt *time.Time        `json:"closed_at,omitempty"`
+
+	// HasReporterPerson Whether a reporter person reference is held (readable by incident officers only).
+	HasReporterPerson bool      `json:"has_reporter_person"`
+	OccurredAt        time.Time `json:"occurred_at"`
+	OccurrenceId      string    `json:"occurrence_id"`
+
+	// Origin client: a USSP or the ANSP through its token; operator: an operator's report (2019/947 Art. 19(2)).
+	Origin             OccurrenceSummaryOrigin `json:"origin"`
+	ReceivedAt         time.Time               `json:"received_at"`
+	ReportedAt         *time.Time              `json:"reported_at,omitempty"`
+	RiskClassification *string                 `json:"risk_classification,omitempty"`
+	State              OccurrenceState         `json:"state"`
+	UpdatedAt          time.Time               `json:"updated_at"`
+	Within72h          bool                    `json:"within_72h"`
+}
+
+// OccurrenceSummaryOrigin client: a USSP or the ANSP through its token; operator: an operator's report (2019/947 Art. 19(2)).
+type OccurrenceSummaryOrigin string
+
 // OperatorType defines model for OperatorType.
 type OperatorType string
 
@@ -4326,6 +4703,26 @@ type CompromiseSigningKeyJSONBody struct {
 	Reason string `json:"reason"`
 }
 
+// ListOccurrencesParams defines parameters for ListOccurrences.
+type ListOccurrencesParams struct {
+	State    *OccurrenceState    `form:"state,omitempty" json:"state,omitempty"`
+	Category *OccurrenceCategory `form:"category,omitempty" json:"category,omitempty"`
+	Channel  *OccurrenceChannel  `form:"channel,omitempty" json:"channel,omitempty"`
+
+	// From Received at or after.
+	From *time.Time `form:"from,omitempty" json:"from,omitempty"`
+
+	// To Received before.
+	To     *time.Time `form:"to,omitempty" json:"to,omitempty"`
+	Cursor *string    `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int       `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// GetOccurrenceReporterParams defines parameters for GetOccurrenceReporter.
+type GetOccurrenceReporterParams struct {
+	Purpose string `form:"purpose" json:"purpose"`
+}
+
 // ListPublicationsParams defines parameters for ListPublications.
 type ListPublicationsParams struct {
 	Dataset *ListPublicationsParamsDataset `form:"dataset,omitempty" json:"dataset,omitempty"`
@@ -4551,6 +4948,18 @@ type UpdateOAuthClientJSONRequestBody = OAuthClientPatch
 
 // CompromiseSigningKeyJSONRequestBody defines body for CompromiseSigningKey for application/json ContentType.
 type CompromiseSigningKeyJSONRequestBody CompromiseSigningKeyJSONBody
+
+// CreateOccurrenceJSONRequestBody defines body for CreateOccurrence for application/json ContentType.
+type CreateOccurrenceJSONRequestBody = OccurrenceReport
+
+// ExportOccurrencesJSONRequestBody defines body for ExportOccurrences for application/json ContentType.
+type ExportOccurrencesJSONRequestBody = OccurrenceExportInput
+
+// UpdateOccurrenceAnalysisJSONRequestBody defines body for UpdateOccurrenceAnalysis for application/json ContentType.
+type UpdateOccurrenceAnalysisJSONRequestBody = OccurrenceAnalysisPatch
+
+// ClassifyOccurrenceJSONRequestBody defines body for ClassifyOccurrence for application/json ContentType.
+type ClassifyOccurrenceJSONRequestBody = OccurrenceClassification
 
 // CreatePolicyJSONRequestBody defines body for CreatePolicy for application/json ContentType.
 type CreatePolicyJSONRequestBody = PolicyInput
@@ -5734,6 +6143,177 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /v1/oauth/keys/{kid}/compromised (the `CompromiseSigningKey` operationId).
 	CompromiseSigningKey(ctx context.Context, kid string, body CompromiseSigningKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListOccurrences Occurrence reports, newest received first (no reporter identity)
+	//
+	// Corresponds with GET /v1/occurrences (the `ListOccurrences` operationId).
+	ListOccurrences(ctx context.Context, params *ListOccurrencesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateOccurrenceWithBody Report an occurrence (occurrence/v1; USSPs, the ANSP)
+	//
+	// The body is `occurrence/v1` (schemas/occurrence/v1.json, owned
+	// here, M14). The sender is the token's `sub`, recorded as
+	// `reporter_org` (a `reporter.org` that differs is ignored and
+	// counted). Idempotent on (`reporter_org`, `report_ref`): the same
+	// report again answers 200 with the id given first; another
+	// report under the same reference is 409 `report_ref_conflict`.
+	// A report received more than the reporting deadline (72 h,
+	// `OCCURRENCES_REPORT_DEADLINE_S`) after `became_aware_at` is
+	// accepted with `within_72h: false`, never refused. A
+	// `became_aware_at` ahead of the database clock by more than the
+	// allowed skew, or before `occurred_at`, is 400. A
+	// `reporter.person_ref` is stored sealed under the occurrence key;
+	// without that key configured such a report is 503
+	// `occurrence_key_unavailable` (retry later), never stored in
+	// clear. Operator aircraft keep the registration number's public
+	// part only. Recorded with an `occurrence_received` events row
+	// that holds no reporter identity.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/occurrences (the `CreateOccurrence` operationId).
+	CreateOccurrenceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateOccurrence Report an occurrence (occurrence/v1; USSPs, the ANSP)
+	//
+	// The body is `occurrence/v1` (schemas/occurrence/v1.json, owned
+	// here, M14). The sender is the token's `sub`, recorded as
+	// `reporter_org` (a `reporter.org` that differs is ignored and
+	// counted). Idempotent on (`reporter_org`, `report_ref`): the same
+	// report again answers 200 with the id given first; another
+	// report under the same reference is 409 `report_ref_conflict`.
+	// A report received more than the reporting deadline (72 h,
+	// `OCCURRENCES_REPORT_DEADLINE_S`) after `became_aware_at` is
+	// accepted with `within_72h: false`, never refused. A
+	// `became_aware_at` ahead of the database clock by more than the
+	// allowed skew, or before `occurred_at`, is 400. A
+	// `reporter.person_ref` is stored sealed under the occurrence key;
+	// without that key configured such a report is 503
+	// `occurrence_key_unavailable` (retry later), never stored in
+	// clear. Operator aircraft keep the registration number's public
+	// part only. Recorded with an `occurrence_received` events row
+	// that holds no reporter identity.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/occurrences (the `CreateOccurrence` operationId).
+	CreateOccurrence(ctx context.Context, body CreateOccurrenceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ExportOccurrencesWithBody A de-identified export of the reports received in a window (hash-sealed, audited)
+	//
+	// Builds the de-identified record set of the reports received in
+	// [`from`, `to`) in `format` (default `eccairs-compatible-draft`,
+	// the only format of this build; the E5X writer is open question
+	// Q-A12). No reporter organisation, reporter reference, person,
+	// name or address; aircraft by serial and the registration
+	// number's public part; the narrative as the reporter wrote it
+	// (the officer redacts it before filing). `content` is the exact
+	// document; `content_hash` is the SHA-256 of its UTF-8 bytes,
+	// recorded in `deidentified_exports` and in the
+	// `occurrence_export_created` events row. A window holding more
+	// reports than `OCCURRENCES_EXPORT_MAX_RECORDS` is refused
+	// (`export_too_large`), never thinned.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/occurrences/export (the `ExportOccurrences` operationId).
+	ExportOccurrencesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ExportOccurrences A de-identified export of the reports received in a window (hash-sealed, audited)
+	//
+	// Builds the de-identified record set of the reports received in
+	// [`from`, `to`) in `format` (default `eccairs-compatible-draft`,
+	// the only format of this build; the E5X writer is open question
+	// Q-A12). No reporter organisation, reporter reference, person,
+	// name or address; aircraft by serial and the registration
+	// number's public part; the narrative as the reporter wrote it
+	// (the officer redacts it before filing). `content` is the exact
+	// document; `content_hash` is the SHA-256 of its UTF-8 bytes,
+	// recorded in `deidentified_exports` and in the
+	// `occurrence_export_created` events row. A window holding more
+	// reports than `OCCURRENCES_EXPORT_MAX_RECORDS` is refused
+	// (`export_too_large`), never thinned.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/occurrences/export (the `ExportOccurrences` operationId).
+	ExportOccurrences(ctx context.Context, body ExportOccurrencesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetOccurrence One occurrence report (no reporter identity)
+	//
+	// Corresponds with GET /v1/occurrences/{occurrence_id} (the `GetOccurrence` operationId).
+	GetOccurrence(ctx context.Context, occurrenceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateOccurrenceAnalysisWithBody Record the analysis and follow-up of an occurrence, mark it analysed or closed
+	//
+	// Every member is optional; what is present is applied in one
+	// transaction with one `occurrence_analysis_updated` events row
+	// naming what changed (never the text). `state` moves a classified
+	// report to `analysed` (an analysis is required) and an analysed
+	// one to `closed`; a report not yet classified cannot be analysed
+	// (409 `occurrence_not_classified`) and a closed one cannot change
+	// (409 `occurrence_closed`).
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /v1/occurrences/{occurrence_id}/analysis (the `UpdateOccurrenceAnalysis` operationId).
+	UpdateOccurrenceAnalysisWithBody(ctx context.Context, occurrenceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateOccurrenceAnalysis Record the analysis and follow-up of an occurrence, mark it analysed or closed
+	//
+	// Every member is optional; what is present is applied in one
+	// transaction with one `occurrence_analysis_updated` events row
+	// naming what changed (never the text). `state` moves a classified
+	// report to `analysed` (an analysis is required) and an analysed
+	// one to `closed`; a report not yet classified cannot be analysed
+	// (409 `occurrence_not_classified`) and a closed one cannot change
+	// (409 `occurrence_closed`).
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /v1/occurrences/{occurrence_id}/analysis (the `UpdateOccurrenceAnalysis` operationId).
+	UpdateOccurrenceAnalysis(ctx context.Context, occurrenceId string, body UpdateOccurrenceAnalysisJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ClassifyOccurrenceWithBody Classify the safety risk of an occurrence (376 Art. 7(2))
+	//
+	// `risk_classification` is one class of the configured scheme
+	// (`OCCURRENCES_RISK_CLASSES`; another value is 400 naming the
+	// scheme). A received report becomes `classified`; a classified or
+	// analysed one keeps its state with the new class; a closed one
+	// is 409 `occurrence_closed`. Recorded with an
+	// `occurrence_classified` events row (from, to).
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v1/occurrences/{occurrence_id}/classify (the `ClassifyOccurrence` operationId).
+	ClassifyOccurrenceWithBody(ctx context.Context, occurrenceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ClassifyOccurrence Classify the safety risk of an occurrence (376 Art. 7(2))
+	//
+	// `risk_classification` is one class of the configured scheme
+	// (`OCCURRENCES_RISK_CLASSES`; another value is 400 naming the
+	// scheme). A received report becomes `classified`; a classified or
+	// analysed one keeps its state with the new class; a closed one
+	// is 409 `occurrence_closed`. Recorded with an
+	// `occurrence_classified` events row (from, to).
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v1/occurrences/{occurrence_id}/classify (the `ClassifyOccurrence` operationId).
+	ClassifyOccurrence(ctx context.Context, occurrenceId string, body ClassifyOccurrenceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetOccurrenceReporter The reporter of an occurrence (incident officers only; purpose required, audited)
+	//
+	// The reporting organisation, its reference and the reporter's
+	// person reference opened from the occurrence key. Refused without
+	// `purpose`; every read is an `occurrence_reporter_viewed` events
+	// row with the purpose, written before the identity is returned
+	// (376 Art. 16(1)). An inspector, whatever else it may read, is
+	// 403 here. Without the occurrence key a sealed person reference
+	// is 503 `occurrence_key_unavailable`.
+	//
+	// Corresponds with GET /v1/occurrences/{occurrence_id}/reporter (the `GetOccurrenceReporter` operationId).
+	GetOccurrenceReporter(ctx context.Context, occurrenceId string, params *GetOccurrenceReporterParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetPolicy The active policy
 	//
@@ -8207,6 +8787,287 @@ func (c *Client) CompromiseSigningKeyWithBody(ctx context.Context, kid string, c
 // Corresponds with POST /v1/oauth/keys/{kid}/compromised (the `CompromiseSigningKey` operationId).
 func (c *Client) CompromiseSigningKey(ctx context.Context, kid string, body CompromiseSigningKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCompromiseSigningKeyRequest(c.Server, kid, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ListOccurrences Occurrence reports, newest received first (no reporter identity)
+//
+// Corresponds with GET /v1/occurrences (the `ListOccurrences` operationId).
+func (c *Client) ListOccurrences(ctx context.Context, params *ListOccurrencesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListOccurrencesRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateOccurrenceWithBody Report an occurrence (occurrence/v1; USSPs, the ANSP)
+//
+// The body is `occurrence/v1` (schemas/occurrence/v1.json, owned
+// here, M14). The sender is the token's `sub`, recorded as
+// `reporter_org` (a `reporter.org` that differs is ignored and
+// counted). Idempotent on (`reporter_org`, `report_ref`): the same
+// report again answers 200 with the id given first; another
+// report under the same reference is 409 `report_ref_conflict`.
+// A report received more than the reporting deadline (72 h,
+// `OCCURRENCES_REPORT_DEADLINE_S`) after `became_aware_at` is
+// accepted with `within_72h: false`, never refused. A
+// `became_aware_at` ahead of the database clock by more than the
+// allowed skew, or before `occurred_at`, is 400. A
+// `reporter.person_ref` is stored sealed under the occurrence key;
+// without that key configured such a report is 503
+// `occurrence_key_unavailable` (retry later), never stored in
+// clear. Operator aircraft keep the registration number's public
+// part only. Recorded with an `occurrence_received` events row
+// that holds no reporter identity.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/occurrences (the `CreateOccurrence` operationId).
+func (c *Client) CreateOccurrenceWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateOccurrenceRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateOccurrence Report an occurrence (occurrence/v1; USSPs, the ANSP)
+//
+// The body is `occurrence/v1` (schemas/occurrence/v1.json, owned
+// here, M14). The sender is the token's `sub`, recorded as
+// `reporter_org` (a `reporter.org` that differs is ignored and
+// counted). Idempotent on (`reporter_org`, `report_ref`): the same
+// report again answers 200 with the id given first; another
+// report under the same reference is 409 `report_ref_conflict`.
+// A report received more than the reporting deadline (72 h,
+// `OCCURRENCES_REPORT_DEADLINE_S`) after `became_aware_at` is
+// accepted with `within_72h: false`, never refused. A
+// `became_aware_at` ahead of the database clock by more than the
+// allowed skew, or before `occurred_at`, is 400. A
+// `reporter.person_ref` is stored sealed under the occurrence key;
+// without that key configured such a report is 503
+// `occurrence_key_unavailable` (retry later), never stored in
+// clear. Operator aircraft keep the registration number's public
+// part only. Recorded with an `occurrence_received` events row
+// that holds no reporter identity.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/occurrences (the `CreateOccurrence` operationId).
+func (c *Client) CreateOccurrence(ctx context.Context, body CreateOccurrenceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateOccurrenceRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ExportOccurrencesWithBody A de-identified export of the reports received in a window (hash-sealed, audited)
+//
+// Builds the de-identified record set of the reports received in
+// [`from`, `to`) in `format` (default `eccairs-compatible-draft`,
+// the only format of this build; the E5X writer is open question
+// Q-A12). No reporter organisation, reporter reference, person,
+// name or address; aircraft by serial and the registration
+// number's public part; the narrative as the reporter wrote it
+// (the officer redacts it before filing). `content` is the exact
+// document; `content_hash` is the SHA-256 of its UTF-8 bytes,
+// recorded in `deidentified_exports` and in the
+// `occurrence_export_created` events row. A window holding more
+// reports than `OCCURRENCES_EXPORT_MAX_RECORDS` is refused
+// (`export_too_large`), never thinned.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/occurrences/export (the `ExportOccurrences` operationId).
+func (c *Client) ExportOccurrencesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewExportOccurrencesRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ExportOccurrences A de-identified export of the reports received in a window (hash-sealed, audited)
+//
+// Builds the de-identified record set of the reports received in
+// [`from`, `to`) in `format` (default `eccairs-compatible-draft`,
+// the only format of this build; the E5X writer is open question
+// Q-A12). No reporter organisation, reporter reference, person,
+// name or address; aircraft by serial and the registration
+// number's public part; the narrative as the reporter wrote it
+// (the officer redacts it before filing). `content` is the exact
+// document; `content_hash` is the SHA-256 of its UTF-8 bytes,
+// recorded in `deidentified_exports` and in the
+// `occurrence_export_created` events row. A window holding more
+// reports than `OCCURRENCES_EXPORT_MAX_RECORDS` is refused
+// (`export_too_large`), never thinned.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/occurrences/export (the `ExportOccurrences` operationId).
+func (c *Client) ExportOccurrences(ctx context.Context, body ExportOccurrencesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewExportOccurrencesRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetOccurrence One occurrence report (no reporter identity)
+//
+// Corresponds with GET /v1/occurrences/{occurrence_id} (the `GetOccurrence` operationId).
+func (c *Client) GetOccurrence(ctx context.Context, occurrenceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetOccurrenceRequest(c.Server, occurrenceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateOccurrenceAnalysisWithBody Record the analysis and follow-up of an occurrence, mark it analysed or closed
+//
+// Every member is optional; what is present is applied in one
+// transaction with one `occurrence_analysis_updated` events row
+// naming what changed (never the text). `state` moves a classified
+// report to `analysed` (an analysis is required) and an analysed
+// one to `closed`; a report not yet classified cannot be analysed
+// (409 `occurrence_not_classified`) and a closed one cannot change
+// (409 `occurrence_closed`).
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /v1/occurrences/{occurrence_id}/analysis (the `UpdateOccurrenceAnalysis` operationId).
+func (c *Client) UpdateOccurrenceAnalysisWithBody(ctx context.Context, occurrenceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateOccurrenceAnalysisRequestWithBody(c.Server, occurrenceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateOccurrenceAnalysis Record the analysis and follow-up of an occurrence, mark it analysed or closed
+//
+// Every member is optional; what is present is applied in one
+// transaction with one `occurrence_analysis_updated` events row
+// naming what changed (never the text). `state` moves a classified
+// report to `analysed` (an analysis is required) and an analysed
+// one to `closed`; a report not yet classified cannot be analysed
+// (409 `occurrence_not_classified`) and a closed one cannot change
+// (409 `occurrence_closed`).
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /v1/occurrences/{occurrence_id}/analysis (the `UpdateOccurrenceAnalysis` operationId).
+func (c *Client) UpdateOccurrenceAnalysis(ctx context.Context, occurrenceId string, body UpdateOccurrenceAnalysisJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateOccurrenceAnalysisRequest(c.Server, occurrenceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ClassifyOccurrenceWithBody Classify the safety risk of an occurrence (376 Art. 7(2))
+//
+// `risk_classification` is one class of the configured scheme
+// (`OCCURRENCES_RISK_CLASSES`; another value is 400 naming the
+// scheme). A received report becomes `classified`; a classified or
+// analysed one keeps its state with the new class; a closed one
+// is 409 `occurrence_closed`. Recorded with an
+// `occurrence_classified` events row (from, to).
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v1/occurrences/{occurrence_id}/classify (the `ClassifyOccurrence` operationId).
+func (c *Client) ClassifyOccurrenceWithBody(ctx context.Context, occurrenceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewClassifyOccurrenceRequestWithBody(c.Server, occurrenceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ClassifyOccurrence Classify the safety risk of an occurrence (376 Art. 7(2))
+//
+// `risk_classification` is one class of the configured scheme
+// (`OCCURRENCES_RISK_CLASSES`; another value is 400 naming the
+// scheme). A received report becomes `classified`; a classified or
+// analysed one keeps its state with the new class; a closed one
+// is 409 `occurrence_closed`. Recorded with an
+// `occurrence_classified` events row (from, to).
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v1/occurrences/{occurrence_id}/classify (the `ClassifyOccurrence` operationId).
+func (c *Client) ClassifyOccurrence(ctx context.Context, occurrenceId string, body ClassifyOccurrenceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewClassifyOccurrenceRequest(c.Server, occurrenceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetOccurrenceReporter The reporter of an occurrence (incident officers only; purpose required, audited)
+//
+// The reporting organisation, its reference and the reporter's
+// person reference opened from the occurrence key. Refused without
+// `purpose`; every read is an `occurrence_reporter_viewed` events
+// row with the purpose, written before the identity is returned
+// (376 Art. 16(1)). An inspector, whatever else it may read, is
+// 403 here. Without the occurrence key a sealed person reference
+// is 503 `occurrence_key_unavailable`.
+//
+// Corresponds with GET /v1/occurrences/{occurrence_id}/reporter (the `GetOccurrenceReporter` operationId).
+func (c *Client) GetOccurrenceReporter(ctx context.Context, occurrenceId string, params *GetOccurrenceReporterParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetOccurrenceReporterRequest(c.Server, occurrenceId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -12004,6 +12865,397 @@ func NewCompromiseSigningKeyRequestWithBody(server string, kid string, contentTy
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListOccurrencesRequest constructs an http.Request for the ListOccurrences method
+func NewListOccurrencesRequest(server string, params *ListOccurrencesParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/occurrences")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.State != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "state", *params.State, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Category != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "category", *params.Category, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Channel != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "channel", *params.Channel, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.From != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "from", *params.From, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.To != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "to", *params.To, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateOccurrenceRequest calls the generic CreateOccurrence builder with application/json body
+func NewCreateOccurrenceRequest(server string, body CreateOccurrenceJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateOccurrenceRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateOccurrenceRequestWithBody constructs an http.Request for the CreateOccurrence method, with any body, and a specified content type
+func NewCreateOccurrenceRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/occurrences")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewExportOccurrencesRequest calls the generic ExportOccurrences builder with application/json body
+func NewExportOccurrencesRequest(server string, body ExportOccurrencesJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewExportOccurrencesRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewExportOccurrencesRequestWithBody constructs an http.Request for the ExportOccurrences method, with any body, and a specified content type
+func NewExportOccurrencesRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/occurrences/export")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetOccurrenceRequest constructs an http.Request for the GetOccurrence method
+func NewGetOccurrenceRequest(server string, occurrenceId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "occurrence_id", occurrenceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/occurrences/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateOccurrenceAnalysisRequest calls the generic UpdateOccurrenceAnalysis builder with application/json body
+func NewUpdateOccurrenceAnalysisRequest(server string, occurrenceId string, body UpdateOccurrenceAnalysisJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateOccurrenceAnalysisRequestWithBody(server, occurrenceId, "application/json", bodyReader)
+}
+
+// NewUpdateOccurrenceAnalysisRequestWithBody constructs an http.Request for the UpdateOccurrenceAnalysis method, with any body, and a specified content type
+func NewUpdateOccurrenceAnalysisRequestWithBody(server string, occurrenceId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "occurrence_id", occurrenceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/occurrences/%s/analysis", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewClassifyOccurrenceRequest calls the generic ClassifyOccurrence builder with application/json body
+func NewClassifyOccurrenceRequest(server string, occurrenceId string, body ClassifyOccurrenceJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewClassifyOccurrenceRequestWithBody(server, occurrenceId, "application/json", bodyReader)
+}
+
+// NewClassifyOccurrenceRequestWithBody constructs an http.Request for the ClassifyOccurrence method, with any body, and a specified content type
+func NewClassifyOccurrenceRequestWithBody(server string, occurrenceId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "occurrence_id", occurrenceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/occurrences/%s/classify", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetOccurrenceReporterRequest constructs an http.Request for the GetOccurrenceReporter method
+func NewGetOccurrenceReporterRequest(server string, occurrenceId string, params *GetOccurrenceReporterParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "occurrence_id", occurrenceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/occurrences/%s/reporter", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "purpose", params.Purpose, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -16416,6 +17668,183 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /v1/oauth/keys/{kid}/compromised (the `CompromiseSigningKey` operationId).
 	CompromiseSigningKeyWithResponse(ctx context.Context, kid string, body CompromiseSigningKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*CompromiseSigningKeyResponse, error)
 
+	// ListOccurrencesWithResponse Occurrence reports, newest received first (no reporter identity)
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/occurrences (the `ListOccurrences` operationId).
+	ListOccurrencesWithResponse(ctx context.Context, params *ListOccurrencesParams, reqEditors ...RequestEditorFn) (*ListOccurrencesResponse, error)
+
+	// CreateOccurrenceWithBodyWithResponse Report an occurrence (occurrence/v1; USSPs, the ANSP)
+	//
+	// The body is `occurrence/v1` (schemas/occurrence/v1.json, owned
+	// here, M14). The sender is the token's `sub`, recorded as
+	// `reporter_org` (a `reporter.org` that differs is ignored and
+	// counted). Idempotent on (`reporter_org`, `report_ref`): the same
+	// report again answers 200 with the id given first; another
+	// report under the same reference is 409 `report_ref_conflict`.
+	// A report received more than the reporting deadline (72 h,
+	// `OCCURRENCES_REPORT_DEADLINE_S`) after `became_aware_at` is
+	// accepted with `within_72h: false`, never refused. A
+	// `became_aware_at` ahead of the database clock by more than the
+	// allowed skew, or before `occurred_at`, is 400. A
+	// `reporter.person_ref` is stored sealed under the occurrence key;
+	// without that key configured such a report is 503
+	// `occurrence_key_unavailable` (retry later), never stored in
+	// clear. Operator aircraft keep the registration number's public
+	// part only. Recorded with an `occurrence_received` events row
+	// that holds no reporter identity.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/occurrences (the `CreateOccurrence` operationId).
+	CreateOccurrenceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateOccurrenceResponse, error)
+
+	// CreateOccurrenceWithResponse Report an occurrence (occurrence/v1; USSPs, the ANSP)
+	//
+	// The body is `occurrence/v1` (schemas/occurrence/v1.json, owned
+	// here, M14). The sender is the token's `sub`, recorded as
+	// `reporter_org` (a `reporter.org` that differs is ignored and
+	// counted). Idempotent on (`reporter_org`, `report_ref`): the same
+	// report again answers 200 with the id given first; another
+	// report under the same reference is 409 `report_ref_conflict`.
+	// A report received more than the reporting deadline (72 h,
+	// `OCCURRENCES_REPORT_DEADLINE_S`) after `became_aware_at` is
+	// accepted with `within_72h: false`, never refused. A
+	// `became_aware_at` ahead of the database clock by more than the
+	// allowed skew, or before `occurred_at`, is 400. A
+	// `reporter.person_ref` is stored sealed under the occurrence key;
+	// without that key configured such a report is 503
+	// `occurrence_key_unavailable` (retry later), never stored in
+	// clear. Operator aircraft keep the registration number's public
+	// part only. Recorded with an `occurrence_received` events row
+	// that holds no reporter identity.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/occurrences (the `CreateOccurrence` operationId).
+	CreateOccurrenceWithResponse(ctx context.Context, body CreateOccurrenceJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateOccurrenceResponse, error)
+
+	// ExportOccurrencesWithBodyWithResponse A de-identified export of the reports received in a window (hash-sealed, audited)
+	//
+	// Builds the de-identified record set of the reports received in
+	// [`from`, `to`) in `format` (default `eccairs-compatible-draft`,
+	// the only format of this build; the E5X writer is open question
+	// Q-A12). No reporter organisation, reporter reference, person,
+	// name or address; aircraft by serial and the registration
+	// number's public part; the narrative as the reporter wrote it
+	// (the officer redacts it before filing). `content` is the exact
+	// document; `content_hash` is the SHA-256 of its UTF-8 bytes,
+	// recorded in `deidentified_exports` and in the
+	// `occurrence_export_created` events row. A window holding more
+	// reports than `OCCURRENCES_EXPORT_MAX_RECORDS` is refused
+	// (`export_too_large`), never thinned.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/occurrences/export (the `ExportOccurrences` operationId).
+	ExportOccurrencesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ExportOccurrencesResponse, error)
+
+	// ExportOccurrencesWithResponse A de-identified export of the reports received in a window (hash-sealed, audited)
+	//
+	// Builds the de-identified record set of the reports received in
+	// [`from`, `to`) in `format` (default `eccairs-compatible-draft`,
+	// the only format of this build; the E5X writer is open question
+	// Q-A12). No reporter organisation, reporter reference, person,
+	// name or address; aircraft by serial and the registration
+	// number's public part; the narrative as the reporter wrote it
+	// (the officer redacts it before filing). `content` is the exact
+	// document; `content_hash` is the SHA-256 of its UTF-8 bytes,
+	// recorded in `deidentified_exports` and in the
+	// `occurrence_export_created` events row. A window holding more
+	// reports than `OCCURRENCES_EXPORT_MAX_RECORDS` is refused
+	// (`export_too_large`), never thinned.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/occurrences/export (the `ExportOccurrences` operationId).
+	ExportOccurrencesWithResponse(ctx context.Context, body ExportOccurrencesJSONRequestBody, reqEditors ...RequestEditorFn) (*ExportOccurrencesResponse, error)
+
+	// GetOccurrenceWithResponse One occurrence report (no reporter identity)
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/occurrences/{occurrence_id} (the `GetOccurrence` operationId).
+	GetOccurrenceWithResponse(ctx context.Context, occurrenceId string, reqEditors ...RequestEditorFn) (*GetOccurrenceResponse, error)
+
+	// UpdateOccurrenceAnalysisWithBodyWithResponse Record the analysis and follow-up of an occurrence, mark it analysed or closed
+	//
+	// Every member is optional; what is present is applied in one
+	// transaction with one `occurrence_analysis_updated` events row
+	// naming what changed (never the text). `state` moves a classified
+	// report to `analysed` (an analysis is required) and an analysed
+	// one to `closed`; a report not yet classified cannot be analysed
+	// (409 `occurrence_not_classified`) and a closed one cannot change
+	// (409 `occurrence_closed`).
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v1/occurrences/{occurrence_id}/analysis (the `UpdateOccurrenceAnalysis` operationId).
+	UpdateOccurrenceAnalysisWithBodyWithResponse(ctx context.Context, occurrenceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateOccurrenceAnalysisResponse, error)
+
+	// UpdateOccurrenceAnalysisWithResponse Record the analysis and follow-up of an occurrence, mark it analysed or closed
+	//
+	// Every member is optional; what is present is applied in one
+	// transaction with one `occurrence_analysis_updated` events row
+	// naming what changed (never the text). `state` moves a classified
+	// report to `analysed` (an analysis is required) and an analysed
+	// one to `closed`; a report not yet classified cannot be analysed
+	// (409 `occurrence_not_classified`) and a closed one cannot change
+	// (409 `occurrence_closed`).
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v1/occurrences/{occurrence_id}/analysis (the `UpdateOccurrenceAnalysis` operationId).
+	UpdateOccurrenceAnalysisWithResponse(ctx context.Context, occurrenceId string, body UpdateOccurrenceAnalysisJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateOccurrenceAnalysisResponse, error)
+
+	// ClassifyOccurrenceWithBodyWithResponse Classify the safety risk of an occurrence (376 Art. 7(2))
+	//
+	// `risk_classification` is one class of the configured scheme
+	// (`OCCURRENCES_RISK_CLASSES`; another value is 400 naming the
+	// scheme). A received report becomes `classified`; a classified or
+	// analysed one keeps its state with the new class; a closed one
+	// is 409 `occurrence_closed`. Recorded with an
+	// `occurrence_classified` events row (from, to).
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/occurrences/{occurrence_id}/classify (the `ClassifyOccurrence` operationId).
+	ClassifyOccurrenceWithBodyWithResponse(ctx context.Context, occurrenceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ClassifyOccurrenceResponse, error)
+
+	// ClassifyOccurrenceWithResponse Classify the safety risk of an occurrence (376 Art. 7(2))
+	//
+	// `risk_classification` is one class of the configured scheme
+	// (`OCCURRENCES_RISK_CLASSES`; another value is 400 naming the
+	// scheme). A received report becomes `classified`; a classified or
+	// analysed one keeps its state with the new class; a closed one
+	// is 409 `occurrence_closed`. Recorded with an
+	// `occurrence_classified` events row (from, to).
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v1/occurrences/{occurrence_id}/classify (the `ClassifyOccurrence` operationId).
+	ClassifyOccurrenceWithResponse(ctx context.Context, occurrenceId string, body ClassifyOccurrenceJSONRequestBody, reqEditors ...RequestEditorFn) (*ClassifyOccurrenceResponse, error)
+
+	// GetOccurrenceReporterWithResponse The reporter of an occurrence (incident officers only; purpose required, audited)
+	//
+	// The reporting organisation, its reference and the reporter's
+	// person reference opened from the occurrence key. Refused without
+	// `purpose`; every read is an `occurrence_reporter_viewed` events
+	// row with the purpose, written before the identity is returned
+	// (376 Art. 16(1)). An inspector, whatever else it may read, is
+	// 403 here. Without the occurrence key a sealed person reference
+	// is 503 `occurrence_key_unavailable`.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/occurrences/{occurrence_id}/reporter (the `GetOccurrenceReporter` operationId).
+	GetOccurrenceReporterWithResponse(ctx context.Context, occurrenceId string, params *GetOccurrenceReporterParams, reqEditors ...RequestEditorFn) (*GetOccurrenceReporterResponse, error)
+
 	// GetPolicyWithResponse The active policy
 	//
 	// The one active policy version and its thresholds.
@@ -20043,6 +21472,468 @@ func (r CompromiseSigningKeyResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CompromiseSigningKeyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListOccurrencesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *OccurrencePage
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ListOccurrencesResponse) GetJSON200() *OccurrencePage {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r ListOccurrencesResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ListOccurrencesResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ListOccurrencesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ListOccurrencesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListOccurrencesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListOccurrencesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateOccurrenceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *OccurrenceReceipt
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *OccurrenceReceipt
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *Problem
+	// ApplicationproblemJSON413 the response for an HTTP 413 `application/problem+json` response
+	ApplicationproblemJSON413 *Problem
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r CreateOccurrenceResponse) GetJSON200() *OccurrenceReceipt {
+	return r.JSON200
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateOccurrenceResponse) GetJSON201() *OccurrenceReceipt {
+	return r.JSON201
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r CreateOccurrenceResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r CreateOccurrenceResponse) GetApplicationproblemJSON409() *Problem {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSON413 returns the response for an HTTP 413 `application/problem+json` response
+func (r CreateOccurrenceResponse) GetApplicationproblemJSON413() *Problem {
+	return r.ApplicationproblemJSON413
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r CreateOccurrenceResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r CreateOccurrenceResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateOccurrenceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateOccurrenceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateOccurrenceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateOccurrenceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ExportOccurrencesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *OccurrenceExport
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r ExportOccurrencesResponse) GetJSON201() *OccurrenceExport {
+	return r.JSON201
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r ExportOccurrencesResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ExportOccurrencesResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ExportOccurrencesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ExportOccurrencesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ExportOccurrencesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ExportOccurrencesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetOccurrenceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Occurrence
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetOccurrenceResponse) GetJSON200() *Occurrence {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r GetOccurrenceResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetOccurrenceResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetOccurrenceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetOccurrenceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetOccurrenceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetOccurrenceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateOccurrenceAnalysisResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Occurrence
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateOccurrenceAnalysisResponse) GetJSON200() *Occurrence {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r UpdateOccurrenceAnalysisResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r UpdateOccurrenceAnalysisResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r UpdateOccurrenceAnalysisResponse) GetApplicationproblemJSON409() *Problem {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r UpdateOccurrenceAnalysisResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateOccurrenceAnalysisResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateOccurrenceAnalysisResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateOccurrenceAnalysisResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateOccurrenceAnalysisResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ClassifyOccurrenceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Occurrence
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ClassifyOccurrenceResponse) GetJSON200() *Occurrence {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r ClassifyOccurrenceResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r ClassifyOccurrenceResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r ClassifyOccurrenceResponse) GetApplicationproblemJSON409() *Problem {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r ClassifyOccurrenceResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r ClassifyOccurrenceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ClassifyOccurrenceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ClassifyOccurrenceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ClassifyOccurrenceResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// GetOccurrenceReporterResponse200Headers the declared response headers of an HTTP 200 response for GetOccurrenceReporter
+type GetOccurrenceReporterResponse200Headers struct {
+	CacheControl *string
+}
+
+type GetOccurrenceReporterResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *OccurrenceReporter
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *Problem
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *Problem
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *Problem
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetOccurrenceReporterResponse200Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetOccurrenceReporterResponse) GetJSON200() *OccurrenceReporter {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r GetOccurrenceReporterResponse) GetApplicationproblemJSON400() *Problem {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r GetOccurrenceReporterResponse) GetApplicationproblemJSON404() *Problem {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r GetOccurrenceReporterResponse) GetApplicationproblemJSON503() *Problem {
+	return r.ApplicationproblemJSON503
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetOccurrenceReporterResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetOccurrenceReporterResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetOccurrenceReporterResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetOccurrenceReporterResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetOccurrenceReporterResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -24743,6 +26634,249 @@ func (c *ClientWithResponses) CompromiseSigningKeyWithResponse(ctx context.Conte
 	return ParseCompromiseSigningKeyResponse(rsp)
 }
 
+// ListOccurrencesWithResponse Occurrence reports, newest received first (no reporter identity)
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/occurrences (the `ListOccurrences` operationId).
+func (c *ClientWithResponses) ListOccurrencesWithResponse(ctx context.Context, params *ListOccurrencesParams, reqEditors ...RequestEditorFn) (*ListOccurrencesResponse, error) {
+	rsp, err := c.ListOccurrences(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListOccurrencesResponse(rsp)
+}
+
+// CreateOccurrenceWithBodyWithResponse Report an occurrence (occurrence/v1; USSPs, the ANSP)
+//
+// The body is `occurrence/v1` (schemas/occurrence/v1.json, owned
+// here, M14). The sender is the token's `sub`, recorded as
+// `reporter_org` (a `reporter.org` that differs is ignored and
+// counted). Idempotent on (`reporter_org`, `report_ref`): the same
+// report again answers 200 with the id given first; another
+// report under the same reference is 409 `report_ref_conflict`.
+// A report received more than the reporting deadline (72 h,
+// `OCCURRENCES_REPORT_DEADLINE_S`) after `became_aware_at` is
+// accepted with `within_72h: false`, never refused. A
+// `became_aware_at` ahead of the database clock by more than the
+// allowed skew, or before `occurred_at`, is 400. A
+// `reporter.person_ref` is stored sealed under the occurrence key;
+// without that key configured such a report is 503
+// `occurrence_key_unavailable` (retry later), never stored in
+// clear. Operator aircraft keep the registration number's public
+// part only. Recorded with an `occurrence_received` events row
+// that holds no reporter identity.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/occurrences (the `CreateOccurrence` operationId).
+func (c *ClientWithResponses) CreateOccurrenceWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateOccurrenceResponse, error) {
+	rsp, err := c.CreateOccurrenceWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateOccurrenceResponse(rsp)
+}
+
+// CreateOccurrenceWithResponse Report an occurrence (occurrence/v1; USSPs, the ANSP)
+//
+// The body is `occurrence/v1` (schemas/occurrence/v1.json, owned
+// here, M14). The sender is the token's `sub`, recorded as
+// `reporter_org` (a `reporter.org` that differs is ignored and
+// counted). Idempotent on (`reporter_org`, `report_ref`): the same
+// report again answers 200 with the id given first; another
+// report under the same reference is 409 `report_ref_conflict`.
+// A report received more than the reporting deadline (72 h,
+// `OCCURRENCES_REPORT_DEADLINE_S`) after `became_aware_at` is
+// accepted with `within_72h: false`, never refused. A
+// `became_aware_at` ahead of the database clock by more than the
+// allowed skew, or before `occurred_at`, is 400. A
+// `reporter.person_ref` is stored sealed under the occurrence key;
+// without that key configured such a report is 503
+// `occurrence_key_unavailable` (retry later), never stored in
+// clear. Operator aircraft keep the registration number's public
+// part only. Recorded with an `occurrence_received` events row
+// that holds no reporter identity.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/occurrences (the `CreateOccurrence` operationId).
+func (c *ClientWithResponses) CreateOccurrenceWithResponse(ctx context.Context, body CreateOccurrenceJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateOccurrenceResponse, error) {
+	rsp, err := c.CreateOccurrence(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateOccurrenceResponse(rsp)
+}
+
+// ExportOccurrencesWithBodyWithResponse A de-identified export of the reports received in a window (hash-sealed, audited)
+//
+// Builds the de-identified record set of the reports received in
+// [`from`, `to`) in `format` (default `eccairs-compatible-draft`,
+// the only format of this build; the E5X writer is open question
+// Q-A12). No reporter organisation, reporter reference, person,
+// name or address; aircraft by serial and the registration
+// number's public part; the narrative as the reporter wrote it
+// (the officer redacts it before filing). `content` is the exact
+// document; `content_hash` is the SHA-256 of its UTF-8 bytes,
+// recorded in `deidentified_exports` and in the
+// `occurrence_export_created` events row. A window holding more
+// reports than `OCCURRENCES_EXPORT_MAX_RECORDS` is refused
+// (`export_too_large`), never thinned.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/occurrences/export (the `ExportOccurrences` operationId).
+func (c *ClientWithResponses) ExportOccurrencesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ExportOccurrencesResponse, error) {
+	rsp, err := c.ExportOccurrencesWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseExportOccurrencesResponse(rsp)
+}
+
+// ExportOccurrencesWithResponse A de-identified export of the reports received in a window (hash-sealed, audited)
+//
+// Builds the de-identified record set of the reports received in
+// [`from`, `to`) in `format` (default `eccairs-compatible-draft`,
+// the only format of this build; the E5X writer is open question
+// Q-A12). No reporter organisation, reporter reference, person,
+// name or address; aircraft by serial and the registration
+// number's public part; the narrative as the reporter wrote it
+// (the officer redacts it before filing). `content` is the exact
+// document; `content_hash` is the SHA-256 of its UTF-8 bytes,
+// recorded in `deidentified_exports` and in the
+// `occurrence_export_created` events row. A window holding more
+// reports than `OCCURRENCES_EXPORT_MAX_RECORDS` is refused
+// (`export_too_large`), never thinned.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/occurrences/export (the `ExportOccurrences` operationId).
+func (c *ClientWithResponses) ExportOccurrencesWithResponse(ctx context.Context, body ExportOccurrencesJSONRequestBody, reqEditors ...RequestEditorFn) (*ExportOccurrencesResponse, error) {
+	rsp, err := c.ExportOccurrences(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseExportOccurrencesResponse(rsp)
+}
+
+// GetOccurrenceWithResponse One occurrence report (no reporter identity)
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/occurrences/{occurrence_id} (the `GetOccurrence` operationId).
+func (c *ClientWithResponses) GetOccurrenceWithResponse(ctx context.Context, occurrenceId string, reqEditors ...RequestEditorFn) (*GetOccurrenceResponse, error) {
+	rsp, err := c.GetOccurrence(ctx, occurrenceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetOccurrenceResponse(rsp)
+}
+
+// UpdateOccurrenceAnalysisWithBodyWithResponse Record the analysis and follow-up of an occurrence, mark it analysed or closed
+//
+// Every member is optional; what is present is applied in one
+// transaction with one `occurrence_analysis_updated` events row
+// naming what changed (never the text). `state` moves a classified
+// report to `analysed` (an analysis is required) and an analysed
+// one to `closed`; a report not yet classified cannot be analysed
+// (409 `occurrence_not_classified`) and a closed one cannot change
+// (409 `occurrence_closed`).
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v1/occurrences/{occurrence_id}/analysis (the `UpdateOccurrenceAnalysis` operationId).
+func (c *ClientWithResponses) UpdateOccurrenceAnalysisWithBodyWithResponse(ctx context.Context, occurrenceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateOccurrenceAnalysisResponse, error) {
+	rsp, err := c.UpdateOccurrenceAnalysisWithBody(ctx, occurrenceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateOccurrenceAnalysisResponse(rsp)
+}
+
+// UpdateOccurrenceAnalysisWithResponse Record the analysis and follow-up of an occurrence, mark it analysed or closed
+//
+// Every member is optional; what is present is applied in one
+// transaction with one `occurrence_analysis_updated` events row
+// naming what changed (never the text). `state` moves a classified
+// report to `analysed` (an analysis is required) and an analysed
+// one to `closed`; a report not yet classified cannot be analysed
+// (409 `occurrence_not_classified`) and a closed one cannot change
+// (409 `occurrence_closed`).
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v1/occurrences/{occurrence_id}/analysis (the `UpdateOccurrenceAnalysis` operationId).
+func (c *ClientWithResponses) UpdateOccurrenceAnalysisWithResponse(ctx context.Context, occurrenceId string, body UpdateOccurrenceAnalysisJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateOccurrenceAnalysisResponse, error) {
+	rsp, err := c.UpdateOccurrenceAnalysis(ctx, occurrenceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateOccurrenceAnalysisResponse(rsp)
+}
+
+// ClassifyOccurrenceWithBodyWithResponse Classify the safety risk of an occurrence (376 Art. 7(2))
+//
+// `risk_classification` is one class of the configured scheme
+// (`OCCURRENCES_RISK_CLASSES`; another value is 400 naming the
+// scheme). A received report becomes `classified`; a classified or
+// analysed one keeps its state with the new class; a closed one
+// is 409 `occurrence_closed`. Recorded with an
+// `occurrence_classified` events row (from, to).
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/occurrences/{occurrence_id}/classify (the `ClassifyOccurrence` operationId).
+func (c *ClientWithResponses) ClassifyOccurrenceWithBodyWithResponse(ctx context.Context, occurrenceId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ClassifyOccurrenceResponse, error) {
+	rsp, err := c.ClassifyOccurrenceWithBody(ctx, occurrenceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseClassifyOccurrenceResponse(rsp)
+}
+
+// ClassifyOccurrenceWithResponse Classify the safety risk of an occurrence (376 Art. 7(2))
+//
+// `risk_classification` is one class of the configured scheme
+// (`OCCURRENCES_RISK_CLASSES`; another value is 400 naming the
+// scheme). A received report becomes `classified`; a classified or
+// analysed one keeps its state with the new class; a closed one
+// is 409 `occurrence_closed`. Recorded with an
+// `occurrence_classified` events row (from, to).
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v1/occurrences/{occurrence_id}/classify (the `ClassifyOccurrence` operationId).
+func (c *ClientWithResponses) ClassifyOccurrenceWithResponse(ctx context.Context, occurrenceId string, body ClassifyOccurrenceJSONRequestBody, reqEditors ...RequestEditorFn) (*ClassifyOccurrenceResponse, error) {
+	rsp, err := c.ClassifyOccurrence(ctx, occurrenceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseClassifyOccurrenceResponse(rsp)
+}
+
+// GetOccurrenceReporterWithResponse The reporter of an occurrence (incident officers only; purpose required, audited)
+//
+// The reporting organisation, its reference and the reporter's
+// person reference opened from the occurrence key. Refused without
+// `purpose`; every read is an `occurrence_reporter_viewed` events
+// row with the purpose, written before the identity is returned
+// (376 Art. 16(1)). An inspector, whatever else it may read, is
+// 403 here. Without the occurrence key a sealed person reference
+// is 503 `occurrence_key_unavailable`.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/occurrences/{occurrence_id}/reporter (the `GetOccurrenceReporter` operationId).
+func (c *ClientWithResponses) GetOccurrenceReporterWithResponse(ctx context.Context, occurrenceId string, params *GetOccurrenceReporterParams, reqEditors ...RequestEditorFn) (*GetOccurrenceReporterResponse, error) {
+	rsp, err := c.GetOccurrenceReporter(ctx, occurrenceId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetOccurrenceReporterResponse(rsp)
+}
+
 // GetPolicyWithResponse The active policy
 //
 // The one active policy version and its thresholds.
@@ -28375,6 +30509,369 @@ func ParseCompromiseSigningKeyResponse(rsp *http.Response) (*CompromiseSigningKe
 	return response, nil
 }
 
+// ParseListOccurrencesResponse parses an HTTP response from a ListOccurrencesWithResponse call
+func ParseListOccurrencesResponse(rsp *http.Response) (*ListOccurrencesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListOccurrencesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OccurrencePage
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateOccurrenceResponse parses an HTTP response from a CreateOccurrenceWithResponse call
+func ParseCreateOccurrenceResponse(rsp *http.Response) (*CreateOccurrenceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateOccurrenceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OccurrenceReceipt
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest OccurrenceReceipt
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseExportOccurrencesResponse parses an HTTP response from a ExportOccurrencesWithResponse call
+func ParseExportOccurrencesResponse(rsp *http.Response) (*ExportOccurrencesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ExportOccurrencesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest OccurrenceExport
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetOccurrenceResponse parses an HTTP response from a GetOccurrenceWithResponse call
+func ParseGetOccurrenceResponse(rsp *http.Response) (*GetOccurrenceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetOccurrenceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Occurrence
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateOccurrenceAnalysisResponse parses an HTTP response from a UpdateOccurrenceAnalysisWithResponse call
+func ParseUpdateOccurrenceAnalysisResponse(rsp *http.Response) (*UpdateOccurrenceAnalysisResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateOccurrenceAnalysisResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Occurrence
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseClassifyOccurrenceResponse parses an HTTP response from a ClassifyOccurrenceWithResponse call
+func ParseClassifyOccurrenceResponse(rsp *http.Response) (*ClassifyOccurrenceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ClassifyOccurrenceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Occurrence
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetOccurrenceReporterResponse parses an HTTP response from a GetOccurrenceReporterWithResponse call
+func ParseGetOccurrenceReporterResponse(rsp *http.Response) (*GetOccurrenceReporterResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetOccurrenceReporterResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OccurrenceReporter
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetOccurrenceReporterResponse200Headers
+		if values := rsp.Header.Values("Cache-Control"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Cache-Control", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.CacheControl = &value
+		}
+		response.Headers200 = &headers
+	}
+
+	return response, nil
+}
+
 // ParseGetPolicyResponse parses an HTTP response from a GetPolicyWithResponse call
 func ParseGetPolicyResponse(rsp *http.Response) (*GetPolicyResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -30945,6 +33442,27 @@ type ServerInterface interface {
 	// CompromiseSigningKey Drop a compromised key now
 	// (POST /v1/oauth/keys/{kid}/compromised)
 	CompromiseSigningKey(w http.ResponseWriter, r *http.Request, kid string)
+	// ListOccurrences Occurrence reports, newest received first (no reporter identity)
+	// (GET /v1/occurrences)
+	ListOccurrences(w http.ResponseWriter, r *http.Request, params ListOccurrencesParams)
+	// CreateOccurrence Report an occurrence (occurrence/v1; USSPs, the ANSP)
+	// (POST /v1/occurrences)
+	CreateOccurrence(w http.ResponseWriter, r *http.Request)
+	// ExportOccurrences A de-identified export of the reports received in a window (hash-sealed, audited)
+	// (POST /v1/occurrences/export)
+	ExportOccurrences(w http.ResponseWriter, r *http.Request)
+	// GetOccurrence One occurrence report (no reporter identity)
+	// (GET /v1/occurrences/{occurrence_id})
+	GetOccurrence(w http.ResponseWriter, r *http.Request, occurrenceId string)
+	// UpdateOccurrenceAnalysis Record the analysis and follow-up of an occurrence, mark it analysed or closed
+	// (PATCH /v1/occurrences/{occurrence_id}/analysis)
+	UpdateOccurrenceAnalysis(w http.ResponseWriter, r *http.Request, occurrenceId string)
+	// ClassifyOccurrence Classify the safety risk of an occurrence (376 Art. 7(2))
+	// (POST /v1/occurrences/{occurrence_id}/classify)
+	ClassifyOccurrence(w http.ResponseWriter, r *http.Request, occurrenceId string)
+	// GetOccurrenceReporter The reporter of an occurrence (incident officers only; purpose required, audited)
+	// (GET /v1/occurrences/{occurrence_id}/reporter)
+	GetOccurrenceReporter(w http.ResponseWriter, r *http.Request, occurrenceId string, params GetOccurrenceReporterParams)
 	// GetPolicy The active policy
 	// (GET /v1/policy)
 	GetPolicy(w http.ResponseWriter, r *http.Request)
@@ -32254,6 +34772,265 @@ func (siw *ServerInterfaceWrapper) CompromiseSigningKey(w http.ResponseWriter, r
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CompromiseSigningKey(w, r, kid)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListOccurrences operation middleware
+func (siw *ServerInterfaceWrapper) ListOccurrences(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListOccurrencesParams
+
+	// ------------- Optional query parameter "state" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "category" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "category", r.URL.Query(), &params.Category, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "category"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "category", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "channel" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "channel", r.URL.Query(), &params.Channel, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "channel"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "channel", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListOccurrences(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateOccurrence operation middleware
+func (siw *ServerInterfaceWrapper) CreateOccurrence(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateOccurrence(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ExportOccurrences operation middleware
+func (siw *ServerInterfaceWrapper) ExportOccurrences(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ExportOccurrences(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetOccurrence operation middleware
+func (siw *ServerInterfaceWrapper) GetOccurrence(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "occurrence_id" -------------
+	var occurrenceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "occurrence_id", r.PathValue("occurrence_id"), &occurrenceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "occurrence_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetOccurrence(w, r, occurrenceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateOccurrenceAnalysis operation middleware
+func (siw *ServerInterfaceWrapper) UpdateOccurrenceAnalysis(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "occurrence_id" -------------
+	var occurrenceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "occurrence_id", r.PathValue("occurrence_id"), &occurrenceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "occurrence_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateOccurrenceAnalysis(w, r, occurrenceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ClassifyOccurrence operation middleware
+func (siw *ServerInterfaceWrapper) ClassifyOccurrence(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "occurrence_id" -------------
+	var occurrenceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "occurrence_id", r.PathValue("occurrence_id"), &occurrenceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "occurrence_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ClassifyOccurrence(w, r, occurrenceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetOccurrenceReporter operation middleware
+func (siw *ServerInterfaceWrapper) GetOccurrenceReporter(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "occurrence_id" -------------
+	var occurrenceId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "occurrence_id", r.PathValue("occurrence_id"), &occurrenceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "occurrence_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetOccurrenceReporterParams
+
+	// ------------- Required query parameter "purpose" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "purpose", r.URL.Query(), &params.Purpose, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "purpose"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "purpose", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetOccurrenceReporter(w, r, occurrenceId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -34785,6 +37562,13 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/incidents/{incident_id}/evidence-packs/{pack_id}", wrapper.GetEvidencePack)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/incidents/{incident_id}/evidence-packs/{pack_id}/download", wrapper.DownloadEvidencePack)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/incidents/{incident_id}/evidence-packs/{pack_id}/verify", wrapper.VerifyEvidencePack)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/occurrences", wrapper.ListOccurrences)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/occurrences", wrapper.CreateOccurrence)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/occurrences/export", wrapper.ExportOccurrences)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/occurrences/{occurrence_id}", wrapper.GetOccurrence)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/occurrences/{occurrence_id}/reporter", wrapper.GetOccurrenceReporter)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/occurrences/{occurrence_id}/classify", wrapper.ClassifyOccurrence)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/v1/occurrences/{occurrence_id}/analysis", wrapper.UpdateOccurrenceAnalysis)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/certificates", wrapper.ListCertificates)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/certificates", wrapper.IssueCertificate)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/certificates/register", wrapper.GetCertificateRegister)
@@ -37512,6 +40296,544 @@ type CompromiseSigningKeydefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response CompromiseSigningKeydefaultApplicationProblemPlusJSONResponse) VisitCompromiseSigningKeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListOccurrencesRequestObject struct {
+	Params ListOccurrencesParams
+}
+
+type ListOccurrencesResponseObject interface {
+	VisitListOccurrencesResponse(w http.ResponseWriter) error
+}
+
+type ListOccurrences200JSONResponse OccurrencePage
+
+func (response ListOccurrences200JSONResponse) VisitListOccurrencesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListOccurrences400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response ListOccurrences400ApplicationProblemPlusJSONResponse) VisitListOccurrencesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListOccurrencesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListOccurrencesdefaultApplicationProblemPlusJSONResponse) VisitListOccurrencesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOccurrenceRequestObject struct {
+	Body *CreateOccurrenceJSONRequestBody
+}
+
+type CreateOccurrenceResponseObject interface {
+	VisitCreateOccurrenceResponse(w http.ResponseWriter) error
+}
+
+type CreateOccurrence200JSONResponse OccurrenceReceipt
+
+func (response CreateOccurrence200JSONResponse) VisitCreateOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOccurrence201JSONResponse OccurrenceReceipt
+
+func (response CreateOccurrence201JSONResponse) VisitCreateOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOccurrence400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response CreateOccurrence400ApplicationProblemPlusJSONResponse) VisitCreateOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOccurrence409ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateOccurrence409ApplicationProblemPlusJSONResponse) VisitCreateOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOccurrence413ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateOccurrence413ApplicationProblemPlusJSONResponse) VisitCreateOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(413)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOccurrence503ApplicationProblemPlusJSONResponse Problem
+
+func (response CreateOccurrence503ApplicationProblemPlusJSONResponse) VisitCreateOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateOccurrencedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateOccurrencedefaultApplicationProblemPlusJSONResponse) VisitCreateOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExportOccurrencesRequestObject struct {
+	Body *ExportOccurrencesJSONRequestBody
+}
+
+type ExportOccurrencesResponseObject interface {
+	VisitExportOccurrencesResponse(w http.ResponseWriter) error
+}
+
+type ExportOccurrences201JSONResponse OccurrenceExport
+
+func (response ExportOccurrences201JSONResponse) VisitExportOccurrencesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExportOccurrences400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response ExportOccurrences400ApplicationProblemPlusJSONResponse) VisitExportOccurrencesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExportOccurrencesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ExportOccurrencesdefaultApplicationProblemPlusJSONResponse) VisitExportOccurrencesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOccurrenceRequestObject struct {
+	OccurrenceId string `json:"occurrence_id"`
+}
+
+type GetOccurrenceResponseObject interface {
+	VisitGetOccurrenceResponse(w http.ResponseWriter) error
+}
+
+type GetOccurrence200JSONResponse Occurrence
+
+func (response GetOccurrence200JSONResponse) VisitGetOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOccurrence404ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetOccurrence404ApplicationProblemPlusJSONResponse) VisitGetOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOccurrencedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetOccurrencedefaultApplicationProblemPlusJSONResponse) VisitGetOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateOccurrenceAnalysisRequestObject struct {
+	OccurrenceId string `json:"occurrence_id"`
+	Body         *UpdateOccurrenceAnalysisJSONRequestBody
+}
+
+type UpdateOccurrenceAnalysisResponseObject interface {
+	VisitUpdateOccurrenceAnalysisResponse(w http.ResponseWriter) error
+}
+
+type UpdateOccurrenceAnalysis200JSONResponse Occurrence
+
+func (response UpdateOccurrenceAnalysis200JSONResponse) VisitUpdateOccurrenceAnalysisResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateOccurrenceAnalysis400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response UpdateOccurrenceAnalysis400ApplicationProblemPlusJSONResponse) VisitUpdateOccurrenceAnalysisResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateOccurrenceAnalysis404ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateOccurrenceAnalysis404ApplicationProblemPlusJSONResponse) VisitUpdateOccurrenceAnalysisResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateOccurrenceAnalysis409ApplicationProblemPlusJSONResponse Problem
+
+func (response UpdateOccurrenceAnalysis409ApplicationProblemPlusJSONResponse) VisitUpdateOccurrenceAnalysisResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateOccurrenceAnalysisdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpdateOccurrenceAnalysisdefaultApplicationProblemPlusJSONResponse) VisitUpdateOccurrenceAnalysisResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ClassifyOccurrenceRequestObject struct {
+	OccurrenceId string `json:"occurrence_id"`
+	Body         *ClassifyOccurrenceJSONRequestBody
+}
+
+type ClassifyOccurrenceResponseObject interface {
+	VisitClassifyOccurrenceResponse(w http.ResponseWriter) error
+}
+
+type ClassifyOccurrence200JSONResponse Occurrence
+
+func (response ClassifyOccurrence200JSONResponse) VisitClassifyOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ClassifyOccurrence400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response ClassifyOccurrence400ApplicationProblemPlusJSONResponse) VisitClassifyOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ClassifyOccurrence404ApplicationProblemPlusJSONResponse Problem
+
+func (response ClassifyOccurrence404ApplicationProblemPlusJSONResponse) VisitClassifyOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ClassifyOccurrence409ApplicationProblemPlusJSONResponse Problem
+
+func (response ClassifyOccurrence409ApplicationProblemPlusJSONResponse) VisitClassifyOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ClassifyOccurrencedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ClassifyOccurrencedefaultApplicationProblemPlusJSONResponse) VisitClassifyOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOccurrenceReporterRequestObject struct {
+	OccurrenceId string `json:"occurrence_id"`
+	Params       GetOccurrenceReporterParams
+}
+
+type GetOccurrenceReporterResponseObject interface {
+	VisitGetOccurrenceReporterResponse(w http.ResponseWriter) error
+}
+
+type GetOccurrenceReporter200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetOccurrenceReporter200JSONResponse struct {
+	Body    OccurrenceReporter
+	Headers GetOccurrenceReporter200ResponseHeaders
+}
+
+func (response GetOccurrenceReporter200JSONResponse) VisitGetOccurrenceReporterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOccurrenceReporter400ApplicationProblemPlusJSONResponse struct {
+	ProblemApplicationProblemPlusJSONResponse
+}
+
+func (response GetOccurrenceReporter400ApplicationProblemPlusJSONResponse) VisitGetOccurrenceReporterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOccurrenceReporter404ApplicationProblemPlusJSONResponse Problem
+
+func (response GetOccurrenceReporter404ApplicationProblemPlusJSONResponse) VisitGetOccurrenceReporterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOccurrenceReporter503ApplicationProblemPlusJSONResponse Problem
+
+func (response GetOccurrenceReporter503ApplicationProblemPlusJSONResponse) VisitGetOccurrenceReporterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOccurrenceReporterdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetOccurrenceReporterdefaultApplicationProblemPlusJSONResponse) VisitGetOccurrenceReporterResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -40698,6 +44020,27 @@ type StrictServerInterface interface {
 	// CompromiseSigningKey Drop a compromised key now
 	// (POST /v1/oauth/keys/{kid}/compromised)
 	CompromiseSigningKey(ctx context.Context, request CompromiseSigningKeyRequestObject) (CompromiseSigningKeyResponseObject, error)
+	// ListOccurrences Occurrence reports, newest received first (no reporter identity)
+	// (GET /v1/occurrences)
+	ListOccurrences(ctx context.Context, request ListOccurrencesRequestObject) (ListOccurrencesResponseObject, error)
+	// CreateOccurrence Report an occurrence (occurrence/v1; USSPs, the ANSP)
+	// (POST /v1/occurrences)
+	CreateOccurrence(ctx context.Context, request CreateOccurrenceRequestObject) (CreateOccurrenceResponseObject, error)
+	// ExportOccurrences A de-identified export of the reports received in a window (hash-sealed, audited)
+	// (POST /v1/occurrences/export)
+	ExportOccurrences(ctx context.Context, request ExportOccurrencesRequestObject) (ExportOccurrencesResponseObject, error)
+	// GetOccurrence One occurrence report (no reporter identity)
+	// (GET /v1/occurrences/{occurrence_id})
+	GetOccurrence(ctx context.Context, request GetOccurrenceRequestObject) (GetOccurrenceResponseObject, error)
+	// UpdateOccurrenceAnalysis Record the analysis and follow-up of an occurrence, mark it analysed or closed
+	// (PATCH /v1/occurrences/{occurrence_id}/analysis)
+	UpdateOccurrenceAnalysis(ctx context.Context, request UpdateOccurrenceAnalysisRequestObject) (UpdateOccurrenceAnalysisResponseObject, error)
+	// ClassifyOccurrence Classify the safety risk of an occurrence (376 Art. 7(2))
+	// (POST /v1/occurrences/{occurrence_id}/classify)
+	ClassifyOccurrence(ctx context.Context, request ClassifyOccurrenceRequestObject) (ClassifyOccurrenceResponseObject, error)
+	// GetOccurrenceReporter The reporter of an occurrence (incident officers only; purpose required, audited)
+	// (GET /v1/occurrences/{occurrence_id}/reporter)
+	GetOccurrenceReporter(ctx context.Context, request GetOccurrenceReporterRequestObject) (GetOccurrenceReporterResponseObject, error)
 	// GetPolicy The active policy
 	// (GET /v1/policy)
 	GetPolicy(ctx context.Context, request GetPolicyRequestObject) (GetPolicyResponseObject, error)
@@ -42157,6 +45500,213 @@ func (sh *strictHandler) CompromiseSigningKey(w http.ResponseWriter, r *http.Req
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CompromiseSigningKeyResponseObject); ok {
 		if err := validResponse.VisitCompromiseSigningKeyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListOccurrences operation middleware
+func (sh *strictHandler) ListOccurrences(w http.ResponseWriter, r *http.Request, params ListOccurrencesParams) {
+	var request ListOccurrencesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListOccurrences(ctx, request.(ListOccurrencesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListOccurrences")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListOccurrencesResponseObject); ok {
+		if err := validResponse.VisitListOccurrencesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateOccurrence operation middleware
+func (sh *strictHandler) CreateOccurrence(w http.ResponseWriter, r *http.Request) {
+	var request CreateOccurrenceRequestObject
+
+	var body CreateOccurrenceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateOccurrence(ctx, request.(CreateOccurrenceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateOccurrence")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateOccurrenceResponseObject); ok {
+		if err := validResponse.VisitCreateOccurrenceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ExportOccurrences operation middleware
+func (sh *strictHandler) ExportOccurrences(w http.ResponseWriter, r *http.Request) {
+	var request ExportOccurrencesRequestObject
+
+	var body ExportOccurrencesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ExportOccurrences(ctx, request.(ExportOccurrencesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ExportOccurrences")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ExportOccurrencesResponseObject); ok {
+		if err := validResponse.VisitExportOccurrencesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetOccurrence operation middleware
+func (sh *strictHandler) GetOccurrence(w http.ResponseWriter, r *http.Request, occurrenceId string) {
+	var request GetOccurrenceRequestObject
+
+	request.OccurrenceId = occurrenceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetOccurrence(ctx, request.(GetOccurrenceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetOccurrence")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetOccurrenceResponseObject); ok {
+		if err := validResponse.VisitGetOccurrenceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateOccurrenceAnalysis operation middleware
+func (sh *strictHandler) UpdateOccurrenceAnalysis(w http.ResponseWriter, r *http.Request, occurrenceId string) {
+	var request UpdateOccurrenceAnalysisRequestObject
+
+	request.OccurrenceId = occurrenceId
+
+	var body UpdateOccurrenceAnalysisJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateOccurrenceAnalysis(ctx, request.(UpdateOccurrenceAnalysisRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateOccurrenceAnalysis")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateOccurrenceAnalysisResponseObject); ok {
+		if err := validResponse.VisitUpdateOccurrenceAnalysisResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ClassifyOccurrence operation middleware
+func (sh *strictHandler) ClassifyOccurrence(w http.ResponseWriter, r *http.Request, occurrenceId string) {
+	var request ClassifyOccurrenceRequestObject
+
+	request.OccurrenceId = occurrenceId
+
+	var body ClassifyOccurrenceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ClassifyOccurrence(ctx, request.(ClassifyOccurrenceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ClassifyOccurrence")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ClassifyOccurrenceResponseObject); ok {
+		if err := validResponse.VisitClassifyOccurrenceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetOccurrenceReporter operation middleware
+func (sh *strictHandler) GetOccurrenceReporter(w http.ResponseWriter, r *http.Request, occurrenceId string, params GetOccurrenceReporterParams) {
+	var request GetOccurrenceReporterRequestObject
+
+	request.OccurrenceId = occurrenceId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetOccurrenceReporter(ctx, request.(GetOccurrenceReporterRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetOccurrenceReporter")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetOccurrenceReporterResponseObject); ok {
+		if err := validResponse.VisitGetOccurrenceReporterResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

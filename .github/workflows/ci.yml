@@ -186,6 +186,15 @@ jobs:
           cache: true
       - name: generated code is up to date with api/openapi.yaml
         run: scripts/verify-generated.sh
+      # WP-18: schemas/occurrence/v1.json (owned here, M14): every example
+      # validates and is received by the intake, a body that differs by
+      # one member is refused, and the file is the contract's request
+      # body. The grep fails the step when the tests did not run.
+      - name: occurrence/v1 schema and its examples
+        run: |
+          go test -count=1 -run 'TestOccurrenceSchema' -v ./internal/occurrences/ | tee "$RUNNER_TEMP/occurrence-schema.log"
+          grep -- '--- PASS: TestOccurrenceSchemaExamples' "$RUNNER_TEMP/occurrence-schema.log"
+          grep -- '--- PASS: TestOccurrenceSchemaMatchesTheContract' "$RUNNER_TEMP/occurrence-schema.log"
       # M11: the CISP's OpenAPI file and schemas in api/clients/ equal the
       # CISP's files at the commit api/clients/SOURCE records, and the
       # check is shown to fail on a changed copy (E-01).

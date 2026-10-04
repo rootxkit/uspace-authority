@@ -2,8 +2,11 @@
 # generated packages by hand. scripts/verify-generated.sh regenerates
 # into a temporary directory and fails on any difference.
 #
-# Four query sets, two databases, never mixed (CLAUDE.md rule 10):
+# Five query sets, two databases, never mixed (CLAUDE.md rule 10):
 #   internal/store/pg/gen         relational (api only)
+#   internal/occurrences/store/gen  the relational occurrences schema
+#                                 (WP-18; internal/occurrences only, as
+#                                 the authority_occurrences role)
 #   internal/store/ts/gen/writer  telemetry hypertables (tsdb-writer only)
 #   internal/store/ts/gen/reader  telemetry projection and record reads
 #   internal/store/ts/gen/projector  projection writes (api only, WP-3)
@@ -35,6 +38,14 @@ sql:
             go_type:
               type: time.Time
               pointer: true
+  - engine: postgresql
+    schema: [internal/store/pg/schema, migrations/relational]
+    queries: internal/occurrences/store/queries
+    gen:
+      go:
+        <<: *go
+        package: gen
+        out: internal/occurrences/store/gen
   - engine: postgresql
     schema: [internal/store/ts/schema, migrations/timeseries]
     queries: internal/store/ts/queries/writer

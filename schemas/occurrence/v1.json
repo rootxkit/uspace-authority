@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.uspace.ge/occurrence/v1.json",
+  "title": "occurrence/v1",
+  "description": "An occurrence report under Reg. (EU) 376/2014 (spec 04 §3.3; 02 F7 and F11; 01 A8): the request body of the authority's POST /v1/occurrences, sent by USSPs and the ANSP with an ecosystem token of scope occurrences.write. This repository owns it (M14): api/openapi.yaml's OccurrenceReport is the same shape, and the USSP's and ANSP's copies point at this file at a recorded commit. The sender is the token's sub, recorded as reporter_org; reporter.org is informational. (reporter_org, report_ref) is the idempotency key: the same report again answers the first receipt, another report under the same reference is refused. reporter.person_ref is the reporter's opaque reference in the sender's system, sent in clear over TLS (M13) and sealed at rest by the authority under a key of its own; it is shown to incident officers only and never exported (376 Art. 16). An operator registration's secret part is dropped at intake (G-04). A report received more than 72 h after became_aware_at is accepted and flagged late, never refused (376 Art. 4(7)-(8)). Members this version does not know are ignored (02 §1).",
+  "type": "object",
+  "required": ["schema", "report_ref", "channel", "occurred_at", "became_aware_at", "category"],
+  "properties": {
+    "schema": { "const": "occurrence/v1" },
+    "report_ref": { "type": "string", "minLength": 1, "maxLength": 128, "description": "The sender's reference of the report; with the sender, the idempotency key." },
+    "channel": { "enum": ["mandatory", "voluntary"], "description": "mandatory (376 Art. 4) or voluntary (Art. 5); an operator's report (2019/947 Art. 19(2)) is mandatory." },
+    "occurred_at": { "$ref": "#/$defs/timestamp" },
+    "became_aware_at": { "$ref": "#/$defs/timestamp", "description": "When the reporter became aware; not before occurred_at. The 72 h run from it." },
+    "category": {
+      "enum": ["airprox", "nonconformance_in_prohibited", "lost_link_in_uspace", "emergency", "other"],
+      "description": "The 376 Art. 4(1) class (the UAS classes of 2015/1018 are unverified, spec 08 Q9)."
+    },
+    "reporter": {
+      "type": "object",
+      "properties": {
+        "org": { "type": "string", "maxLength": 160, "description": "The reporting organisation's name for itself; the authority records the token's sub." },
+        "person_ref": { "type": "string", "maxLength": 128, "description": "The reporter's opaque reference in the sender's system (never a name)." }
+      }
+    },
+    "aircraft": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "properties": {
+          "serial": { "$ref": "#/$defs/text" },
+          "operator_reg": { "$ref": "#/$defs/text", "description": "The operator registration number; its secret part, if sent, is dropped." },
+          "flight_id": { "$ref": "#/$defs/text" },
+          "authorisation_number": { "$ref": "#/$defs/text" }
+        }
+      }
+    },
+    "manned": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "properties": {
+          "icao24": { "type": "string", "pattern": "^[0-9a-f]{6}$" },
+          "callsign": { "$ref": "#/$defs/text" }
+        }
+      }
+    },
+    "intent_refs": {
+      "type": "array",
+      "maxItems": 50,
+      "items": { "type": "string", "minLength": 1, "maxLength": 64 }
+    },
+    "min_separation": {
+      "type": "object",
+      "properties": {
+        "h_m": { "type": "number", "minimum": 0 },
+        "v_m": { "type": "number", "minimum": 0 },
+        "at": { "$ref": "#/$defs/timestamp" }
+      }
+    },
+    "narrative": { "type": "string", "maxLength": 20000, "description": "Free text, at most 20000 bytes of UTF-8. It is exported as written: the officer redacts names before filing." },
+    "evidence_urls": {
+      "type": "array",
+      "maxItems": 20,
+      "items": { "type": "string", "maxLength": 2048, "pattern": "^https?://[^/\\s]+" }
+    },
+    "reported_at": { "$ref": "#/$defs/timestamp", "description": "When the sender recorded the report." }
+  },
+  "$defs": {
+    "timestamp": { "type": "string", "format": "date-time" },
+    "text": { "type": "string", "maxLength": 128 }
+  },
+  "examples": [
+    {
+      "schema": "occurrence/v1",
+      "report_ref": "ANSP-OCC-2026-0001",
+      "channel": "mandatory",
+      "occurred_at": "2026-10-03T10:00:00.000Z",
+      "became_aware_at": "2026-10-03T10:05:00.000Z",
+      "category": "airprox",
+      "reporter": { "org": "ansp-01", "person_ref": "staff-0042" },
+      "aircraft": [{ "serial": "TEST1581F5FHD2344", "operator_reg": "GEO-TEST-OP-0001" }],
+      "manned": [{ "icao24": "4ca7b5", "callsign": "TST123" }],
+      "intent_refs": ["2f8343be-6482-4d1b-a474-16847e01af1e"],
+      "min_separation": { "h_m": 180, "v_m": 40, "at": "2026-10-03T10:00:00.000Z" },
+      "narrative": "Synthetic airprox between a UAS and a manned aircraft.",
+      "evidence_urls": [],
+      "reported_at": "2026-10-03T10:06:00.000Z"
+    },
+    {
+      "schema": "occurrence/v1",
+      "report_ref": "USSP-TST-OCC-0007",
+      "channel": "voluntary",
+      "occurred_at": "2026-10-04T08:12:30Z",
+      "became_aware_at": "2026-10-04T08:20:00Z",
+      "category": "lost_link_in_uspace",
+      "reporter": { "org": "ussp-tst-01" },
+      "aircraft": [
+        {
+          "serial": "TESTSER0001",
+          "operator_reg": "GEO-TEST-OP-0002",
+          "flight_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+          "authorisation_number": "TST-GEO-TEST-OP-0002-01KAAAAAAAAAAAAAAAAAAAAAAA"
+        }
+      ],
+      "narrative": "C2 link lost for 40 s over the test area; the UAS flew its contingency procedure and landed.",
+      "evidence_urls": ["https://records.ussp.example.test/v1/records/flights/7c9e6679-7425-40de-944b-e07fc1f90ae7"]
+    },
+    {
+      "schema": "occurrence/v1",
+      "report_ref": "R-MIN-1",
+      "channel": "mandatory",
+      "occurred_at": "2026-10-01T00:00:00Z",
+      "became_aware_at": "2026-10-05T00:00:00Z",
+      "category": "other"
+    }
+  ]
+}

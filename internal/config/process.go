@@ -101,6 +101,7 @@ type API struct {
 	CISP
 	Violations
 	Incidents
+	Occurrences
 	DPAdmin
 	Certificates
 }
@@ -138,6 +139,22 @@ type Incidents struct {
 	RecordsMaxPerPack            int    `env:"RECORDS_MAX_PER_PACK" default:"16" min:"1" max:"1000" help:"USSP service records fetched per pack at most; the rest are unavailable with that reason"`
 	RecordsConcurrency           int    `env:"RECORDS_CONCURRENCY" default:"4" min:"1" max:"64" help:"USSP service records of a legal pack read at once"`
 	RecordsStepTimeoutS          int    `env:"RECORDS_STEP_TIMEOUT_S" default:"30" min:"1" max:"600" help:"deadline of a legal pack's whole records step; the records not read by then are unavailable with that reason (oversight packs read none)"`
+}
+
+// Occurrences are api's occurrence reports under Reg. (EU) 376/2014
+// (WP-18): their own role and pool, their own key, the reporting
+// deadline, the classification scheme and the export.
+type Occurrences struct {
+	OccurrenceKeyFile          string   `env:"OCCURRENCE_KEY_FILE" help:"AES-256 key (one line of base64, openssl rand -base64 32) sealing the occurrence reporter's person reference, separate from PII_KEY_FILE (a key equal to it stops the start); unset: a report carrying a person reference is refused 503 occurrence_key_unavailable and the reporter identity cannot be opened"`
+	OccurrenceKeyID            string   `env:"OCCURRENCE_KEY_ID" default:"occ-1" help:"id stored beside every value sealed with OCCURRENCE_KEY_FILE"`
+	OccurrencesPGRole          string   `env:"PG_OCCURRENCES_ROLE" default:"authority_occurrences" help:"role SET on every connection of the occurrences pool (migration 00020_occurrences creates it); the login user must be a member, and PG_ROLE has no grant on the occurrences schema"`
+	OccurrencesPGMaxConns      int      `env:"PG_OCCURRENCES_MAX_CONNS" default:"4" min:"1" max:"50" help:"maximum connections of the occurrences pool"`
+	OccurrencesDeadlineS       int      `env:"OCCURRENCES_REPORT_DEADLINE_S" default:"259200" min:"3600" max:"2592000" help:"reporting deadline after became_aware_at (376/2014 Art. 4(7)-(8): 72 h); a report received later is stored with within_72h false, never refused"`
+	OccurrencesClockSkewS      int      `env:"OCCURRENCES_CLOCK_SKEW_S" default:"300" min:"0" max:"3600" help:"how far became_aware_at may be ahead of the database clock before a report is refused (400 naming became_aware_at)"`
+	OccurrencesRiskClasses     []string `env:"OCCURRENCES_RISK_CLASSES" default:"accident,serious_incident,incident,occurrence_without_safety_effect,not_determined" help:"the safety risk classification scheme of POST /v1/occurrences/{id}/classify (376/2014 Art. 7(2)), comma-separated; the default is the ECCAIRS occurrence class list (unverified against the taxonomy, Q-A12)"`
+	OccurrencesExportFormat    string   `env:"OCCURRENCES_EXPORT_FORMAT" default:"eccairs-compatible-draft" help:"the de-identified export's default format (Q-A12, owner-only: E5X is a later writer); the formats this build knows are listed at start"`
+	OccurrencesExportMaxRecord int      `env:"OCCURRENCES_EXPORT_MAX_RECORDS" default:"5000" min:"1" max:"1000000" help:"reports one export holds at most; a window holding more is refused (export_too_large), never thinned"`
+	OccurrencesWriteTimeoutS   int      `env:"OCCURRENCES_WRITE_TIMEOUT_S" default:"10" min:"1" max:"600" help:"bound on one occurrences transaction"`
 }
 
 // DPAdmin is api's administration of the F3411 Display Provider

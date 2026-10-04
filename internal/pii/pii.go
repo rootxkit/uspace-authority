@@ -4,6 +4,8 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -24,15 +26,21 @@ var keyIDPattern = regexp.MustCompile(`^[A-Za-z0-9._-]{1,32}$`)
 type Sealer struct {
 	keyID string
 	aead  cipher.AEAD
+	// fp tells two sealers' keys apart without keeping the key (SameKey).
+	fp [sha256.Size]byte
 }
 
 // NewSealer builds a sealer from a 32-byte key under keyID.
 func NewSealer(keyID string, key []byte) (*Sealer, error) {
+	return newSealer("PII_KEY_ID", "PII_KEY_FILE", keyID, key)
+}
+
+func newSealer(idVar, fileVar, keyID string, key []byte) (*Sealer, error) {
 	if !keyIDPattern.MatchString(keyID) {
-		return nil, core.Fieldf("PII_KEY_ID", "%q is not 1 to 32 of [A-Za-z0-9._-]", keyID)
+		return nil, core.Fieldf(idVar, "%q is not 1 to 32 of [A-Za-z0-9._-]", keyID)
 	}
 	if len(key) != KeyBytes {
-		return nil, core.Fieldf("PII_KEY_FILE", "the key is %d bytes, not %d", len(key), KeyBytes)
+		return nil, core.Fieldf(fileVar, "the key is %d bytes, not %d", len(key), KeyBytes)
 	}
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -42,26 +50,42 @@ func NewSealer(keyID string, key []byte) (*Sealer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Sealer{keyID: keyID, aead: aead}, nil
+	return &Sealer{keyID: keyID, aead: aead, fp: sha256.Sum256(append([]byte("uspace-authority sealer key/"), key...))}, nil
 }
 
 // LoadSealer reads the key from path: 32 bytes in standard base64 (one
 // line, as `openssl rand -base64 32` writes it).
 func LoadSealer(keyID, path string) (*Sealer, error) {
+	return LoadSealerAs("PII_KEY_ID", "PII_KEY_FILE", keyID, path)
+}
+
+// LoadSealerAs is LoadSealer for a key configured by other variables
+// (OCCURRENCE_KEY_ID, OCCURRENCE_KEY_FILE): its errors name them.
+func LoadSealerAs(idVar, fileVar, keyID, path string) (*Sealer, error) {
 	f, err := os.Open(path) //nolint:gosec // the path is the operator's configuration
 	if err != nil {
-		return nil, core.Fieldf("PII_KEY_FILE", "%q cannot be read: %v", path, errors.Unwrap(err))
+		return nil, core.Fieldf(fileVar, "%q cannot be read: %v", path, errors.Unwrap(err))
 	}
 	defer func() { _ = f.Close() }()
 	raw, err := io.ReadAll(io.LimitReader(f, 1024))
 	if err != nil {
-		return nil, core.Fieldf("PII_KEY_FILE", "%q cannot be read", path)
+		return nil, core.Fieldf(fileVar, "%q cannot be read", path)
 	}
 	key, err := base64.StdEncoding.Strict().DecodeString(strings.TrimSpace(string(raw)))
 	if err != nil {
-		return nil, core.Fieldf("PII_KEY_FILE", "%q is not one line of base64 (openssl rand -base64 32)", path)
+		return nil, core.Fieldf(fileVar, "%q is not one line of base64 (openssl rand -base64 32)", path)
 	}
-	return NewSealer(keyID, key)
+	return newSealer(idVar, fileVar, keyID, key)
+}
+
+// SameKey reports whether s and o seal with the same key bytes, whatever
+// their key ids: a key that must be separate from another (the
+// occurrence key from the PII key, plan D9) is checked with it.
+func (s *Sealer) SameKey(o *Sealer) bool {
+	if s == nil || o == nil {
+		return false
+	}
+	return subtle.ConstantTimeCompare(s.fp[:], o.fp[:]) == 1
 }
 
 // KeyID is the id stored beside every value this sealer seals.
