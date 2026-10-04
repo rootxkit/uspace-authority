@@ -112,7 +112,14 @@ func newIntegrationWith(t *testing.T, appURL func(string) string) *itest {
 	ctx := context.Background()
 	pgURL := storetest.Migrated(t, migrate.Relational)
 	tsURL := storetest.Migrated(t, migrate.Timeseries)
-	db, err := pg.Open(ctx, store.PoolOptions{URL: appURL(pgURL), Role: pg.AppRole, ApplicationName: "uspace-authority-test"})
+	// An approval holds its connection and the application's row lock
+	// while the registry takes a second connection, and a refusal waits
+	// for the lock holding one: a pool no wider than the callers of
+	// TestIntegrationApproveAndRefuseRace (twelve) deadlocks it. pgx's
+	// default (max(4, CPUs)) is four on the CI runner, below api's
+	// PG_MAX_CONNS default of 10; the pool here is wider than the callers.
+	// The pool-exhaustion risk itself is recorded in PR #45 for WP-20.
+	db, err := pg.Open(ctx, store.PoolOptions{URL: appURL(pgURL), Role: pg.AppRole, ApplicationName: "uspace-authority-test", MaxConns: 16})
 	if err != nil {
 		t.Fatal(err)
 	}
