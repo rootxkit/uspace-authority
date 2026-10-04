@@ -49,7 +49,7 @@ GCAA**):
 |---|---|---|
 | `no_authorisation_grace_s` | 10 | How long an aircraft may show no matching intent before the raise. |
 | `no_authorisation_severity` | warning | The severity raised. |
-| `height_limit_in_uspace` | evaluate | `skip_when_authorised` lifts the 120 m rule for a matched aircraft whose height was checked. |
+| `height_limit_in_uspace` | evaluate | `skip_when_authorised` lifts the 120 m rule for a matched aircraft whose height was checked; a `height_120m` inside U-space airspace waits for the aircraft's first outcome, at most `DETECT_INTENT_OUTCOME_MAX_AGE_S`, so an authorised aircraft is never raised. |
 | `clear_after_s` | 3 | The hysteresis of the clear on a match. |
 
 ## What it does
@@ -91,7 +91,9 @@ GCAA**):
 
 Per worker: `uspace_aircraft`, `no_authorisation_open`,
 `no_authorisation_unknown` (suspended cases), `no_authorisation_matched`,
-`no_authorisation_grace_running`, `height_lifted`.
+`no_authorisation_grace_running`, `height_lifted`,
+`height_awaiting_outcome` (a `height_120m` held for the aircraft's first
+outcome; counter `height_awaiting_outcome`).
 
 ## Known limits (spec gaps, docs/PLAN.md Q-A22)
 
@@ -112,6 +114,6 @@ Per worker: `uspace_aircraft`, `no_authorisation_open`,
 
 ## Checks
 
-- Unit: `go test ./internal/intents/ ./internal/detectsvc/ -run 'NoAuth|HeightLimitLifted|Board|Judge|Cache|Parse|Client'`.
+- Unit: `go test ./internal/intents/ ./internal/detectsvc/ -run 'NoAuth|HeightLimitLifted|HeightRaiseWaits|Board|Judge|Cache|Parse|Client'`.
 - Through the stack (NATS, TimescaleDB, PostgreSQL, the fake DSS over
   HTTP): `INTEGRATION=1 go test -run TestIntegrationNoAuthorisationThroughTheStack ./internal/violations/`.

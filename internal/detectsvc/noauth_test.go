@@ -307,9 +307,9 @@ func TestHeightLimitLiftedOnlyForAnAircraftAnAuthorisationCaps(t *testing.T) {
 	r.dss.activate("oi-1", zLat, zLon)
 	r.fly(0, 12, high(f64(218)))
 	got := transitions(r.pub.take(), false)
-	// The first sample is judged before the first outcome: its height_120m
-	// is cleared authorised on the next tick, then held.
-	if h := kinds(got, violation.KindHeight120m); len(h) != 2 || h[1].Body.State != violation.StateCleared || *h[1].Body.ClearReason != violation.ClearReasonAuthorised {
+	// The raise waits for the first outcome, which matches: nothing is
+	// raised, nothing is cleared, the condition is held.
+	if h := kinds(got, violation.KindHeight120m); len(h) != 0 {
 		t.Fatalf("matched: %s", describe(got))
 	}
 	if r.w.Counters.Get(CounterHeightLifted) == 0 || r.w.noAuthStats().heightLifted != 1 {
@@ -394,5 +394,76 @@ func TestNoAuthorisationNotJudgedWithoutADSS(t *testing.T) {
 	j.fly(0, 11, inUSpace)
 	if got := kinds(transitions(j.pub.take(), false), violation.KindNoAuthorisation); len(got) != 1 || j.w.Counters.Get(CounterNoAuthNotJudged) != 0 {
 		t.Fatalf("with a DSS: %s", describe(got))
+	}
+}
+
+// skip_when_authorised: the height_120m of an aircraft entering U-space
+// airspace over the limit waits for its first authorisation outcome, so
+// an authorised aircraft is never raised and cleared authorised; an
+// unmatched outcome raises it at once, opened at the first sample; with
+// no outcome (the DSS down) it is raised once OutcomeMaxAge has passed,
+// never held for good (E-01, E-02).
+func TestHeightRaiseWaitsForTheFirstAuthorisationOutcome(t *testing.T) {
+	high := func(int) sample { return sample{id: "A", lat: zLat, lon: zLon, altAMSL: f64(200), wgs84: f64(218)} }
+	skip := func(th *policy.Thresholds) { th.HeightLimitInUspace = policy.HeightSkipWhenAuthorised }
+
+	// Authorised: the first sample is held, the first outcome lifts it.
+	a := newNARig(t, skip)
+	a.dss.activate("oi-1", zLat, zLon)
+	a.at(0, high(0))
+	if st := a.w.noAuthStats(); st.heightAwaiting != 1 || a.w.Counters.Get(CounterHeightAwaiting) != 1 {
+		t.Fatalf("awaiting %+v %v", st, a.w.Counters.Snapshot())
+	}
+	if h := kinds(a.pub.take(), violation.KindHeight120m); len(h) != 0 {
+		t.Fatalf("raised before the first outcome: %s", describe(h))
+	}
+	a.board.Step(context.Background())
+	a.tick(0)
+	a.fly(1, 12, high)
+	if h := kinds(a.pub.take(), violation.KindHeight120m); len(h) != 0 {
+		t.Fatalf("authorised: %s", describe(h))
+	}
+	if st := a.w.noAuthStats(); st.heightLifted != 1 || st.heightAwaiting != 0 {
+		t.Fatalf("lifted %+v", st)
+	}
+
+	// Unmatched: raised with the first outcome, opened at the first sample.
+	u := newNARig(t, skip)
+	u.fly(0, 3, high)
+	h := kinds(transitions(u.pub.take(), false), violation.KindHeight120m)
+	if len(h) != 1 || h[0].Body.State != violation.StateRaised {
+		t.Fatalf("unmatched: %s", describe(h))
+	}
+	if opened, _ := time.Parse(time.RFC3339Nano, h[0].Body.OpenedAt); !opened.Equal(t0) {
+		t.Fatalf("opened_at %s, want the first sample", h[0].Body.OpenedAt)
+	}
+	if u.w.Counters.Get(CounterHeightAwaiting) != 1 || u.w.noAuthStats().heightAwaiting != 0 {
+		t.Fatalf("awaiting %v", u.w.Counters.Snapshot())
+	}
+
+	// The DSS down: no outcome ever stands; raised at OutcomeMaxAge.
+	d := newNARig(t, skip)
+	d.dss.setErr(errors.New("connection refused"))
+	maxAge := int(d.board.S.OutcomeMaxAge / time.Second)
+	raisedAt := -1
+	for sec := 0; sec <= 30 && raisedAt < 0; sec++ {
+		d.second(float64(sec), high(sec))
+		if h := kinds(transitions(d.pub.take(), false), violation.KindHeight120m); len(h) > 0 {
+			raisedAt = sec
+		}
+	}
+	if raisedAt != maxAge {
+		t.Fatalf("raised at %d with the DSS down, want %d", raisedAt, maxAge)
+	}
+
+	// No DSS at all: nothing to wait for, raised with the first sample.
+	n := newRig(t, nil)
+	n.in.setPolicy(1, skip)
+	n.in.setZones(zoneOf(t, zoneSpec{id: "US1", typ: "USPACE", lat: zLat, lon: zLon, halfDeg: 0.01, upper: 5000}.feature())...)
+	n.in.env = groundAt(0)
+	n.at(0, high(0))
+	n.tick(0)
+	if h := kinds(transitions(n.pub.take(), false), violation.KindHeight120m); len(h) != 1 {
+		t.Fatalf("no DSS: %s", describe(h))
 	}
 }

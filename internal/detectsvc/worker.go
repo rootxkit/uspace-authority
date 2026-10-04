@@ -53,6 +53,7 @@ const (
 	CounterSourceSwitches      = "source_switches_applied"       // a source-control state handed to the monitor (B-11)
 	CounterHeightLifted        = "height_lifted_authorised"      // a height_120m held (or cleared authorised) for an aircraft matched to an intent inside U-space airspace (WP-26)
 	CounterHeightRestored      = "height_restored_unmatched"     // a held height_120m raised: the aircraft lost its match while still over the limit
+	CounterHeightAwaiting      = "height_awaiting_outcome"       // a height_120m raise inside U-space airspace held for the aircraft's first authorisation outcome, at most OutcomeMaxAge (WP-26)
 	CounterNoAuthNotJudged     = "no_authorisation_not_judged"   // an aircraft entered U-space airspace and this detector has no DSS: no_authorisation is not judged for it
 )
 
@@ -183,6 +184,10 @@ type Worker struct {
 	// (WP-26).
 	noAuth     map[string]*naCase
 	heldHeight map[string]bool
+	// awaitHeight are the height_120m keys whose raise waits for the
+	// aircraft's first authorisation outcome, with the wall time the wait
+	// began (WP-26).
+	awaitHeight map[string]float64
 	// thresholds are the policy's, as of the last rebuild.
 	thresholds policy.Thresholds
 	excerpts   *Excerpts
@@ -212,7 +217,7 @@ func NewWorker(name string, in Inputs, set Settings, pub Publisher, logger *slog
 		Name: name, Counters: &core.Counters{}, MonitorCounters: &core.Counters{},
 		in: in, set: set, pub: pub, logger: logger.With(slog.String("cell3", name)), lim: lim,
 		open: map[string]*open{}, uspace: map[string]map[string]struct{}{},
-		noAuth: map[string]*naCase{}, heldHeight: map[string]bool{},
+		noAuth: map[string]*naCase{}, heldHeight: map[string]bool{}, awaitHeight: map[string]float64{},
 	}
 	w.excerpts = NewExcerpts(set.ExcerptWindowS, set.ExcerptMaxSamples, set.MaxAircraft, w.Counters)
 	w.maybeRebuild()
@@ -464,8 +469,17 @@ func (w *Worker) fold() {
 
 // handle publishes what one monitor call raised and cleared.
 func (w *Worker) handle(ev alerting.Events) {
+	// Presences first: a height_120m raised with the same sample then
+	// knows the aircraft is inside U-space airspace (awaitHeight, WP-26).
 	for i := range ev.Raised {
-		w.raised(&ev.Raised[i])
+		if kind, _ := parseKey(ev.Raised[i].Key); kind == alerting.KindZone {
+			w.raised(&ev.Raised[i])
+		}
+	}
+	for i := range ev.Raised {
+		if kind, _ := parseKey(ev.Raised[i].Key); kind != alerting.KindZone {
+			w.raised(&ev.Raised[i])
+		}
 	}
 	for i := range ev.Cleared {
 		w.cleared(&ev.Cleared[i])
@@ -623,8 +637,12 @@ func (w *Worker) raised(a *alerting.Alert) {
 		// volume caps the height of an aircraft matched to an intent
 		// inside U-space airspace (spec 01 §7); held, and raised the moment
 		// the match is lost while the monitor still holds it (gateHeight).
+		delete(w.awaitHeight, a.Key)
 		w.heldHeight[a.Key] = true
 		w.Counters.Inc(CounterHeightLifted)
+		return
+	}
+	if kind == violation.KindHeight120m && w.awaitingOutcome(a.Key, id) {
 		return
 	}
 	b := w.bodyFor(kind, a.Key, id, ref, a.Severity, a.Detail, a.RaisedAtS, a.LastTrueS)
@@ -731,6 +749,11 @@ func (w *Worker) cleared(c *alerting.Cleared) {
 	if w.heldHeight[c.Key] {
 		// Lifted for an authorised aircraft and never published.
 		delete(w.heldHeight, c.Key)
+		return
+	}
+	if _, waiting := w.awaitHeight[c.Key]; waiting {
+		// Ended before the aircraft's first outcome: never published.
+		delete(w.awaitHeight, c.Key)
 		return
 	}
 	kind, _ := parseKey(c.Key)
@@ -926,7 +949,8 @@ func (w *Worker) StatusAttrs() []slog.Attr {
 		slog.Bool("capacity_exceeded", s.capacityExceeded), slog.Int64("policy_version", s.policyVersion),
 		slog.Int("uspace_aircraft", s.noAuth.cases), slog.Int("no_authorisation_open", s.noAuth.open),
 		slog.Int("no_authorisation_unknown", s.noAuth.unknown), slog.Int("no_authorisation_matched", s.noAuth.matched),
-		slog.Int("no_authorisation_grace_running", s.noAuth.grace), slog.Int("height_lifted", s.noAuth.heightLifted))}
+		slog.Int("no_authorisation_grace_running", s.noAuth.grace), slog.Int("height_lifted", s.noAuth.heightLifted),
+		slog.Int("height_awaiting_outcome", s.noAuth.heightAwaiting))}
 }
 
 // CapacityExceeded reports the monitor's state as of the last tick.

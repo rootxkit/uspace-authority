@@ -34,7 +34,10 @@ type naCase struct {
 	// last is the outcome of the last tick, nil when none stood (the DSS
 	// unavailable, the aircraft not checked yet): the case is suspended.
 	last *intents.Outcome
-	ov   *open
+	// judged is set by the first outcome that stood for the case: until
+	// then a height_120m raise of the aircraft waits (awaitingOutcome).
+	judged bool
+	ov     *open
 }
 
 // noAuthKey is the violation key of a presence key.
@@ -165,6 +168,9 @@ func (w *Worker) judgeNoAuth(wallS float64) {
 	for _, k := range slices.Sorted(maps.Keys(w.noAuth)) {
 		c := w.noAuth[k]
 		o, ok := b.Outcome(c.aircraft)
+		if ok {
+			c.judged = true
+		}
 		switch {
 		case !ok:
 			c.last, c.unmatchedSinceS, c.unmatchedAtS, c.matchedSinceS = nil, 0, 0, 0
@@ -271,10 +277,43 @@ func (w *Worker) heightLifted(id string) bool {
 	return false
 }
 
+// awaitingOutcome reports whether the raise of the height_120m key of
+// aircraft id waits, and records the wait: with skip_when_authorised and
+// a DSS, an aircraft inside U-space airspace none of whose cases has had
+// an outcome yet is not raised until one stands (an authorised aircraft
+// is then never raised and cleared authorised), or until OutcomeMaxAge
+// has passed since the wait began (an outcome that never comes does not
+// hide the condition). Counted when a wait begins; dropped when it ends.
+func (w *Worker) awaitingOutcome(key, id string) bool {
+	b := w.in.Authorisations()
+	wait := b != nil && w.thresholds.HeightLimitInUspace == policy.HeightSkipWhenAuthorised && len(w.uspace[id]) > 0
+	for k := range w.uspace[id] {
+		if c := w.noAuth[k]; c != nil && c.judged {
+			wait = false
+		}
+	}
+	since, had := w.awaitHeight[key]
+	now := w.wallS()
+	if !had {
+		since = now
+	}
+	if wait && now-since < b.S.OutcomeMaxAge.Seconds() {
+		if !had {
+			w.awaitHeight[key] = since
+			w.Counters.Inc(CounterHeightAwaiting)
+		}
+		return true
+	}
+	delete(w.awaitHeight, key)
+	return false
+}
+
 // gateHeight applies heightLifted every tick to the height conditions
 // the monitor holds: an open height_120m of an aircraft now lifted
 // clears authorised and is held; a held one whose aircraft lost its
-// match is raised at once; a held key the monitor no longer holds goes.
+// match is raised at once; one awaiting the first outcome is held when
+// it lifts and raised when the wait ends otherwise; a held or awaiting
+// key the monitor no longer holds goes.
 func (w *Worker) gateHeight() {
 	active := map[string]bool{}
 	for _, a := range w.mon.Active() {
@@ -284,6 +323,11 @@ func (w *Worker) gateHeight() {
 		active[a.Key] = true
 		id := aircraftOf(&a)
 		lifted := w.heightLifted(id)
+		if _, waiting := w.awaitHeight[a.Key]; waiting {
+			// raised holds it when lifted, keeps waiting, or raises it.
+			w.raised(&a)
+			continue
+		}
 		if ov, isOpen := w.open[a.Key]; isOpen && lifted {
 			w.closeViolation(ov, violation.ClearReasonAuthorised, w.wallS(), ov.body.Detail, map[string]any{"authorised": true})
 			delete(w.open, a.Key)
@@ -302,6 +346,11 @@ func (w *Worker) gateHeight() {
 			delete(w.heldHeight, k)
 		}
 	}
+	for k := range w.awaitHeight {
+		if !active[k] {
+			delete(w.awaitHeight, k)
+		}
+	}
 }
 
 // openNoAuth is the number of open no_authorisation violations.
@@ -317,11 +366,11 @@ func (w *Worker) openNoAuth() int {
 
 // noAuthStats are the cases' numbers for the status line (WP-26).
 type noAuthStats struct {
-	cases, open, unknown, matched, grace, heightLifted int
+	cases, open, unknown, matched, grace, heightLifted, heightAwaiting int
 }
 
 func (w *Worker) noAuthStats() noAuthStats {
-	s := noAuthStats{cases: len(w.noAuth), heightLifted: len(w.heldHeight)}
+	s := noAuthStats{cases: len(w.noAuth), heightLifted: len(w.heldHeight), heightAwaiting: len(w.awaitHeight)}
 	for _, c := range w.noAuth {
 		switch {
 		case c.ov != nil:
