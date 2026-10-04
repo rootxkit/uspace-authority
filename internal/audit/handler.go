@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
+
+	"github.com/rootxkit/uspace-core/core"
 
 	"github.com/rootxkit/uspace-authority/api/gen"
 	"github.com/rootxkit/uspace-authority/internal/apiserver"
@@ -99,4 +102,40 @@ func deref(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+// VerifyHandler serves GET /v1/audit/verify (apiserver.AuditVerifyHandler,
+// WP-27): the month verified on request and recorded in the chain.
+type VerifyHandler struct {
+	Verifier *ChainVerifier
+}
+
+var _ apiserver.AuditVerifyHandler = VerifyHandler{}
+
+// VerifyAuditChain verifies one month and records the verification.
+func (h VerifyHandler) VerifyAuditChain(ctx context.Context, req gen.VerifyAuditChainRequestObject) (gen.VerifyAuditChainResponseObject, error) {
+	actor, err := ActorOf(ctx)
+	if err != nil {
+		return nil, err
+	}
+	month, err := time.Parse("2006-01", req.Params.Month)
+	if err != nil {
+		return nil, httpx.Refuse(http.StatusBadRequest, httpx.SlugValidation, "month is not YYYY-MM",
+			core.Fieldf("month", "%q is not a UTC month YYYY-MM", req.Params.Month))
+	}
+	res, at, err := h.Verifier.VerifyMonth(ctx, actor, month, ViaRequest)
+	if err != nil {
+		return nil, err
+	}
+	out := gen.VerifyAuditChain200JSONResponse{Month: res.Month, Rows: res.Rows, Intact: res.Broken == nil, VerifiedAt: at.UTC()}
+	if res.Rows > 0 {
+		out.FirstId, out.LastId, out.LastHash = &res.FirstID, &res.LastID, &res.LastHash
+	}
+	if res.AnchoredTo != "" {
+		out.AnchoredTo = &res.AnchoredTo
+	}
+	if b := res.Broken; b != nil {
+		out.Broken = &gen.AuditChainBreak{Id: b.ID, Ts: b.TS.UTC(), Reason: gen.AuditChainBreakReason(b.Reason), Want: &b.Want, Got: &b.Got}
+	}
+	return out, nil
 }

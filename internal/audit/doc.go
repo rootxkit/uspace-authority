@@ -28,7 +28,14 @@
 //     and reports the rows it checked, the last hash, and the first
 //     broken row (prev_hash mismatch or hash mismatch) or none. The
 //     integration test tampers with a row as a superuser and reads both
-//     answers (E-01, E-02). /v1/audit/verify exposes it in WP-27.
+//     answers (E-01, E-02).
+//   - WP-27: GET /v1/audit/verify and the monthly job (ChainVerifier)
+//     verify months and record each verification as an
+//     audit_chain_verified row in the chain itself; a broken month is
+//     counted, logged and named on the status line, also after a
+//     restart (Load). Once the oldest months are dropped after their
+//     retention, the oldest kept month's first row links to the anchor
+//     in audit_dropped_months (Result.AnchoredTo).
 //   - Writer.Query pages the log newest first with optional filters for
 //     GET /v1/audit/events; Handler serves that route, behind the role
 //     placeholder of internal/apiserver, and records the read itself as
