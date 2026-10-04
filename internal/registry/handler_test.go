@@ -36,6 +36,7 @@ func server(t *testing.T, f *fixture) *httptest.Server {
 	}
 	apiserver.Mount(mux, apiserver.Server{RegistryHandler: Handler{Service: f.svc}}, apiserver.Options{
 		Middlewares: []apiserver.Middleware{apiserver.Authorize(identify, apiserver.DefaultRules())},
+		Admit:       apiserver.Admission(identify, apiserver.DefaultRules()),
 		Keep:        apiserver.PathPrefix("/v1/registry/"),
 	})
 	srv := httptest.NewServer(mux)
@@ -156,6 +157,14 @@ func TestRegistryOverHTTP(t *testing.T) {
 	}
 	if r := call(t, srv, "inspector", "GET", "/v1/registry/operators/"+op.ID+"/personal-data", nil); r.status != http.StatusBadRequest {
 		t.Fatalf("no purpose: %d", r.status)
+	}
+	// C6: without a credential, or without the role, the missing purpose
+	// is not what the caller hears first.
+	if r := call(t, srv, "", "GET", "/v1/registry/operators/"+op.ID+"/personal-data", nil); r.status != http.StatusUnauthorized || r.slug() != "unauthenticated" {
+		t.Fatalf("no purpose, no credential: %d %s", r.status, r.body)
+	}
+	if r := call(t, srv, "viewer", "GET", "/v1/registry/operators/"+op.ID+"/personal-data", nil); r.status != http.StatusForbidden {
+		t.Fatalf("no purpose, viewer: %d %s", r.status, r.body)
 	}
 	r = call(t, srv, "inspector", "GET", "/v1/registry/operators/"+op.ID+"/personal-data?purpose=case+TEST-1", nil)
 	if r.status != http.StatusOK || !bytes.Contains(r.body, []byte("Test Person")) || r.header.Get("Cache-Control") != "no-store" {

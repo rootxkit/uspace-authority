@@ -460,7 +460,9 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 		}, apiserver.Options{
 			Logger:      rt.Logger,
 			Middlewares: []apiserver.Middleware{tok.Handler.FormGuard(), apiserver.Authorize(identify, apiserver.DefaultRules())},
-			Keep:        apiserver.PathPrefix("/v1/", "/oauth/", "/.well-known/"),
+			// The same rules before a malformed request is answered 400 (C6).
+			Admit: apiserver.Admission(identify, apiserver.DefaultRules()),
+			Keep:  apiserver.PathPrefix("/v1/", "/oauth/", "/.well-known/"),
 			// A zone file may be as large as uspace-core's parsers accept.
 			BodyLimits: map[string]int64{
 				"POST /v1/zones/import":                 int64(zonesvc.MaxDocumentBytes),

@@ -408,6 +408,64 @@ func RequireRole(identify IdentifyFunc, roles map[string][]string) Middleware {
 	return Authorize(identify, Rules{Roles: roles})
 }
 
+// gate is the rule set of one operation.
+type gate struct {
+	allowed    []string
+	hasRoles   bool
+	scope      string
+	hasScope   bool
+	public     bool
+	anySession bool
+	realm      string
+}
+
+func newGate(rules Rules, operationID string) gate {
+	g := gate{public: rules.Public[operationID], anySession: rules.AnySession[operationID], realm: rules.Realms[operationID]}
+	g.allowed, g.hasRoles = rules.Roles[operationID]
+	g.scope, g.hasScope = rules.Scopes[operationID]
+	if g.realm == "" {
+		g.realm = RealmConsole
+	}
+	return g
+}
+
+// admit applies the gate to a request that is not public: it returns
+// the identity identify resolved, or writes the refusal and returns
+// false.
+func (g gate) admit(identify IdentifyFunc, w http.ResponseWriter, r *http.Request) (Identity, bool) {
+	if !g.hasRoles && !g.anySession && !g.hasScope {
+		httpx.NewProblem(http.StatusForbidden, httpx.SlugForbidden, "", "this operation has no role rule").Write(w, r)
+		return Identity{}, false
+	}
+	id, err := identify(r)
+	if err != nil {
+		httpx.NewProblem(http.StatusUnauthorized, httpx.SlugUnauthn, "", err.Error()).Write(w, r)
+		return Identity{}, false
+	}
+	if g.hasScope {
+		if id.Session || !slices.Contains(id.Scopes, g.scope) {
+			httpx.NewProblem(http.StatusForbidden, httpx.SlugForbidden, "", "this operation needs an ecosystem token granting "+g.scope).Write(w, r)
+			return Identity{}, false
+		}
+		return id, true
+	}
+	if !id.Session {
+		httpx.NewProblem(http.StatusForbidden, httpx.SlugForbidden, "", "this operation needs a console session, not a machine token").Write(w, r)
+		return Identity{}, false
+	}
+	if g.hasRoles {
+		if id.Realm != g.realm {
+			httpx.NewProblem(http.StatusForbidden, httpx.SlugForbidden, "", "this operation needs a session of the "+g.realm+" realm").Write(w, r)
+			return Identity{}, false
+		}
+		if !slices.ContainsFunc(id.Roles, func(role string) bool { return slices.Contains(g.allowed, role) }) {
+			httpx.NewProblem(http.StatusForbidden, httpx.SlugForbidden, "", "this operation needs one of the roles "+strings.Join(g.allowed, ", ")).Write(w, r)
+			return Identity{}, false
+		}
+	}
+	return id, true
+}
+
 // Authorize applies rules to every operation: a public operation runs
 // without an identity; any other needs identify to resolve one (401
 // unauthenticated otherwise); a scope operation admits only an
@@ -417,56 +475,50 @@ func RequireRole(identify IdentifyFunc, roles map[string][]string) Middleware {
 // operation needs a session of the operation's realm (console by
 // default) holding one of its roles (403 forbidden otherwise). An
 // operation that no rule names is refused (403, fail closed).
+//
+// Authorize runs after the generated code has parsed the parameters and
+// the body; Admission applies the same rules to a request that parsing
+// refused, so that a refused credential is answered before a malformed
+// request (conformance C6).
 func Authorize(identify IdentifyFunc, rules Rules) Middleware {
 	return func(f gen.StrictHandlerFunc, operationID string) gen.StrictHandlerFunc {
-		allowed, hasRoles := rules.Roles[operationID]
-		scope, hasScope := rules.Scopes[operationID]
-		public := rules.Public[operationID]
-		anySession := rules.AnySession[operationID]
-		realm := rules.Realms[operationID]
-		if realm == "" {
-			realm = RealmConsole
-		}
+		g := newGate(rules, operationID)
 		return func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
 			ctx = WithRequestInfo(ctx, RequestInfo{RemoteIP: httpx.RemoteIP(r), UserAgent: r.UserAgent()})
-			if public {
+			if g.public {
 				return f(ctx, w, r, request)
-			}
-			if !hasRoles && !anySession && !hasScope {
-				httpx.NewProblem(http.StatusForbidden, httpx.SlugForbidden, "", "this operation has no role rule").Write(w, r)
-				return nil, nil
 			}
 			if checkOnly(request) {
 				ctx = WithoutActivity(ctx)
 				r = r.WithContext(WithoutActivity(r.Context()))
 			}
-			id, err := identify(r)
-			if err != nil {
-				httpx.NewProblem(http.StatusUnauthorized, httpx.SlugUnauthn, "", err.Error()).Write(w, r)
+			id, ok := g.admit(identify, w, r)
+			if !ok {
 				return nil, nil
-			}
-			if hasScope {
-				if id.Session || !slices.Contains(id.Scopes, scope) {
-					httpx.NewProblem(http.StatusForbidden, httpx.SlugForbidden, "", "this operation needs an ecosystem token granting "+scope).Write(w, r)
-					return nil, nil
-				}
-				return f(WithIdentity(ctx, id), w, r, request)
-			}
-			if !id.Session {
-				httpx.NewProblem(http.StatusForbidden, httpx.SlugForbidden, "", "this operation needs a console session, not a machine token").Write(w, r)
-				return nil, nil
-			}
-			if hasRoles {
-				if id.Realm != realm {
-					httpx.NewProblem(http.StatusForbidden, httpx.SlugForbidden, "", "this operation needs a session of the "+realm+" realm").Write(w, r)
-					return nil, nil
-				}
-				if !slices.ContainsFunc(id.Roles, func(role string) bool { return slices.Contains(allowed, role) }) {
-					httpx.NewProblem(http.StatusForbidden, httpx.SlugForbidden, "", "this operation needs one of the roles "+strings.Join(allowed, ", ")).Write(w, r)
-					return nil, nil
-				}
 			}
 			return f(WithIdentity(ctx, id), w, r, request)
 		}
+	}
+}
+
+// AdmitFunc decides, for a request the generated code could not parse,
+// whether its caller would have been admitted to operationID; when not,
+// it writes the refusal (401 or 403) and returns false, and Mount does
+// not answer 400.
+type AdmitFunc func(w http.ResponseWriter, r *http.Request, operationID string) bool
+
+// Admission is the AdmitFunc of Authorize(identify, rules): the same
+// gate, applied before the request is answered as malformed. A request
+// without a credential learns that it is not authenticated before it
+// learns anything about the resource (conformance NAT-UNAUTH, C6). It
+// is a check only: the request is not counted as session activity.
+func Admission(identify IdentifyFunc, rules Rules) AdmitFunc {
+	return func(w http.ResponseWriter, r *http.Request, operationID string) bool {
+		g := newGate(rules, operationID)
+		if g.public {
+			return true
+		}
+		_, ok := g.admit(identify, w, r.WithContext(WithoutActivity(r.Context())))
+		return ok
 	}
 }

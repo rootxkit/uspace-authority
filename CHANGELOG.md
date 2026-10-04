@@ -420,3 +420,11 @@ Unreleased; the format follows Keep a Changelog.
   registration check (status only), the public register and the rules
   from configured Markdown; ka/en, Playwright and an axe check (WCAG 2.2
   AA) in English light and Georgian dark.
+- WP-L7 conformance C6 (bug fix, no contract change): a request the
+  generated code cannot parse (a missing or malformed parameter, an
+  unreadable body) is put to the operation's access rules first
+  (`apiserver.Admission`, the gate `Authorize` applies): without a
+  credential it is `401 unauthenticated`, without the role or scope
+  `403 forbidden`, and only an admitted caller hears `400 validation`.
+  `apiserver.Options.Admit` left unset fails closed (401 on every
+  operation that is not public).

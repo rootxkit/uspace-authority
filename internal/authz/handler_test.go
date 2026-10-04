@@ -25,6 +25,7 @@ func serve(t *testing.T, f *fixture) *httptest.Server {
 	mux := http.NewServeMux()
 	apiserver.Mount(mux, apiserver.Server{AuthHandler: Handler{Service: f.svc}, UsersHandler: Handler{Service: f.svc}}, apiserver.Options{
 		Middlewares: []apiserver.Middleware{apiserver.Authorize(f.a.Identify, apiserver.DefaultRules())},
+		Admit:       apiserver.Admission(f.a.Identify, apiserver.DefaultRules()),
 		Keep:        apiserver.PathPrefix("/v1/"),
 	})
 	srv := httptest.NewServer(httpx.Baseline(mux, slog.New(slog.DiscardHandler), httpx.BaselineDeps{Counters: newCounters()}))
@@ -146,6 +147,7 @@ func TestSignInLimitAndAuditUseTheForwardedClient(t *testing.T) {
 		mux := http.NewServeMux()
 		apiserver.Mount(mux, apiserver.Server{AuthHandler: Handler{Service: f.svc}}, apiserver.Options{
 			Middlewares: []apiserver.Middleware{apiserver.Authorize(f.a.Identify, apiserver.DefaultRules())},
+			Admit:       apiserver.Admission(f.a.Identify, apiserver.DefaultRules()),
 			Keep:        apiserver.PathPrefix("/v1/"),
 		})
 		var proxies []netip.Prefix
