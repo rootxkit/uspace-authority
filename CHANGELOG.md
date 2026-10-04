@@ -312,3 +312,8 @@ Unreleased; the format follows Keep a Changelog.
   classification from a configured scheme, analysis and closure; the
   de-identified, hash-sealed and audited export in the pluggable
   `eccairs-compatible-draft` format (Q-A12); the occurrences runbook.
+- WP-19: uspace-core v1.4.0. `internal/ground` loads `GEOID_FILE` with
+  `geoid.LoadMapped` (after its own 128 MiB bound) and the DEM tiles
+  with `terrain.MappedDirOpener`, so detect, dp-poller and rid-ingest on
+  one host share the grid and each tile in the page cache; the status
+  line says `geoid_mapped` and, once a tile is read, `terrain_mapped`.

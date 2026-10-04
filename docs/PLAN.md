@@ -594,9 +594,11 @@ edits another's), `CHANGELOG.md` (one line per WP under Unreleased) and
 
 ## 13. Engineering standards and CI
 
-- Go 1.27, `CGO_ENABLED=0`; `uspace-core` pinned by tag (`v1.3.0`
-  since WP-12, additive to `v1.2.0`: `geodesy.Destination`; `v1.2.0`
-  since WP-10, additive to `v1.1.0`: the shared session signer
+- Go 1.27, `CGO_ENABLED=0`; `uspace-core` pinned by tag (`v1.4.0`
+  since WP-19, additive to `v1.3.0`: the memory-mapped grid loaders
+  `geoid.LoadMapped` and `terrain.MappedDirOpener`; `v1.3.0` since
+  WP-12, additive to `v1.2.0`: `geodesy.Destination`; `v1.2.0` since
+  WP-10, additive to `v1.1.0`: the shared session signer
   `auth.Issuer.IssueSession`; `v1.1.0` since WP-2: the additive JWS
   helpers, audience lists and `StrictSessionClaims`, `geodesy/cell`,
   `core.BasisProvider` and `alerting.Config.SkipConflicts`; each move

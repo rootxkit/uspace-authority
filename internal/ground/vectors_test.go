@@ -101,7 +101,7 @@ func TestVectorsTerrainGeoid(t *testing.T) {
 			// one, as the vectors read it (clamped at its edges).
 			s := New(Options{})
 			s.setTerrain(terrain.Index{terrain.CellName(p): "COP-DEM GLO-30"},
-				func(string) ([]byte, error) { return syntheticTile(), nil })
+				parsedTiles(func(string) ([]byte, error) { return syntheticTile(), nil }))
 			env := s.Env(p)
 			if exp.ElevationM == nil {
 				if env.Ground != zones.GroundUnknown {

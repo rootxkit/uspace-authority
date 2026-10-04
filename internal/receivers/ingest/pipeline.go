@@ -173,7 +173,7 @@ func loadGeoid(rt *proc.Runtime, cfg config.Geoid) geoid.Undulator {
 		if len(problems) != 0 {
 			return []slog.Attr{slog.String("geoid_grid", problems[0].State+": "+problems[0].Reason)}
 		}
-		return []slog.Attr{slog.String("geoid_grid", g.GeoidDescription())}
+		return []slog.Attr{slog.String("geoid_grid", g.GeoidDescription()), slog.Bool("geoid_mapped", g.GeoidMapped())}
 	})
 	return g.Undulator()
 }

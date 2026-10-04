@@ -27,7 +27,7 @@ import (
 
 // pinnedCore is the uspace-core tag this repository builds on (plan
 // §13); it moves only in its own build: commit.
-const pinnedCore = "v1.3.0"
+const pinnedCore = "v1.4.0"
 
 func TestCoreVersionIsThePinnedTag(t *testing.T) {
 	bi, ok := debug.ReadBuildInfo()
