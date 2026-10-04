@@ -219,6 +219,51 @@ func TestIntegrationAuditMonthsGoOldestFirstAndTheChainStillVerifies(t *testing.
 	}
 }
 
+// A hold without a window that names only aircraft covers them at any
+// time, their audit rows too: a month with a row naming a held track (in
+// its payload) or a held serial (as its entity) stays, and stops the
+// months after it (absence); a hold naming other aircraft holds nothing,
+// and once each matching hold is released its month goes (presence).
+func TestIntegrationAuditMonthsStayForHoldsNamingOnlyAircraft(t *testing.T) {
+	f := newFixture(t)
+	ctx := context.Background()
+	m1 := time.Date(time.Now().UTC().Year()-12, 3, 10, 12, 0, 0, 0, time.UTC)
+	m2 := m1.AddDate(0, 1, 0)
+	record := func(at time.Time, entityID string, payload any) {
+		if err := f.db.WithTx(ctx, func(q *gen.Queries) error {
+			_, err := f.w.Record(ctx, q, audit.Event{TS: at, Actor: audit.SystemActor("test"), EntityType: "test", EntityID: entityID,
+				EventType: audit.EventPolicyCreated, Payload: payload})
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	record(m1, "", map[string]any{"violation": map[string]any{"track_id": "track-held"}})
+	record(m2, "TESTSERIALHELD000001", nil)
+	byTrack := f.hold(t, HoldInput{CaseRef: "CASE-T", Reason: "track inquiry", TrackIDs: []string{"track-held"}})
+	bySerial := f.hold(t, HoldInput{CaseRef: "CASE-S", Reason: "serial inquiry", Serials: []string{"TESTSERIALHELD000001"}})
+	f.hold(t, HoldInput{CaseRef: "CASE-O", Reason: "another aircraft", TrackIDs: []string{"track-other"}, Serials: []string{"TESTSERIALOTHER00001"}})
+
+	sum, err := f.svc.DropAuditMonths(ctx)
+	if err != nil || len(sum["dropped"].([]string)) != 0 || sum["held"] != m1.Format("2006-01") {
+		t.Fatalf("held by the track %v %v", sum, err)
+	}
+	if _, err := f.holds.Release(ctx, officer, byTrack, "answered"); err != nil {
+		t.Fatal(err)
+	}
+	sum, err = f.svc.DropAuditMonths(ctx)
+	if err != nil || !slices.Equal(sum["dropped"].([]string), []string{m1.Format("2006-01")}) || sum["held"] != m2.Format("2006-01") {
+		t.Fatalf("held by the serial %v %v", sum, err)
+	}
+	if _, err := f.holds.Release(ctx, officer, bySerial, "answered"); err != nil {
+		t.Fatal(err)
+	}
+	sum, err = f.svc.DropAuditMonths(ctx)
+	if err != nil || !slices.Equal(sum["dropped"].([]string), []string{m2.Format("2006-01")}) || sum["held"] != "" {
+		t.Fatalf("with only the other aircraft's hold %v %v", sum, err)
+	}
+}
+
 // The archive period: a dropped chunk's object older than two years is
 // deleted with its manifest and an events row (presence); a hold
 // naming one of its aircraft (read from the manifest) keeps it, a hold

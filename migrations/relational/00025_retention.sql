@@ -208,7 +208,9 @@ $$;
 -- events when it ended before cutoff and nothing holds it, after
 -- recording its anchor in audit_dropped_months, and returns
 -- {partition, held, rows, first_id, last_id, last_hash}. A held month
--- is returned with held true and kept. Months are dropped oldest first,
+-- is returned with held true and kept: one a window covers, one with a
+-- row of a held violation or an open incident, or one with a row naming
+-- an aircraft a hold without a window names. Months are dropped oldest first,
 -- one per call, so the anchor is always the newest dropped month.
 -- +goose StatementBegin
 CREATE FUNCTION authority_retention_drop_events_month(month_start timestamptz, cutoff timestamptz)
@@ -241,12 +243,21 @@ BEGIN
     RAISE EXCEPTION 'retention: % is not the oldest month of events (%)', part, oldest USING ERRCODE = 'invalid_parameter_value';
   END IF;
   LOCK TABLE legal_holds IN SHARE MODE;
+  -- A hold without a window names aircraft at any time: a row of the
+  -- month naming one (as its entity, as a violation of it, or anywhere
+  -- in its payload) holds the month.
   EXECUTE format(
     'SELECT EXISTS (SELECT 1 FROM legal_holds h WHERE h.released_at IS NULL AND h.window_from < %L AND h.window_to > %L)
          OR EXISTS (SELECT 1 FROM %I e WHERE e.entity_id IN (
                SELECT unnest(h.violation_ids) FROM legal_holds h WHERE h.released_at IS NULL
-               UNION ALL SELECT i.incident_id FROM incidents i WHERE i.status <> ''closed''))',
-    m_end, m_start, part) INTO is_held;
+               UNION ALL SELECT i.incident_id FROM incidents i WHERE i.status <> ''closed''))
+         OR EXISTS (SELECT 1
+               FROM legal_holds h CROSS JOIN LATERAL unnest(h.track_ids || h.serials) AS x(name), %I e
+               WHERE h.released_at IS NULL AND h.window_from IS NULL
+                 AND (e.entity_id = x.name
+                      OR e.entity_id IN (SELECT v.violation_id FROM violations v WHERE v.track_id = x.name OR v.serial = x.name)
+                      OR jsonb_path_exists(e.payload, ''lax $.** ? (@ == $n)'', jsonb_build_object(''n'', x.name))))',
+    m_end, m_start, part, part) INTO is_held;
   IF is_held THEN
     RETURN jsonb_build_object('partition', part, 'held', true);
   END IF;
