@@ -74,6 +74,18 @@ func logLines(t *testing.T, s *Service) []map[string]any {
 	return out
 }
 
+// parsedTiles turns a byte opener into the tile opener setTerrain takes,
+// parsing with core's terrain.ParseTile (a tile in memory, not mapped).
+func parsedTiles(open func(string) ([]byte, error)) func(string) (*terrain.Tile, error) {
+	return func(cell string) (*terrain.Tile, error) {
+		data, err := open(cell)
+		if err != nil {
+			return nil, err
+		}
+		return terrain.ParseTile(data)
+	}
+}
+
 func attrs(as []slog.Attr) map[string]string {
 	m := map[string]string{}
 	for _, a := range as {
@@ -211,7 +223,7 @@ func TestTileCacheBound(t *testing.T) {
 		idx[terrain.CellName(core.LatLon{LatDeg: float64(lat) + 0.5, LonDeg: 44.5})] = "COP-DEM GLO-30"
 	}
 	s := New(Options{MaxTiles: 2})
-	s.setTerrain(idx, func(cell string) ([]byte, error) {
+	s.setTerrain(idx, parsedTiles(func(cell string) ([]byte, error) {
 		mu.Lock()
 		reads++
 		mu.Unlock()
@@ -221,7 +233,7 @@ func TestTileCacheBound(t *testing.T) {
 		}
 		return tileBytes(5, 5, float64(lat+1), 44, 0.25, "COP-DEM GLO-30",
 			func(int, int) float64 { return 100 }, nil), nil
-	})
+	}))
 	for lat := 40; lat < 43; lat++ {
 		if env := s.Env(core.LatLon{LatDeg: float64(lat) + 0.5, LonDeg: 44.5}); env.Ground != zones.GroundKnown || env.GroundM != 100 {
 			t.Fatalf("cell %d: %+v", lat, env)

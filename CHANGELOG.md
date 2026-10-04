@@ -296,3 +296,8 @@ Unreleased; the format follows Keep a Changelog.
   batch is refused, counted as `refused_no_receiver_keys` and reported
   by the `receiver_keys` check of `/readyz`; a receiver registered later
   is accepted without a restart.
+- WP-19: uspace-core v1.4.0. `internal/ground` loads `GEOID_FILE` with
+  `geoid.LoadMapped` (after its own 128 MiB bound) and the DEM tiles
+  with `terrain.MappedDirOpener`, so detect, dp-poller and rid-ingest on
+  one host share the grid and each tile in the page cache; the status
+  line says `geoid_mapped` and, once a tile is read, `terrain_mapped`.
