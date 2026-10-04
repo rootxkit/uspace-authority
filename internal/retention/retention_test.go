@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -164,5 +165,29 @@ func TestStatusAttrsSayThePeriodsArePendingGCAA(t *testing.T) {
 	}
 	if got["retention_pending_gcaa"] != "true" || got["archive_store"] != "none" || got["retention_online_days"] != "90" {
 		t.Fatalf("%v", got)
+	}
+}
+
+// The plan's Q-A15 row says what PendingGCAA says: while the periods are
+// the spec's defaults, the owner's acknowledgement (periods in config)
+// and that GCAA has not answered are both on the row.
+func TestPlanQA15SaysThePeriodsArePendingGCAA(t *testing.T) {
+	b, err := os.ReadFile("../../docs/PLAN.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var row string
+	for _, line := range strings.Split(string(b), "\n") {
+		if strings.HasPrefix(line, "| Q-A15 |") {
+			row = line
+		}
+	}
+	cells := strings.Split(row, "|")
+	if len(cells) < 5 {
+		t.Fatalf("no Q-A15 row in docs/PLAN.md: %q", row)
+	}
+	status := strings.TrimSpace(cells[len(cells)-2])
+	if PendingGCAA && !strings.Contains(status, "owner acknowledged 2026-10-04: periods in config, pending GCAA") {
+		t.Fatalf("Q-A15 status %q does not say the periods are in config pending GCAA", status)
 	}
 }
