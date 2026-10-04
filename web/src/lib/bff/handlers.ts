@@ -39,6 +39,15 @@ export interface ProxyRoute {
 }
 
 const ULID = "[0-7][0-9A-HJKMNP-TV-Z]{25}";
+
+/**
+ * A geo-zone's or U-space airspace's identifier: the pattern
+ * api/openapi.yaml pins on every /v1/zones/{identifier} and
+ * /v1/uspace/{identifier} operation (ED-318's seven characters; the
+ * characters this project's identifiers use). zone-identifier.test.ts
+ * reads the spec and fails when the two differ.
+ */
+export const ZONE_IDENTIFIER = "[A-Za-z0-9_-]{1,7}";
 const route = (methods: ProxyRoute["methods"], path: string): ProxyRoute => ({ methods, path: new RegExp(`^${path}$`) });
 
 /**
@@ -99,9 +108,9 @@ export const PROXY_ALLOW_PATHS: readonly RegExp[] = [
   /^\/v1\/registry\/applications$/,
   /^\/v1\/registry\/applications\/[A-Za-z0-9_-]{1,64}\/(personal-data|review|approve|refuse)$/,
   /^\/v1\/zones\/(export|import|publish)$/,
-  /^\/v1\/zones\/[A-Za-z0-9_-]{1,7}(\/(approve|versions|applies))?$/,
+  new RegExp(`^/v1/zones/${ZONE_IDENTIFIER}(/(approve|versions|applies))?$`),
   /^\/v1\/uspace(\/publish)?$/,
-  /^\/v1\/uspace\/[A-Za-z0-9_-]{1,7}(\/(designate|versions))?$/,
+  new RegExp(`^/v1/uspace/${ZONE_IDENTIFIER}(/(designate|versions))?$`),
   /^\/v1\/publications$/,
   /^\/v1\/certificates(\/(register|publish-list))?$/,
   /^\/v1\/certificates\/[0-9a-f]{32}(\/(status-notices|suspend|limit|revoke|reinstate))?$/,

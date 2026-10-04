@@ -216,8 +216,9 @@ the kit's `bffHandlers` configured in `web/src/lib/bff/handlers.ts`.
   `Authorization: Bearer`, for the paths of `PROXY_ALLOW_PATHS` only:
   `/v1/auth/session`, `/v1/zones`, since WP-22 the registry, zone,
   U-space, publication and certificate operations of the console (each
-  pattern anchored; the registry's machine operations are not among
-  them), and WP-23's `OVERSIGHT_PROXY_ROUTES`, each of which names the
+  pattern anchored; a zone or U-space identifier is the
+  `^[A-Za-z0-9_-]{1,7}$` api/openapi.yaml pins, `ZONE_IDENTIFIER`; the
+  registry's machine operations are not among them), and WP-23's `OVERSIGHT_PROXY_ROUTES`, each of which names the
   methods of its operations (a path of WP-23's with another method is
   the BFF's 405 and never reaches api; without a session it is the
   BFF's 401 and without the CSRF pair its 403 first, so the 405 tells
