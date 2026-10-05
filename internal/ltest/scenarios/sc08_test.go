@@ -17,7 +17,8 @@ import (
 // clears only A's violation, as source_disabled, at once, and A's
 // batches are refused 503 source_disabled; switched on, A is raised
 // again. Remote ID switched off by type clears both; on, both are
-// raised again; flying out clears both resolved. Every switch is an
+// raised again; flying out clears both resolved. While Remote ID is off by
+// type no direct Remote ID track is published. Every switch is an
 // events row with the actor and the reason.
 func TestScenarioSC08SourcesSwitchedOffAndOn(t *testing.T) {
 	s := ltest.New(t, ltest.Options{Name: "SC-08"})
@@ -70,14 +71,31 @@ func TestScenarioSC08SourcesSwitchedOffAndOn(t *testing.T) {
 	va2 := s.AwaitRaised(violation.KindZoneIncursion, a.TrackID(), 10*time.Second)
 	s.Note("instance_on_to_raise_ms", va2.RaisedAt.Sub(on).Milliseconds())
 
-	// Remote ID off by type: both clear source_disabled.
+	// Remote ID off by type: both clear source_disabled, both receivers
+	// are refused, and no direct Remote ID track is published at all.
+	refused := func(rx *ltest.Receiver) int { return rx.Tally().RefusedBy["503 source_disabled"] }
+	refusedA, refusedB := refused(rxA), refused(rxB)
 	s.Switch(sources.TypeDirectRID, nil, false, "SC-08 step 2: Remote ID off by type")
 	for _, id := range []string{va2.ID, vb.ID} {
 		if r := s.AwaitCleared(id, 5*time.Second); r != "source_disabled" {
 			t.Errorf("%s cleared %s, want source_disabled", id, r)
 		}
 	}
+	// Once the ingest refuses both receivers the switch has reached it;
+	// from then on, three steps of each, nothing reaches trk.v1.
+	s.Await("both receivers refused 503 source_disabled", 10*time.Second, func() bool {
+		return refused(rxA) > refusedA && refused(rxB) > refusedB
+	})
+	tracksA, tracksB := len(s.Rec.Tracks(a.TrackID())), len(s.Rec.Tracks(b.TrackID()))
+	refusedA, refusedB = refused(rxA), refused(rxB)
 	fa.WaitSteps(3)
+	fb.WaitSteps(3)
+	if n := len(s.Rec.Tracks(a.TrackID())) - tracksA + len(s.Rec.Tracks(b.TrackID())) - tracksB; n != 0 {
+		t.Errorf("%d direct Remote ID tracks published while Remote ID was switched off by type", n)
+	}
+	if refused(rxA) == refusedA || refused(rxB) == refusedB {
+		t.Errorf("the receivers flew on unrefused while Remote ID was off: A %+v, B %+v", rxA.Tally(), rxB.Tally())
+	}
 	s.Switch(sources.TypeDirectRID, nil, true, "SC-08 step 3: Remote ID on")
 	va3 := s.AwaitRaised(violation.KindZoneIncursion, a.TrackID(), 10*time.Second)
 	vb3 := s.AwaitRaised(violation.KindZoneIncursion, b.TrackID(), 10*time.Second)
