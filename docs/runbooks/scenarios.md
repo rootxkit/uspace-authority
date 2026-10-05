@@ -161,7 +161,7 @@ process's last 400 log lines.
 | `TestScenarioSC06IdentificationStatusesAndMismatch` | SC-06 | the four identification statuses; `identification_mismatch` cleared `resolved` when the broadcast operator is corrected |
 | `TestScenarioSC08SourcesSwitchedOffAndOn` | SC-08 | `zone_incursion` cleared `source_disabled` by instance and by type, raised again, cleared `resolved`; no direct Remote ID track published while off by type; the switches' events rows |
 | `TestScenarioStaleLandedAndASilentReceiver` | ageing | `zone_incursion` cleared `stale` and `landed`; a receiver live, stale, live |
-| `TestScenarioSC12WindowsAndAZoneWithdrawnInFlight` | SC-12 | nothing out of a window; PROHIBITED (critical) and CONDITIONAL (warning) cleared `reconfigured` |
+| `TestScenarioSC12WindowsAndAZoneWithdrawnInFlight` | SC-12 | a permanent PROHIBITED zone cleared `resolved` on exit; nothing out of a window; PROHIBITED (critical) and CONDITIONAL (warning) cleared `reconfigured` |
 | `TestScenarioSC13AGLZonesWithNoDEM` | SC-13 | AGL zones with no DEM: warnings with `not_judged [AGL]`, cleared `resolved`; error-level status |
 | `TestScenarioNoAuthorisationAndTheHeightLimitInUSpace` | WP-26 | `no_authorisation` cleared `resolved` by an intent; `height_120m` cleared `authorised` |
 | `TestScenarioSC16NetworkProviderOffOnAndDown` | SC-16 | a network flight's `zone_incursion` cleared `source_disabled`, `stale` (provider down) and `resolved`; the provider disabled, down, live |
