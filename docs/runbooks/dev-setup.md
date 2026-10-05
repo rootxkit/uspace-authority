@@ -61,9 +61,12 @@ golangci-lint run ./...
 ## 5. The development stack
 
 `make up` (`docker compose -f deploy/compose.dev.yaml up -d --wait`)
-starts PostGIS, TimescaleDB and NATS (JetStream, file store) and returns
-once all three are healthy. Host ports are 56432 (PostGIS), 56433
-(TimescaleDB), 56422 and 56822 (NATS client and monitoring), bound to
+starts one timescaledb-ha container holding both databases (`authority`
+with PostGIS, `authority_ts` with TimescaleDB, as staging holds them:
+`deploy/compose.yaml`, `staging.md`) and NATS (JetStream, file store),
+and returns once both are healthy. Host ports are 56432 (the relational
+URL) and 56433 (the telemetry URL), both the one database container,
+56422 and 56822 (NATS client and monitoring), bound to
 127.0.0.1; override them with `AUTHORITY_DEV_PG_PORT`,
 `AUTHORITY_DEV_TS_PORT`, `AUTHORITY_DEV_NATS_PORT` and
 `AUTHORITY_DEV_NATS_MON_PORT` if another stack holds them. `make down`
