@@ -68,6 +68,10 @@ type NotifySender struct {
 	// ANSP is true for the ANSP's degraded direct delivery (M5), false
 	// for the CISP.
 	ANSP bool
+	// BaseURL is the ANSP's issuer URL, its published base URL: a
+	// direct notification's pull_url is followed only on its scheme,
+	// host and port (the SSRF guard of M5).
+	BaseURL string
 }
 
 // CompactVerifier verifies a compact delivery JWS (core's
@@ -88,13 +92,18 @@ type ReceiverConfig struct {
 	Senders map[string]NotifySender
 	Store   CacheStore
 	// PullURL guards a notification's pull_url (nil: never followed).
-	PullURL     PullURLChecker
-	Trigger     func(Dataset, Hint)
-	MaxLiveJTIs int64
-	Counters    *core.Counters
-	Logger      *slog.Logger
-	Limiter     *logging.Limiter
-	Now         func() time.Time
+	PullURL PullURLChecker
+	Trigger func(Dataset, Hint)
+	// TriggerDirect queues the pull of an ANSP direct notification
+	// (Subscriber.TriggerDirect); false means it cannot be queued now
+	// and the receiver answers 503. Nil: the ANSP's notifications are
+	// read from the CISP only.
+	TriggerDirect func(DirectHint) bool
+	MaxLiveJTIs   int64
+	Counters      *core.Counters
+	Logger        *slog.Logger
+	Limiter       *logging.Limiter
+	Now           func() time.Time
 }
 
 // Receiver is POST /v1/cis/notifications.
@@ -172,6 +181,20 @@ func (rc *Receiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		httpx.NewProblem(http.StatusBadRequest, httpx.SlugValidation, "", "the notification is not a "+ChangeSchema+" record", ferr).Write(w, r)
 		return
 	}
+	// The ANSP's degraded direct path (M4, M5): the record's version is
+	// the restriction's ansp_version, never a CIS dataset version, and
+	// the restriction is read from the ANSP's signed pull_url. It is
+	// queued before the delivery id is recorded, so a full queue is a
+	// 503 the ANSP retries, never a delivery recorded and dropped; a
+	// queued pull of a replay finds the version held and does nothing.
+	direct := sender.ANSP && ds == DatasetRestrictions && pullReasons[string(ch.Reason)] && rc.cfg.TriggerDirect != nil &&
+		sameOrigin(ch.PullUrl, sender.BaseURL)
+	if direct && !rc.cfg.TriggerDirect(DirectHint{RestrictionID: claims.Subject, AnspVersion: ch.Version, FeatureIDs: ch.FeatureIds,
+		PullURL: ch.PullUrl, Issuer: claims.Issuer, Reason: string(ch.Reason), At: rc.cfg.Now()}) {
+		w.Header().Set("Retry-After", "30")
+		httpx.NewProblem(http.StatusServiceUnavailable, CounterDirectFull, "", "too many direct restrictions waiting to be pulled; retry").Write(w, r)
+		return
+	}
 	fresh, full, err := rc.cfg.Store.RememberJTI(ctx, claims.Issuer, claims.JTI, JTITTL, rc.cfg.MaxLiveJTIs)
 	switch {
 	case err != nil:
@@ -207,14 +230,25 @@ func (rc *Receiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
+	if direct {
+		log.Info("ANSP direct notification accepted; the restriction is pulled from its pull_url", slog.String("restriction_id", claims.Subject))
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
 	h := Hint{Version: ch.Version, ETag: ch.Etag, Issuer: claims.Issuer, At: rc.cfg.Now()}
+	if sender.ANSP {
+		// Not a CIS dataset version: a CISP pull it asks for is never
+		// skipped as a replay because of it.
+		h.Version, h.ETag = 0, ""
+	}
 	switch {
 	case ch.PullUrl == "":
 	case sender.ANSP:
-		// The ANSP's direct delivery names its own resource; pulls go to
-		// the configured CISP only.
+		// Not a restriction the direct path takes (another dataset, or a
+		// pull_url off the ANSP's base URL): the CISP is read.
 		rc.cfg.Counters.Inc(CounterPullURLMismatch)
-		log.Info("ANSP direct notification; the dataset is read from the configured CISP", slog.String("pull_url_host", hostOf(ch.PullUrl)))
+		log.Info("ANSP notification not taken by the direct path; the dataset is read from the configured CISP",
+			slog.String("pull_url_host", hostOf(ch.PullUrl)))
 	case rc.cfg.PullURL == nil:
 		rc.cfg.Counters.Inc(CounterPullURLMismatch)
 	default:
@@ -265,6 +299,15 @@ func decodeChange(body json.RawMessage) (cispclient.Change, Dataset, *core.Field
 		return c, "", core.Fieldf("reason", "empty")
 	}
 	return c, ds, nil
+}
+
+// sameOrigin reports whether raw is an absolute URL on base's scheme,
+// host and port, without user information.
+func sameOrigin(raw, base string) bool {
+	u, err := url.Parse(raw)
+	b, berr := url.Parse(base)
+	return err == nil && berr == nil && u.IsAbs() && b.IsAbs() && u.Host != "" &&
+		u.Scheme == b.Scheme && strings.EqualFold(u.Host, b.Host) && u.User == nil
 }
 
 // hostOf is the host of an absolute URL, or "".

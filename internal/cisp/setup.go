@@ -67,6 +67,12 @@ type Setup struct {
 	PublisherSigMaxAge time.Duration
 
 	ReconcileInterval time.Duration
+	// DirectMax and DirectKeep bound the ANSP's degraded direct path
+	// (CIS_DIRECT_MAX, CIS_DIRECT_KEEP_S); DirectClient pulls its
+	// pull_url (nil: a plain client bounded by DefaultDirectTimeout).
+	DirectMax         int
+	DirectKeep        time.Duration
+	DirectClient      *http.Client
 	HeartbeatInterval time.Duration
 	SendPoll          time.Duration
 	BackoffMin        time.Duration
@@ -162,6 +168,9 @@ func Assemble(_ context.Context, s Setup) (*Parts, error) {
 		CISP: reader, Publishers: p.Publishers, Schemas: schemas, Store: store, Projector: projector, Announcer: announcer,
 		Counters: counters, Logger: logger, Limiter: s.Limiter, CallbackURL: s.CallbackURL, BBox: s.BBox,
 		ReconcileInterval: s.ReconcileInterval, StaleBoundS: s.StaleBoundS, Now: s.Now,
+		// The ANSP's pull_url is public and signed: a client of its own,
+		// never the CISP's.
+		Direct: DirectConfig{Client: orClient(s.DirectClient), Store: directStore(s.DB, store), Max: s.DirectMax, Keep: s.DirectKeep},
 	})
 	if p.Client != nil {
 		p.Sender = &Sender{
@@ -179,7 +188,7 @@ func Assemble(_ context.Context, s Setup) (*Parts, error) {
 			k = *ni.Keys
 		}
 		issuers[ni.Issuer] = k
-		senders[ni.Issuer] = NotifySender{ANSP: ni.ANSP}
+		senders[ni.Issuer] = NotifySender{ANSP: ni.ANSP, BaseURL: ni.Issuer}
 	}
 	p.Notify = NewLazyCompactVerifier(coreauth.CompactConfig{Issuers: issuers, Audiences: s.Audiences, HTTPClient: s.HTTPClient, Now: s.Now})
 	var guard PullURLChecker
@@ -187,11 +196,28 @@ func Assemble(_ context.Context, s Setup) (*Parts, error) {
 		guard = p.Client
 	}
 	p.Receiver = NewReceiver(ReceiverConfig{
-		Verifier: p.Notify, Senders: senders, Store: store, PullURL: guard, Trigger: p.Subscriber.Trigger,
+		Verifier: p.Notify, Senders: senders, Store: store, PullURL: guard, Trigger: p.Subscriber.Trigger, TriggerDirect: p.Subscriber.TriggerDirect,
 		MaxLiveJTIs: s.MaxLiveJTIs, Counters: counters, Logger: logger, Limiter: s.Limiter, Now: s.Now,
 	})
 	p.Handler = Handler{Store: store, Subscriber: p.Subscriber, Heartbeat: p.Heartbeat, Configured: p.Configured}
 	return p, nil
+}
+
+// orClient is c, or a plain client bounded by DefaultDirectTimeout.
+func orClient(c *http.Client) *http.Client {
+	if c != nil {
+		return c
+	}
+	return &http.Client{Timeout: DefaultDirectTimeout}
+}
+
+// directStore is the relational store of the direct restrictions, nil
+// without a database (memory only).
+func directStore(db *pg.DB, store PG) DirectStore {
+	if db == nil {
+		return nil
+	}
+	return store
 }
 
 func orDefault(d, def time.Duration) time.Duration {

@@ -22,6 +22,8 @@ from the CISP's file at that commit).
 | `CIS_SEND_BACKOFF_MIN_S`, `CIS_SEND_BACKOFF_MAX_S`, `CIS_SEND_GIVE_UP_S` | 2, 300, 86400 | The sender's retry: doubling from the minimum, capped at 5 min, given up 24 h after the row was queued. |
 | `CIS_PUBLISHER_SIG_MAX_AGE_S` | 31622400 (366 d) | How old the publisher signature of a pulled version may be (a signature is as old as its version). |
 | `CIS_JTI_MAX_LIVE` | 100000 | Delivery ids remembered by the receiver (E-10). |
+| `CIS_DIRECT_MAX` | 500 | Restrictions held from the ANSP's degraded direct delivery, and pulls waiting for it; past it a direct notification is answered 503 (E-10). |
+| `CIS_DIRECT_KEEP_S` | 86400 | How long a direct restriction that is over is kept, and a failed pull retried (pending GCAA; spec 02 F3's 24 h retry window). |
 
 `cis_stale_bound_s` is a policy column (`/v1/policy`, default 300 s).
 
