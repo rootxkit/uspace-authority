@@ -20,9 +20,17 @@ import (
 
 // triggers records the pulls the receiver starts.
 type triggers struct {
-	mu    sync.Mutex
-	hints []Hint
-	ds    []Dataset
+	mu     sync.Mutex
+	hints  []Hint
+	ds     []Dataset
+	direct []DirectHint
+}
+
+func (tr *triggers) triggerDirect(h DirectHint) bool {
+	tr.mu.Lock()
+	tr.direct = append(tr.direct, h)
+	tr.mu.Unlock()
+	return true
 }
 
 func (tr *triggers) trigger(d Dataset, h Hint) {
@@ -44,6 +52,7 @@ func recordingWorld(t *testing.T) (*world, *triggers) {
 	w := newWorld(t)
 	tr := &triggers{}
 	w.receiver.cfg.Trigger = tr.trigger
+	w.receiver.cfg.TriggerDirect = tr.triggerDirect
 	return w, tr
 }
 
@@ -89,9 +98,11 @@ func newJTI() string { return "jti-" + strconv.FormatInt(jtiSeq.Add(1), 10) }
 
 // From the CISP: a zones publication starts a pull, with the pull_url
 // kept when it is https on the CISP's host and port; from the ANSP
-// (M5): accepted, counted, and the dataset is read from the configured
-// CISP, never from the ANSP's pull_url; from a third issuer, or for
-// another audience: refused 401 and counted.
+// (M5, H-2): accepted, counted, and the restriction is pulled from the
+// ANSP's pull_url by its ansp_version (the record's version), never
+// read as a CIS version; a record of another dataset from the ANSP is
+// read from the CISP with no version to skip on; from a third issuer, or
+// for another audience: refused 401 and counted.
 func TestNotificationIssuersAndAudience(t *testing.T) {
 	w, tr := recordingWorld(t)
 	_, ansp := rings(t)
@@ -103,12 +114,18 @@ func TestNotificationIssuersAndAudience(t *testing.T) {
 		t.Fatalf("%+v", tr.hints)
 	}
 	code := w.post(t, signAs(t, ansp, "https://ansp.test", "127.0.0.1",
-		change("restrictions", "restriction_activated", 3, "https://ansp.test/v1/restrictions/r-1")), ContentTypeJOSE)
-	if code != http.StatusNoContent || tr.n() != 2 || tr.ds[1] != DatasetRestrictions || tr.hints[1].PullURL != "" {
-		t.Fatalf("ANSP: %d %+v", code, tr.hints)
+		change("restrictions", "restriction_activated", 3, "https://ansp.test/v1/restrictions/r-1/direct")), ContentTypeJOSE)
+	if code != http.StatusNoContent || tr.n() != 1 || len(tr.direct) != 1 || tr.direct[0].AnspVersion != 3 ||
+		tr.direct[0].PullURL != "https://ansp.test/v1/restrictions/r-1/direct" || tr.direct[0].RestrictionID != "sub-1" {
+		t.Fatalf("ANSP: %d %+v %+v", code, tr.hints, tr.direct)
 	}
-	if w.count(CounterANSPDirect) != 1 || w.count(CounterPullURLMismatch) != 1 {
+	if w.count(CounterANSPDirect) != 1 || w.count(CounterPullURLMismatch) != 0 {
 		t.Fatalf("ansp %d mismatch %d", w.count(CounterANSPDirect), w.count(CounterPullURLMismatch))
+	}
+	code = w.post(t, signAs(t, ansp, "https://ansp.test", "127.0.0.1",
+		change("zones", "publication", 3, "https://ansp.test/v1/zones")), ContentTypeJOSE)
+	if code != http.StatusNoContent || tr.n() != 2 || tr.ds[1] != DatasetZones || tr.hints[1].Version != 0 || tr.hints[1].PullURL != "" {
+		t.Fatalf("ANSP zones: %d %+v", code, tr.hints)
 	}
 	k, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -129,7 +146,7 @@ func TestNotificationIssuersAndAudience(t *testing.T) {
 			t.Fatalf("%s: %d", name, code)
 		}
 	}
-	if tr.n() != 2 || w.count(CounterBadSignature) != uint64(len(refused)) {
+	if tr.n() != 2 || len(tr.direct) != 1 || w.count(CounterBadSignature) != uint64(len(refused)) {
 		t.Fatalf("pulls %d, refused %d", tr.n(), w.count(CounterBadSignature))
 	}
 }

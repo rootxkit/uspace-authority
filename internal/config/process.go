@@ -341,6 +341,8 @@ type CISP struct {
 	CISSendBackoffMaxS     int      `env:"CIS_SEND_BACKOFF_MAX_S" default:"300" min:"1" max:"300" help:"longest wait between two attempts of a publication (02 F1: capped at 5 min)"`
 	CISSendGiveUpS         int      `env:"CIS_SEND_GIVE_UP_S" default:"86400" min:"60" max:"86400" help:"a publication not acknowledged this long after it was queued is failed with its last reason (02 F1: 24 h)"`
 	CISPublisherSigMaxAgeS int      `env:"CIS_PUBLISHER_SIG_MAX_AGE_S" default:"31622400" min:"300" max:"315360000" help:"how old the publisher signature of a pulled version may be: the signature is as old as its version (366 days by default); an older one is held, visibly"`
+	CISDirectMax           int      `env:"CIS_DIRECT_MAX" default:"500" min:"1" max:"100000" help:"restrictions held from the ANSP's degraded direct delivery (02 F2 failure rule, M5) and pulls waiting for it; past it a direct notification is answered 503 and the ANSP retries (E-10)"`
+	CISDirectKeepS         int      `env:"CIS_DIRECT_KEEP_S" default:"86400" min:"60" max:"2592000" help:"seconds a direct restriction that is over (ended, cancelled, past ends_at) is kept, and a pull that fails is retried; pending GCAA: the spec names no figure, the default is spec 02 F3's 24 h notification retry window"`
 	CISJTIMaxLive          int      `env:"CIS_JTI_MAX_LIVE" default:"100000" min:"1" max:"10000000" help:"delivery ids remembered by the notification receiver; beyond it a notification is answered 503 and counted (E-10)"`
 }
 

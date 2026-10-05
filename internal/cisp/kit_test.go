@@ -416,8 +416,8 @@ func newWorld(t *testing.T) *world {
 		t.Fatal(err)
 	}
 	w.receiver = NewReceiver(ReceiverConfig{
-		Verifier: notify, Senders: map[string]NotifySender{fakecisp.Issuer: {}, "https://ansp.test": {ANSP: true}},
-		Store: w.cache, PullURL: client, Trigger: w.sub.Trigger, Counters: w.outbox.Counters,
+		Verifier: notify, Senders: map[string]NotifySender{fakecisp.Issuer: {}, "https://ansp.test": {ANSP: true, BaseURL: "https://ansp.test"}},
+		Store: w.cache, PullURL: client, Trigger: w.sub.Trigger, TriggerDirect: w.sub.TriggerDirect, Counters: w.outbox.Counters,
 	})
 	mux := http.NewServeMux()
 	w.receiver.Mount(mux)

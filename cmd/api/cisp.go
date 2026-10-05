@@ -84,6 +84,8 @@ func assembleCISP(ctx context.Context, cfg *config.API, rt *proc.Runtime, tok *t
 		BackoffMax:         time.Duration(cfg.CISSendBackoffMaxS) * time.Second,
 		GiveUp:             time.Duration(cfg.CISSendGiveUpS) * time.Second,
 		MaxLiveJTIs:        int64(cfg.CISJTIMaxLive),
+		DirectMax:          cfg.CISDirectMax,
+		DirectKeep:         time.Duration(cfg.CISDirectKeepS) * time.Second,
 		StaleBoundS: func() float64 {
 			if p, ok := follower.Current(); ok && p.CISStaleBoundS > 0 {
 				return p.CISStaleBoundS

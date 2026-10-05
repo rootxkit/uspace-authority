@@ -10,6 +10,24 @@ import (
 	"time"
 )
 
+const deleteCISDirect = `-- name: DeleteCISDirect :execrows
+DELETE FROM cis_direct_restrictions
+ WHERE identifier = $1 AND ansp_version <= $2
+`
+
+type DeleteCISDirectParams struct {
+	Identifier  string
+	AnspVersion int64
+}
+
+func (q *Queries) DeleteCISDirect(ctx context.Context, arg DeleteCISDirectParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteCISDirect, arg.Identifier, arg.AnspVersion)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const duePublications = `-- name: DuePublications :many
 SELECT DISTINCT ON (p.dataset) p.id, p.dataset, p.version, p.payload, p.payload_hash, p.feature_count, p.content_type,
        p.state, p.attempts, p.next_retry_at, p.created_at
@@ -287,6 +305,56 @@ func (q *Queries) LoadCISCache(ctx context.Context) ([]LoadCISCacheRow, error) {
 			&i.FeatureCount,
 			&i.PublisherKid,
 			&i.Payload,
+			&i.AgeS,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const loadCISDirect = `-- name: LoadCISDirect :many
+SELECT identifier, restriction_id, ansp_ref, ansp_version, state, body, signature, issuer,
+       extract(epoch FROM now() - stored_at)::double precision AS age_s
+  FROM cis_direct_restrictions
+ ORDER BY identifier
+ LIMIT $1
+`
+
+type LoadCISDirectRow struct {
+	Identifier    string
+	RestrictionID string
+	AnspRef       string
+	AnspVersion   int64
+	State         string
+	Body          []byte
+	Signature     string
+	Issuer        string
+	AgeS          float64
+}
+
+func (q *Queries) LoadCISDirect(ctx context.Context, maxRows int32) ([]LoadCISDirectRow, error) {
+	rows, err := q.db.Query(ctx, loadCISDirect, maxRows)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LoadCISDirectRow{}
+	for rows.Next() {
+		var i LoadCISDirectRow
+		if err := rows.Scan(
+			&i.Identifier,
+			&i.RestrictionID,
+			&i.AnspRef,
+			&i.AnspVersion,
+			&i.State,
+			&i.Body,
+			&i.Signature,
+			&i.Issuer,
 			&i.AgeS,
 		); err != nil {
 			return nil, err
@@ -588,6 +656,47 @@ func (q *Queries) UpsertCISCache(ctx context.Context, arg UpsertCISCacheParams) 
 		arg.FeatureCount,
 		arg.PublisherKid,
 		arg.Payload,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const upsertCISDirect = `-- name: UpsertCISDirect :execrows
+INSERT INTO cis_direct_restrictions (identifier, restriction_id, ansp_ref, ansp_version, state, body, signature, issuer)
+VALUES ($1, $2, $3, $4, $5,
+        $6, $7, $8)
+ON CONFLICT (identifier) DO UPDATE
+   SET restriction_id = EXCLUDED.restriction_id, ansp_ref = EXCLUDED.ansp_ref, ansp_version = EXCLUDED.ansp_version,
+       state = EXCLUDED.state, body = EXCLUDED.body, signature = EXCLUDED.signature, issuer = EXCLUDED.issuer,
+       stored_at = now()
+ WHERE cis_direct_restrictions.ansp_version < EXCLUDED.ansp_version
+`
+
+type UpsertCISDirectParams struct {
+	Identifier    string
+	RestrictionID string
+	AnspRef       string
+	AnspVersion   int64
+	State         string
+	Body          []byte
+	Signature     string
+	Issuer        string
+}
+
+// Stores a direct restriction unless a version at or above it is stored
+// for its identifier (0 rows then).
+func (q *Queries) UpsertCISDirect(ctx context.Context, arg UpsertCISDirectParams) (int64, error) {
+	result, err := q.db.Exec(ctx, upsertCISDirect,
+		arg.Identifier,
+		arg.RestrictionID,
+		arg.AnspRef,
+		arg.AnspVersion,
+		arg.State,
+		arg.Body,
+		arg.Signature,
+		arg.Issuer,
 	)
 	if err != nil {
 		return 0, err

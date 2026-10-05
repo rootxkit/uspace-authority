@@ -91,8 +91,12 @@
 //     restriction_* reasons start a pull; subscription_test, republished
 //     and any reason unknown here are acknowledged 204 without one (M16).
 //     A pull_url is followed only when it is https on the configured
-//     CISP's host and port; any other (the ANSP's resource included) is
-//     counted and the configured CISP is read instead. Refusals are
+//     CISP's host and port; any other is counted and the configured
+//     CISP is read instead. An ANSP restriction notification whose
+//     pull_url is on the ANSP's issuer URL goes to the direct path
+//     (direct.go, H-2): its version is the restriction's ansp_version,
+//     the signed restriction/direct/v1 is pulled from the ANSP and
+//     projected over the CISP's restrictions until the CISP holds it. Refusals are
 //     counted and logged once per interval.
 //   - GET /v1/publications: the outbox rows with their state and, while
 //     pending or sent, their "not yet published" age (02 F1), beside the
