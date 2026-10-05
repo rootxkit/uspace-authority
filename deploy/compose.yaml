@@ -1,0 +1,379 @@
+# Staging and production shape of uspace-authority (docs/PLAN.md section
+# 10, WP-24). The deployment repository (uspace-deploy on the staging
+# droplet; the authority's own infrastructure in production) runs this
+# file through deploy/deploy.sh; deploy/compose.dev.yaml is the
+# development stack, not this.
+#
+#   deploy/deploy.sh --env-file <deployment env> \
+#     ghcr.io/rootxkit/uspace-authority@sha256:<digest> \
+#     ghcr.io/rootxkit/uspace-authority-web@sha256:<digest>
+#
+# What the deployment supplies (every variable without a default is
+# refused when unset; `make check-deploy` renders this file with
+# deploy/compose.env.example and reads the result back):
+#
+#   AUTHORITY_IMAGE, AUTHORITY_WEB_IMAGE  the images by digest
+#                           (repo@sha256:...), verified first by
+#                           deploy/verify-image.sh
+#   AUTHORITY_HOST          this system's public host; AUTHORITY_PUBLIC_URL
+#                           is https://AUTHORITY_HOST (the staging value is
+#                           in deploy/staging/hosts.env, nowhere else)
+#   AUTHORITY_ENV_FILE      the operator's settings, no secret and no DSN
+#                           (deploy/staging.env.example; the catalogue of
+#                           every variable is deploy/env/<process>.env.example)
+#   AUTHORITY_SECRETS_DIR   generated on the host by deploy/gen-secrets.sh,
+#                           never in git: db.env, relational.env (PG_URL:
+#                           migrate, api), timeseries.env (TS_URL: migrate,
+#                           api and the five telemetry processes),
+#                           nats/<process>.env (NATS_URL with that process's
+#                           own user), nats/users.conf, web.env, keys/
+#   AUTHORITY_GROUND_DIR    the pinned geoid grid and terrain tiles
+#                           (deploy/fetch-ground.sh), read-only
+#   AUTHORITY_EDGE_NETWORK  the network shared with the edge Caddy
+#   AUTHORITY_CADDY_IP      the edge Caddy's own fixed address on it: the one
+#                           proxy whose X-Forwarded-For is believed (never a
+#                           range: any container on the edge network could
+#                           then claim a client address)
+#   AUTHORITY_WEB_IP        web's fixed address on the edge network; api
+#                           also believes web's BFF (WEB_TRUSTED_PROXY_HOPS)
+#
+# Rules this file keeps: one timescaledb-ha container holding both
+# databases, separate databases, trees and version tables (M37); a
+# one-shot migrate of both trees that every long-running process waits
+# for, and each process refuses a schema older than it needs (D7, M36);
+# each process gets only the DSN of the database it opens (CLAUDE.md rule
+# 10: only migrate and api see the relational one); one NATS user per
+# process; read-only root filesystems, no capabilities; no published port
+# (only the shared Caddy publishes, through deploy/caddy/authority.snippet);
+# a memory and CPU limit on every service and GOMEMLIMIT at about 80 % of
+# it (the demo droplet's share, uspace-deploy docs/BUDGET.md); bounded
+# logs. Networks: `authority` is internal (no egress) and holds the
+# databases and NATS; only Caddy's edge network joins api, rid-ingest,
+# dp-poller, picture-ws and web; manned-ingest and detect reach their
+# peers (the ANSP, the DSS) through `egress`, which no proxy joins.
+#
+# The Go image is distroless and has no shell or probe, so the Go
+# services have no compose healthcheck: deploy/verify-stack.sh probes
+# each one's /healthz and /readyz on ADMIN_ADDR (:9090) from a pinned
+# container on the project's networks.
+name: uspace-authority
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: ${AUTHORITY_LOG_MAX_SIZE:-10m}
+    max-file: ${AUTHORITY_LOG_MAX_FILE:-3}
+
+x-go: &go
+  image: ${AUTHORITY_IMAGE:?the uspace-authority image by digest}
+  restart: unless-stopped
+  read_only: true
+  tmpfs: [/tmp]
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+  logging: *logging
+  # The public host resolves to the edge Caddy inside the networks, so a
+  # process that fetches this issuer's JWKS over https (picture-ws) or
+  # calls its own token endpoint (dp-poller, manned-ingest, detect) goes
+  # through Caddy as a peer would. The peers' hosts are the deployment's
+  # (uspace-deploy adds them in its override).
+  extra_hosts:
+    - "${AUTHORITY_HOST:?this system's public host}:${AUTHORITY_CADDY_IP:?the edge Caddy's own address}"
+  depends_on:
+    migrate: {condition: service_completed_successfully}
+    nats: {condition: service_healthy}
+
+x-env: &env
+  ADMIN_ADDR: ":9090"
+  AUTHORITY_PUBLIC_URL: https://${AUTHORITY_HOST}
+  # The edge Caddy only (api adds web's BFF below).
+  AUTHORITY_TRUSTED_PROXIES: ${AUTHORITY_CADDY_IP}/32
+  SSL_CERT_FILE: ${AUTHORITY_CA_BUNDLE:-/etc/ssl/certs/ca-certificates.crt}
+
+services:
+  postgres:
+    image: ${AUTHORITY_TIMESCALEDB_IMAGE:-timescale/timescaledb-ha:pg16@sha256:e9f34d8dd27621ec3933386eb07b70021d15b8116247362e0537bbff94ef0769}
+    restart: unless-stopped
+    networks: [authority]
+    logging: *logging
+    shm_size: 128m
+    env_file:
+      - ${AUTHORITY_SECRETS_DIR:?generated on the host by deploy/gen-secrets.sh}/db.env
+    environment:
+      POSTGRES_DB: authority
+    command:
+      - postgres
+      - -c
+      - shared_buffers=${AUTHORITY_PG_SHARED_BUFFERS:-128MB}
+      - -c
+      - max_wal_size=${AUTHORITY_PG_MAX_WAL_SIZE:-256MB}
+      - -c
+      - min_wal_size=${AUTHORITY_PG_MIN_WAL_SIZE:-64MB}
+      - -c
+      - work_mem=${AUTHORITY_PG_WORK_MEM:-4MB}
+      - -c
+      - max_connections=${AUTHORITY_PG_MAX_CONNECTIONS:-100}
+    volumes:
+      - ./initdb/10-authority.sql:/docker-entrypoint-initdb.d/10-authority.sql:ro
+      - pgdata:/home/postgres/pgdata
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d authority && psql -U postgres -d authority_ts -tAc 'SELECT 1' | grep -q 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+    deploy:
+      resources:
+        limits: {cpus: "1.0", memory: 512M}
+
+  nats:
+    image: ${AUTHORITY_NATS_IMAGE:-nats:2-alpine@sha256:ac8f88a6494bffc2c2a5289a0ca61cb28a9145c11ba5677cf24265d07f46d8d4}
+    restart: unless-stopped
+    read_only: true
+    networks: [authority]
+    logging: *logging
+    command: ["-c", "/etc/nats/nats.conf"]
+    environment:
+      # The one byte bound of the store: every authority stream is bounded
+      # by age, so nothing is reserved (1 GiB in the demo profile).
+      NATS_MAX_FILE_STORE: ${AUTHORITY_NATS_MAX_FILE_STORE:-1073741824}
+      NATS_MAX_MEMORY_STORE: ${AUTHORITY_NATS_MAX_MEMORY_STORE:-67108864}
+    volumes:
+      - ./nats/nats.conf:/etc/nats/nats.conf:ro
+      - ${AUTHORITY_SECRETS_DIR}/nats/users.conf:/etc/nats/users.conf:ro
+      - nats:/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8222/healthz?js-enabled-only=true"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    deploy:
+      resources:
+        limits: {cpus: "0.5", memory: 192M}
+
+  # Both trees, then exit; nothing migrates at start (D7, M36). It prints
+  # the version of each tree ("tree at version"); deploy.sh reads them.
+  migrate:
+    <<: *go
+    restart: "no"
+    command: ["migrate"]
+    networks: [authority]
+    env_file:
+      - ${AUTHORITY_ENV_FILE:?the operator's settings}
+      - ${AUTHORITY_SECRETS_DIR}/relational.env
+      - ${AUTHORITY_SECRETS_DIR}/timeseries.env
+    environment:
+      SSL_CERT_FILE: ${AUTHORITY_CA_BUNDLE:-/etc/ssl/certs/ca-certificates.crt}
+    depends_on:
+      postgres: {condition: service_healthy}
+    deploy:
+      resources:
+        limits: {cpus: "0.5", memory: 128M}
+
+  api:
+    <<: *go
+    command: ["api"]
+    networks:
+      authority: {}
+      edge:
+        aliases: [authority-api]
+    env_file:
+      - ${AUTHORITY_ENV_FILE}
+      - ${AUTHORITY_SECRETS_DIR}/relational.env
+      - ${AUTHORITY_SECRETS_DIR}/timeseries.env
+      - ${AUTHORITY_SECRETS_DIR}/nats/api.env
+    environment:
+      <<: *env
+      API_ADDR: ":8080"
+      # The edge Caddy and web's BFF, one host each.
+      AUTHORITY_TRUSTED_PROXIES: ${AUTHORITY_CADDY_IP}/32,${AUTHORITY_WEB_IP:?web's address on the edge network}/32
+      SIGNING_KEY_FILES: /run/secrets/authority/token-1.pem
+      PUBLICATION_KEY_FILE: /run/secrets/authority/publication-1.pem
+      PII_KEY_FILE: /run/secrets/authority/pii.key
+      REGISTRY_HASH_KEY_FILE: /run/secrets/authority/registry-hash.key
+      OCCURRENCE_KEY_FILE: /run/secrets/authority/occurrence.key
+      # Read at the first start on an empty users table only; the
+      # deployment removes the file afterwards (docs/runbooks/staging.md).
+      BOOTSTRAP_ADMIN_PASSWORD_FILE: /run/secrets/authority/admin.pw
+      EVIDENCE_DIR: /var/lib/uspace-authority/evidence
+      ARCHIVE_URL: file:///var/lib/uspace-authority/archive
+      GOMEMLIMIT: 200MiB
+    volumes:
+      - ${AUTHORITY_SECRETS_DIR}/keys:/run/secrets/authority:ro
+      - ${AUTHORITY_GROUND_DIR:?the pinned geoid grid}:/srv/ground:ro
+      - evidence:/var/lib/uspace-authority/evidence
+      - archive:/var/lib/uspace-authority/archive
+    deploy:
+      resources:
+        limits: {cpus: "1.0", memory: 256M}
+
+  rid-ingest:
+    <<: *go
+    command: ["rid-ingest"]
+    networks:
+      authority: {}
+      edge:
+        aliases: [authority-rid-ingest]
+    env_file:
+      - ${AUTHORITY_ENV_FILE}
+      - ${AUTHORITY_SECRETS_DIR}/timeseries.env
+      - ${AUTHORITY_SECRETS_DIR}/nats/rid-ingest.env
+    environment:
+      <<: *env
+      RID_INGEST_ADDR: ":8081"
+      GOMEMLIMIT: 180MiB
+    volumes:
+      - ${AUTHORITY_GROUND_DIR}:/srv/ground:ro
+    deploy:
+      resources:
+        limits: {cpus: "0.5", memory: 224M}
+
+  dp-poller:
+    <<: *go
+    command: ["dp-poller"]
+    networks:
+      authority: {}
+      edge:
+        aliases: [authority-dp-poller]
+    env_file:
+      - ${AUTHORITY_ENV_FILE}
+      - ${AUTHORITY_SECRETS_DIR}/timeseries.env
+      - ${AUTHORITY_SECRETS_DIR}/nats/dp-poller.env
+    environment:
+      <<: *env
+      DP_ADDR: ":8082"
+      GOMEMLIMIT: 180MiB
+    volumes:
+      - ${AUTHORITY_SECRETS_DIR}/keys:/run/secrets/authority:ro
+      - ${AUTHORITY_GROUND_DIR}:/srv/ground:ro
+    deploy:
+      resources:
+        limits: {cpus: "0.5", memory: 224M}
+
+  # Connects out to the ANSP's F4 stream. No database.
+  manned-ingest:
+    <<: *go
+    command: ["manned-ingest"]
+    networks: [authority, egress]
+    env_file:
+      - ${AUTHORITY_ENV_FILE}
+      - ${AUTHORITY_SECRETS_DIR}/nats/manned-ingest.env
+    environment:
+      <<: *env
+      GOMEMLIMIT: 50MiB
+    volumes:
+      - ${AUTHORITY_SECRETS_DIR}/keys:/run/secrets/authority:ro
+    deploy:
+      resources:
+        limits: {cpus: "0.25", memory: 64M}
+
+  # NATS and TimescaleDB; the DSS through egress when DSS_BASE_URL is set
+  # (no_authorisation, WP-26).
+  detect:
+    <<: *go
+    command: ["detect"]
+    networks: [authority, egress]
+    env_file:
+      - ${AUTHORITY_ENV_FILE}
+      - ${AUTHORITY_SECRETS_DIR}/timeseries.env
+      - ${AUTHORITY_SECRETS_DIR}/nats/detect.env
+    environment:
+      <<: *env
+      GOMEMLIMIT: 150MiB
+    volumes:
+      - ${AUTHORITY_SECRETS_DIR}/keys:/run/secrets/authority:ro
+      - ${AUTHORITY_GROUND_DIR}:/srv/ground:ro
+    deploy:
+      resources:
+        limits: {cpus: "0.75", memory: 192M}
+
+  # NATS and TimescaleDB only: no edge network, no egress.
+  tsdb-writer:
+    <<: *go
+    command: ["tsdb-writer"]
+    networks: [authority]
+    env_file:
+      - ${AUTHORITY_ENV_FILE}
+      - ${AUTHORITY_SECRETS_DIR}/timeseries.env
+      - ${AUTHORITY_SECRETS_DIR}/nats/tsdb-writer.env
+    environment:
+      <<: *env
+      GOMEMLIMIT: 100MiB
+    deploy:
+      resources:
+        limits: {cpus: "0.5", memory: 128M}
+
+  picture-ws:
+    <<: *go
+    command: ["picture-ws"]
+    networks:
+      authority: {}
+      edge:
+        aliases: [authority-picture-ws]
+    env_file:
+      - ${AUTHORITY_ENV_FILE}
+      - ${AUTHORITY_SECRETS_DIR}/timeseries.env
+      - ${AUTHORITY_SECRETS_DIR}/nats/picture-ws.env
+    environment:
+      <<: *env
+      PICTURE_ADDR: ":8083"
+      # Every session is checked against api's sessions table on the
+      # internal network.
+      PICTURE_SESSION_URL: http://api:8080/v1/auth/session
+      GOMEMLIMIT: 100MiB
+    deploy:
+      resources:
+        limits: {cpus: "0.5", memory: 128M}
+
+  # The console (web/): no database, no NATS; reaches api on the edge
+  # network and is reached through Caddy. Next.js is built in CI, never
+  # here.
+  web:
+    image: ${AUTHORITY_WEB_IMAGE:?the uspace-authority-web image by digest}
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp, /app/.next/cache]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    logging: *logging
+    networks:
+      edge:
+        aliases: [authority-web]
+        ipv4_address: ${AUTHORITY_WEB_IP}
+    env_file:
+      - ${AUTHORITY_ENV_FILE}
+      - ${AUTHORITY_SECRETS_DIR}/web.env
+    environment:
+      WEB_API_INTERNAL_URL: http://authority-api:8080
+      # Caddy, one hop in front of Next.js, appends to X-Forwarded-For.
+      WEB_TRUSTED_PROXY_HOPS: "1"
+    depends_on:
+      api: {condition: service_started}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits: {cpus: "0.5", memory: 224M}
+
+networks:
+  # Named by the compose project (uspace-authority_authority on the
+  # droplet), so a second project on the same host has its own.
+  authority:
+    internal: true
+  egress: {}
+  edge:
+    name: ${AUTHORITY_EDGE_NETWORK:?the network shared with the edge Caddy}
+    external: true
+
+# Named volumes: the databases, the JetStream store, the evidence packs
+# and the archive (the image creates both directories owned by its
+# non-root user, so a new volume starts writable). deploy/backup.sh dumps
+# the databases and exports the NATS KV buckets.
+volumes:
+  pgdata:
+  nats:
+  evidence:
+  archive:

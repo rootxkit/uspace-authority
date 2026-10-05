@@ -466,3 +466,32 @@ Unreleased; the format follows Keep a Changelog.
   `ErrorResponse` member `message` beside it, equal to `detail`), and
   the code writes exactly that instead of a bare `{"message"}` the
   contract did not declare. A 400 names the field in `errors`.
+- WP-24: the staging deployment. `deploy/compose.yaml`, the staging and
+  production shape: the seven processes from one image, the one-shot
+  `migrate` every process waits for, `web`, one timescaledb-ha
+  container holding both databases, NATS with one user per process,
+  named volumes (the image now creates the evidence and archive mount
+  points owned by its non-root user), memory and CPU limits from the
+  demo budget, read-only roots, an internal project network, Caddy's
+  edge network joining only api, rid-ingest, dp-poller, picture-ws and
+  web, and each process given only the DSN it opens;
+  `deploy/staging.env.example` with GCAA's open choices at the spec's
+  defaults, marked pending GCAA; `deploy/env/<process>.env.example`
+  generated from every process's `--help`; `deploy/gen-secrets.sh`;
+  `deploy/caddy/authority.snippet` (mTLS subject only on the token
+  endpoint, `/basemap/*` with ranges and cache headers, `/metrics` and
+  `/readyz` never routed) and its proof against the pinned Caddy;
+  `deploy/verify-image.sh`; `deploy/deploy.sh` (verify, pull, migrate
+  and its versions, rolling restart, then `/healthz`, every `/readyz`
+  check, version and status line of each process, exiting non-zero on
+  the check that failed); `deploy/backup.sh` (both databases and the
+  KV buckets, read back before kept, optional rclone copy) and
+  `deploy/restore-check.sh` (restores into scratch databases and prints
+  the counts); the lab's registry fixture for REG-NOPII
+  (`deploy/fixtures/operator.json`, `GEOTESTLAB0001`). CI: the `deploy`
+  job (`make check-deploy`), the `staging-smoke` job (`deploy/smoke/run.sh`:
+  the stack from scratch through `deploy.sh`, the Go driver through the
+  public host, backup and restore check with known counts, the
+  older-schema refusal, the teardown checked), and SPDX SBOMs attested
+  with cosign and both signatures read back on `main` and tags. The
+  runbooks `staging.md` and `cutover.md`.

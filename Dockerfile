@@ -17,7 +17,7 @@ ARG VERSION=dev
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     set -eu; \
     ld="-s -w -X github.com/rootxkit/uspace-authority/internal/proc.Version=${VERSION}"; \
-    mkdir -p /out/libexec; \
+    mkdir -p /out/libexec /out/var/evidence /out/var/archive; \
     for p in api rid-ingest dp-poller manned-ingest detect tsdb-writer picture-ws; do \
       go build -ldflags "$ld" -o /out/libexec/$p ./cmd/$p; \
     done; \
@@ -26,6 +26,10 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
 FROM gcr.io/distroless/static-debian12:nonroot
 COPY --from=build /out/libexec/ /usr/libexec/uspace-authority/
 COPY --from=build /out/uspace-authority /uspace-authority
+# The mount points of deploy/compose.yaml's evidence and archive volumes,
+# owned by the non-root user, so a new named volume starts writable
+# (Docker copies the directory's ownership into an empty volume).
+COPY --from=build --chown=nonroot:nonroot /out/var/ /var/lib/uspace-authority/
 USER nonroot:nonroot
 EXPOSE 8080 9090
 ENTRYPOINT ["/uspace-authority"]

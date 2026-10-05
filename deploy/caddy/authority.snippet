@@ -1,0 +1,115 @@
+# uspace-authority routes for the shared Caddy (docs/PLAN.md section 10,
+# Q-A19, M25, M38). A REFERENCE SITE: this repository never runs Caddy
+# alone. The deployment repository (uspace-deploy on the staging droplet)
+# composes the real Caddyfile from every system's site (decision D1); it
+# may replace the repeated parts below by its shared snippets, and its
+# own Caddy proof keeps the outcome equal. deploy/caddy/proof.sh proves
+# this file against the pinned Caddy.
+#
+# Placeholders only, never a real host name (spec 06 section 4):
+#   {$AUTHORITY_HOST}              the authority's public host
+#   {$AUTHORITY_MTLS_CA}           PEM file of the CA that issues callers'
+#                                  client certificates (uspace-deploy mtls/)
+#   {$AUTHORITY_API_UPSTREAM}      api, e.g. authority-api:8080
+#   {$AUTHORITY_ADMIN_UPSTREAM}    api's admin listener, e.g. authority-api:9090
+#   {$AUTHORITY_RID_UPSTREAM}      rid-ingest, e.g. authority-rid-ingest:8081
+#   {$AUTHORITY_DP_UPSTREAM}       dp-poller, e.g. authority-dp-poller:8082
+#   {$AUTHORITY_PICTURE_UPSTREAM}  picture-ws, e.g. authority-picture-ws:8083
+#   {$AUTHORITY_WEB_UPSTREAM}      web, e.g. authority-web:3000
+#   {$AUTHORITY_BASEMAP_DIR}       the shared read-only basemap volume (M38)
+#
+# Route groups:
+#   /oauth/token                   api        mTLS group: verified subject forwarded
+#   /v1/rid/observations           rid-ingest
+#   /v1/picture/*                  picture-ws (the WebSocket and the snapshot)
+#   /uss/*, /v1/dp/observations/*  dp-poller  (F3411 Display Provider)
+#   /healthz                       api's admin listener
+#   /metrics, /readyz              404 (scraped and probed inside the networks)
+#   /basemap/*                     file_server on the basemap volume
+#   /v1/*, /oauth/*, /.well-known/* api
+#   everything else                web (/_bff/* and the pages)
+#
+# mTLS: Caddy asks for a client certificate and verifies it when one is
+# given (verify_if_given); it is the only place the subject header can
+# come from, and it is removed from every request first. The token
+# endpoint is the one inbound machine route where api binds a client to
+# oauth_clients.mtls_subject (Q-A19); the Go side decides whether a
+# certificate was needed (AUTHORITY_MTLS_MODE: `required` in production,
+# `off` on staging and in the lab, logged at error level while off).
+
+{$AUTHORITY_HOST} {
+	encode zstd gzip
+
+	tls {
+		client_auth {
+			mode verify_if_given
+			trust_pool file {$AUTHORITY_MTLS_CA}
+		}
+	}
+
+	# Nobody chooses their own certificate subject.
+	request_header -X-Client-Cert-Subject
+
+	# Without a client certificate the placeholder is null in CEL, and
+	# null != "" is true: the null test keeps a request without a
+	# certificate out of this handle (it would otherwise forward the
+	# placeholder's text).
+	@token_mtls {
+		path /oauth/token
+		expression {http.request.tls.client.subject} != null && {http.request.tls.client.subject} != ""
+	}
+	handle @token_mtls {
+		reverse_proxy {$AUTHORITY_API_UPSTREAM} {
+			header_up X-Client-Cert-Subject {http.request.tls.client.subject}
+		}
+	}
+
+	@internal path /metrics /metrics/* /readyz
+	handle @internal {
+		respond 404
+	}
+
+	@health path /healthz
+	handle @health {
+		reverse_proxy {$AUTHORITY_ADMIN_UPSTREAM}
+	}
+
+	@rid path /v1/rid/observations
+	handle @rid {
+		reverse_proxy {$AUTHORITY_RID_UPSTREAM}
+	}
+
+	@picture path /v1/picture/*
+	handle @picture {
+		reverse_proxy {$AUTHORITY_PICTURE_UPSTREAM}
+	}
+
+	@dp path /uss/* /v1/dp/observations/*
+	handle @dp {
+		reverse_proxy {$AUTHORITY_DP_UPSTREAM}
+	}
+
+	# The shared basemap (M38): one read-only directory for every host.
+	# file_server answers Range with 206. A day's cache: the bundle's URLs
+	# do not carry its release, so `immutable` would pin a browser to an
+	# old one; SOURCE.json, which names the release, five minutes.
+	@basemap path /basemap/*
+	handle @basemap {
+		@basemap_source path /basemap/SOURCE.json
+		@basemap_bundle not path /basemap/SOURCE.json
+		header @basemap_source Cache-Control "public, max-age=300"
+		header @basemap_bundle Cache-Control "public, max-age=86400"
+		uri strip_prefix /basemap
+		root * {$AUTHORITY_BASEMAP_DIR}
+		file_server
+	}
+
+	@api path /v1/* /oauth/* /.well-known/*
+	handle @api {
+		reverse_proxy {$AUTHORITY_API_UPSTREAM}
+	}
+
+	handle {
+		reverse_proxy {$AUTHORITY_WEB_UPSTREAM}
+	}
+}
