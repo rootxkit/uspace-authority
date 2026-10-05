@@ -141,7 +141,7 @@ ends, pass or fail, and reads it back:
 | `report.observed[]` | every violation seen on `alrt.v1`: id, kind, track, zone, severity, `raised_at`, `captured_at` (of the sample that raised it), `cleared_at`, `clear_reason`, `latency_ms` (captured_at to the raise on the bus), `stored_latency_ms` (to api's row), `events` (api's events rows), `expected` |
 | `report.missed_alerts`, `report.false_alerts` | both 0 on a pass |
 | `report.failures[]` | every difference, in words |
-| `report.latency`, `report.stored_latency` | n, min, p50, p95, p99, max in ms; a raise p99 at or over 2000 ms fails (plan §8), except raises expected `GatedByAnOutcome` (waiting by design for a DSS outcome, WP-26), which are recorded only |
+| `report.latency`, `report.stored_latency` | n, min, p50, p95, p99, max in ms; a raise p99 at or over 2000 ms fails (plan §8), except raises expected `GatedByAnOutcome(bound)` (waiting by design for a DSS outcome, WP-26), each of which fails at or over its own bound (`gated_bound_ms`; for `no_authorisation` and `height_120m` in U-space, the grace plus one DSS poll) |
 | `status` | each process's last status-line counters, by component |
 | `notes.sources[]` | per receiver: `sent = accepted + duplicates + refused + dropped + failed`, `refused_by` (status and slug), the ingest's own `observations_accepted` and `batches_refused`, and `stored_rows` in `rid_observations` |
 | `notes.tracks_published`, `notes.tracks_stored` | per track id, on `trk.v1` and in the tracks table |

@@ -1,6 +1,7 @@
 package scenarios
 
 import (
+	"strconv"
 	"testing"
 	"time"
 
@@ -55,8 +56,11 @@ func TestScenarioNoAuthorisationAndTheHeightLimitInUSpace(t *testing.T) {
 	tok := ltest.NewTokenServer(t, "authority-01")
 	ri := s.StartRIDIngest(nil)
 	s.StartTSDBWriter(nil)
+	// The DSS poll: how often detect reads every U-space airspace in
+	// force, set here so the gated raises' bound below follows from it.
+	const requeryS = 5
 	det := s.StartDetect(map[string]string{"DSS_BASE_URL": ltest.HostURL(dss.URL()), "DETECT_TOKEN_URL": tok.URL(),
-		"DETECT_CLIENT_SECRET_FILE": tok.SecretFile, "DETECT_CLIENT_ID": tok.ClientID})
+		"DETECT_CLIENT_SECRET_FILE": tok.SecretFile, "DETECT_CLIENT_ID": tok.ClientID, "DETECT_INTENT_REQUERY_S": strconv.Itoa(requeryS)})
 	det.WaitLine("no_authorisation detector reads the DSS (utm.conformance_monitoring_sa, Q-A5)", nil, 10*time.Second)
 	s.StartViolationStore()
 
@@ -107,11 +111,14 @@ func TestScenarioNoAuthorisationAndTheHeightLimitInUSpace(t *testing.T) {
 	}
 	// Both kinds wait, by design, for the DSS's outcome (the grace; a
 	// height raise in U-space waits for the first authorisation outcome),
-	// so their captured_at-to-raise is not the per-sample budget.
+	// so their captured_at-to-raise is not the per-sample budget. It is
+	// held instead to the wait it is designed for: the grace plus one DSS
+	// poll.
+	gate := time.Duration(th.NoAuthorisationGraceS*float64(time.Second)) + requeryS*time.Second
 	s.Verify(
-		ltest.Raise(violation.KindNoAuthorisation, a.TrackID(), "resolved").InZone(u.ZoneID()).WithSeverity(core.SeverityWarning).GatedByAnOutcome(),
-		ltest.Raise(violation.KindNoAuthorisation, b.TrackID(), "resolved").InZone(u.ZoneID()).WithSeverity(core.SeverityWarning).GatedByAnOutcome(),
-		ltest.Raise(violation.KindHeight120m, b.TrackID(), "authorised").GatedByAnOutcome(),
+		ltest.Raise(violation.KindNoAuthorisation, a.TrackID(), "resolved").InZone(u.ZoneID()).WithSeverity(core.SeverityWarning).GatedByAnOutcome(gate),
+		ltest.Raise(violation.KindNoAuthorisation, b.TrackID(), "resolved").InZone(u.ZoneID()).WithSeverity(core.SeverityWarning).GatedByAnOutcome(gate),
+		ltest.Raise(violation.KindHeight120m, b.TrackID(), "authorised").GatedByAnOutcome(gate),
 	)
 	s.CheckIdentity(ri, true)
 }

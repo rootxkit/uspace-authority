@@ -263,8 +263,14 @@ func TestJudgeDetectsMissesFalseAlertsAndWrongClears(t *testing.T) {
 	if rep := Judge([]*Violation{slow}, []Expect{Raise(violation.KindZoneIncursion, "T5", "resolved")}); !strings.Contains(strings.Join(rep.Failures, " "), "over the 2000 ms budget") {
 		t.Fatalf("a raise at the budget passed: %+v", rep.Failures)
 	}
-	if rep := Judge([]*Violation{slow}, []Expect{Raise(violation.KindZoneIncursion, "T5", "resolved").GatedByAnOutcome()}); len(rep.Failures) != 0 {
-		t.Fatalf("a gated raise was held to the budget: %+v", rep.Failures)
+	if rep := Judge([]*Violation{slow}, []Expect{Raise(violation.KindZoneIncursion, "T5", "resolved").GatedByAnOutcome(RaiseLatencyBudget + time.Millisecond)}); len(rep.Failures) != 0 {
+		t.Fatalf("a gated raise within its bound was held to the budget: %+v", rep.Failures)
+	}
+	if rep := Judge([]*Violation{slow}, []Expect{Raise(violation.KindZoneIncursion, "T5", "resolved").GatedByAnOutcome(RaiseLatencyBudget)}); !strings.Contains(strings.Join(rep.Failures, " "), "over its gated bound of 2000 ms") {
+		t.Fatalf("a gated raise at its bound passed: %+v", rep.Failures)
+	}
+	if rep := Judge([]*Violation{slow}, []Expect{Raise(violation.KindZoneIncursion, "T5", "resolved").GatedByAnOutcome(0)}); len(rep.Failures) != 1 {
+		t.Fatalf("a gated raise with no bound passed: %+v", rep.Failures)
 	}
 	open := []*Violation{seen("V3", violation.KindZoneIncursion, "T3", "")}
 	if rep := Judge(open, []Expect{Raise(violation.KindZoneIncursion, "T3", "resolved")}); !strings.Contains(strings.Join(rep.Failures, " "), "never cleared") {

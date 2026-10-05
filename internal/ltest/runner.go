@@ -24,8 +24,10 @@ type Expect struct {
 	Clears   []string       `json:"clears"`
 	// Gated is a raise that waits, by design, for an outcome other than
 	// the sample (a DSS read past a grace, WP-26): its latency is
-	// recorded but not held to RaiseLatencyBudget.
-	Gated bool `json:"gated,omitempty"`
+	// recorded and held not to RaiseLatencyBudget but to GatedBoundMS,
+	// the wait it is designed for.
+	Gated        bool    `json:"gated,omitempty"`
+	GatedBoundMS float64 `json:"gated_bound_ms,omitempty"`
 }
 
 // RaiseLatencyBudget is the plan's budget for a violation (docs/PLAN.md
@@ -45,8 +47,14 @@ func (e Expect) InZone(zoneID string) Expect { e.Zone = zoneID; return e }
 // WithSeverity is e with the severity each raise must carry.
 func (e Expect) WithSeverity(s core.Severity) Expect { e.Severity = s; return e }
 
-// GatedByAnOutcome is e with its latency kept out of the budget (Gated).
-func (e Expect) GatedByAnOutcome() Expect { e.Gated = true; return e }
+// GatedByAnOutcome is e with its latency kept out of the budget and
+// held instead to bound (Gated): each of its raises must come less than
+// bound after the captured_at of the sample that raised it. A bound of
+// zero or less fails every raise.
+func (e Expect) GatedByAnOutcome(bound time.Duration) Expect {
+	e.Gated, e.GatedBoundMS = true, float64(bound)/float64(time.Millisecond)
+	return e
+}
 
 // Observed is one violation in the report.
 type Observed struct {
@@ -119,7 +127,7 @@ func Judge(seen []*Violation, expects []Expect) Report {
 		byKey[key(v.Kind, v.Track)] = append(byKey[key(v.Kind, v.Track)], v)
 	}
 	used := map[string]bool{}
-	gated := map[string]bool{}
+	gated := map[string]*Expect{}
 	expectedKeys := map[string]bool{}
 	for _, e := range expects {
 		k := key(e.Kind, e.Track)
@@ -138,7 +146,9 @@ func Judge(seen []*Violation, expects []Expect) Report {
 			}
 			v := got[i]
 			used[v.ID] = true
-			gated[v.ID] = e.Gated
+			if e.Gated {
+				gated[v.ID] = &e
+			}
 			switch {
 			case !v.Raised:
 				rep.Failures = append(rep.Failures, fmt.Sprintf("%s %s on %s: first message was not a raise", v.ID, e.Kind, e.Track))
@@ -161,8 +171,10 @@ func Judge(seen []*Violation, expects []Expect) Report {
 		if v.Raised && !v.RaiseCapturedAt.IsZero() {
 			o.LatencyMS = float64(v.RaisedAt.Sub(v.RaiseCapturedAt)) / float64(time.Millisecond)
 			lat = append(lat, o.LatencyMS)
-			if !gated[v.ID] {
+			if g := gated[v.ID]; g == nil {
 				budgeted = append(budgeted, o.LatencyMS)
+			} else if o.LatencyMS >= g.GatedBoundMS {
+				rep.Failures = append(rep.Failures, fmt.Sprintf("%s %s on %s: raised %.0f ms after its sample, over its gated bound of %.0f ms", v.ID, v.Kind, v.Track, o.LatencyMS, g.GatedBoundMS))
 			}
 		}
 		for _, inv := range v.Invalid {
