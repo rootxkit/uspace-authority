@@ -20,6 +20,21 @@ type captureTB struct {
 	errs []string
 }
 
+// newCaptureTB is a captureTB over t that fails t, when the test ends,
+// with every error no take() read: one kept after the last take() (a
+// verdict of Verify, CheckIdentity or the stack's own cleanups) is a
+// failure, never swallowed. Registered before anything else on c, the
+// check runs after every other cleanup.
+func newCaptureTB(t testing.TB) *captureTB {
+	c := &captureTB{TB: t}
+	t.Cleanup(func() {
+		if left := c.take(); left != "" {
+			t.Errorf("errors kept after the last take():\n%s", left)
+		}
+	})
+	return c
+}
+
 func (c *captureTB) Error(args ...any) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -40,6 +55,55 @@ func (c *captureTB) take() string {
 	return out
 }
 
+// recordTB is a TB that records its cleanups and errors instead of
+// running and failing: captureTB's own check, read back.
+type recordTB struct {
+	testing.TB
+	cleanups []func()
+	errs     []string
+}
+
+func (r *recordTB) Helper()           {}
+func (r *recordTB) Cleanup(f func())  { r.cleanups = append(r.cleanups, f) }
+func (r *recordTB) Error(args ...any) { r.errs = append(r.errs, fmt.Sprint(args...)) }
+func (r *recordTB) Errorf(format string, args ...any) {
+	r.errs = append(r.errs, fmt.Sprintf(format, args...))
+}
+
+func (r *recordTB) runCleanups() {
+	for i := len(r.cleanups) - 1; i >= 0; i-- {
+		r.cleanups[i]()
+	}
+}
+
+// An error kept after the last take() fails the test when it ends; one
+// read by take(), or none at all, does not.
+func TestCaptureTBFailsTheTestOnLeftoverErrors(t *testing.T) {
+	left := &recordTB{TB: t}
+	c := newCaptureTB(left)
+	c.Errorf("read %d", 1)
+	if got := c.take(); got != "read 1" {
+		t.Fatalf("take() = %q", got)
+	}
+	c.Errorf("a verdict after the last take(): %s", "missed")
+	if len(left.errs) != 0 {
+		t.Fatalf("captureTB failed the test at once: %q", left.errs)
+	}
+	left.runCleanups()
+	if len(left.errs) != 1 || !strings.Contains(left.errs[0], "a verdict after the last take(): missed") || strings.Contains(left.errs[0], "read 1") {
+		t.Fatalf("leftover error reported as %q", left.errs)
+	}
+
+	clean := &recordTB{TB: t}
+	c = newCaptureTB(clean)
+	c.Error("read")
+	c.take()
+	clean.runCleanups()
+	if len(clean.errs) != 0 {
+		t.Fatalf("nothing left, yet the test failed: %q", clean.errs)
+	}
+}
+
 // E-01, the runner against the real stack: one registered aircraft
 // through a PROHIBITED zone and out raises one zone_incursion, cleared
 // resolved. Judged with a wrong clear reason and a height violation
@@ -47,7 +111,7 @@ func (c *captureTB) take() string {
 // with nothing expected, it reports the raise as a false alert; judged
 // right, it reports nothing. A runner that cannot fail proves nothing.
 func TestScenarioTheRunnerDetectsAMissAndAFalseAlert(t *testing.T) {
-	c := &captureTB{TB: t}
+	c := newCaptureTB(t)
 	s := ltest.New(c, ltest.Options{Name: "runner-self-test"})
 	sd := s.Seed(seed("smoke.json"))
 	z := s.ZoneByID(sd, "SMK1")
