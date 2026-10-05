@@ -1,0 +1,10 @@
+{
+  "operators": [
+    {"id": "op-sc06-1", "registration_number": "GEOTEST00000601", "status": "active"}
+  ],
+  "uas": [
+    {"id": "uas-sc06-reg", "serial": "TESTSC0600001", "status": "active", "operator_id": "op-sc06-1", "label": "SYSID 1"},
+    {"id": "uas-sc06-sus", "serial": "TESTSC0600002", "status": "suspended", "operator_id": "op-sc06-1", "label": "SYSID 2"},
+    {"id": "uas-sc06-unk", "serial": "TESTSC0600003", "status": "active", "operator_id": "op-sc06-1", "label": "SYSID 3"}
+  ]
+}

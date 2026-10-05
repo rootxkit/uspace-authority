@@ -1,0 +1,8 @@
+{
+  "operators": [
+    {"id": "op-sc04-1", "registration_number": "GEOTEST00000401", "status": "active"}
+  ],
+  "uas": [
+    {"id": "uas-sc04-1", "serial": "TESTSC0400001", "status": "active", "operator_id": "op-sc04-1", "label": "SC-04"}
+  ]
+}

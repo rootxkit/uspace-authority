@@ -1,0 +1,12 @@
+{
+  "operators": [
+    {"id": "op-age-1", "registration_number": "GEOTEST00002502", "status": "active"}
+  ],
+  "uas": [
+    {"id": "uas-age-1", "serial": "TESTAGE000001", "status": "active", "operator_id": "op-age-1", "label": "quiet"},
+    {"id": "uas-age-2", "serial": "TESTAGE000002", "status": "active", "operator_id": "op-age-1", "label": "landing"}
+  ],
+  "zones": [
+    {"id": "AGE1", "type": "PROHIBITED", "lat_deg": 41.41, "lon_deg": 44.64, "half_side_deg": 0.0015, "lower_m": 0, "upper_m": 1500}
+  ]
+}
