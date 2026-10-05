@@ -223,6 +223,7 @@ type Certificates struct {
 	CertificatesBucket         string `env:"CERTIFICATES_BUCKET" default:"certificates" help:"KV bucket of the certified USSPs dp-poller follows (the same variable there)"`
 	CertificatesRegisterPerMin int    `env:"CERTIFICATES_REGISTER_PER_MIN" default:"60" min:"1" max:"100000" help:"public register requests per minute per client address (behind the trusted proxies); past it 429 with Retry-After"`
 	CertificatesRegisterBurst  int    `env:"CERTIFICATES_REGISTER_BURST" default:"20" min:"1" max:"100000" help:"burst of the public register's per-address budget"`
+	CertificatesANSPBaseURL    string `env:"ANSP_BASE_URL" kind:"url" help:"the ANSP's published base URL: its host is an audience every certificate's client is issued for, so a USSP's ansp.traffic (F4) and ansp.coordination (F13) tokens name it (M18, cross-plan Appendix B); unset: clients issued meanwhile get no ANSP audience and their ANSP tokens are refused, said at start"`
 	CertificatesRegisterMaxIPs int    `env:"CERTIFICATES_REGISTER_MAX_IPS" default:"10000" min:"1" max:"10000000" help:"client addresses the register's limiter remembers; past it the one seen longest ago is forgotten and counted (E-10)"`
 }
 

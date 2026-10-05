@@ -106,13 +106,17 @@ func ClientIDFor(holder, code string) string {
 // The scopes a certificate's client holds (WP-2 table B; 06 §3, least
 // privilege). Every USSP validates registrations, reports occurrences,
 // notifies its operating status, provides network identification as an
-// F3411 Service Provider and reads the CIS (it is a subscriber); its
-// other services add the F3548 scopes and the F3411 display role they
-// need. The CISP calls this system for its own operating-status notices
+// F3411 Service Provider and reads the CIS (it is a subscriber); it
+// reads the ANSP's manned traffic (ansp.traffic, F4: ATS.OR.127 feeds
+// every USSP) and sends it Annex V coordination (ansp.coordination,
+// F13: Art. 13(2) non-conformance notices), both issued to USSPs by
+// Appendix B of the cross-plan decision record; its other services add
+// the F3548 scopes and the F3411 display role they need. The CISP calls this system for its own operating-status notices
 // only: its CIS endpoints take tokens, they need none from here.
 var (
-	usspBaseScopes = []string{"registry.validate", "occurrences.write", "certificates.status", "rid.service_provider", "cis.read"}
-	serviceScopes  = map[string][]string{
+	usspBaseScopes = []string{"registry.validate", "occurrences.write", "certificates.status", "rid.service_provider", "cis.read",
+		"ansp.traffic", "ansp.coordination"}
+	serviceScopes = map[string][]string{
 		ServiceNetworkIdentification: {"rid.display_provider"},
 		ServiceGeoAwareness:          {"utm.constraint_processing"},
 		ServiceFlightAuthorisation:   {"utm.strategic_coordination"},

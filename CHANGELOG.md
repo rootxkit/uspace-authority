@@ -495,6 +495,18 @@ Unreleased; the format follows Keep a Changelog.
   older-schema refusal, the teardown checked), and SPDX SBOMs attested
   with cosign and both signatures read back on `main` and tags. The
   runbooks `staging.md` and `cutover.md`.
+- Audit H-3 (contract: additive, issuance only): a certified USSP's
+  client gets `ansp.traffic` (F4) and `ansp.coordination` (F13), which
+  cross-plan Appendix B issues to every USSP, and the ANSP's host
+  (`ANSP_BASE_URL`, now read by api too) on its allowed audiences
+  beside this system's and the CISP's, so its tokens for the ANSP's
+  manned traffic and Annex V routes are issued here, not only by the
+  lab issuer. Unset, api says so at start and the audience is left out.
+  Clients issued earlier are not rewritten: patch them
+  (`docs/runbooks/certificates.md`). Test: a token issued to a new
+  certificate's client passes the ANSP's verifier rules and the token
+  rule of each ANSP route a USSP calls (read from `api/clients/ansp.yaml`).
+
 - System audit 2026-10-05 H-2 (bug fix; contract: the ANSP's additive
   `GET /v1/restrictions/{id}/direct`): the ANSP's degraded direct
   delivery (02 F2 failure rule, cross-plan M4, M5) was acknowledged and

@@ -196,7 +196,11 @@ func TestCheckCode(t *testing.T) {
 // service adding only what it needs, and every scope grantable to the
 // client (least privilege, WP-2 table B).
 func TestScopesFor(t *testing.T) {
-	base := []string{"registry.validate", "occurrences.write", "certificates.status", "rid.service_provider", "cis.read"}
+	// Appendix B issues ansp.traffic (F4) and ansp.coordination (F13)
+	// to every USSP: without them the ANSP refuses its manned picture
+	// and its Annex V notices (audit H-3).
+	base := []string{"registry.validate", "occurrences.write", "certificates.status", "rid.service_provider", "cis.read",
+		"ansp.traffic", "ansp.coordination"}
 	cases := []struct {
 		services []string
 		extra    []string
@@ -221,12 +225,38 @@ func TestScopesFor(t *testing.T) {
 			}
 		}
 		if slices.Contains(got, "utm.constraint_management") || slices.Contains(got, "utm.availability_arbitration") ||
-			slices.Contains(got, "police.query") || slices.Contains(got, "ussp.records") {
+			slices.Contains(got, "police.query") || slices.Contains(got, "ussp.records") || slices.Contains(got, "ansp.requests") {
 			t.Errorf("%v: %v grants a scope no USSP service needs", c.services, got)
 		}
 	}
 	if got := ScopesFor(HolderCISP, []string{ServiceCommonInformation}); !slices.Equal(got, []string{"certificates.status"}) {
 		t.Fatalf("cisp %v", got)
+	}
+}
+
+// A certificate's client may name the ANSP's host beside this system's
+// and the CISP's (audit H-3: the token service refuses a national scope
+// for an audience off the list); an unconfigured peer is left out and a
+// repeated host is listed once.
+func TestClientAudiences(t *testing.T) {
+	for _, c := range []struct {
+		own, cisp, ansp string
+		want            []string
+	}{
+		{"authority.example.test", "cisp.example.test", "ansp.example.test",
+			[]string{"authority.example.test", "cisp.example.test", "ansp.example.test"}},
+		{"authority.example.test", "cisp.example.test", "", []string{"authority.example.test", "cisp.example.test"}},
+		{"authority.example.test", "", "ansp.example.test", []string{"authority.example.test", "ansp.example.test"}},
+		{"authority.example.test", "authority.example.test", "", []string{"authority.example.test"}},
+	} {
+		if got := ClientAudiences(c.own, c.cisp, c.ansp); !slices.Equal(got, c.want) {
+			t.Errorf("%s %s %s: %v, want %v", c.own, c.cisp, c.ansp, got, c.want)
+		}
+	}
+	p := Assemble(Setup{OwnHost: "authority.example.test", CISPHost: "cisp.example.test", ANSPHost: "ansp.example.test",
+		RegisterPerMin: 60, RegisterBurst: 1, RegisterMaxIPs: 1})
+	if !slices.Contains(p.Service.Audiences, "ansp.example.test") {
+		t.Fatalf("Assemble drops the ANSP's host: %v", p.Service.Audiences)
 	}
 }
 

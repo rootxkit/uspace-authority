@@ -41,13 +41,18 @@ limitation held stays), and only then a limitation.
 2. **Client.** The same transaction registers `ussp-<code>-01` in the
    token service with the scopes the services imply (least privilege):
    every USSP gets `registry.validate`, `occurrences.write`,
-   `certificates.status`, `rid.service_provider` and `cis.read`;
+   `certificates.status`, `rid.service_provider`, `cis.read`,
+   `ansp.traffic` (the ANSP's manned traffic, F4) and
+   `ansp.coordination` (Annex V notices to the ANSP, F13; cross-plan
+   Appendix B);
    `network_identification` and `traffic_information` add
    `rid.display_provider`, `geo_awareness` adds
    `utm.constraint_processing`, `flight_authorisation`
    `utm.strategic_coordination`, `conformance_monitoring`
-   `utm.conformance_monitoring_sa`. Its audiences are this system's host
-   and the CISP's. A `client_secret_post` secret is in the answer
+   `utm.conformance_monitoring_sa`. Its audiences are this system's
+   host, the CISP's (`CISP_BASE_URL`) and the ANSP's (`ANSP_BASE_URL`);
+   a peer unset at issue is left out, said at start, and its national
+   tokens are refused until the client is patched. A `client_secret_post` secret is in the answer
    **once**: hand it to the USSP out of band (never by e-mail in clear)
    and do not keep a copy. For `private_key_jwt`, register the USSP's
    public JWKS in the request instead.
@@ -153,6 +158,8 @@ counters above, `certificates_kv_published`,
   is not upper-case alphanumeric and cannot be a code here (M8 and the
   client-id pattern of M24). A spec gap, written in the WP-16 pull
   request.
-- Client audiences: this system's and the CISP's host. A USSP's tokens
-  for the ANSP (`ansp.traffic`, `ansp.coordination`) are not derived:
-  the plan does not say which issuer the ANSP accepts them from.
+- Clients issued before the ANSP scopes and audience (audit H-3) lack
+  `ansp.traffic`, `ansp.coordination` and the ANSP's host. Nothing
+  rewrites a registered client: give each one the scopes and audience
+  with `PATCH /v1/oauth/clients/{client_id}` (audited), or the USSP's manned
+  picture and Annex V notices are refused at `/oauth/token`.
