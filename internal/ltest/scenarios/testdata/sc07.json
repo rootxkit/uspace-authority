@@ -1,0 +1,11 @@
+{
+  "operators": [
+    {"id": "op-sc07-1", "registration_number": "GEOTEST00000701", "status": "active"}
+  ],
+  "uas": [
+    {"id": "uas-sc07-1", "serial": "TESTSC0700001", "status": "active", "operator_id": "op-sc07-1", "label": "SYSID 1"}
+  ],
+  "zones": [
+    {"id": "SC7", "type": "PROHIBITED", "lat_deg": 41.44, "lon_deg": 44.62, "half_side_deg": 0.0015, "lower_m": 0, "upper_m": 1500}
+  ]
+}

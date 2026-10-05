@@ -149,7 +149,12 @@ func Run(ctx context.Context, rt *proc.Runtime, cfg *config.RIDIngest, o Options
 		Keyring: kr, Gate: gate, Dedupe: dedupe, Queue: queue, Status: status,
 		DisabledRetryAfter: time.Duration(t.DisabledRetryAfterS) * time.Second,
 		QueueRetryAfter:    time.Duration(t.QueueRetryAfterS) * time.Second,
+		LabHeadersAllowed:  t.LabHeadersAllowed,
 		Counters:           counters, Limiter: rt.Limiter,
+	}
+	if t.LabHeadersAllowed {
+		rt.Logger.Warn("lab scenario batches are admitted (LAB_HEADERS_ALLOWED=true); allowed only in the lab and the scenario harness",
+			slog.String("header", receivers.LabScenarioHeader))
 	}
 
 	ctx, cancel := context.WithCancel(ctx)

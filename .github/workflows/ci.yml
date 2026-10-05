@@ -288,6 +288,104 @@ jobs:
           path: integration.log
           if-no-files-found: ignore
 
+  # WP-25: internal/ltest's scenarios against the same service
+  # containers: every process in one test binary, a simulated receiver,
+  # the fake DSS, Service Provider and ANSP. Each scenario writes its
+  # results JSON (with the commits it measured) to scenario-results/,
+  # uploaded whatever the outcome; a failed one leaves its processes'
+  # last log lines beside it.
+  scenarios:
+    name: scenarios
+    needs: changes
+    if: needs.changes.outputs.go == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 45
+    services:
+      postgis:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: authority
+          POSTGRES_PASSWORD: authority
+          POSTGRES_DB: authority
+        ports: ["56432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U authority -d authority"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+      timescaledb:
+        image: timescale/timescaledb-ha:pg16
+        env:
+          POSTGRES_PASSWORD: authority
+          POSTGRES_DB: authority_ts
+        ports: ["56433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d authority_ts"
+          --health-interval 2s --health-timeout 3s --health-retries 60
+    env:
+      PG_URL: postgres://authority:authority@localhost:56432/authority?sslmode=disable
+      TS_URL: postgres://postgres:authority@localhost:56433/authority_ts?sslmode=disable
+      NATS_URL: nats://127.0.0.1:56422
+      INTEGRATION: "1"
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: NATS with JetStream
+        run: |
+          docker run -d --name nats -p 127.0.0.1:56422:4222 -p 127.0.0.1:56822:8222 nats:2-alpine -js -m 8222
+          for i in $(seq 1 30); do
+            if curl -fsS 'http://127.0.0.1:56822/healthz?js-enabled-only=true' >/dev/null; then echo "NATS ready"; exit 0; fi
+            sleep 1
+          done
+          docker logs nats; exit 1
+      - name: scenarios
+        run: |
+          set -o pipefail
+          mkdir -p scenario-results
+          rc=0
+          SCENARIO_RESULTS_DIR="$PWD/scenario-results" go test -p 1 -count=1 -timeout 40m -run Scenario -v ./internal/ltest/... 2>&1 | tee scenarios.log || rc=$?
+          passed="$(grep -c '^--- PASS: TestScenario' scenarios.log || true)"
+          failed="$(grep -c '^--- FAIL: TestScenario' scenarios.log || true)"
+          echo "scenarios: ${passed} passed, ${failed} failed"
+          if [ "$rc" -ne 0 ]; then echo "scenarios: go test exited $rc"; exit "$rc"; fi
+          if grep -q -- '--- SKIP' scenarios.log; then echo "a scenario skipped with INTEGRATION=1"; exit 1; fi
+          if [ "$passed" -eq 0 ]; then echo "scenarios: zero scenarios ran"; exit 1; fi
+      # Every passed scenario left a results file that parses, says it
+      # passed, names this commit and a uspace-core version, and counts
+      # no missed and no false alert (E-04: read the output back).
+      - name: results name the commits they measured
+        run: |
+          set -o pipefail
+          n=0
+          for f in scenario-results/*.json; do
+            if ! jq -e --arg sha "$GITHUB_SHA" '.passed == true and .commits["uspace-authority"] == $sha and (.commits["uspace-core"] | startswith("v")) and (.report.missed_alerts == 0) and (.report.false_alerts == 0)' "$f" >/dev/null; then
+              echo "$f:"; jq '{scenario, passed, commits, missed: .report.missed_alerts, false: .report.false_alerts, failures: .report.failures}' "$f"; exit 1
+            fi
+            n=$((n + 1))
+          done
+          passed="$(grep -c '^--- PASS: TestScenario' scenarios.log)"
+          echo "results: $n files for $passed passed scenarios"
+          if [ "$n" -ne "$passed" ]; then echo "a passed scenario wrote no results file"; exit 1; fi
+          {
+            echo '### scenarios'
+            echo '| scenario | violations | missed | false | raise latency p99 (ms) |'
+            echo '|---|---|---|---|---|'
+            jq -r '"| \(.scenario) | \(.report.observed | length) | \(.report.missed_alerts) | \(.report.false_alerts) | \(.report.latency.p99_ms | floor) |"' scenario-results/*.json
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: scenario-results
+          path: |
+            scenario-results/
+            scenarios.log
+          if-no-files-found: ignore
+
   # web/ (WP-21): the console on uspace-ui. Lint (the kit's rules and the
   # restricted imports), types, the generated API and frame types, unit
   # tests, the build and its bundle check, the Playwright smoke against a

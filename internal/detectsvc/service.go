@@ -293,6 +293,10 @@ func FilterOf(c3 *cell.ID) (string, error) {
 	return "trk.v1." + tok + ".>", nil
 }
 
+// DurableOf is the TRK durable of worker workerID judging cell3 c3 (nil:
+// every cell); the scenario harness waits for it before the first track.
+func DurableOf(workerID string, c3 *cell.ID) string { return durableOf(workerID, c3) }
+
 // durableOf names the durable of a worker for a filter: one per worker
 // and cell, so two workers never split one cell's tracks between them.
 func durableOf(workerID string, c3 *cell.ID) string {

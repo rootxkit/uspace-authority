@@ -1,0 +1,12 @@
+{
+  "operators": [
+    {"id": "op-sc16-1", "registration_number": "GEOTEST00001601", "status": "active"}
+  ],
+  "uas": [
+    {"id": "uas-sc16-a", "serial": "TEST9SC1600001", "status": "active", "operator_id": "op-sc16-1", "label": "network only"},
+    {"id": "uas-sc16-2", "serial": "TEST9SC1600002", "status": "active", "operator_id": "op-sc16-1", "label": "SYSID 2"}
+  ],
+  "zones": [
+    {"id": "SC16", "type": "PROHIBITED", "lat_deg": 41.34, "lon_deg": 44.70, "half_side_deg": 0.0015, "lower_m": 0, "upper_m": 1500}
+  ]
+}

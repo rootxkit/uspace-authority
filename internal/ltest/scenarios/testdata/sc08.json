@@ -1,0 +1,13 @@
+{
+  "operators": [
+    {"id": "op-sc08-1", "registration_number": "GEOTEST00000801", "status": "active"}
+  ],
+  "uas": [
+    {"id": "uas-sc08-1", "serial": "TESTSC0800001", "status": "active", "operator_id": "op-sc08-1", "label": "SYSID 1"},
+    {"id": "uas-sc08-2", "serial": "TESTSC0800002", "status": "active", "operator_id": "op-sc08-1", "label": "SYSID 2"}
+  ],
+  "zones": [
+    {"id": "SC8A", "type": "PROHIBITED", "lat_deg": 41.43, "lon_deg": 44.64, "half_side_deg": 0.0015, "lower_m": 0, "upper_m": 1500},
+    {"id": "SC8B", "type": "PROHIBITED", "lat_deg": 41.43, "lon_deg": 44.66, "half_side_deg": 0.0015, "lower_m": 0, "upper_m": 1500}
+  ]
+}

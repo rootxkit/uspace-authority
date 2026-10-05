@@ -1,0 +1,15 @@
+{
+  "operators": [
+    {"id": "op-sc13-1", "registration_number": "GEOTEST00001301", "status": "active"}
+  ],
+  "uas": [
+    {"id": "uas-sc13-1", "serial": "TESTSC1300001", "status": "active", "operator_id": "op-sc13-1", "label": "P"},
+    {"id": "uas-sc13-2", "serial": "TESTSC1300002", "status": "active", "operator_id": "op-sc13-1", "label": "R"},
+    {"id": "uas-sc13-3", "serial": "TESTSC1300003", "status": "active", "operator_id": "op-sc13-1", "label": "C"}
+  ],
+  "zones": [
+    {"id": "SC13P", "type": "PROHIBITED", "lat_deg": 41.38, "lon_deg": 44.62, "half_side_deg": 0.0015, "lower_m": 0, "upper_m": 120, "lower_ref": "AGL", "upper_ref": "AGL"},
+    {"id": "SC13R", "type": "REQ_AUTHORIZATION", "lat_deg": 41.38, "lon_deg": 44.64, "half_side_deg": 0.0015, "lower_m": 0, "upper_m": 120, "lower_ref": "AGL", "upper_ref": "AGL"},
+    {"id": "SC13C", "type": "CONDITIONAL", "lat_deg": 41.38, "lon_deg": 44.66, "half_side_deg": 0.0015, "lower_m": 0, "upper_m": 120, "lower_ref": "AGL", "upper_ref": "AGL"}
+  ]
+}

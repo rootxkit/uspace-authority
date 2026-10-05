@@ -1,0 +1,12 @@
+{
+  "operators": [
+    {"id": "op-na-1", "registration_number": "GEOTEST00002601", "status": "active"}
+  ],
+  "uas": [
+    {"id": "uas-na-1", "serial": "TESTNA0000001", "status": "active", "operator_id": "op-na-1", "label": "low"},
+    {"id": "uas-na-2", "serial": "TESTNA0000002", "status": "active", "operator_id": "op-na-1", "label": "high"}
+  ],
+  "zones": [
+    {"dataset": "uspace_airspace", "id": "USP25", "type": "USPACE", "lat_deg": 41.37, "lon_deg": 44.70, "half_side_deg": 0.01, "lower_m": 0, "upper_m": 3000}
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "operators": [
+    {"id": "op-sc12-1", "registration_number": "GEOTEST00001201", "status": "active"}
+  ],
+  "uas": [
+    {"id": "uas-sc12-1", "serial": "TESTSC1200001", "status": "active", "operator_id": "op-sc12-1", "label": "SYSID 1"},
+    {"id": "uas-sc12-3", "serial": "TESTSC1200003", "status": "active", "operator_id": "op-sc12-1", "label": "SYSID 3"}
+  ]
+}

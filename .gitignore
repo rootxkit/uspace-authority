@@ -7,6 +7,8 @@ coverage.*
 bench.txt
 integration.log
 vectors.log
+scenarios.log
+/scenario-results/
 
 # Local data that must never be committed (spec 06 §4): geoid grids,
 # DEM tiles, keys, certificates, environment files.

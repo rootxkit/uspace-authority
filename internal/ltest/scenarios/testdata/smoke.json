@@ -1,0 +1,11 @@
+{
+  "operators": [
+    {"id": "op-smoke-1", "registration_number": "GEOTEST00002501", "status": "active"}
+  ],
+  "uas": [
+    {"id": "uas-smoke-1", "serial": "TESTSMK000001", "status": "active", "operator_id": "op-smoke-1", "label": "smoke"}
+  ],
+  "zones": [
+    {"id": "SMK1", "type": "PROHIBITED", "lat_deg": 41.45, "lon_deg": 44.60, "half_side_deg": 0.001, "lower_m": 0, "upper_m": 1500}
+  ]
+}

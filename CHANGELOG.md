@@ -383,6 +383,30 @@ Unreleased; the format follows Keep a Changelog.
   monthly evidence-pack re-verification; the daily USSP records pull
   with the missing-day alarm; the `job_runs` ledger on the database
   clock; `GET /v1/retention/status`; the retention runbook.
+- WP-25: the scenario harness (`internal/ltest`): fixtures that run
+  rid-ingest, tsdb-writer, detect, dp-poller and manned-ingest in the
+  test binary with each binary's own wiring (`detectsvc.RunProcess` now
+  holds detect's whole body) against real NATS, PostgreSQL and
+  TimescaleDB, with api's violation store, projector and switch and
+  policy services; a simulated Remote ID receiver that encodes real ODID
+  frames (HAE = AMSL + N, no timestamp before UTC, R-16), signs them
+  with a run-time key and posts them with drops, latency and backlog;
+  a token endpoint double; a runner that fails a scenario on a missed or
+  a false alert, checks every raise and clear against api's rows and
+  events, measures the raise latency against the plan's 2 s and the
+  no-silent-loss identity per receiver, and writes a results JSON naming
+  the commits it measured. Scenarios (`internal/ltest/scenarios`) raise
+  and clear every violation kind (`zone_incursion`, `unregistered`,
+  `height_120m`, `identification_mismatch`, `no_authorisation`) and
+  every clear reason the authority produces (`resolved`, `stale`,
+  `landed`, `source_disabled`, `reconfigured`, `authorised`), and the
+  degraded states of a receiver, a Display Provider and the manned feed
+  (SC-04, SC-06, SC-07, SC-08, SC-10, SC-11, SC-12, SC-13, SC-16, SC-17,
+  SC-18, SC-22, the smoke run with no detector). rid-ingest refuses a
+  batch carrying `X-Lab-Scenario` with 400 `lab_header` unless
+  `LAB_HEADERS_ALLOWED=true` (default false, T11; additive: the
+  contract's description of the 400 names it). `make scenarios`, CI job
+  `scenarios` with the results uploaded, `docs/runbooks/scenarios.md`.
 - WP-22: the console's registry, zone, U-space and certificate pages
   on uspace-ui 0.1.0: operators, UAS and pilots with the look-up by
   number and serial, the Art. 14(2) forms and status transitions with a
