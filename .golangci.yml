@@ -120,6 +120,10 @@ linters:
             - "$all"
             - "!**/internal/store/**"
             - "!**/internal/occurrences/store/**"
+            # The scenario harness reads back what the processes wrote;
+            # it is test-only (ltest-only-in-tests below, and the layout
+            # test), so no binary opens a database through it.
+            - "!**/internal/ltest/**"
             - "!$test"
           deny:
             - pkg: github.com/jackc/pgx
@@ -134,6 +138,9 @@ linters:
           files:
             - "$all"
             - "!$test"
+            # The harness uses its own doubles (fakedss, fakeansp); the
+            # layout test still holds every binary free of internal/ltest.
+            - "!**/internal/ltest/**"
           deny:
             - pkg: github.com/rootxkit/uspace-authority/internal/ltest
               desc: "internal/ltest is imported by _test.go files only"
