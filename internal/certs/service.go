@@ -102,7 +102,8 @@ type Service struct {
 	// Issuer is this issuer: notices are taken from its tokens only.
 	Issuer string
 	// Audiences are the hosts a certificate's client may name for its
-	// national scopes: this system's and the CISP's.
+	// national scopes: this system's, the CISP's and the ANSP's
+	// (ClientAudiences).
 	Audiences []string
 	// TokenTTL is the token service's TTL: how long a token issued
 	// before a suspension stays valid.

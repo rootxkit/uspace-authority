@@ -32,11 +32,11 @@ type Setup struct {
 	KVTimeout time.Duration
 	Policy    func() (policy.Policy, bool)
 	Issuer    string
-	// OwnHost and CISPHost are the audiences a holder's client may name
-	// for its national scopes; CISPHost empty when no CISP is
-	// configured.
-	OwnHost, CISPHost string
-	TokenTTL          time.Duration
+	// OwnHost, CISPHost and ANSPHost are the audiences a holder's
+	// client may name for its national scopes (ClientAudiences);
+	// CISPHost or ANSPHost empty when that system is not configured.
+	OwnHost, CISPHost, ANSPHost string
+	TokenTTL                    time.Duration
 	// RegisterPerMin, RegisterBurst and RegisterMaxIPs bound the public
 	// register per client address.
 	RegisterPerMin, RegisterBurst, RegisterMaxIPs int
@@ -54,13 +54,9 @@ type Parts struct {
 // Assemble builds the service and its handler.
 func Assemble(s Setup) *Parts {
 	counters := &core.Counters{}
-	auds := []string{s.OwnHost}
-	if s.CISPHost != "" && !slices.Contains(auds, s.CISPHost) {
-		auds = append(auds, s.CISPHost)
-	}
 	svc := &Service{
 		DB: s.DB, Audit: s.Audit, Clients: s.Clients, Outbox: s.Outbox, KVTimeout: s.KVTimeout, Policy: s.Policy,
-		Issuer: s.Issuer, Audiences: auds, TokenTTL: s.TokenTTL, Counters: counters, Logger: s.Logger, Limiter: s.Limiter,
+		Issuer: s.Issuer, Audiences: ClientAudiences(s.OwnHost, s.CISPHost, s.ANSPHost), TokenTTL: s.TokenTTL, Counters: counters, Logger: s.Logger, Limiter: s.Limiter,
 	}
 	if s.JS != nil {
 		cfg := certkv.BucketConfig(s.Bucket)
@@ -68,4 +64,20 @@ func Assemble(s Setup) *Parts {
 	}
 	limit := httpx.NewRateLimiter(float64(s.RegisterPerMin)/60, s.RegisterBurst, s.RegisterMaxIPs, counters)
 	return &Parts{Service: svc, Handler: Handler{Service: svc, Limit: limit}, Counters: counters}
+}
+
+// ClientAudiences is the allowed-audience list of a certificate's
+// client (M18: the host of each target's base URL): this system's
+// host, the CISP's (cis.read, F3) and the ANSP's (ansp.traffic F4,
+// ansp.coordination F13), distinct, in that order; an empty host is
+// left out. The token service refuses a national scope for any other
+// audience, so a host missing here is a target the client cannot call.
+func ClientAudiences(own string, peers ...string) []string {
+	out := []string{own}
+	for _, h := range peers {
+		if h != "" && !slices.Contains(out, h) {
+			out = append(out, h)
+		}
+	}
+	return out
 }

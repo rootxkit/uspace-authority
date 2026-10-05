@@ -396,10 +396,19 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 				return err
 			}
 		}
+		anspHost := ""
+		if cfg.CertificatesANSPBaseURL != "" {
+			if anspHost, err = tokens.AudienceOf(cfg.CertificatesANSPBaseURL); err != nil {
+				return err
+			}
+		} else {
+			rt.Logger.Warn("certificates: ANSP_BASE_URL unset: clients issued now get no ANSP audience, so their ansp.traffic and ansp.coordination tokens are refused",
+				slog.String("variable", "ANSP_BASE_URL"))
+		}
 		crt := certs.Assemble(certs.Setup{
 			DB: db, Audit: auditWriter, Clients: tok.Registry, Outbox: cis.Outbox, JS: bp.JS, Bucket: cfg.CertificatesBucket,
 			KVTimeout: time.Duration(cfg.NATSTimeoutMS) * time.Millisecond, Policy: follower.Current, Issuer: cfg.Issuer(),
-			OwnHost: cfg.OwnHost(), CISPHost: cispHost, TokenTTL: time.Duration(cfg.TokenTTLS) * time.Second,
+			OwnHost: cfg.OwnHost(), CISPHost: cispHost, ANSPHost: anspHost, TokenTTL: time.Duration(cfg.TokenTTLS) * time.Second,
 			RegisterPerMin: cfg.CertificatesRegisterPerMin, RegisterBurst: cfg.CertificatesRegisterBurst,
 			RegisterMaxIPs: cfg.CertificatesRegisterMaxIPs, Logger: rt.Logger, Limiter: rt.Limiter,
 		})

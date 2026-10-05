@@ -82,7 +82,7 @@ func (r *rig) service(t *testing.T, outbox bool) *Service {
 		DB: r.db, Audit: w, Clients: &tokens.Registry{Store: tokens.PG{DB: r.db, Audit: w}, Hasher: hasher},
 		KV: func(context.Context) (jetstream.KeyValue, error) { return r.kv, nil }, KVTimeout: 2 * time.Second,
 		Policy: func() (policy.Policy, bool) { return policy.Policy{Version: 1, Thresholds: policy.Defaults()}, true },
-		Issuer: issuer, Audiences: []string{"authority.example.test", "cisp.example.test"}, TokenTTL: time.Hour,
+		Issuer: issuer, Audiences: ClientAudiences("authority.example.test", "cisp.example.test", anspHost), TokenTTL: time.Hour,
 		Counters: cnt, Logger: logging.Discard(), Limiter: logging.NewLimiter(logging.Discard(), time.Minute, 0, cnt),
 	}
 	if outbox {
@@ -196,7 +196,7 @@ func TestIntegrationCertificateLifecycle(t *testing.T) {
 		t.Fatalf("%+v", is)
 	}
 	if want := ScopesFor(HolderUSSP, c.Services); !slices.Equal(is.Client.Scopes, want) || is.Client.Status != tokens.StatusActive ||
-		!slices.Equal(is.Client.Audiences, []string{"authority.example.test", "cisp.example.test"}) {
+		!slices.Equal(is.Client.Audiences, []string{"authority.example.test", "cisp.example.test", anspHost}) {
 		t.Fatalf("client %+v", is.Client)
 	}
 	if n := r.count(t, `SELECT count(*) FROM oauth_clients WHERE client_id = 'ussp-AB12-01' AND certificate_id = $1`, c.ID); n != 1 {
