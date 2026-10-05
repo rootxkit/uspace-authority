@@ -73,6 +73,8 @@ type SubscriberConfig struct {
 	// StaleBoundS is the policy's cis_stale_bound_s.
 	StaleBoundS func() float64
 	Now         func() time.Time
+	// Direct is the ANSP's degraded direct path (direct.go).
+	Direct DirectConfig
 }
 
 type dsState struct {
@@ -105,6 +107,13 @@ type Subscriber struct {
 	subStatus  string
 	subErr     string
 	warmErr    string
+
+	// direct are the restrictions laid over the CISP's from the ANSP's
+	// direct path, by identifier; directPending the notifications not
+	// pulled yet, by restriction id (direct.go).
+	direct        map[string]*directHeld
+	directPending map[string]*DirectHint
+	directKick    chan struct{}
 }
 
 // NewSubscriber builds a Subscriber.
@@ -131,7 +140,8 @@ func NewSubscriber(cfg SubscriberConfig) *Subscriber {
 		cfg.StaleBoundS = func() float64 { return DefaultStaleBoundS }
 	}
 	s := &Subscriber{cfg: cfg, locks: map[Dataset]*sync.Mutex{}, kick: map[Dataset]chan struct{}{},
-		st: map[Dataset]*dsState{}, hints: map[Dataset]*Hint{}}
+		st: map[Dataset]*dsState{}, hints: map[Dataset]*Hint{},
+		direct: map[string]*directHeld{}, directPending: map[string]*DirectHint{}, directKick: make(chan struct{}, 1)}
 	for _, d := range SubscribedDatasets {
 		s.locks[d] = &sync.Mutex{}
 		s.kick[d] = make(chan struct{}, 1)
@@ -153,6 +163,7 @@ func (s *Subscriber) Run(ctx context.Context) {
 	}
 	wg.Go(func() { s.subscribeLoop(ctx) })
 	wg.Go(func() { s.sweepLoop(ctx) })
+	wg.Go(func() { s.directWorker(ctx) })
 	wg.Wait()
 }
 
@@ -160,6 +171,18 @@ func (s *Subscriber) Run(ctx context.Context) {
 // the database clock, so a restart serves the last known datasets
 // (stale if they are old) instead of none.
 func (s *Subscriber) Warm(ctx context.Context) {
+	s.warmDirect(ctx)
+	s.mu.Lock()
+	direct := len(s.direct) > 0
+	s.mu.Unlock()
+	restrictions := false
+	defer func() {
+		if direct && !restrictions {
+			// Only the direct path holds restrictions: they are
+			// projected (and announced) without a CISP version.
+			s.reproject(ctx)
+		}
+	}()
 	if s.cfg.Store == nil {
 		return
 	}
@@ -191,6 +214,7 @@ func (s *Subscriber) Warm(ctx context.Context) {
 		s.cfg.Logger.Info("CIS version loaded from the database", slog.String("dataset", string(c.Dataset)),
 			slog.Int64("cis_version", c.Version), slog.Float64("cis_age_s", c.AgeS))
 		if c.Dataset == DatasetRestrictions {
+			restrictions = true
 			s.project(ctx, v)
 		}
 	}
@@ -391,6 +415,10 @@ func (s *Subscriber) accept(ctx context.Context, v, cur *Version, reconcile bool
 		s.project(ctx, v)
 	}
 	s.announce(ctx, c)
+	if v.Dataset == DatasetRestrictions && s.dropDirect(ctx) {
+		// The CISP now holds what came directly: the overlay is gone.
+		s.reproject(ctx)
+	}
 	return nil
 }
 
@@ -400,8 +428,9 @@ func (s *Subscriber) project(ctx context.Context, v *Version) {
 	}
 	var rows []RestrictionRow
 	version, etag := int64(0), ETagOf(DatasetRestrictions, 0)
+	rows = s.mergedRows(v)
 	if v != nil {
-		rows, version, etag = RestrictionRows(v), v.Number, v.ETag
+		version, etag = v.Number, v.ETag
 	}
 	err := s.cfg.Projector.ProjectRestrictions(ctx, version, etag, rows, s.cfg.Now().UTC())
 	switch {

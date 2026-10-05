@@ -80,11 +80,13 @@ type stack struct {
 	pgURL   string
 	ansp    *auth.KeyRing
 	nc      *nats.Conn
-	cancel  context.CancelFunc
-	done    chan struct{}
+	// callback is the receiver's URL (POST /v1/cis/notifications).
+	callback string
+	cancel   context.CancelFunc
+	done     chan struct{}
 }
 
-func newStack(t *testing.T, down bool) *stack {
+func newStack(t *testing.T, down bool, opts ...func(*cisp.Setup)) *stack {
 	t.Helper()
 	ctx := context.Background()
 	pgURL := storetest.Migrated(t, migrate.Relational)
@@ -116,7 +118,7 @@ func newStack(t *testing.T, down bool) *stack {
 	rx := httptest.NewServer(mux)
 	t.Cleanup(rx.Close)
 	fakeKeys, anspKeys := auth.IssuerConfig{Keys: fake.Ring.JWKS()}, auth.IssuerConfig{Keys: ansp.JWKS()}
-	parts, err := cisp.Assemble(ctx, cisp.Setup{
+	setup := cisp.Setup{
 		DB: db, Audit: w, Projector: proj, JS: js, NATSTimeout: 2 * time.Second, PublicationRing: authority,
 		Tokens: scopeTokens{}, BaseURL: fake.URL(), CallbackURL: rx.URL + cisp.NotificationsPath, Audiences: []string{"127.0.0.1"},
 		NotifyIssuers: []cisp.NotifyIssuer{
@@ -126,7 +128,11 @@ func newStack(t *testing.T, down bool) *stack {
 		ReconcileInterval: itReconcile, HeartbeatInterval: itHeartbeat, SendPoll: 100 * time.Millisecond,
 		BackoffMin: 100 * time.Millisecond, BackoffMax: 300 * time.Millisecond,
 		HTTPClient: fake.Client(), Logger: logging.Discard(),
-	})
+	}
+	for _, o := range opts {
+		o(&setup)
+	}
+	parts, err := cisp.Assemble(ctx, setup)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +144,7 @@ func newStack(t *testing.T, down bool) *stack {
 	}
 	runCtx, cancel := context.WithCancel(ctx)
 	s := &stack{fake: fake, parts: parts, zones: zp.Service, pgAdmin: storetest.Open(t, pgURL), tsAdmin: storetest.Open(t, tsURL),
-		pgURL: pgURL, ansp: ansp, nc: nc, cancel: cancel, done: make(chan struct{})}
+		pgURL: pgURL, ansp: ansp, nc: nc, cancel: cancel, done: make(chan struct{}), callback: rx.URL + cisp.NotificationsPath}
 	go func() { parts.Run(runCtx); close(s.done) }()
 	t.Cleanup(s.stop)
 	return s

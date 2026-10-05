@@ -141,3 +141,26 @@ SELECT (SELECT count(*) FROM ins)::bigint AS inserted,
 
 -- name: SweepDeliveryJTIs :execrows
 DELETE FROM cis_delivery_jtis WHERE expires_at <= now();
+
+-- name: UpsertCISDirect :execrows
+-- Stores a direct restriction unless a version at or above it is stored
+-- for its identifier (0 rows then).
+INSERT INTO cis_direct_restrictions (identifier, restriction_id, ansp_ref, ansp_version, state, body, signature, issuer)
+VALUES (sqlc.arg(identifier), sqlc.arg(restriction_id), sqlc.arg(ansp_ref), sqlc.arg(ansp_version), sqlc.arg(state),
+        sqlc.arg(body), sqlc.arg(signature), sqlc.arg(issuer))
+ON CONFLICT (identifier) DO UPDATE
+   SET restriction_id = EXCLUDED.restriction_id, ansp_ref = EXCLUDED.ansp_ref, ansp_version = EXCLUDED.ansp_version,
+       state = EXCLUDED.state, body = EXCLUDED.body, signature = EXCLUDED.signature, issuer = EXCLUDED.issuer,
+       stored_at = now()
+ WHERE cis_direct_restrictions.ansp_version < EXCLUDED.ansp_version;
+
+-- name: LoadCISDirect :many
+SELECT identifier, restriction_id, ansp_ref, ansp_version, state, body, signature, issuer,
+       extract(epoch FROM now() - stored_at)::double precision AS age_s
+  FROM cis_direct_restrictions
+ ORDER BY identifier
+ LIMIT sqlc.arg(max_rows);
+
+-- name: DeleteCISDirect :execrows
+DELETE FROM cis_direct_restrictions
+ WHERE identifier = sqlc.arg(identifier) AND ansp_version <= sqlc.arg(ansp_version);

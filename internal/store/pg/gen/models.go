@@ -136,6 +136,18 @@ type CisDeliveryJti struct {
 	ExpiresAt  time.Time
 }
 
+type CisDirectRestriction struct {
+	Identifier    string
+	RestrictionID string
+	AnspRef       string
+	AnspVersion   int64
+	State         string
+	Body          []byte
+	Signature     string
+	Issuer        string
+	StoredAt      time.Time
+}
+
 type DpView struct {
 	ID        int64
 	Label     string

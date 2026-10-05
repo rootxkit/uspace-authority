@@ -506,3 +506,24 @@ Unreleased; the format follows Keep a Changelog.
   (`docs/runbooks/certificates.md`). Test: a token issued to a new
   certificate's client passes the ANSP's verifier rules and the token
   rule of each ANSP route a USSP calls (read from `api/clients/ansp.yaml`).
+
+- System audit 2026-10-05 H-2 (bug fix; contract: the ANSP's additive
+  `GET /v1/restrictions/{id}/direct`): the ANSP's degraded direct
+  delivery (02 F2 failure rule, cross-plan M4, M5) was acknowledged and
+  discarded. Its record's `version`, the restriction's `ansp_version`,
+  was read as the CIS restrictions version and skipped as a replay, and
+  the ANSP's `pull_url` was never followed. The receiver now hands an
+  ANSP restriction notification whose `pull_url` is on the ANSP's issuer
+  URL to the subscriber's direct path: it pulls the ANSP's signed
+  `restriction/direct/v1` (no credential), verifies `X-JWS-Signature`
+  with the ANSP's publisher keys, checks it is the restriction,
+  identifier and `ansp_version` the record named, stores it
+  (`cis_direct_restrictions`, migration `00026`, so a restart keeps it),
+  projects it into `proj_restrictions` over the CISP's version and
+  announces `cis.v1.restrictions`, until the CISP holds that
+  `ansp_version` or a newer one; an end delivered the same way is
+  projected `ended`. A full queue answers `503` before the delivery id is
+  recorded; a failed pull is retried. `CIS_DIRECT_MAX` (500) and
+  `CIS_DIRECT_KEEP_S` (86400, pending GCAA). The ANSP's contract fixture
+  is vendored in `internal/cisp/testdata/ansp-direct` at the commit its
+  `SOURCE` names.
