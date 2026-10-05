@@ -30,6 +30,7 @@ func serve(t *testing.T, f *fixture, who string) *httptest.Server {
 	mux := http.NewServeMux()
 	apiserver.Mount(mux, apiserver.Server{TokenHandler: f.parts.Handler, OAuthAdminHandler: f.parts.Handler}, apiserver.Options{
 		Middlewares: []apiserver.Middleware{f.parts.Handler.FormGuard(), apiserver.Authorize(identify, apiserver.DefaultRules())},
+		Admit:       apiserver.Admission(identify, apiserver.DefaultRules()),
 		Keep:        apiserver.PathPrefix("/v1/", "/oauth/", "/.well-known/"),
 	})
 	mux.HandleFunc("/", httpx.NotFound)

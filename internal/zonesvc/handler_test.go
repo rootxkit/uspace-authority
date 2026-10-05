@@ -34,6 +34,7 @@ func handlerServer(t *testing.T, s *Service) *httptest.Server {
 	h := Handler{Service: s}
 	apiserver.Mount(mux, apiserver.Server{ZonesHandler: h, USpaceHandler: h}, apiserver.Options{
 		Middlewares:  []apiserver.Middleware{apiserver.Authorize(identify, apiserver.DefaultRules())},
+		Admit:        apiserver.Admission(identify, apiserver.DefaultRules()),
 		Keep:         apiserver.PathPrefix("/v1/zones", "/v1/uspace"),
 		BodyLimits:   map[string]int64{"POST /v1/zones/import": int64(MaxDocumentBytes)},
 		BodyCounters: &core.Counters{},

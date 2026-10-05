@@ -14,6 +14,7 @@ import (
 	"github.com/rootxkit/uspace-core/f3411"
 
 	"github.com/rootxkit/uspace-authority/internal/dp/ridapi"
+	"github.com/rootxkit/uspace-authority/internal/httpx"
 	"github.com/rootxkit/uspace-authority/internal/logging"
 )
 
@@ -70,45 +71,96 @@ var _ ridapi.ServerInterface = notificationServer{}
 // only PostIdentificationServiceArea is mounted (Mount).
 type notificationServer struct{ n *Notifications }
 
-// errorResponse writes the F3411 ErrorResponse.
-func errorResponse(w http.ResponseWriter, status int, message string) {
-	w.Header().Set("Content-Type", "application/json")
+// notificationProblem is the refusal body of the notification route:
+// the problem/v1 body its contract declares (application/problem+json,
+// conformance C7), which is also an F3411 ErrorResponse: message, the
+// standard's one member, carries the detail for a Service Provider that
+// reads the standard's shape. problem/v1 admits the extra member.
+type notificationProblem struct {
+	httpx.Problem
+	Message string `json:"message"`
+}
+
+// slugOf names the refusal of status (M28).
+func slugOf(status int) string {
+	switch status {
+	case http.StatusBadRequest:
+		return httpx.SlugValidation
+	case http.StatusUnauthorized:
+		return httpx.SlugUnauthn
+	case http.StatusForbidden:
+		return httpx.SlugForbidden
+	case http.StatusNotFound:
+		return httpx.SlugNotFound
+	case http.StatusRequestEntityTooLarge:
+		return httpx.SlugBodyTooLarge
+	case http.StatusServiceUnavailable:
+		return "unavailable"
+	}
+	return httpx.SlugInternal
+}
+
+// errorResponse writes the refusal of the notification route with
+// status and message; a field error, when given, is listed in errors.
+func errorResponse(w http.ResponseWriter, r *http.Request, status int, message string, errs ...*core.FieldError) {
+	p := notificationProblem{Problem: *httpx.NewProblem(status, slugOf(status), "", message, errs...), Message: message}
+	if r != nil {
+		p.Instance = r.URL.Path
+	}
+	w.Header().Set("Content-Type", httpx.ProblemContentType)
+	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(f3411.ErrorResponse{Message: &message})
+	_ = json.NewEncoder(w).Encode(p)
+}
+
+// refuseWith is errorResponse for authenticate's refusals.
+func refuseWith(r *http.Request) func(http.ResponseWriter, int, string) {
+	return func(w http.ResponseWriter, status int, message string) { errorResponse(w, r, status, message) }
+}
+
+// fieldOf is the field error inside err, nil when it carries none.
+func fieldOf(err error) []*core.FieldError {
+	var fe *core.FieldError
+	if errors.As(err, &fe) {
+		return []*core.FieldError{fe}
+	}
+	return nil
 }
 
 // notMounted answers the operations dp-poller does not serve (never
 // reached: Mount registers one pattern).
-func notMounted(w http.ResponseWriter) { errorResponse(w, http.StatusNotFound, "not served here") }
+func notMounted(w http.ResponseWriter, r *http.Request) {
+	errorResponse(w, r, http.StatusNotFound, "not served here")
+}
 
 // SearchIdentificationServiceAreas is not served here.
-func (notificationServer) SearchIdentificationServiceAreas(w http.ResponseWriter, _ *http.Request, _ f3411.SearchIdentificationServiceAreasParams) {
-	notMounted(w)
+func (notificationServer) SearchIdentificationServiceAreas(w http.ResponseWriter, r *http.Request, _ f3411.SearchIdentificationServiceAreasParams) {
+	notMounted(w, r)
 }
 
 // CreateSubscription is not served here.
-func (notificationServer) CreateSubscription(w http.ResponseWriter, _ *http.Request, _ string) {
-	notMounted(w)
+func (notificationServer) CreateSubscription(w http.ResponseWriter, r *http.Request, _ string) {
+	notMounted(w, r)
 }
 
 // DeleteSubscription is not served here.
-func (notificationServer) DeleteSubscription(w http.ResponseWriter, _ *http.Request, _ string, _ string) {
-	notMounted(w)
+func (notificationServer) DeleteSubscription(w http.ResponseWriter, r *http.Request, _ string, _ string) {
+	notMounted(w, r)
 }
 
 // UpdateSubscription is not served here.
-func (notificationServer) UpdateSubscription(w http.ResponseWriter, _ *http.Request, _ string, _ string) {
-	notMounted(w)
+func (notificationServer) UpdateSubscription(w http.ResponseWriter, r *http.Request, _ string, _ string) {
+	notMounted(w, r)
 }
 
 // SearchFlights is not served here.
-func (notificationServer) SearchFlights(w http.ResponseWriter, _ *http.Request, _ f3411.SearchFlightsParams) {
-	notMounted(w)
+func (notificationServer) SearchFlights(w http.ResponseWriter, r *http.Request, _ f3411.SearchFlightsParams) {
+	notMounted(w, r)
 }
 
 // GetFlightDetails is not served here.
-func (notificationServer) GetFlightDetails(w http.ResponseWriter, _ *http.Request, _ string) {
-	notMounted(w)
+func (notificationServer) GetFlightDetails(w http.ResponseWriter, r *http.Request, _ string) {
+	notMounted(w, r)
 }
 
 // PostIdentificationServiceArea implements the route.
@@ -131,9 +183,9 @@ func (k keepOne) HandleFunc(pattern string, h func(http.ResponseWriter, *http.Re
 func (n *Notifications) Mount(mux *http.ServeMux) {
 	ridapi.HandlerWithOptions(notificationServer{n: n}, ridapi.StdHTTPServerOptions{
 		BaseRouter: keepOne{mux},
-		ErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, err error) {
+		ErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
 			n.inc(CounterNotifyMalformed)
-			errorResponse(w, http.StatusBadRequest, "invalid request: "+err.Error())
+			errorResponse(w, r, http.StatusBadRequest, "invalid request: "+err.Error())
 		},
 	})
 }
@@ -192,7 +244,7 @@ func authenticate(w http.ResponseWriter, r *http.Request, v Verifier, scope stri
 
 func (n *Notifications) serve(w http.ResponseWriter, r *http.Request, id string) {
 	cl, ok := authenticate(w, r, n.Verifier, string(f3411.ScopeServiceProvider), n.inc,
-		[4]string{CounterNotifyNoToken, CounterNotifyBadToken, CounterNotifyUnavailable, CounterNotifyScope}, errorResponse)
+		[4]string{CounterNotifyNoToken, CounterNotifyBadToken, CounterNotifyUnavailable, CounterNotifyScope}, refuseWith(r))
 	if !ok {
 		return
 	}
@@ -203,19 +255,20 @@ func (n *Notifications) serve(w http.ResponseWriter, r *http.Request, id string)
 	body, err := io.ReadAll(io.LimitReader(r.Body, limit+1))
 	if err != nil || int64(len(body)) > limit {
 		n.inc(CounterNotifyTooLarge)
-		errorResponse(w, http.StatusRequestEntityTooLarge, "notification larger than the bound")
+		errorResponse(w, r, http.StatusRequestEntityTooLarge, "notification larger than the bound")
 		return
 	}
 	p, err := ParseNotification(body)
 	if err != nil {
 		n.inc(CounterNotifyMalformed)
-		errorResponse(w, http.StatusBadRequest, err.Error())
+		errorResponse(w, r, http.StatusBadRequest, err.Error(), fieldOf(err)...)
 		return
 	}
 	if p.ServiceArea != nil {
 		if p.ServiceArea.Id != "" && p.ServiceArea.Id != id {
 			n.inc(CounterNotifyIDMismatch)
-			errorResponse(w, http.StatusBadRequest, "service_area.id is not the id of the path")
+			errorResponse(w, r, http.StatusBadRequest, "service_area.id is not the id of the path",
+				&core.FieldError{Field: "service_area.id", Reason: "not the id of the path"})
 			return
 		}
 		// The body's owner must be the caller, and an ISA already held
@@ -224,7 +277,7 @@ func (n *Notifications) serve(w http.ResponseWriter, r *http.Request, id string)
 		// another Service Provider's ISA (audit A-B1).
 		if owner, known := n.ISAs.Owner(id); p.ServiceArea.Owner != cl.Subject || (known && owner != cl.Subject) {
 			n.inc(CounterNotifyNotOwner)
-			errorResponse(w, http.StatusForbidden, "the client identified in the access token is not the owner of this Entity")
+			errorResponse(w, r, http.StatusForbidden, "the client identified in the access token is not the owner of this Entity")
 			return
 		}
 	} else {
@@ -232,7 +285,7 @@ func (n *Notifications) serve(w http.ResponseWriter, r *http.Request, id string)
 		switch {
 		case known && owner != cl.Subject:
 			n.inc(CounterNotifyNotOwner)
-			errorResponse(w, http.StatusForbidden, "the client identified in the access token is not the owner of this Entity")
+			errorResponse(w, r, http.StatusForbidden, "the client identified in the access token is not the owner of this Entity")
 			return
 		case !known:
 			n.inc(CounterNotifyUnknownDelete)
@@ -248,7 +301,7 @@ func (n *Notifications) serve(w http.ResponseWriter, r *http.Request, id string)
 	if !n.ISAs.Notify(id, p.ServiceArea, p.Extents) {
 		// The owner changed between the check and the apply.
 		n.inc(CounterNotifyNotOwner)
-		errorResponse(w, http.StatusForbidden, "the client identified in the access token is not the owner of this Entity")
+		errorResponse(w, r, http.StatusForbidden, "the client identified in the access token is not the owner of this Entity")
 		return
 	}
 	n.inc(CounterNotifyAccepted)

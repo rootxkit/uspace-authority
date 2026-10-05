@@ -2797,6 +2797,24 @@ type DPAvailabilityResult struct {
 // DPAvailabilityResultAvailability defines model for DPAvailabilityResult.Availability.
 type DPAvailabilityResultAvailability string
 
+// DPNotificationProblem The refusal of the F3411 ISA notification (dp-poller): the
+// problem/v1 body, which is also an F3411 `ErrorResponse`, its one
+// member `message` carrying the same text as `detail`.
+type DPNotificationProblem struct {
+	Detail   *string        `json:"detail,omitempty"`
+	Errors   []FieldProblem `json:"errors"`
+	Instance *string        `json:"instance,omitempty"`
+
+	// Message F3411 `ErrorResponse.message`; equal to `detail`.
+	Message   string `json:"message"`
+	Status    int    `json:"status"`
+	Title     string `json:"title"`
+	Truncated *bool  `json:"truncated,omitempty"`
+
+	// Type `https://schemas.uspace.ge/problems/<slug>`, slug = the counter or refusal name.
+	Type string `json:"type"`
+}
+
 // DPOPIIView defines model for DPOPIIView.
 type DPOPIIView struct {
 	ActorId       string    `json:"actor_id"`

@@ -83,16 +83,27 @@ func (h *Handler) sessionCtx(r *http.Request) (context.Context, context.CancelFu
 	return context.WithTimeout(r.Context(), d)
 }
 
-// serveWS is GET /v1/picture/ws. Before the upgrade: a request that is
-// not a WebSocket upgrade is 426, an Origin outside the allow-list (or
-// none: only a browser on an allowed origin is a console) is 403 and
-// never upgraded, a full instance is 503 with Retry-After. After it: no
-// uspace_session cookie, a token that is not a live console session
-// (machine tokens included) closes with 4401 (re-login); a check that
-// cannot be made closes with 1013. Nothing is read from the query
-// string: there is no ticket (M22).
+// serveWS is GET /v1/picture/ws. Before the upgrade: a request without
+// a uspace_session cookie is 401 (it is unauthenticated, whatever else
+// it lacks; conformance C4), a request that is not a WebSocket upgrade
+// is 426, an Origin outside the allow-list (or none: only a browser on
+// an allowed origin is a console) is 403 and never upgraded, a full
+// instance is 503 with Retry-After. After it: a token that is not a
+// live console session (machine tokens included) closes with 4401
+// (re-login); a check that cannot be made closes with 1013. Nothing is
+// read from the query string: there is no ticket (M22).
 func (h *Handler) serveWS(w http.ResponseWriter, r *http.Request) {
 	hub := h.Hub
+	var token string
+	if c, err := r.Cookie(CookieSession); err == nil {
+		token = c.Value
+	}
+	if token == "" {
+		hub.counters.Inc(CounterRefusedNoSession)
+		httpx.NewProblem(http.StatusUnauthorized, httpx.SlugUnauthn, "",
+			"no "+CookieSession+" cookie on the upgrade: sign in through /v1/auth/login").Write(w, r)
+		return
+	}
 	if !isUpgrade(r) {
 		hub.counters.Inc(CounterRefusedRequest)
 		w.Header().Set("Upgrade", "websocket")
@@ -116,19 +127,9 @@ func (h *Handler) serveWS(w http.ResponseWriter, r *http.Request) {
 			"this instance serves its maximum of consoles (PICTURE_MAX_CLIENTS)").Write(w, r)
 		return
 	}
-	var token string
-	if c, err := r.Cookie(CookieSession); err == nil {
-		token = c.Value
-	}
-	var sess Session
-	var serr error
-	if token == "" {
-		serr = refused("no %s cookie on the upgrade", CookieSession)
-	} else {
-		ctx, cancel := h.sessionCtx(r)
-		sess, serr = h.Sessions.Check(ctx, token)
-		cancel()
-	}
+	ctx, cancel := h.sessionCtx(r)
+	sess, serr := h.Sessions.Check(ctx, token)
+	cancel()
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 		InsecureSkipVerify: true, // the Origin was judged above, exactly
 		CompressionMode:    websocket.CompressionDisabled,

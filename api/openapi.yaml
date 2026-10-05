@@ -4315,10 +4315,12 @@ paths:
       tags: [picture]
       summary: The live picture over a WebSocket (picture-ws)
       description: |
-        A WebSocket upgrade, same-origin: the `Origin` header must be
-        exactly one of `PICTURE_ALLOWED_ORIGINS` (else 403 `origin`,
-        never upgraded) and the browser sends the `uspace_session`
-        cookie (M22; no ticket, nothing in the query string). The token
+        A WebSocket upgrade, same-origin: the browser sends the
+        `uspace_session` cookie (M22; no ticket, nothing in the query
+        string; without it 401 `unauthenticated`, never upgraded,
+        whatever the Origin) and the `Origin` header must be exactly one
+        of `PICTURE_ALLOWED_ORIGINS` (else 403 `origin`, never
+        upgraded). The token
         is verified by uspace-core's verifier and must be a session of
         the console or police realm whose sessions row is live (api's
         `GET /v1/auth/session`); otherwise the connection is closed
@@ -4330,8 +4332,9 @@ paths:
         layers[]}`, then `track/telemetry/v1` (with `age_s` and
         `source_state`), `track/manned/v1`, `violation/v1` and
         `source/status/v1`, and `console/status/v1` every 2 s. Refusals
-        before the upgrade: 426 `upgrade_required`, 403 `origin`, 503
-        `picture_full` with Retry-After.
+        before the upgrade, in this order: 401 `unauthenticated` (no
+        `uspace_session` cookie), 426 `upgrade_required`, 403 `origin`,
+        503 `picture_full` with Retry-After.
       security:
         - sessionCookie: []
       x-picture: true
@@ -4339,6 +4342,8 @@ paths:
       responses:
         "101":
           description: Switching protocols; the console frame follows.
+        "401":
+          $ref: "#/components/responses/Problem"
         "403":
           $ref: "#/components/responses/Problem"
         "426":
@@ -4624,8 +4629,10 @@ paths:
         with `aud` one of `AUTHORITY_AUDIENCES` (M6, M18); the service
         area's owner must be the token's subject (403 otherwise). Body:
         F3411 `PutIdentificationServiceAreaNotificationParameters`, at most
-        `DP_MAX_NOTIFICATION_BYTES`. Errors are F3411 `ErrorResponse`
-        bodies.
+        `DP_MAX_NOTIFICATION_BYTES`. Every refusal is the problem/v1 body
+        (`application/problem+json`) with the F3411 `ErrorResponse`
+        member `message` beside it, equal to `detail`
+        (`DPNotificationProblem`).
       security:
         - ecosystemToken: []
       x-dp: true
@@ -4642,15 +4649,35 @@ paths:
         "204":
           description: Applied.
         "400":
-          description: Malformed (F3411 ErrorResponse).
+          description: Malformed (`validation`, the field in `errors`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/DPNotificationProblem"
         "401":
-          description: No token, or a token refused (F3411 ErrorResponse).
+          description: No token, or a token refused (`unauthenticated`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/DPNotificationProblem"
         "403":
-          description: The token does not grant rid.service_provider, or its subject does not own the ISA (F3411 ErrorResponse).
+          description: The token does not grant rid.service_provider, or its subject does not own the ISA (`forbidden`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/DPNotificationProblem"
         "413":
-          description: Larger than the bound (F3411 ErrorResponse).
+          description: Larger than the bound (`body_too_large`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/DPNotificationProblem"
         "503":
-          description: The token cannot be verified yet (F3411 ErrorResponse).
+          description: The token cannot be verified yet (`unavailable`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/DPNotificationProblem"
 
   # WP-19: the police realm (spec 02 F10). A session of the police realm
   # holding police.query, signed in with MFA from an address of the
@@ -5178,6 +5205,19 @@ components:
             $ref: "#/components/schemas/FieldProblem"
         truncated:
           type: boolean
+    DPNotificationProblem:
+      description: |
+        The refusal of the F3411 ISA notification (dp-poller): the
+        problem/v1 body, which is also an F3411 `ErrorResponse`, its one
+        member `message` carrying the same text as `detail`.
+      allOf:
+        - $ref: "#/components/schemas/Problem"
+        - type: object
+          required: [message]
+          properties:
+            message:
+              type: string
+              description: F3411 `ErrorResponse.message`; equal to `detail`.
     Severity:
       type: string
       enum: [info, warning, critical]

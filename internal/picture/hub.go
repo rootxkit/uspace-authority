@@ -27,6 +27,7 @@ const (
 	GaugeClientsName           = "picture_clients"
 	CounterClientsOpened       = "clients_opened"
 	CounterClientsClosed       = "clients_closed"
+	CounterRefusedNoSession    = "upgrade_refused_no_session"
 	CounterRefusedOrigin       = "upgrade_refused_origin"
 	CounterRefusedCapacity     = "upgrade_refused_capacity"
 	CounterRefusedRequest      = "upgrade_refused_request"
