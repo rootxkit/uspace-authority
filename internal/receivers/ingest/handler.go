@@ -57,9 +57,14 @@ type Handler struct {
 	DisabledRetryAfter time.Duration
 	// QueueRetryAfter is the Retry-After of a queue refusal.
 	QueueRetryAfter time.Duration
-	Counters        *core.Counters
-	Limiter         *logging.Limiter
-	Now             func() time.Time
+	// LabHeadersAllowed admits a batch carrying
+	// receivers.LabScenarioHeader (LAB_HEADERS_ALLOWED; false, the
+	// default, refuses it with 400 lab_header before anything is read
+	// or stored: spec 06 §2 T11).
+	LabHeadersAllowed bool
+	Counters          *core.Counters
+	Limiter           *logging.Limiter
+	Now               func() time.Time
 }
 
 func (h *Handler) now() time.Time {
@@ -123,6 +128,15 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := entry.ReceiverID
+	// T11: a lab simulator's batch never reaches an ingest that has not
+	// been told it serves the lab. After the credential, so a request
+	// without one is still told 401 first; before the body is read.
+	if !h.LabHeadersAllowed && len(r.Header.Values(receivers.LabScenarioHeader)) > 0 {
+		h.refuse(w, r, receivers.Refusal{Status: http.StatusBadRequest, Slug: receivers.SlugLabHeader,
+			Counter: receivers.ReasonLabHeader, Detail: "this ingest does not admit lab scenario batches (LAB_HEADERS_ALLOWED is false); nothing was stored"}, id,
+			core.Fieldf(receivers.LabScenarioHeader, "not admitted by this ingest"))
+		return
+	}
 	if !entry.Enabled() {
 		h.refuse(w, r, receivers.Refusal{Status: http.StatusServiceUnavailable, Slug: receivers.SlugSourceDisabled,
 			Counter: receivers.ReasonDisabled, Detail: "this receiver is disabled by the authority; nothing was stored",

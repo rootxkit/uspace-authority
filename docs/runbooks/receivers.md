@@ -100,6 +100,7 @@ stored twice.
 |---|---|---|---|
 | 202 | — | Durably queued. `accepted` new, `duplicates` already had | drop the batch from its buffer |
 | 400 | `validation` | the batch does not match the schema; `errors[]` names each field | fix the firmware; do not resend as is |
+| 400 | `lab_header` | the batch carries `X-Lab-Scenario`, which only the lab's simulated receivers (`internal/ltest`, WP-25) set, and this ingest runs with `LAB_HEADERS_ALLOWED=false` (the default; spec 06 T11); counted `refused_lab_header`, nothing stored | a real receiver never sends the header: remove it; a simulator has reached the wrong ingest |
 | 401 | `unauthenticated` | no bearer key, a malformed one, an unknown or revoked one | stop and alert its operator: re-provision |
 | 401 | `signature` | unsigned, a wrong signature, or a body naming another receiver | check the secret and that the signed bytes are the sent bytes |
 | 401 | `skew` | `sent_at_ms` more than 30 s from the authority's clock | fix the clock; resend with a fresh `sent_at_ms` and nonce |

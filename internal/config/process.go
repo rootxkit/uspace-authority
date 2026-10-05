@@ -566,6 +566,7 @@ type RIDIngestTuning struct {
 	QueueRetryAfterS    int    `env:"RID_INGEST_QUEUE_RETRY_AFTER_S" default:"2" min:"1" max:"3600" help:"Retry-After of a work-queue refusal"`
 	NATSTimeoutMS       int    `env:"RID_INGEST_NATS_TIMEOUT_MS" default:"2000" min:"50" max:"60000" help:"bound on one queue write, row hand-over or key-set read"`
 	KeysetBucket        string `env:"RID_KEYSET_BUCKET" default:"rid_receiver_keys" help:"KV bucket of the receiver key set, written by api (the same variable there)"`
+	LabHeadersAllowed   bool   `env:"LAB_HEADERS_ALLOWED" default:"false" help:"admit batches carrying X-Lab-Scenario (the scenario harness's simulated receiver, WP-25); false refuses them with 400 lab_header (spec 06 T11); true only in the lab"`
 	KeyCheckSlots       int    `env:"RID_INGEST_KEY_CHECK_SLOTS" default:"2" min:"1" max:"64" help:"concurrent argon2id checks of bearer keys not yet seen (T8); beyond it a request waits briefly and is refused with 503"`
 	RIDPipelineTuning
 }

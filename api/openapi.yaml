@@ -2326,7 +2326,10 @@ paths:
         `unauthenticated` (no or unknown bearer key), 401 `signature`
         (unsigned, unknown receiver, wrong signature), 401 `skew`
         (sent_at_ms more than 30 s from the ingest's clock), 409
-        `replay` (nonce seen before), 400 `validation`, 413
+        `replay` (nonce seen before), 400 `validation`, 400
+        `lab_header` (the batch carries `X-Lab-Scenario`, which only the
+        lab's simulated receivers set, and this ingest runs with
+        `LAB_HEADERS_ALLOWED=false`, the default: spec 06 T11), 413
         `body_too_large`, 503 `source_disabled`, `queue_full` or
         `queue_unavailable` with Retry-After. Never 403.
       security:

@@ -48,7 +48,17 @@ const (
 	SlugQueueFull        = "queue_full"
 	SlugQueueUnavailable = "queue_unavailable"
 	SlugBusy             = "busy"
+	// SlugLabHeader refuses a batch that names a lab scenario
+	// (LabScenarioHeader) at an ingest that does not admit lab headers.
+	SlugLabHeader = "lab_header"
 )
+
+// LabScenarioHeader is the header the scenario harness's simulated
+// receiver (internal/ltest, WP-25) sets on every batch it posts. An
+// ingest refuses it unless LAB_HEADERS_ALLOWED is true, which only the
+// lab and the harness set, so a stray simulator never reaches staging or
+// production data (spec 06 §2 T11).
+const LabScenarioHeader = "X-Lab-Scenario"
 
 // Refusal is one refused receiver request: its status, problem slug and
 // the counter it increments (E-09).
@@ -77,6 +87,7 @@ const (
 	ReasonQueueFull        = "refused_queue_full"
 	ReasonQueueUnavailable = "refused_queue_unavailable"
 	ReasonBusy             = "refused_busy"
+	ReasonLabHeader        = "refused_lab_header"
 )
 
 // VerifyRefusal maps a refusal of uspace-core's ReceiverVerifier onto the
