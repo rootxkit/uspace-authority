@@ -444,3 +444,25 @@ Unreleased; the format follows Keep a Changelog.
   registration check (status only), the public register and the rules
   from configured Markdown; ka/en, Playwright and an axe check (WCAG 2.2
   AA) in English light and Georgian dark.
+- WP-L7 conformance C6 (bug fix, no contract change): a request the
+  generated code cannot parse (a missing or malformed parameter, an
+  unreadable body) is put to the operation's access rules first
+  (`apiserver.Admission`, the gate `Authorize` applies): without a
+  credential it is `401 unauthenticated`, without the role or scope
+  `403 forbidden`, and only an admitted caller hears `400 validation`.
+  `apiserver.Options.Admit` left unset fails closed (401 on every
+  operation that is not public).
+- WP-L7 conformance C4 (contract: additive `401` on `getPictureWS`):
+  picture-ws answers an upgrade without the `uspace_session` cookie
+  `401 unauthenticated` before it judges the upgrade or the Origin
+  (counted as `upgrade_refused_no_session`), instead of `403 origin`
+  without an Origin or a 4401 close after the upgrade with one. With
+  the cookie, a missing or foreign Origin is still `403 origin`; 4401
+  now means a refused or ended session.
+- WP-L7 conformance C7 (contract bug fix): `postDPISANotification`
+  declares its refusal body: every 400, 401, 403, 413 and 503 of the
+  dp-poller notification route is `application/problem+json`, the new
+  component `DPNotificationProblem` (problem/v1 with the F3411
+  `ErrorResponse` member `message` beside it, equal to `detail`), and
+  the code writes exactly that instead of a bare `{"message"}` the
+  contract did not declare. A 400 names the field in `errors`.

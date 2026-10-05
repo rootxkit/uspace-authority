@@ -59,9 +59,11 @@
 // was never heard (B-11), an adapter silent for SOURCE_STATUS_STALE_S is
 // stale, and every change is announced as a source/status/v1 frame.
 //
-// Sessions (session.go, handler.go; M20, M22). GET /v1/picture/ws is
-// upgraded only from an Origin exactly on PICTURE_ALLOWED_ORIGINS (else
-// 403, never upgraded); the uspace_session cookie of the upgrade is
+// Sessions (session.go, handler.go; M20, M22). GET /v1/picture/ws
+// without a uspace_session cookie is 401 and never upgraded (an upgrade
+// without a credential is unauthenticated before its Origin is judged;
+// conformance C4); it is upgraded only from an Origin exactly on
+// PICTURE_ALLOWED_ORIGINS (else 403, never upgraded); the cookie is
 // verified by uspace-core's verifier (this issuer's JWKS, the audiences,
 // StrictSessionClaims; built in the background while api is down, every
 // session refused as unavailable until then) and must be a session of

@@ -74,10 +74,11 @@ func readFrame(t *testing.T, c *websocket.Conn) frame {
 }
 
 // M22, E-01: the upgrade with a live console session from an allowed
-// origin is served (status, then snapshot); without the cookie, with a
-// machine token in it, with a revoked session, or with a token in the
-// query string instead of the cookie, it is closed with 4401; with a
-// wrong Origin, or none, it is refused 403 and never upgraded.
+// origin is served (status, then snapshot); with a machine token in the
+// cookie, a revoked session or garbage, it is closed with 4401; with a
+// wrong Origin, or none, it is refused 403 and never upgraded; without
+// the cookie (a token in the query string is none) it is refused 401
+// and never upgraded (C4, TestUpgradeWithoutCredential).
 func TestUpgradeRefusedBesideTheAcceptedOne(t *testing.T) {
 	ti := newTestIssuer(t)
 	api := newFakeAPI(t, ti, "live-1")
@@ -98,7 +99,6 @@ func TestUpgradeRefusedBesideTheAcceptedOne(t *testing.T) {
 	_ = c.Close(websocket.StatusNormalClosure, "")
 
 	for name, cookie := range map[string]string{
-		"no cookie":       "",
 		"machine token":   ti.machine(t),
 		"revoked session": ti.session(t, RealmConsole, "revoked-1", time.Hour),
 		"garbage":         "not-a-token",
@@ -112,12 +112,9 @@ func TestUpgradeRefusedBesideTheAcceptedOne(t *testing.T) {
 		}
 	}
 	// A ticket in the query string is not a session (M22).
-	c, _, err = dial(t, wsURL+"?token="+ti.session(t, RealmConsole, "live-1", time.Hour), consoleOrigin, "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if code, err := closeOf(t, c); code != CloseRelogin {
-		t.Fatalf("query-string token: closed %d, want %d: %v", code, CloseRelogin, err)
+	_, resp, err := dial(t, wsURL+"?token="+ti.session(t, RealmConsole, "live-1", time.Hour), consoleOrigin, "")
+	if err == nil || resp == nil || resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("query-string token: %v %v", err, resp)
 	}
 	for name, origin := range map[string]string{"wrong origin": "https://evil.example.test", "no origin": "", "port differs": consoleOrigin + ":8443"} {
 		_, resp, err := dial(t, wsURL, origin, ti.session(t, RealmConsole, "live-1", time.Hour))
@@ -128,6 +125,77 @@ func TestUpgradeRefusedBesideTheAcceptedOne(t *testing.T) {
 	if h.Counters().Get(CounterRefusedOrigin) != 3 || h.Len() != 0 {
 		t.Fatalf("origin refusals %d, consoles %d", h.Counters().Get(CounterRefusedOrigin), h.Len())
 	}
+}
+
+// C4, E-01: an upgrade without a credential is unauthenticated, 401
+// with the problem body and never upgraded, whatever its Origin (none,
+// a wrong one, the allowed one), and a bearer header is not the
+// picture's credential; the same upgrades with the session cookie are
+// judged by their Origin (403 wrong or none) and served on the allowed
+// one. The 401 is answered before the Origin is looked at, and never
+// counts as an Origin refusal.
+func TestUpgradeWithoutCredential(t *testing.T) {
+	ti := newTestIssuer(t)
+	api := newFakeAPI(t, ti, "live-1")
+	h := testHub(t, func(c *Config, _ *Inputs) { c.StatusInterval = time.Hour })
+	_, wsURL := pictureServer(t, h, api.checker(t, ti))
+	live := ti.session(t, RealmConsole, "live-1", time.Hour)
+
+	handshake := func(origin, cookie, bearer string) (*websocket.Conn, *http.Response, error) {
+		hd := http.Header{}
+		if origin != "" {
+			hd.Set("Origin", origin)
+		}
+		if cookie != "" {
+			hd.Set("Cookie", CookieSession+"="+cookie)
+		}
+		if bearer != "" {
+			hd.Set("Authorization", "Bearer "+bearer)
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		return websocket.Dial(ctx, wsURL, &websocket.DialOptions{HTTPHeader: hd})
+	}
+	for name, c := range map[string]struct{ origin, bearer string }{
+		"no origin":      {"", ""},
+		"wrong origin":   {"https://evil.example.test", ""},
+		"allowed origin": {consoleOrigin, ""},
+		"bearer only":    {"", live},
+	} {
+		_, resp, err := handshake(c.origin, "", c.bearer)
+		if err == nil || resp == nil || resp.StatusCode != http.StatusUnauthorized {
+			t.Fatalf("%s: %v %v", name, err, resp)
+		}
+		if ct := resp.Header.Get("Content-Type"); ct != httpx.ProblemContentType {
+			t.Fatalf("%s: content type %q", name, ct)
+		}
+	}
+	if got := h.Counters().Get(CounterRefusedNoSession); got != 4 {
+		t.Fatalf("no-session refusals %d, want 4", got)
+	}
+	if got := h.Counters().Get(CounterRefusedOrigin); got != 0 {
+		t.Fatalf("origin refusals %d before any credential", got)
+	}
+
+	// With the credential the Origin decides.
+	for name, origin := range map[string]string{"no origin": "", "wrong origin": "https://evil.example.test"} {
+		_, resp, err := handshake(origin, live, "")
+		if err == nil || resp == nil || resp.StatusCode != http.StatusForbidden {
+			t.Fatalf("%s with the cookie: %v %v", name, err, resp)
+		}
+	}
+	if got := h.Counters().Get(CounterRefusedOrigin); got != 2 {
+		t.Fatalf("origin refusals %d, want 2", got)
+	}
+	c, _, err := handshake(consoleOrigin, live, "")
+	if err != nil {
+		t.Fatalf("allowed origin with the cookie: %v", err)
+	}
+	c.SetReadLimit(1 << 24)
+	if f := readFrame(t, c); f.Schema != SchemaStatus {
+		t.Fatalf("first frame %s", f.Schema)
+	}
+	_ = c.Close(websocket.StatusNormalClosure, "")
 }
 
 // With api unreachable the upgrade is closed with 1013 (fail closed, not
@@ -148,7 +216,9 @@ func TestUpgradeUnavailableNotUpgradeAndFull(t *testing.T) {
 	}
 	api.broken.Store(false)
 
-	resp, err := http.Get(srv.URL + "/v1/picture/ws")
+	req, _ := http.NewRequest(http.MethodGet, srv.URL+"/v1/picture/ws", nil)
+	req.AddCookie(&http.Cookie{Name: CookieSession, Value: ti.session(t, RealmConsole, "live-1", time.Hour)})
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}

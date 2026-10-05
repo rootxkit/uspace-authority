@@ -4,6 +4,8 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"reflect"
+	"runtime"
 	"strings"
 
 	"github.com/rootxkit/uspace-core/core"
@@ -322,6 +324,13 @@ type Options struct {
 	// larger than the listener's default), counted in BodyCounters.
 	BodyLimits   map[string]int64
 	BodyCounters *core.Counters
+	// Admit decides who may hear that a request is malformed: a request
+	// the generated code cannot parse is first put to Admit (Admission
+	// with the rules of the Authorize in Middlewares), and answered 400
+	// only when it would have been admitted. nil admits only the public
+	// operations of DefaultRules (fail closed: every other malformed
+	// request is 401).
+	Admit AdmitFunc
 }
 
 // PathPrefix keeps the patterns whose path starts with one of prefixes.
@@ -344,6 +353,21 @@ type subsetMux struct {
 	mounted  *[]string
 	limits   map[string]int64
 	counters *core.Counters
+	// ops maps each registered pattern to its operation id.
+	ops map[string]string
+}
+
+// operationOf is the operation id of a generated route handler: the
+// generated wrapper's method value is named after the operation
+// ("...(*ServerInterfaceWrapper).GetZoneApplicability-fm"); a test holds
+// every mounted pattern to an operation of the contract.
+func operationOf(h func(http.ResponseWriter, *http.Request)) string {
+	fn := runtime.FuncForPC(reflect.ValueOf(h).Pointer())
+	if fn == nil {
+		return ""
+	}
+	name := strings.TrimSuffix(fn.Name(), "-fm")
+	return name[strings.LastIndexByte(name, '.')+1:]
 }
 
 // HandleFunc registers h when keep accepts pattern, under its own body
@@ -352,6 +376,7 @@ func (m subsetMux) HandleFunc(pattern string, h func(http.ResponseWriter, *http.
 	if !m.keep(pattern) {
 		return
 	}
+	m.ops[pattern] = operationOf(h)
 	if n, ok := m.limits[pattern]; ok {
 		counters := m.counters
 		if counters == nil {
@@ -371,16 +396,37 @@ func badRequest(w http.ResponseWriter, r *http.Request, err error) {
 
 // Mount registers on mux the operations of s that o.Keep selects and
 // returns their patterns. A malformed request (an unparsable parameter
-// or body) is a 400 validation problem naming what failed; an error a
-// handler returns is mapped by httpx.ProblemFromError, and a 5xx is
-// logged without echoing its text to the client.
+// or body) is a 400 validation problem naming what failed, once o.Admit
+// has admitted its caller (a request without a credential is 401 first,
+// conformance C6); an error a handler returns is mapped by
+// httpx.ProblemFromError, and a 5xx is logged without echoing its text
+// to the client.
 func Mount(mux *http.ServeMux, s Server, o Options) []string {
 	logger := o.Logger
 	if logger == nil {
 		logger = logging.Discard()
 	}
+	admit := o.Admit
+	if admit == nil {
+		admit = Admission(NoSession, DefaultRules())
+	}
+	ops := map[string]string{}
+	// The parse errors of both generated layers (parameters in the
+	// std-http wrapper, the body in the strict handler) run before the
+	// strict middlewares: the caller is admitted here first.
+	malformed := func(w http.ResponseWriter, r *http.Request, err error) {
+		op, known := ops[r.Pattern]
+		if !known || op == "" {
+			httpx.NewProblem(http.StatusForbidden, httpx.SlugForbidden, "", "this route has no operation").Write(w, r)
+			return
+		}
+		if !admit(w, r, op) {
+			return
+		}
+		badRequest(w, r, err)
+	}
 	strict := gen.NewStrictHandlerWithOptions(s, o.Middlewares, gen.StrictHTTPServerOptions{
-		RequestErrorHandlerFunc: badRequest,
+		RequestErrorHandlerFunc: malformed,
 		ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
 			p := httpx.ProblemFromError(err)
 			if p.Status >= http.StatusInternalServerError {
@@ -391,8 +437,8 @@ func Mount(mux *http.ServeMux, s Server, o Options) []string {
 	})
 	var mounted []string
 	gen.HandlerWithOptions(strict, gen.StdHTTPServerOptions{
-		BaseRouter:       subsetMux{ServeMux: mux, keep: o.Keep, mounted: &mounted, limits: o.BodyLimits, counters: o.BodyCounters},
-		ErrorHandlerFunc: badRequest,
+		BaseRouter:       subsetMux{ServeMux: mux, keep: o.Keep, mounted: &mounted, limits: o.BodyLimits, counters: o.BodyCounters, ops: ops},
+		ErrorHandlerFunc: malformed,
 	})
 	return mounted
 }

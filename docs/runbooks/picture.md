@@ -124,10 +124,15 @@ margin.
 - The console opens the WebSocket **same-origin**; the browser sends the
   `uspace_session` cookie with the upgrade. There is no ticket and
   nothing is read from the query string.
+- An upgrade without the `uspace_session` cookie is refused with 401
+  `unauthenticated` and never upgraded, whatever its Origin: it carries
+  no credential, and that is said first (conformance C4; a bearer header
+  is not the picture's credential). Counted as
+  `upgrade_refused_no_session`.
 - The `Origin` header must equal one of `PICTURE_ALLOWED_ORIGINS`
   exactly (scheme, host, port; default the origin of
-  `AUTHORITY_PUBLIC_URL`). Any other Origin, or none, is refused with
-  403 and never upgraded.
+  `AUTHORITY_PUBLIC_URL`). With the cookie, any other Origin, or none,
+  is refused with 403 and never upgraded.
 - The token is verified by uspace-core's verifier (`ISSUER_URL`,
   `PICTURE_JWKS_URL`, `AUTHORITY_AUDIENCES`, `StrictSessionClaims`) and
   must be a session (`scope = "session"` alone; a machine token is
@@ -149,13 +154,14 @@ margin.
 
 | Close code | Meaning | The console |
 |---|---|---|
-| 4401 | no session, a refused one, or one that ended | signs in again |
+| 4401 | a refused session, or one that ended | signs in again |
 | 1013 | the session could not be checked | reconnects later |
 | 1007 | a frame that is not a `console/subscribe/v1` (the reason names the member) | fixes the frame |
 | 1009 | a frame over `PICTURE_SUBSCRIBE_MAX_BYTES` | |
 | 1001 | picture-ws is stopping | reconnects |
 
-Before the upgrade: 426 `upgrade_required`, 403 `origin`, 503
+Before the upgrade, in this order: 401 `unauthenticated` (no
+`uspace_session` cookie), 426 `upgrade_required`, 403 `origin`, 503
 `picture_full` (with `Retry-After`, past `PICTURE_MAX_CLIENTS`).
 
 ## Operating it

@@ -47,6 +47,7 @@ func server(t *testing.T, identify IdentifyFunc) (*httptest.Server, *Identity, [
 	mux := http.NewServeMux()
 	mounted := Mount(mux, Server{PolicyHandler: stubPolicy{seen: seen}}, Options{
 		Middlewares: []Middleware{RequireRole(identify, Roles)},
+		Admit:       Admission(identify, Rules{Roles: Roles}),
 		Keep:        PathPrefix("/v1/policy"),
 	})
 	srv := httptest.NewServer(mux)
@@ -403,5 +404,150 @@ func TestRealmsMatchTheContract(t *testing.T) {
 		if _, called, _ := authorized(DefaultRules(), c.id, nil, c.op); called != c.called {
 			t.Errorf("%s: called %v", c.name, called)
 		}
+	}
+}
+
+// stubAuth serves the auth group; its methods are never reached by the
+// malformed requests below.
+type stubAuth struct{ AuthHandler }
+
+func send(t *testing.T, method, url, body string) (int, httpx.Problem) {
+	t.Helper()
+	req, err := http.NewRequest(method, url, strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	var p httpx.Problem
+	if err := json.NewDecoder(resp.Body).Decode(&p); err != nil {
+		t.Fatalf("%s %s: %d without a problem body: %v", method, url, resp.StatusCode, err)
+	}
+	return resp.StatusCode, p
+}
+
+// C6, E-01: a request the generated code cannot parse (a parameter or a
+// body) is answered 401 without a credential and 403 without the role,
+// before the 400 it earns once its caller is admitted; and the 400 is
+// still answered to the admitted caller and on a public operation.
+func TestMalformedRequestAnswersTheCredentialFirst(t *testing.T) {
+	for _, c := range []struct {
+		name     string
+		identify IdentifyFunc
+		want     int
+		slug     string
+	}{
+		{"no credential", NoSession, http.StatusUnauthorized, httpx.SlugUnauthn},
+		{"without the role", identity(RoleViewer), http.StatusForbidden, httpx.SlugForbidden},
+		{"admitted", identity(RoleAdmin), http.StatusBadRequest, httpx.SlugValidation},
+	} {
+		srv, seen, _ := server(t, c.identify)
+		for _, req := range []struct{ method, path, body string }{
+			{http.MethodPost, "/v1/policy/abc/activate", "{}"},
+			{http.MethodPost, "/v1/policy", "not json"},
+		} {
+			code, p := send(t, req.method, srv.URL+req.path, req.body)
+			if code != c.want || p.Slug() != c.slug {
+				t.Errorf("%s: %s %s: %d %+v", c.name, req.method, req.path, code, p)
+			}
+		}
+		if seen.Subject != "" {
+			t.Errorf("%s: a malformed request reached the handler", c.name)
+		}
+	}
+
+	// A public operation needs no credential to hear that its body is
+	// malformed.
+	mux := http.NewServeMux()
+	Mount(mux, Server{AuthHandler: stubAuth{}}, Options{
+		Middlewares: []Middleware{Authorize(NoSession, DefaultRules())},
+		Admit:       Admission(NoSession, DefaultRules()),
+		Keep:        PathPrefix("/v1/auth/"),
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	if code, p := send(t, http.MethodPost, srv.URL+"/v1/auth/login", "not json"); code != http.StatusBadRequest || p.Slug() != httpx.SlugValidation {
+		t.Fatalf("public login, malformed: %d %+v", code, p)
+	}
+	if code, p := send(t, http.MethodPost, srv.URL+"/v1/auth/logout", "{}"); code != http.StatusUnauthorized {
+		t.Fatalf("logout without a credential: %d %+v", code, p)
+	}
+}
+
+// Without Admit, Mount fails closed: only the public operations of
+// DefaultRules hear that a request is malformed; every other is 401,
+// whatever the strict middlewares would have admitted.
+func TestMountWithoutAdmitFailsClosed(t *testing.T) {
+	mux := http.NewServeMux()
+	Mount(mux, Server{PolicyHandler: stubPolicy{seen: &Identity{}}, AuthHandler: stubAuth{}}, Options{
+		Middlewares: []Middleware{RequireRole(identity(RoleAdmin), Roles)},
+		Keep:        PathPrefix("/v1/policy", "/v1/auth/"),
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	if code, p := send(t, http.MethodPost, srv.URL+"/v1/policy/abc/activate", "{}"); code != http.StatusUnauthorized || p.Slug() != httpx.SlugUnauthn {
+		t.Fatalf("role operation, malformed, no Admit: %d %+v", code, p)
+	}
+	if code, p := send(t, http.MethodPost, srv.URL+"/v1/policy/2/activate", "{}"); code != http.StatusInternalServerError {
+		t.Fatalf("role operation, well formed: %d %+v", code, p)
+	}
+	if code, p := send(t, http.MethodPost, srv.URL+"/v1/auth/login", "not json"); code != http.StatusBadRequest || p.Slug() != httpx.SlugValidation {
+		t.Fatalf("public operation, malformed, no Admit: %d %+v", code, p)
+	}
+}
+
+// contractRoutes reads "METHOD /path" -> operation id (as the generated
+// code names it) from api/openapi.yaml.
+func contractRoutes(t *testing.T) map[string]string {
+	t.Helper()
+	f, err := os.Open("../../api/openapi.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	pathRe := regexp.MustCompile(`^  (/\S*):\s*$`)
+	methodRe := regexp.MustCompile(`^    (get|put|post|delete|patch):\s*$`)
+	opRe := regexp.MustCompile(`^      operationId:\s*(\w+)`)
+	out := map[string]string{}
+	path, method := "", ""
+	sc := bufio.NewScanner(f)
+	for sc.Scan() {
+		line := sc.Text()
+		if m := pathRe.FindStringSubmatch(line); m != nil {
+			path, method = m[1], ""
+		} else if m := methodRe.FindStringSubmatch(line); m != nil && path != "" {
+			method = strings.ToUpper(m[1])
+		} else if m := opRe.FindStringSubmatch(line); m != nil && method != "" {
+			out[method+" "+path] = strings.ToUpper(m[1][:1]) + m[1][1:]
+		}
+	}
+	if err := sc.Err(); err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
+// Mount names the operation of every route it registers from the
+// generated handler; every name is the contract's operation of that
+// route, so Admit is always asked about the right operation.
+func TestEveryMountedRouteNamesItsContractOperation(t *testing.T) {
+	var mounted []string
+	sm := subsetMux{ServeMux: http.NewServeMux(), keep: func(string) bool { return true }, mounted: &mounted, ops: map[string]string{}}
+	gen.HandlerWithOptions(gen.NewStrictHandler(Server{}, nil), gen.StdHTTPServerOptions{BaseRouter: sm})
+	routes := contractRoutes(t)
+	if len(mounted) < 100 || len(sm.ops) != len(mounted) {
+		t.Fatalf("mounted %d routes, named %d", len(mounted), len(sm.ops))
+	}
+	for _, pattern := range mounted {
+		if got, want := sm.ops[pattern], routes[pattern]; got == "" || got != want {
+			t.Errorf("%s: named %q, contract %q", pattern, got, want)
+		}
+	}
+	if sm.ops["GET /v1/zones/{identifier}/applies"] != "GetZoneApplicability" {
+		t.Fatalf("applies: %q", sm.ops["GET /v1/zones/{identifier}/applies"])
 	}
 }
