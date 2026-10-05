@@ -29,7 +29,7 @@ DEV_TS_URL ?= postgres://postgres:authority@localhost:56433/authority_ts?sslmode
 DEV_NATS_URL ?= nats://127.0.0.1:56422
 
 .PHONY: all build vet fmt fmt-check tools staticcheck lint test race cover vectors \
-        generate verify-generated integration migrate up down image tidy secrets \
+        generate verify-generated integration scenarios migrate up down image tidy secrets \
         vulncheck ci clean web-image web-check
 
 all: ci
@@ -94,6 +94,15 @@ verify-generated:
 # they share one NATS and some recreate shared streams (internal/bus/bustest).
 integration:
 	INTEGRATION=1 PG_URL='$(DEV_PG_URL)' TS_URL='$(DEV_TS_URL)' NATS_URL='$(DEV_NATS_URL)' $(GO) test -p 1 -count=1 -run Integration $(PKGS)
+
+# The scenario harness (WP-25, docs/runbooks/scenarios.md): every
+# scenario of internal/ltest against the development stack, one after
+# another (they recreate the shared streams), each writing its results
+# JSON to SCENARIO_RESULTS_DIR.
+SCENARIO_RESULTS_DIR ?= scenario-results
+scenarios:
+	INTEGRATION=1 PG_URL='$(DEV_PG_URL)' TS_URL='$(DEV_TS_URL)' NATS_URL='$(DEV_NATS_URL)' SCENARIO_RESULTS_DIR='$(abspath $(SCENARIO_RESULTS_DIR))' \
+	  $(GO) test -p 1 -count=1 -timeout 40m -run Scenario -v ./internal/ltest/...
 
 # Both trees against the development stack, as the one-shot service does.
 migrate:
