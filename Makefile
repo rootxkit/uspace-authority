@@ -30,7 +30,7 @@ DEV_NATS_URL ?= nats://127.0.0.1:56422
 
 .PHONY: all build vet fmt fmt-check tools staticcheck lint test race cover vectors \
         generate verify-generated integration scenarios migrate up down image tidy secrets \
-        vulncheck ci clean web-image web-check
+        vulncheck ci clean web-image web-check check-deploy env-catalog staging-smoke
 
 all: ci
 
@@ -124,6 +124,28 @@ web-image:
 # web/'s checks, as the CI job web runs them (pnpm through corepack).
 web-check:
 	cd web && pnpm install --frozen-lockfile && pnpm check:api && pnpm check:schemas && 	  pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm check:bundle && pnpm e2e
+
+# deploy/ (WP-24): shellcheck, the env catalogue against --help, the
+# staging compose rendered and read back, the Caddy snippet proved
+# against the pinned Caddy (scripts/check-deploy.sh). Needs docker, jq,
+# shellcheck and a curl built on OpenSSL (Linux or WSL).
+check-deploy:
+	scripts/check-deploy.sh
+
+# deploy/env/<process>.env.example from each process's --help.
+env-catalog:
+	GO=$(GO) scripts/gen-env-catalog.sh
+
+# The staging smoke (docs/runbooks/staging.md): both images built here,
+# deploy/compose.yaml brought up behind the edge Caddy as deploy.sh
+# deploys it, the Go driver through the public host, backup and restore
+# check, the older-schema refusal, and the teardown. SMOKE_GROUND_DIR
+# is fetched (geoid only) when unset.
+SMOKE_GROUND_DIR ?= local/ground
+staging-smoke: image web-image
+	deploy/fetch-ground.sh --geoid-only '$(SMOKE_GROUND_DIR)'
+	SMOKE_GO_IMAGE=$(IMAGE):$(TAG) SMOKE_WEB_IMAGE=$(WEB_IMAGE):$(TAG) SMOKE_VERSION=$(TAG) \
+	  SMOKE_GROUND_DIR='$(abspath $(SMOKE_GROUND_DIR))' deploy/smoke/run.sh
 
 secrets:
 	gitleaks detect --no-banner --redact

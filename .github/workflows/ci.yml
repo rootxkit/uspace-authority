@@ -41,6 +41,7 @@ jobs:
     outputs:
       go: ${{ steps.filter.outputs.go }}
       web: ${{ steps.filter.outputs.web }}
+      deploy: ${{ steps.filter.outputs.deploy }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -78,6 +79,16 @@ jobs:
               - 'schemas/picture/**'
               - 'schemas/violation/**'
               - 'internal/picture/testdata/lab/**'
+              - '.github/workflows/ci.yml'
+            # deploy/ (WP-24): the staging shape, its scripts and the
+            # fixture the smoke registers.
+            deploy:
+              - 'deploy/**'
+              - 'scripts/check-deploy.sh'
+              - 'scripts/gen-env-catalog.sh'
+              - 'Dockerfile'
+              - 'web/Dockerfile'
+              - 'Makefile'
               - '.github/workflows/ci.yml'
 
   build-vet-lint:
@@ -501,6 +512,108 @@ jobs:
       - name: web image (Next.js standalone, web/Dockerfile)
         run: docker build -t uspace-authority-web:ci .
 
+  # deploy/ (WP-24): shellcheck, the env catalogue against every
+  # process's --help, the staging compose rendered and read back per
+  # service, and the Caddy snippet proved against the pinned Caddy with
+  # stub upstreams and throwaway client certificates
+  # (scripts/check-deploy.sh). Nothing is started but that Caddy.
+  deploy:
+    name: deploy (compose, env catalogue, Caddy proof)
+    needs: changes
+    if: needs.changes.outputs.deploy == 'true' || needs.changes.outputs.go == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: tool versions (E-05)
+        run: |
+          shellcheck --version | sed -n 2p
+          docker compose version
+          curl -V | head -n 1
+          jq --version
+          openssl version
+      - name: make check-deploy
+        run: make check-deploy
+
+  # The staging smoke (WP-24, deploy/smoke/run.sh): both images built from
+  # this commit, deploy/compose.yaml brought up from scratch by
+  # deploy/deploy.sh behind the edge Caddy and the snippet, the Go driver
+  # through the public host (sign-in, the lab's registry fixture, validate
+  # status only, one receiver batch accepted, the picture's frames and the
+  # aircraft's track), backup and restore check with known counts, a
+  # process against an older schema refused, memory per container, and
+  # the teardown verified. The containers' logs are uploaded on failure.
+  staging-smoke:
+    name: staging smoke (compose up, deploy.sh, driver, backup, restore)
+    needs: changes
+    if: needs.changes.outputs.deploy == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.web == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.temp }}/geoid
+          key: geoid-${{ hashFiles('deploy/fetch-ground.sh') }}
+      - name: geoid grid
+        run: deploy/fetch-ground.sh --geoid-only "$RUNNER_TEMP/geoid"
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: version
+        id: version
+        run: echo "version=smoke-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - name: Go image (local, not pushed)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          load: true
+          push: false
+          tags: uspace-authority:smoke
+          build-args: VERSION=${{ steps.version.outputs.version }}
+          cache-from: type=gha
+      - name: web image (local, not pushed)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: web
+          load: true
+          push: false
+          tags: uspace-authority-web:smoke
+          cache-from: type=gha,scope=web
+      - name: tool versions (E-05)
+        run: |
+          docker version --format 'docker {{.Server.Version}}'
+          docker compose version
+          jq --version
+          openssl version
+      - name: deploy/smoke/run.sh
+        env:
+          SMOKE_GO_IMAGE: uspace-authority:smoke
+          SMOKE_WEB_IMAGE: uspace-authority-web:smoke
+          SMOKE_VERSION: ${{ steps.version.outputs.version }}
+          SMOKE_LOG_DIR: ${{ runner.temp }}/smoke-logs
+        run: SMOKE_GROUND_DIR="$RUNNER_TEMP/geoid" deploy/smoke/run.sh
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: failure()
+        with:
+          name: staging-smoke-logs
+          path: ${{ runner.temp }}/smoke-logs
+          if-no-files-found: ignore
+
   govulncheck:
     name: govulncheck
     needs: changes
@@ -564,18 +677,24 @@ jobs:
           echo "gitleaks commits: $range ($n commits)"
           "$RUNNER_TEMP/gitleaks" git --redact --verbose --log-opts="$range" .
 
-  # main and v* tags only: build, push to GHCR with an SBOM and
-  # provenance, and sign with cosign (keyless).
+  # main and v* tags only, after every gate (the staging smoke included):
+  # build, push to GHCR with buildx's SBOM and provenance, sign each
+  # digest with cosign (keyless) and verify the signature against this
+  # workflow's identity. The SPDX SBOMs deploy/verify-image.sh checks are
+  # made and attached by the two jobs after this one (WP-24).
   image:
     name: image
     if: github.event_name == 'push'
-    needs: [build-vet-lint, test-race, vectors, contract, integration, gitleaks, web]
+    needs: [build-vet-lint, test-race, vectors, contract, integration, gitleaks, web, deploy, staging-smoke]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: read
       packages: write
       id-token: write
+    outputs:
+      go_digest: ${{ steps.build.outputs.digest }}
+      web_digest: ${{ steps.build-web.outputs.digest }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -637,3 +756,98 @@ jobs:
         env:
           DIGEST: ${{ steps.build-web.outputs.digest }}
         run: cosign sign --yes "ghcr.io/${{ github.repository }}-web@${DIGEST}"
+      # Read back what was signed (E-04): both signatures verify against
+      # this workflow's own identity, as deploy/verify-image.sh checks them.
+      - name: verify both signatures
+        env:
+          GO_DIGEST: ${{ steps.build.outputs.digest }}
+          WEB_DIGEST: ${{ steps.build-web.outputs.digest }}
+        run: |
+          [ -n "$GO_DIGEST" ] && [ -n "$WEB_DIGEST" ] || { echo "an image has no digest"; exit 1; }
+          refs=("ghcr.io/${GITHUB_REPOSITORY}@${GO_DIGEST}" "ghcr.io/${GITHUB_REPOSITORY}-web@${WEB_DIGEST}")
+          for ref in "${refs[@]}"; do
+            cosign verify "$ref" --certificate-identity "${GITHUB_SERVER_URL}/${GITHUB_WORKFLOW_REF}" --certificate-oidc-issuer https://token.actions.githubusercontent.com >/dev/null
+            echo "signature verified: $ref"
+          done
+          {
+            echo '### Images (pushed, signed, signature verified)'
+            echo
+            for ref in "${refs[@]}"; do echo "- $ref"; done
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: forget the registry credential
+        if: always()
+        run: docker logout ghcr.io
+
+  # The SPDX SBOMs (syft), apart from the push and the signing: the
+  # third-party SBOM action runs with a read-only package token and no
+  # OIDC token, never beside a registry credential that can push.
+  sbom:
+    name: SBOMs
+    if: github.event_name == 'push'
+    needs: image
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: read-only registry login
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+      - name: SBOM of the Go image (syft, SPDX)
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          image: ghcr.io/${{ github.repository }}@${{ needs.image.outputs.go_digest }}
+          format: spdx-json
+          output-file: sbom-uspace-authority.spdx.json
+          upload-artifact: false
+      - name: SBOM of the web image (syft, SPDX)
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          image: ghcr.io/${{ github.repository }}-web@${{ needs.image.outputs.web_digest }}
+          format: spdx-json
+          output-file: sbom-uspace-authority-web.spdx.json
+          upload-artifact: false
+      - name: forget the registry credential
+        if: always()
+        run: docker logout ghcr.io
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sbom
+          path: sbom-*.spdx.json
+          if-no-files-found: error
+
+  # The SBOMs attached to the digests as signed attestations (cosign
+  # alone, with the write and OIDC permissions this needs), then read
+  # back with the check deploy/verify-image.sh makes.
+  attest:
+    name: attest SBOMs
+    if: github.event_name == 'push'
+    needs: [image, sbom]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: sbom
+      - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3.9.1
+      - name: attach the SBOMs (cosign keyless) and verify the attestations
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GO_DIGEST: ${{ needs.image.outputs.go_digest }}
+          WEB_DIGEST: ${{ needs.image.outputs.web_digest }}
+        run: |
+          echo "$TOKEN" | cosign login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          go_ref="ghcr.io/${GITHUB_REPOSITORY}@${GO_DIGEST}"
+          web_ref="ghcr.io/${GITHUB_REPOSITORY}-web@${WEB_DIGEST}"
+          cosign attest --yes --type spdxjson --predicate sbom-uspace-authority.spdx.json "$go_ref"
+          cosign attest --yes --type spdxjson --predicate sbom-uspace-authority-web.spdx.json "$web_ref"
+          for ref in "$go_ref" "$web_ref"; do
+            cosign verify-attestation --type spdxjson "$ref" --certificate-identity "${GITHUB_SERVER_URL}/${GITHUB_WORKFLOW_REF}" --certificate-oidc-issuer https://token.actions.githubusercontent.com >/dev/null
+            echo "SBOM attestation verified: $ref"
+          done
