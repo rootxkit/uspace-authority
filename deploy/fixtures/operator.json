@@ -1,0 +1,36 @@
+{
+  "comment": "The lab's registry fixture (test data only, CLAUDE.md rule 11): one operator with every 2019/947 Art. 14(2) field a legal person gives, its UAS, a receiver and the aircraft the staging smoke flies. The registration number is what uspace-lab's conformance target names in AUTHORITY_CONFORMANCE_OPERATOR for REG-NOPII and NAT-SUCCESS validateRegistry. Loaded through the API by `go test ./deploy/smoke -run TestStagingSmoke` (docs/runbooks/staging.md, 'The registry fixture'); idempotent.",
+  "operator": {
+    "operator_type": "legal",
+    "registration_number": "GEOTESTLAB0001",
+    "legal_name": "Test Lab Aerial LLC",
+    "legal_identification_number": "TEST-LAB-0001",
+    "postal_address": "1 Test Lab Street, Testville",
+    "contact_email": "lab-operator@example.test",
+    "contact_phone": "+995 555 000 101",
+    "insurance_policy_number": "TEST-INS-LAB-0001",
+    "competency_confirmation": true,
+    "valid_until": "2030-12-31T23:59:59Z"
+  },
+  "uas": {
+    "serial": "TESTA00000LAB01",
+    "class_label": "C1",
+    "manufacturer": "Test Manufacturer",
+    "model": "Test Model",
+    "mtom_g": 850,
+    "rid_capability": "direct"
+  },
+  "receiver": {
+    "id": "smoke-rx-1",
+    "label": "Staging smoke receiver",
+    "owner": "authority",
+    "lat_deg": 41.7151,
+    "lon_deg": 44.8271
+  },
+  "aircraft": {
+    "transmitter": "02:00:5E:10:00:01",
+    "lat_deg": 41.7160,
+    "lon_deg": 44.8280,
+    "alt_amsl_m": 520.0
+  }
+}

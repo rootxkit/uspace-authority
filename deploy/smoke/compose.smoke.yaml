@@ -1,0 +1,52 @@
+# The staging smoke's additions to deploy/compose.yaml (deploy/smoke/
+# run.sh, CI job `staging-smoke`): the edge Caddy that uspace-deploy runs
+# on the droplet, with this repository's snippet, at the fixed address
+# deploy/compose.yaml trusts; and the smoke's throwaway root CA in every
+# Go process's SSL_CERT_FILE, so picture-ws fetches this issuer's JWKS
+# over https through Caddy as it does on the droplet. Nothing else
+# differs from the staging shape.
+services:
+  caddy:
+    image: ${SMOKE_CADDY_IMAGE:-caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d}
+    restart: "no"
+    read_only: true
+    tmpfs: [/tmp, /data, /config]
+    environment:
+      AUTHORITY_HOST: ${AUTHORITY_HOST}
+      AUTHORITY_MTLS_CA: /etc/smoke/ca.pem
+      AUTHORITY_API_UPSTREAM: authority-api:8080
+      AUTHORITY_ADMIN_UPSTREAM: authority-api:9090
+      AUTHORITY_RID_UPSTREAM: authority-rid-ingest:8081
+      AUTHORITY_DP_UPSTREAM: authority-dp-poller:8082
+      AUTHORITY_PICTURE_UPSTREAM: authority-picture-ws:8083
+      AUTHORITY_WEB_UPSTREAM: authority-web:3000
+      AUTHORITY_BASEMAP_DIR: /srv/basemap
+    volumes:
+      - ./smoke/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy/authority.snippet:/etc/caddy/authority.snippet:ro
+      - ${SMOKE_DIR:?run.sh sets it}/ca:/etc/smoke:ro
+      - ${SMOKE_DIR}/basemap:/srv/basemap:ro
+    ports:
+      - "127.0.0.1:${SMOKE_HTTPS_PORT:-58443}:443"
+    networks:
+      edge:
+        ipv4_address: ${AUTHORITY_CADDY_IP}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:2019/config/"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    deploy:
+      resources:
+        limits: {cpus: "0.5", memory: 128M}
+
+  migrate: &ca
+    volumes:
+      - ${SMOKE_DIR}/ca/ca.pem:/etc/smoke/ca.pem:ro
+  api: *ca
+  rid-ingest: *ca
+  dp-poller: *ca
+  manned-ingest: *ca
+  detect: *ca
+  tsdb-writer: *ca
+  picture-ws: *ca
