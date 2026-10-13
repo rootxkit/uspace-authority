@@ -447,6 +447,24 @@ func (s *Subscriber) baseRestriction(id string) *cispclient.CisRestriction {
 	return nil
 }
 
+// baseMayHold is false only when the CISP's restrictions version is held
+// and has no feature id: with no version held yet, the one that comes
+// may still carry an older version of it.
+func (s *Subscriber) baseMayHold(id string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	cur := s.st[DatasetRestrictions].cur
+	if cur == nil {
+		return true
+	}
+	for i := range cur.Features {
+		if cur.Features[i].Identifier == id {
+			return true
+		}
+	}
+	return false
+}
+
 // baseAnspVersion is the ansp_version of id in the CISP's restrictions
 // version held (0 when absent).
 func (s *Subscriber) baseAnspVersion(id string) int64 {
@@ -529,8 +547,10 @@ func (s *Subscriber) reproject(ctx context.Context) {
 }
 
 // pruneDirect drops the direct restrictions the CISP now holds at the
-// same version or a newer one, and the ones over for longer than the
-// keep period, and projects again when it dropped any.
+// same version or a newer one, the ended or cancelled ones over for
+// longer than the keep period that the CISP holds no row of, and the
+// active ones past their ends_at for longer than it, and projects again
+// when it dropped any.
 func (s *Subscriber) pruneDirect(ctx context.Context) {
 	lock := s.locks[DatasetRestrictions]
 	lock.Lock()
@@ -569,7 +589,10 @@ func (s *Subscriber) dropDirect(ctx context.Context) bool {
 		switch {
 		case base >= h.d.AnspVersion:
 			drop = append(drop, gone{id, h.d.AnspVersion, "superseded"})
-		case over && now.Sub(h.since) > keep:
+		case over && now.Sub(h.since) > keep && !s.baseMayHold(id):
+			// An end stays while the CISP may still hold an older version
+			// of the restriction: dropping it would lay that row bare
+			// again, in force, until the CISP's version supersedes it.
 			drop = append(drop, gone{id, h.d.AnspVersion, "kept long enough after its end"})
 		case !over && !h.d.EndsAt.IsZero() && now.Sub(h.d.EndsAt) > keep:
 			drop = append(drop, gone{id, h.d.AnspVersion, "kept long enough after its ends_at"})

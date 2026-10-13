@@ -326,6 +326,51 @@ func TestDirectDeliveryOfTheANSPIsApplied(t *testing.T) {
 	}
 }
 
+// An end delivered directly outlives the keep period while the CISP
+// still holds the restriction's older active version: dropping it would
+// lay the CISP's active row bare again and the detectors would judge a
+// restriction that is over. It stays, in memory and in the store, until
+// the CISP's version supersedes it. The presence: once the CISP holds no
+// row of it, the end is dropped after the keep period.
+func TestDirectEndKeptUntilTheCISPSupersedesIt(t *testing.T) {
+	g := newDirectRig(t)
+	stale := Feature{Identifier: fixtureIdentifier, Raw: json.RawMessage(`{}`),
+		Restriction: &cispclient.CisRestriction{AnspVersion: 1, State: "active", Id: fixtureRestriction}}
+	g.hold(8, stale)
+	g.now = g.now.Add(time.Hour - 9*time.Second) // the end's signing time
+	g.ansp.serve(t, "ended")
+	if code := g.post("ended"); code != http.StatusNoContent {
+		t.Fatalf("ended: %d", code)
+	}
+	g.sub.drainDirect(t.Context())
+	if st, _ := g.projected(); st != "ended" {
+		t.Fatalf("the end is not projected: %q", st)
+	}
+	g.now = g.now.Add(g.sub.directKeep() + time.Hour)
+	g.sub.pruneDirect(t.Context())
+	if st, _ := g.projected(); st != "ended" || len(g.sub.Direct()) != 1 || len(g.direct.rows) != 1 {
+		t.Fatalf("the end was dropped while the CISP holds an older active row: projected %q, direct %+v", st, g.sub.Direct())
+	}
+	// After a restart too.
+	g.projector = &memProjector{}
+	g.start()
+	g.hold(8, stale)
+	g.sub.pruneDirect(t.Context())
+	if st, _ := g.projected(); st != "ended" || len(g.sub.Direct()) != 1 {
+		t.Fatalf("after a restart: projected %q", st)
+	}
+	// The CISP no longer holds it: the end is over for longer than the
+	// keep period and goes (the memory store keeps no age, so the
+	// restart started the period again).
+	g.now = g.now.Add(g.sub.directKeep() + time.Hour)
+	g.hold(9)
+	g.sub.pruneDirect(t.Context())
+	if st, _ := g.projected(); st != "" || len(g.sub.Direct()) != 0 || len(g.direct.rows) != 0 ||
+		g.sub.cfg.Counters.Get(CounterDirectExpired) != 1 {
+		t.Fatalf("the end was not dropped once the CISP held no row of it: projected %q, direct %+v", st, g.sub.Direct())
+	}
+}
+
 // The absence pairs. A body the ANSP's key does not sign is never
 // applied (and retried, the keys may come later); a body for another
 // restriction is dropped; a pull_url off the ANSP's base URL is read
