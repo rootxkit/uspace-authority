@@ -18,7 +18,7 @@ TAG     ?= dev
 # Linter versions pinned to the ones uspace-core pins and
 # .github/workflows/ci.yml runs. Change all three places together.
 GOLANGCI_LINT_VERSION ?= v2.14.0
-STATICCHECK_VERSION   ?= v0.8.1
+STATICCHECK_VERSION   ?= v0.8.2
 GITLEAKS_VERSION      ?= v8.24.3
 GOVULNCHECK_VERSION   ?= v1.8.0
 
