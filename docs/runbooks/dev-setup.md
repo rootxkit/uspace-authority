@@ -35,7 +35,7 @@ go build ./...
 
 ```
 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
-go install honnef.co/go/tools/cmd/staticcheck@v0.8.1
+go install honnef.co/go/tools/cmd/staticcheck@v0.8.2
 go install github.com/zricethezav/gitleaks/v8@v8.24.3
 ```
 
@@ -44,7 +44,7 @@ go install github.com/zricethezav/gitleaks/v8@v8.24.3
 ```
 gofmt -l .                      # must print nothing
 go vet ./...
-go run honnef.co/go/tools/cmd/staticcheck@v0.8.1 ./...
+go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./...
 golangci-lint run ./...
 ```
 
