@@ -507,6 +507,14 @@ Unreleased; the format follows Keep a Changelog.
   certificate's client passes the ANSP's verifier rules and the token
   rule of each ANSP route a USSP calls (read from `api/clients/ansp.yaml`).
 
+- H-2 review (bug fix): an end delivered directly was dropped once
+  `CIS_DIRECT_KEEP_S` passed even while the CISP still held the
+  restriction's older active version, which the projection then laid
+  bare again: the detectors judged a restriction that is over. An ended
+  or cancelled direct restriction now stays, in memory and in the store,
+  until the CISP's version supersedes it; once the CISP holds no row of
+  it, it goes after the keep period as before.
+
 - System audit 2026-10-05 H-2 (bug fix; contract: the ANSP's additive
   `GET /v1/restrictions/{id}/direct`): the ANSP's degraded direct
   delivery (02 F2 failure rule, cross-plan M4, M5) was acknowledged and
