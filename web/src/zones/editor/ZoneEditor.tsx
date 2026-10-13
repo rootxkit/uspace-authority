@@ -19,6 +19,7 @@ import { useLang, useT } from "@rootxkit/uspace-ui/i18n";
 import { EnumField, Form, NumberField, SelectField, TextField, UTCDateTimeField, shapes } from "@rootxkit/uspace-ui/form";
 import type { FieldError, VerticalRef } from "@rootxkit/uspace-ui/model";
 import { ApiError, fieldErrorsOf } from "@rootxkit/uspace-ui/api";
+import { DrawLayer } from "@rootxkit/uspace-ui/layers";
 import { Button } from "@rootxkit/uspace-ui/ui";
 import { useRuntimeConfig } from "../../components/Providers";
 import { must, useConsole } from "../../authoring/api";
@@ -27,7 +28,7 @@ import { mapPath } from "../../shell/paths";
 import type { ZoneVersion } from "../adapt";
 import { DesignationFields, designationSchema } from "./DesignationFields";
 import { designationOf, designationValues, DesignationProblem, type DesignationValues } from "./designation";
-import { DrawingLayer } from "./DrawingLayer";
+import { centreValues, MAX_RING_VERTICES, outlineOf, useCircleOutline, withOuterRing } from "./outline";
 import { ZonesMap } from "../ZonesMap";
 import {
   DAYS,
@@ -316,9 +317,12 @@ function Authorities() {
 
 function GeometryFields({ context }: { context: readonly ZoneVersion[] }) {
   const t = useT();
+  const client = useConsole();
   const { setValue, getValues } = useFormContext<EditorForm>();
   const geometry = useWatch<EditorForm, "feature.geometry">({ name: "feature.geometry" });
   const ext = extensionRefs(geometry.layer);
+  const drawn = useMemo(() => outlineOf(geometry), [geometry]);
+  const circle = useCircleOutline(client, drawn.outline);
   return (
     <fieldset className="flex flex-col gap-2 rounded border border-[var(--us-border)] p-2" data-testid="geometry">
       <legend className="px-1 text-sm font-semibold">{t("authority.zone.f.geometry")}</legend>
@@ -331,16 +335,30 @@ function GeometryFields({ context }: { context: readonly ZoneVersion[] }) {
         ]}
       />
       <p className="m-0 text-xs text-[var(--us-text-muted)]">{t(geometry.kind === "circle" ? "authority.zone.h.circle_draw" : "authority.zone.h.polygon_draw")}</p>
+      {!drawn.editable && (
+        <p role="status" className="m-0 text-xs" data-testid="map-edit-off">
+          {t("authority.zone.map_edit_off")}
+        </p>
+      )}
       <ZonesMap zones={context} testId="editor-map">
-        <DrawingLayer
-          geometry={geometry}
-          onClick={(lng, lat) => {
-            if (getValues("feature.geometry.kind") === "circle") {
-              setValue("feature.geometry.centerLng", lng, { shouldDirty: true });
-              setValue("feature.geometry.centerLat", lat, { shouldDirty: true });
+        <DrawLayer
+          id="authoring-draw"
+          outline={drawn.outline}
+          maxVertices={MAX_RING_VERTICES}
+          circleOutline={circle.kind === "drawn" ? circle.outline : null}
+          active={drawn.editable}
+          onChange={(next) => {
+            // The map changes the outer ring or the centre; the holes and
+            // the radius stay as typed. Text the map cannot read is never
+            // rewritten (the layer is inactive, and a drag is ignored).
+            if (!outlineOf(getValues("feature.geometry")).editable) return;
+            if (next.kind === "circle") {
+              if (next.center === null) return;
+              const c = centreValues(next.center);
+              setValue("feature.geometry.centerLng", c.centerLng, { shouldDirty: true });
+              setValue("feature.geometry.centerLat", c.centerLat, { shouldDirty: true });
             } else {
-              const cur = getValues("feature.geometry.rings");
-              setValue("feature.geometry.rings", `${cur.trimEnd()}${cur.trim() === "" ? "" : "\n"}${lng} ${lat}`, { shouldDirty: true });
+              setValue("feature.geometry.rings", withOuterRing(getValues("feature.geometry.rings"), next.vertices), { shouldDirty: true });
             }
           }}
         />
@@ -350,7 +368,9 @@ function GeometryFields({ context }: { context: readonly ZoneVersion[] }) {
           <NumberField name="feature.geometry.centerLng" labelKey="authority.zone.f.center_lng" unit="form.unit.deg" required />
           <NumberField name="feature.geometry.centerLat" labelKey="authority.zone.f.center_lat" unit="form.unit.deg" required />
           <NumberField name="feature.geometry.radiusM" labelKey="authority.zone.f.radius" unit="form.unit.m" hintKey="authority.zone.h.radius" required />
-          <p className="m-0 text-xs md:col-span-3">{t("authority.zone.circle_not_drawn")}</p>
+          <p className="m-0 text-xs md:col-span-3" data-testid="circle-outline" data-state={circle.kind}>
+            {t(circle.kind === "drawn" ? "authority.zone.circle_drawn" : circle.kind === "refused" ? "authority.zone.circle_refused" : "authority.zone.circle_not_drawn")}
+          </p>
         </div>
       ) : (
         <TextareaField name="feature.geometry.rings" labelKey="authority.zone.f.rings" hintKey="authority.zone.h.rings" rows={8} required />

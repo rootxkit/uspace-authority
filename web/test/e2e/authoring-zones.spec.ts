@@ -68,10 +68,17 @@ test("an inspector authors a circle: the request carries its centre and radius, 
   await field(page, "feature.properties.type").selectOption("REQ_AUTHORIZATION");
   await field(page, "feature.geometry.kind").selectOption("circle");
   await expect(page.getByTestId("circle-fields")).toBeVisible();
-  await expect(page.getByTestId("circle-fields")).toContainText("The circle's edge is not drawn here");
+  await expect(page.getByTestId("circle-outline")).toHaveAttribute("data-state", "none");
+  await expect(page.getByTestId("circle-outline")).toContainText("the map shows its centre only");
   await field(page, "feature.geometry.centerLng").fill("44.85");
   await field(page, "feature.geometry.centerLat").fill("41.7");
   await field(page, "feature.geometry.radiusM").fill("500");
+  // The outline on the map is api's (GET /v1/outlines/circle), asked for
+  // the centre and radius as typed.
+  await expect(page.getByTestId("circle-outline")).toHaveAttribute("data-state", "drawn");
+  await expect(page.getByTestId("circle-outline")).toContainText("the outline api drew");
+  const asked = (await recorded(request)).filter((r) => r.method === "GET" && r.path === "/v1/outlines/circle");
+  expect(asked.at(-1)?.query).toEqual({ lat: "41.7", lng: "44.85", radius_m: "500" });
   await page.getByRole("button", { name: "Save as draft" }).click();
   await expect(page).toHaveURL(/\/en\/zones\/TSTE011$/);
 
@@ -81,6 +88,43 @@ test("an inspector authors a circle: the request carries its centre and radius, 
   expect(g["coordinates"]).toEqual([44.85, 41.7]);
   expect(g["extent"]).toEqual({ subType: "Circle", radius: 500 });
   expect(JSON.stringify(g)).not.toContain("Polygon");
+});
+
+test("a circle api will not draw shows its centre and says so (the pair)", async ({ page, request }) => {
+  await signIn(page, "en", INSPECTOR);
+  await page.goto("/en/zones/new");
+  await field(page, "feature.geometry.kind").selectOption("circle");
+  await field(page, "feature.geometry.centerLng").fill("44.85");
+  await field(page, "feature.geometry.centerLat").fill("41.7");
+  await field(page, "feature.geometry.radiusM").fill("2000000");
+  await expect(page.getByTestId("circle-outline")).toHaveAttribute("data-state", "refused");
+  await expect(page.getByTestId("circle-outline")).toContainText("api did not draw this circle's outline");
+  const asked = (await recorded(request)).filter((r) => r.method === "GET" && r.path === "/v1/outlines/circle");
+  expect(asked.at(-1)?.query).toEqual({ lat: "41.7", lng: "44.85", radius_m: "2000000" });
+});
+
+test("a click on the editor's map adds a position to the outer ring and keeps the holes", async ({ page }) => {
+  await signIn(page, "en", INSPECTOR);
+  await page.goto("/en/zones/new");
+  const rings = field(page, "feature.geometry.rings");
+  await rings.fill("44.70 41.70\n44.72 41.70\n44.72 41.72\n\n44.705 41.705\n44.71 41.705\n44.71 41.71");
+  const canvas = page.getByTestId("editor-map").locator("canvas.maplibregl-canvas");
+  await expect(canvas).toBeVisible();
+  await page.getByTestId("editor-map").locator(".maplibregl-map").first().waitFor();
+  await canvas.click({ position: { x: 40, y: 40 } });
+  await expect(rings).toHaveValue(/^44\.7 41\.7\n44\.72 41\.7\n44\.72 41\.72\n-?\d+(\.\d+)? -?\d+(\.\d+)?\n\n44\.705 41\.705\n44\.71 41\.705\n44\.71 41\.71$/);
+});
+
+test("a line the map cannot read turns map editing off and leaves the text as typed (the pair)", async ({ page }) => {
+  await signIn(page, "en", INSPECTOR);
+  await page.goto("/en/zones/new");
+  const rings = field(page, "feature.geometry.rings");
+  await rings.fill("44.70 41.70\nnot a position");
+  await expect(page.getByTestId("map-edit-off")).toBeVisible();
+  const canvas = page.getByTestId("editor-map").locator("canvas.maplibregl-canvas");
+  await expect(canvas).toBeVisible();
+  await canvas.click({ position: { x: 40, y: 40 } });
+  await expect(rings).toHaveValue("44.70 41.70\nnot a position");
 });
 
 test("the editor refuses an unbuilt geometry before anything is sent, and the API's refusal lands on its field (the pair)", async ({ page, request }) => {

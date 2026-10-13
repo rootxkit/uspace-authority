@@ -32,6 +32,15 @@ function json(res, status, payload, headers = {}) {
   res.end(text);
 }
 
+/** The outline the mock answers for any circle within the bounds (a fixture, [lng, lat]). */
+const CIRCLE_FIXTURE = [
+  [44.85, 41.7045],
+  [44.844, 41.7],
+  [44.85, 41.6955],
+  [44.856, 41.7],
+  [44.85, 41.7045],
+];
+
 function problem(res, status, slug, title, detail, errors = []) {
   const text = JSON.stringify({ type: `https://schemas.uspace.ge/problems/${slug}`, title, status, detail, errors });
   res.writeHead(status, { "Content-Type": "application/problem+json", "Content-Length": Buffer.byteLength(text) });
@@ -289,7 +298,7 @@ export function createAuthoring({ zonesSeed }) {
     const p = url.pathname;
     const m = req.method;
     const q = url.searchParams;
-    if (!/^\/v1\/(registry|zones|uspace|publications|certificates)(\/|$)/.test(p)) return false;
+    if (!/^\/v1\/(registry|zones|uspace|publications|certificates|outlines)(\/|$)/.test(p)) return false;
     requests.push({ method: m, path: p, query: Object.fromEntries(q.entries()), body });
     const R = (roles) => {
       if (has(s, roles)) return true;
@@ -297,6 +306,29 @@ export function createAuthoring({ zonesSeed }) {
       return false;
     };
     let g;
+
+    // GET /v1/outlines/circle: api's bounds, refused as it refuses them
+    // (internal/outline); a drawn answer is a fixed fixture ring, not a
+    // computation (api draws it with uspace-core's geodesy).
+    if (p === "/v1/outlines/circle" && m === "GET") {
+      if (!R(["inspector", "admin"])) return true;
+      const num = (k) => (q.has(k) ? Number(q.get(k)) : Number.NaN);
+      const [lat, lng, radius] = [num("lat"), num("lng"), num("radius_m")];
+      if (!(Math.abs(lat) <= 89)) {
+        problem(res, 400, "validation", "Invalid request", "", [{ field: "lat", reason: "must be a number within 89 degrees of the equator" }]);
+        return true;
+      }
+      if (!(Math.abs(lng) <= 180)) {
+        problem(res, 400, "validation", "Invalid request", "", [{ field: "lng", reason: "must be a number from -180 to 180" }]);
+        return true;
+      }
+      if (!(radius > 0 && radius <= 1_000_000)) {
+        problem(res, 400, "validation", "Invalid request", "", [{ field: "radius_m", reason: "must be above 0 and at most 1000000 m" }]);
+        return true;
+      }
+      json(res, 200, { vertices: 4, outline: { type: "Polygon", coordinates: [CIRCLE_FIXTURE] } });
+      return true;
+    }
 
     // --- registry -------------------------------------------------------
     if (p === "/v1/registry/operators" && m === "GET") {
@@ -335,8 +367,14 @@ export function createAuthoring({ zonesSeed }) {
       }
       if (sub === "status" && m === "POST") {
         if (!R(["registrar"])) return true;
-        if (!["active", "suspended", "revoked"].includes(body?.status)) return problem(res, 400, "validation", "Invalid request", "", [{ field: "status", reason: "active, suspended or revoked" }]), true;
-        if (body.status !== "active" && (typeof body.reason !== "string" || body.reason.trim() === "")) return problem(res, 400, "validation", "Invalid request", "", [{ field: "reason", reason: "required for suspended and revoked" }]), true;
+        if (!["active", "suspended", "revoked"].includes(body?.status)) {
+        problem(res, 400, "validation", "Invalid request", "", [{ field: "status", reason: "active, suspended or revoked" }]);
+        return true;
+      }
+        if (body.status !== "active" && (typeof body.reason !== "string" || body.reason.trim() === "")) {
+        problem(res, 400, "validation", "Invalid request", "", [{ field: "reason", reason: "required for suspended and revoked" }]);
+        return true;
+      }
         row.status = body.status;
         row.status_reason = body.reason ?? "";
         row.registry_version = ++st.seq;
@@ -345,7 +383,10 @@ export function createAuthoring({ zonesSeed }) {
       if (sub === "personal-data" && m === "GET" && kind !== "uas") {
         if (!R(["registrar", "inspector"])) return true;
         const purpose = q.get("purpose");
-        if (purpose === null || purpose.trim() === "") return problem(res, 400, "validation", "Invalid request", "a personal data read needs its purpose", [{ field: "purpose", reason: "required" }]), true;
+        if (purpose === null || purpose.trim() === "") {
+        problem(res, 400, "validation", "Invalid request", "a personal data read needs its purpose", [{ field: "purpose", reason: "required" }]);
+        return true;
+      }
         return json(res, 200, (kind === "operators" ? st.pii : st.pilotPii).get(id), { "Cache-Control": "no-store" }), true;
       }
       if (sub === "competencies" && m === "POST" && kind === "pilots") {
@@ -383,7 +424,10 @@ export function createAuthoring({ zonesSeed }) {
     if (p === "/v1/registry/import" && m === "POST") {
       if (!R(["registrar"])) return true;
       const kind = q.get("kind");
-      if (kind !== "operators" && kind !== "uas") return problem(res, 400, "validation", "Invalid request", "", [{ field: "kind", reason: "operators or uas" }]), true;
+      if (kind !== "operators" && kind !== "uas") {
+        problem(res, 400, "validation", "Invalid request", "", [{ field: "kind", reason: "operators or uas" }]);
+        return true;
+      }
       const lines = raw.split(/\r?\n/).filter((l) => l.trim() !== "");
       const records = lines.slice(1);
       const problems = [];
@@ -408,7 +452,10 @@ export function createAuthoring({ zonesSeed }) {
       const a = st.applications.find((x) => x.application_id === g[1]);
       if (a === undefined) return problem(res, 404, "not_found", "Not found", g[1]), true;
       if (g[2] === "personal-data") {
-        if ((q.get("purpose") ?? "") === "") return problem(res, 400, "validation", "Invalid request", "", [{ field: "purpose", reason: "required" }]), true;
+        if ((q.get("purpose") ?? "") === "") {
+        problem(res, 400, "validation", "Invalid request", "", [{ field: "purpose", reason: "required" }]);
+        return true;
+      }
         return json(res, 200, { application_id: a.application_id, operator_type: a.operator_type, legal_name: "Test Company LLC", legal_identification_number: "TEST000000", postal_address: "2 Test Street", contact_email: "company@example.test", contact_phone: "+995000000003" }), true;
       }
       if (g[2] === "review") Object.assign(a, { state: "under_review", review_started_at: iso(Date.now()), registrar_id: s.sub });
@@ -531,7 +578,10 @@ export function createAuthoring({ zonesSeed }) {
       }
       const ended = c.status === "revoked" || c.status === "lapsed";
       if (ended) return problem(res, 409, "certificate_ended", "Ended", "revoked or lapsed is final"), true;
-      if (act !== "status-notices" && (typeof body?.reason !== "string" || body.reason.trim() === "")) return problem(res, 400, "validation", "Invalid request", "", [{ field: "reason", reason: "required" }]), true;
+      if (act !== "status-notices" && (typeof body?.reason !== "string" || body.reason.trim() === "")) {
+        problem(res, 400, "validation", "Invalid request", "", [{ field: "reason", reason: "required" }]);
+        return true;
+      }
       if (act === "suspend") Object.assign(c, { suspended: true, status_reason: body.reason, status_changed_at: iso(Date.now()), status_changed_by: s.sub });
       if (act === "reinstate") Object.assign(c, c.suspended ? { suspended: false } : { limited: false, limitations: [] }, { status_reason: body.reason });
       if (act === "limit") Object.assign(c, { limited: true, limitations: body.limitations, status_reason: body.reason });

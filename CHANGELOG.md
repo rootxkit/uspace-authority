@@ -535,3 +535,15 @@ Unreleased; the format follows Keep a Changelog.
   `CIS_DIRECT_KEEP_S` (86400, pending GCAA). The ANSP's contract fixture
   is vendored in `internal/cisp/testdata/ansp-direct` at the commit its
   `SOURCE` names.
+- Kit 1.0.0 (U-M4): `web/` pins `@rootxkit/uspace-ui` `v1.0.0`, its release
+  tarball checked against `SHA256SUMS` and its provenance attestation;
+  the generated types carry the new generator version.
+- Picture header (bug fix, live use): "last frame -1 s ago". The tick is
+  up to a second behind a frame that arrived since it; the header and the
+  frozen overlay now read the age against the later of the two, on the
+  one browser clock, so it is never negative.
+- Kit 1.0.0 drawing tool (contract: additive `getCircleOutline`): the
+  zone and U-space airspace editors draw with the kit's `DrawLayer` (the
+  outer ring and the centre, dragged or clicked; holes and radius typed)
+  and show a circle's outline as api drew it with uspace-core's geodesy
+  (`GET /v1/outlines/circle`, `internal/outline`; PLAN section 14 Q-A23).
