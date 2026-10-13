@@ -20,6 +20,7 @@ import { useTheme } from "@rootxkit/uspace-ui/theme";
 import { useRuntimeConfig } from "../components/Providers";
 import { loginPath } from "../shell/paths";
 import { useZones } from "../zones/useZones";
+import { headerNowMs } from "./feedAge";
 import { DegradedBanner, FeedFacts, TrackDetail, TrackList, ViolationsPanel } from "./panels";
 import { SUBSCRIBE_LAYERS, TRAIL_POINTS, usePicture } from "./usePicture";
 
@@ -128,7 +129,7 @@ export function InspectorMap() {
         data-testid="feed-strip"
         data-connection={feed.connection}
       >
-        <FeedStatusBar status={feed} nowMs={nowMs} />
+        <FeedStatusBar status={feed} nowMs={headerNowMs(nowMs, feed.lastFrameAtMs)} />
         <FeedFacts feed={feed} counters={picture.counters} tracksEvicted={picture.tracksEvicted} trackCount={tracks.length} />
       </section>
       <DegradedBanner feed={feed} natsSince={picture.natsSince} />
@@ -182,7 +183,7 @@ export function InspectorMap() {
               </MapView>
             )
           )}
-          <FrozenOverlay status={feed} nowMs={nowMs} />
+          <FrozenOverlay status={feed} nowMs={headerNowMs(nowMs, feed.lastFrameAtMs)} />
         </div>
         <aside
           aria-label={t("authority.side.label")}

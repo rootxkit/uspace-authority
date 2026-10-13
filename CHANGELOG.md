@@ -530,3 +530,7 @@ Unreleased; the format follows Keep a Changelog.
 - Kit 1.0.0 (U-M4): `web/` pins `@rootxkit/uspace-ui` `v1.0.0`, its release
   tarball checked against `SHA256SUMS` and its provenance attestation;
   the generated types carry the new generator version.
+- Picture header (bug fix, live use): "last frame -1 s ago". The tick is
+  up to a second behind a frame that arrived since it; the header and the
+  frozen overlay now read the age against the later of the two, on the
+  one browser clock, so it is never negative.
