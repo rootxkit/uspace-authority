@@ -354,6 +354,21 @@ func (e CertificateStatusNoticeState) Valid() bool {
 	}
 }
 
+// Defines values for CircleOutlineOutlineType.
+const (
+	CircleOutlineOutlineTypePolygon CircleOutlineOutlineType = "Polygon"
+)
+
+// Valid indicates whether the value is a known member of the CircleOutlineOutlineType enum.
+func (e CircleOutlineOutlineType) Valid() bool {
+	switch e {
+	case CircleOutlineOutlineTypePolygon:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ClassLabel.
 const (
 	ClassLabelC0 ClassLabel = "C0"
@@ -2765,6 +2780,20 @@ type Check struct {
 	Error *string `json:"error,omitempty"`
 	Ok    bool    `json:"ok"`
 }
+
+// CircleOutline A circle drawn for the map (getCircleOutline); display only.
+type CircleOutline struct {
+	Outline struct {
+		Coordinates [][][]float64            `json:"coordinates"`
+		Type        CircleOutlineOutlineType `json:"type"`
+	} `json:"outline"`
+
+	// Vertices The distinct vertices of the drawing (the ring repeats the first at the end).
+	Vertices int `json:"vertices"`
+}
+
+// CircleOutlineOutlineType defines model for CircleOutline.Outline.Type.
+type CircleOutlineOutlineType string
 
 // ClassLabel defines model for ClassLabel.
 type ClassLabel string
@@ -5723,6 +5752,18 @@ type GetOccurrenceReporterParams struct {
 	Purpose string `form:"purpose" json:"purpose"`
 }
 
+// GetCircleOutlineParams defines parameters for GetCircleOutline.
+type GetCircleOutlineParams struct {
+	// Lat The centre's latitude, WGS84 degrees.
+	Lat float64 `form:"lat" json:"lat"`
+
+	// Lng The centre's longitude, WGS84 degrees.
+	Lng float64 `form:"lng" json:"lng"`
+
+	// RadiusM The radius in metres.
+	RadiusM float64 `form:"radius_m" json:"radius_m"`
+}
+
 // QueryPoliceAircraftParams defines parameters for QueryPoliceAircraft.
 type QueryPoliceAircraftParams struct {
 	// Bbox min_lon,min_lat,max_lon,max_lat (WGS84 degrees), each side at most POLICE_MAX_BBOX_DEG.
@@ -7476,6 +7517,24 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /v1/occurrences/{occurrence_id}/reporter (the `GetOccurrenceReporter` operationId).
 	GetOccurrenceReporter(ctx context.Context, occurrenceId string, params *GetOccurrenceReporterParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetCircleOutline The outline of a circle, drawn for the zone editor's map
+	//
+	// The circle of radius_m about (lat, lng) as a closed GeoJSON
+	// Polygon of 64 vertices, each placed on the geodesic circle by
+	// uspace-core's direct solver (geodesy.Destination, WGS84),
+	// counterclockwise from due north and rounded to 1e-8 degree. It is
+	// a drawing for the zone and U-space airspace editors' map while a
+	// circle is authored (the kit's DrawLayer takes it as
+	// circleOutline): a zone is stored, published and judged as its
+	// ED-318 centre and radius, never as this polygon, and nothing is
+	// stored or audited. A radius above 0 and at most ED-318's
+	// MaxCircleRadiusM, a centre within 89 degrees of latitude; each
+	// refused 400 validation naming lat, lng or radius_m before
+	// anything is computed.
+	//
+	// Corresponds with GET /v1/outlines/circle (the `GetCircleOutline` operationId).
+	GetCircleOutline(ctx context.Context, params *GetCircleOutlineParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// QueryPoliceAircraft Who is flying in a box now, or was at an instant
 	//
@@ -10769,6 +10828,34 @@ func (c *Client) ClassifyOccurrence(ctx context.Context, occurrenceId string, bo
 // Corresponds with GET /v1/occurrences/{occurrence_id}/reporter (the `GetOccurrenceReporter` operationId).
 func (c *Client) GetOccurrenceReporter(ctx context.Context, occurrenceId string, params *GetOccurrenceReporterParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetOccurrenceReporterRequest(c.Server, occurrenceId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetCircleOutline The outline of a circle, drawn for the zone editor's map
+//
+// The circle of radius_m about (lat, lng) as a closed GeoJSON
+// Polygon of 64 vertices, each placed on the geodesic circle by
+// uspace-core's direct solver (geodesy.Destination, WGS84),
+// counterclockwise from due north and rounded to 1e-8 degree. It is
+// a drawing for the zone and U-space airspace editors' map while a
+// circle is authored (the kit's DrawLayer takes it as
+// circleOutline): a zone is stored, published and judged as its
+// ED-318 centre and radius, never as this polygon, and nothing is
+// stored or audited. A radius above 0 and at most ED-318's
+// MaxCircleRadiusM, a centre within 89 degrees of latitude; each
+// refused 400 validation naming lat, lng or radius_m before
+// anything is computed.
+//
+// Corresponds with GET /v1/outlines/circle (the `GetCircleOutline` operationId).
+func (c *Client) GetCircleOutline(ctx context.Context, params *GetCircleOutlineParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetCircleOutlineRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -15830,6 +15917,72 @@ func NewGetOccurrenceReporterRequest(server string, occurrenceId string, params 
 		var rawQueryFragments []string
 
 		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "purpose", params.Purpose, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetCircleOutlineRequest constructs an http.Request for the GetCircleOutline method
+func NewGetCircleOutlineRequest(server string, params *GetCircleOutlineParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/outlines/circle")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "lat", params.Lat, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "number", Format: "double"}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "lng", params.Lng, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "number", Format: "double"}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "radius_m", params.RadiusM, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "number", Format: "double"}); err != nil {
 			return nil, err
 		} else {
 			for _, qp := range strings.Split(queryFrag, "&") {
@@ -21610,6 +21763,26 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /v1/occurrences/{occurrence_id}/reporter (the `GetOccurrenceReporter` operationId).
 	GetOccurrenceReporterWithResponse(ctx context.Context, occurrenceId string, params *GetOccurrenceReporterParams, reqEditors ...RequestEditorFn) (*GetOccurrenceReporterResponse, error)
 
+	// GetCircleOutlineWithResponse The outline of a circle, drawn for the zone editor's map
+	//
+	// The circle of radius_m about (lat, lng) as a closed GeoJSON
+	// Polygon of 64 vertices, each placed on the geodesic circle by
+	// uspace-core's direct solver (geodesy.Destination, WGS84),
+	// counterclockwise from due north and rounded to 1e-8 degree. It is
+	// a drawing for the zone and U-space airspace editors' map while a
+	// circle is authored (the kit's DrawLayer takes it as
+	// circleOutline): a zone is stored, published and judged as its
+	// ED-318 centre and radius, never as this polygon, and nothing is
+	// stored or audited. A radius above 0 and at most ED-318's
+	// MaxCircleRadiusM, a centre within 89 degrees of latitude; each
+	// refused 400 validation naming lat, lng or radius_m before
+	// anything is computed.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/outlines/circle (the `GetCircleOutline` operationId).
+	GetCircleOutlineWithResponse(ctx context.Context, params *GetCircleOutlineParams, reqEditors ...RequestEditorFn) (*GetCircleOutlineResponse, error)
+
 	// QueryPoliceAircraftWithResponse Who is flying in a box now, or was at an instant
 	//
 	// Without `at`: the tracks of the authority's picture last seen
@@ -26379,6 +26552,54 @@ func (r GetOccurrenceReporterResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetOccurrenceReporterResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetCircleOutlineResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CircleOutline
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetCircleOutlineResponse) GetJSON200() *CircleOutline {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetCircleOutlineResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetCircleOutlineResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetCircleOutlineResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetCircleOutlineResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetCircleOutlineResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -32885,6 +33106,32 @@ func (c *ClientWithResponses) GetOccurrenceReporterWithResponse(ctx context.Cont
 	return ParseGetOccurrenceReporterResponse(rsp)
 }
 
+// GetCircleOutlineWithResponse The outline of a circle, drawn for the zone editor's map
+//
+// The circle of radius_m about (lat, lng) as a closed GeoJSON
+// Polygon of 64 vertices, each placed on the geodesic circle by
+// uspace-core's direct solver (geodesy.Destination, WGS84),
+// counterclockwise from due north and rounded to 1e-8 degree. It is
+// a drawing for the zone and U-space airspace editors' map while a
+// circle is authored (the kit's DrawLayer takes it as
+// circleOutline): a zone is stored, published and judged as its
+// ED-318 centre and radius, never as this polygon, and nothing is
+// stored or audited. A radius above 0 and at most ED-318's
+// MaxCircleRadiusM, a centre within 89 degrees of latitude; each
+// refused 400 validation naming lat, lng or radius_m before
+// anything is computed.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/outlines/circle (the `GetCircleOutline` operationId).
+func (c *ClientWithResponses) GetCircleOutlineWithResponse(ctx context.Context, params *GetCircleOutlineParams, reqEditors ...RequestEditorFn) (*GetCircleOutlineResponse, error) {
+	rsp, err := c.GetCircleOutline(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetCircleOutlineResponse(rsp)
+}
+
 // QueryPoliceAircraftWithResponse Who is flying in a box now, or was at an instant
 //
 // Without `at`: the tracks of the authority's picture last seen
@@ -37701,6 +37948,39 @@ func ParseGetOccurrenceReporterResponse(rsp *http.Response) (*GetOccurrenceRepor
 	return response, nil
 }
 
+// ParseGetCircleOutlineResponse parses an HTTP response from a GetCircleOutlineWithResponse call
+func ParseGetCircleOutlineResponse(rsp *http.Response) (*GetCircleOutlineResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetCircleOutlineResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CircleOutline
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseQueryPoliceAircraftResponse parses an HTTP response from a QueryPoliceAircraftWithResponse call
 func ParseQueryPoliceAircraftResponse(rsp *http.Response) (*QueryPoliceAircraftResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -41517,6 +41797,9 @@ type ServerInterface interface {
 	// GetOccurrenceReporter The reporter of an occurrence (incident officers only; purpose required, audited)
 	// (GET /v1/occurrences/{occurrence_id}/reporter)
 	GetOccurrenceReporter(w http.ResponseWriter, r *http.Request, occurrenceId string, params GetOccurrenceReporterParams)
+	// GetCircleOutline The outline of a circle, drawn for the zone editor's map
+	// (GET /v1/outlines/circle)
+	GetCircleOutline(w http.ResponseWriter, r *http.Request, params GetCircleOutlineParams)
 	// QueryPoliceAircraft Who is flying in a box now, or was at an instant
 	// (GET /v1/police/aircraft)
 	QueryPoliceAircraft(w http.ResponseWriter, r *http.Request, params QueryPoliceAircraftParams)
@@ -43255,6 +43538,65 @@ func (siw *ServerInterfaceWrapper) GetOccurrenceReporter(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetOccurrenceReporter(w, r, occurrenceId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCircleOutline operation middleware
+func (siw *ServerInterfaceWrapper) GetCircleOutline(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetCircleOutlineParams
+
+	// ------------- Required query parameter "lat" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "lat", r.URL.Query(), &params.Lat, runtime.BindQueryParameterOptions{Type: "number", Format: "double"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "lat"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "lat", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "lng" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "lng", r.URL.Query(), &params.Lng, runtime.BindQueryParameterOptions{Type: "number", Format: "double"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "lng"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "lng", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "radius_m" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "radius_m", r.URL.Query(), &params.RadiusM, runtime.BindQueryParameterOptions{Type: "number", Format: "double"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "radius_m"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "radius_m", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCircleOutline(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -46544,6 +46886,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/zones/{identifier}/approve", wrapper.ApproveZone)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/zones/{identifier}/versions", wrapper.ListZoneVersions)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/zones/{identifier}/applies", wrapper.GetZoneApplicability)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/outlines/circle", wrapper.GetCircleOutline)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/uspace", wrapper.ListUSpaceAirspaces)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/uspace", wrapper.CreateUSpaceAirspace)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/uspace/publish", wrapper.PublishUSpaceAirspaces)
@@ -50114,6 +50457,45 @@ type GetOccurrenceReporterdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response GetOccurrenceReporterdefaultApplicationProblemPlusJSONResponse) VisitGetOccurrenceReporterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCircleOutlineRequestObject struct {
+	Params GetCircleOutlineParams
+}
+
+type GetCircleOutlineResponseObject interface {
+	VisitGetCircleOutlineResponse(w http.ResponseWriter) error
+}
+
+type GetCircleOutline200JSONResponse CircleOutline
+
+func (response GetCircleOutline200JSONResponse) VisitGetCircleOutlineResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCircleOutlinedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetCircleOutlinedefaultApplicationProblemPlusJSONResponse) VisitGetCircleOutlineResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -55076,6 +55458,9 @@ type StrictServerInterface interface {
 	// GetOccurrenceReporter The reporter of an occurrence (incident officers only; purpose required, audited)
 	// (GET /v1/occurrences/{occurrence_id}/reporter)
 	GetOccurrenceReporter(ctx context.Context, request GetOccurrenceReporterRequestObject) (GetOccurrenceReporterResponseObject, error)
+	// GetCircleOutline The outline of a circle, drawn for the zone editor's map
+	// (GET /v1/outlines/circle)
+	GetCircleOutline(ctx context.Context, request GetCircleOutlineRequestObject) (GetCircleOutlineResponseObject, error)
 	// QueryPoliceAircraft Who is flying in a box now, or was at an instant
 	// (GET /v1/police/aircraft)
 	QueryPoliceAircraft(ctx context.Context, request QueryPoliceAircraftRequestObject) (QueryPoliceAircraftResponseObject, error)
@@ -56890,6 +57275,32 @@ func (sh *strictHandler) GetOccurrenceReporter(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetOccurrenceReporterResponseObject); ok {
 		if err := validResponse.VisitGetOccurrenceReporterResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCircleOutline operation middleware
+func (sh *strictHandler) GetCircleOutline(w http.ResponseWriter, r *http.Request, params GetCircleOutlineParams) {
+	var request GetCircleOutlineRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCircleOutline(ctx, request.(GetCircleOutlineRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCircleOutline")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCircleOutlineResponseObject); ok {
+		if err := validResponse.VisitGetCircleOutlineResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -108,6 +108,8 @@ export const PROXY_ALLOW_PATHS: readonly RegExp[] = [
   /^\/v1\/registry\/applications$/,
   /^\/v1\/registry\/applications\/[A-Za-z0-9_-]{1,64}\/(personal-data|review|approve|refuse)$/,
   /^\/v1\/zones\/(export|import|publish)$/,
+  // The zone editors' map: a circle's outline drawn by api (uspace-core geodesy).
+  /^\/v1\/outlines\/circle$/,
   new RegExp(`^/v1/zones/${ZONE_IDENTIFIER}(/(approve|versions|applies))?$`),
   /^\/v1\/uspace(\/publish)?$/,
   new RegExp(`^/v1/uspace/${ZONE_IDENTIFIER}(/(designate|versions))?$`),

@@ -137,6 +137,7 @@ var Roles = map[string][]string{
 	"GetZone":              {RoleInspector, RoleAdmin, RoleViewer},
 	"ListZoneVersions":     {RoleInspector, RoleAdmin, RoleViewer},
 	"GetZoneApplicability": {RoleInspector, RoleAdmin, RoleViewer},
+	"GetCircleOutline":     {RoleInspector, RoleAdmin},
 	"ExportZones":          {RoleInspector, RoleAdmin, RoleViewer},
 	"CreateZone":           {RoleInspector},
 	"ReplaceZone":          {RoleInspector},

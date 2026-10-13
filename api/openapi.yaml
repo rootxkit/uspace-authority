@@ -2933,6 +2933,44 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
 
+  # The zone editor's map (uspace-ui DrawLayer): a circle drawn by
+  # uspace-core's geodesy for the console, never a judgement.
+  /v1/outlines/circle:
+    get:
+      operationId: getCircleOutline
+      tags: [zones]
+      summary: The outline of a circle, drawn for the zone editor's map
+      description: |
+        The circle of radius_m about (lat, lng) as a closed GeoJSON
+        Polygon of 64 vertices, each placed on the geodesic circle by
+        uspace-core's direct solver (geodesy.Destination, WGS84),
+        counterclockwise from due north and rounded to 1e-8 degree. It is
+        a drawing for the zone and U-space airspace editors' map while a
+        circle is authored (the kit's DrawLayer takes it as
+        circleOutline): a zone is stored, published and judged as its
+        ED-318 centre and radius, never as this polygon, and nothing is
+        stored or audited. A radius above 0 and at most ED-318's
+        MaxCircleRadiusM, a centre within 89 degrees of latitude; each
+        refused 400 validation naming lat, lng or radius_m before
+        anything is computed.
+      security:
+        - sessionCookie: []
+      x-roles: [inspector, admin]
+      x-audit: none
+      parameters:
+        - {name: lat, in: query, required: true, description: "The centre's latitude, WGS84 degrees.", schema: {type: number, format: double, minimum: -89, maximum: 89}}
+        - {name: lng, in: query, required: true, description: "The centre's longitude, WGS84 degrees.", schema: {type: number, format: double, minimum: -180, maximum: 180}}
+        - {name: radius_m, in: query, required: true, description: The radius in metres., schema: {type: number, format: double, exclusiveMinimum: 0, maximum: 1000000}}
+      responses:
+        "200":
+          description: The outline.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CircleOutline"
+        default:
+          $ref: "#/components/responses/Problem"
+
   # WP-5: U-space airspace designations (spec 01 A3, A4; 2021/664 Art. 3
   # and 5). A U-space airspace is published as an ED-318 USPACE zone
   # whose extendedProperties.uspace_requirements is the Art. 3(4) block
@@ -6680,6 +6718,31 @@ components:
           type: array
           items: {$ref: "#/components/schemas/ZoneVersion"}
         publication: {$ref: "#/components/schemas/PublicationRow"}
+    CircleOutline:
+      type: object
+      description: A circle drawn for the map (getCircleOutline); display only.
+      required: [outline, vertices]
+      properties:
+        outline:
+          type: object
+          required: [type, coordinates]
+          properties:
+            type: {type: string, enum: [Polygon]}
+            coordinates:
+              type: array
+              minItems: 1
+              maxItems: 1
+              items:
+                type: array
+                minItems: 4
+                items:
+                  type: array
+                  minItems: 2
+                  maxItems: 2
+                  items: {type: number, format: double}
+        vertices:
+          type: integer
+          description: The distinct vertices of the drawing (the ring repeats the first at the end).
     ZoneApplicability:
       type: object
       required: [identifier, zone_version, at, applicability]

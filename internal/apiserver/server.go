@@ -165,6 +165,9 @@ type ZonesHandler interface {
 	ApproveZone(ctx context.Context, request gen.ApproveZoneRequestObject) (gen.ApproveZoneResponseObject, error)
 	ListZoneVersions(ctx context.Context, request gen.ListZoneVersionsRequestObject) (gen.ListZoneVersionsResponseObject, error)
 	GetZoneApplicability(ctx context.Context, request gen.GetZoneApplicabilityRequestObject) (gen.GetZoneApplicabilityResponseObject, error)
+	// GetCircleOutline is the zone editors' map: a circle drawn by
+	// uspace-core's geodesy, display only (internal/outline).
+	GetCircleOutline(ctx context.Context, request gen.GetCircleOutlineRequestObject) (gen.GetCircleOutlineResponseObject, error)
 }
 
 // USpaceHandler serves /v1/uspace* (api, WP-5): U-space airspace

@@ -534,3 +534,8 @@ Unreleased; the format follows Keep a Changelog.
   up to a second behind a frame that arrived since it; the header and the
   frozen overlay now read the age against the later of the two, on the
   one browser clock, so it is never negative.
+- Kit 1.0.0 drawing tool (contract: additive `getCircleOutline`): the
+  zone and U-space airspace editors draw with the kit's `DrawLayer` (the
+  outer ring and the centre, dragged or clicked; holes and radius typed)
+  and show a circle's outline as api drew it with uspace-core's geodesy
+  (`GET /v1/outlines/circle`, `internal/outline`; PLAN section 14 Q-A23).

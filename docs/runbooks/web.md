@@ -333,14 +333,23 @@ sent api's `age_s` as "not yet published for N"; it reads again every
   `siteURL`, `email`, `phone`, `purpose`, `intervalBefore`), and
   `dataSource`), as uspace-core v1.4.0 `ed318` reads them. The form's
   field names are api's JSON paths, so a refusal lands on its field.
-- The geometry is a polygon (clicked on the map or typed as
-  `longitude latitude` lines; the ring is closed by repeating its first
-  position; a blank line starts a hole) or a circle, sent as a `Point`
-  with a `Circle` extent: its centre and its radius in metres (Z-11).
-  The circle's edge is not drawn, only its centre: drawing it is
-  geodesy (CLAUDE.md rule 3), and the page says so. A version whose
-  geometry is a collection of layers is not editable here; revise it by
-  import.
+- The geometry is a polygon (typed as `longitude latitude` lines, the
+  ring closed by repeating its first position, a blank line before each
+  hole) or a circle, sent as a `Point` with a `Circle` extent: its centre
+  and its radius in metres (Z-11). On the map the kit's drawing tool
+  (uspace-ui 1.0.0 `DrawLayer`) edits the outer ring and the centre: a
+  click adds a position or places the centre, a drag moves one, written
+  to six decimals; the holes and the radius stay typed. While a line of
+  the outer ring is not a position, the map edits nothing and says so,
+  so typed text is never rewritten. A ring takes at most 4999 vertices
+  (`MAX_RING_VERTICES`, core's 5000 positions per ring; pinned by
+  `internal/zonesvc/outline_test.go`). A circle's outline on the map is
+  the one api drew (`GET /v1/outlines/circle`, inspector and admin: 64
+  vertices by uspace-core `geodesy.Destination`, display only, nothing
+  stored or audited); until it has, or when it refuses, the map shows the
+  centre and the page says so (CLAUDE.md rule 3: web/ draws no edge). A
+  version whose geometry is a collection of layers is not editable here;
+  revise it by import.
 - The vertical limits name their reference and unit; `WGS84` is flagged
   as this project's extension (Z-05), and the UNVERIFIED readings of
   `docs/runbooks/zones.md` are shown as such, not as the standard's.
