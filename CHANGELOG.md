@@ -527,3 +527,6 @@ Unreleased; the format follows Keep a Changelog.
   `CIS_DIRECT_KEEP_S` (86400, pending GCAA). The ANSP's contract fixture
   is vendored in `internal/cisp/testdata/ansp-direct` at the commit its
   `SOURCE` names.
+- Kit 1.0.0 (U-M4): `web/` pins `@rootxkit/uspace-ui` `v1.0.0`, its release
+  tarball checked against `SHA256SUMS` and its provenance attestation;
+  the generated types carry the new generator version.
