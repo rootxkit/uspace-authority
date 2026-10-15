@@ -46,3 +46,27 @@ test("the rules: rendered from the configured file in en, and naming the variabl
   await page.goto("/ka/rules");
   await expect(page.getByTestId("rules-problem")).toContainText("WEB_RULES_FILE_KA");
 });
+
+// The register's services cell is a long list; it must wrap, not widen the
+// page. At 1280px neither the page nor the table's container may scroll
+// sideways (the container scrolls only below 640px as a fallback).
+for (const lang of ["en", "ka"] as const) {
+  test(`the register fits a 1280px viewport without sideways scroll (${lang})`, async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(`/${lang}/register`);
+    const table = page.getByTestId("register-table");
+    await expect(table.locator('[data-certificate="USSPTST"]')).toBeVisible();
+    const m = await page.evaluate(() => {
+      const root = document.scrollingElement as Element;
+      const box = document.querySelector('[data-testid="register-table"]')?.parentElement as HTMLElement;
+      return {
+        pageScroll: root.scrollWidth,
+        pageClient: root.clientWidth,
+        boxScroll: box.scrollWidth,
+        boxClient: box.clientWidth,
+      };
+    });
+    expect(m.pageScroll).toBeLessThanOrEqual(m.pageClient);
+    expect(m.boxScroll).toBeLessThanOrEqual(m.boxClient);
+  });
+}
