@@ -24,6 +24,7 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/dpadmin"
 	"github.com/rootxkit/uspace-authority/internal/incidents"
 	"github.com/rootxkit/uspace-authority/internal/occurrences"
+	overviewsvc "github.com/rootxkit/uspace-authority/internal/overview"
 	"github.com/rootxkit/uspace-authority/internal/passhash"
 	"github.com/rootxkit/uspace-authority/internal/police"
 	"github.com/rootxkit/uspace-authority/internal/policy"
@@ -466,6 +467,7 @@ func specWith(cfg *config.API, identify apiserver.IdentifyFunc) proc.Spec {
 			DPOHandler:          pol.Handler,
 			AuditVerifyHandler:  audit.VerifyHandler{Verifier: ret.Verifier},
 			RetentionHandler:    ret.Handler,
+			OverviewHandler:     overviewsvc.Handler{Store: overviewsvc.PG{DB: db}},
 		}, apiserver.Options{
 			Logger:      rt.Logger,
 			Middlewares: []apiserver.Middleware{tok.Handler.FormGuard(), apiserver.Authorize(identify, apiserver.DefaultRules())},

@@ -3707,6 +3707,71 @@ type OperatorValidity struct {
 	ValidUntil         *time.Time             `json:"valid_until,omitempty"`
 }
 
+// OverviewAudit defines model for OverviewAudit.
+type OverviewAudit struct {
+	// AsOf The database clock at the count; the window ends here.
+	AsOf time.Time `json:"as_of"`
+
+	// Events The events rows of the window
+	Events int64 `json:"events"`
+
+	// More The bound was reached; events is a lower bound.
+	More bool `json:"more"`
+
+	// WindowS The window's length in seconds (86400).
+	WindowS int64 `json:"window_s"`
+}
+
+// OverviewCertificates Every certificate by status (CertificateStatus); total is their sum.
+type OverviewCertificates struct {
+	// AsOf The database clock at the count.
+	AsOf      time.Time `json:"as_of"`
+	Ceased    int64     `json:"ceased"`
+	Issued    int64     `json:"issued"`
+	Lapsed    int64     `json:"lapsed"`
+	Limited   int64     `json:"limited"`
+	Operating int64     `json:"operating"`
+	Revoked   int64     `json:"revoked"`
+	Suspended int64     `json:"suspended"`
+	Total     int64     `json:"total"`
+}
+
+// OverviewRegistry defines model for OverviewRegistry.
+type OverviewRegistry struct {
+	// AsOf The database clock at the count.
+	AsOf time.Time `json:"as_of"`
+
+	// Operators One registry entity's records by status (RegistryStatus); total is their sum.
+	Operators OverviewRegistryCounts `json:"operators"`
+
+	// Pilots One registry entity's records by status (RegistryStatus); total is their sum.
+	Pilots OverviewRegistryCounts `json:"pilots"`
+
+	// Uas One registry entity's records by status (RegistryStatus); total is their sum.
+	Uas OverviewRegistryCounts `json:"uas"`
+}
+
+// OverviewRegistryCounts One registry entity's records by status (RegistryStatus); total is their sum.
+type OverviewRegistryCounts struct {
+	Active    int64 `json:"active"`
+	Expired   int64 `json:"expired"`
+	Revoked   int64 `json:"revoked"`
+	Suspended int64 `json:"suspended"`
+	Total     int64 `json:"total"`
+}
+
+// OverviewUSpace The newest version of every U-space airspace by state (ZoneState); total is their sum, one per airspace.
+type OverviewUSpace struct {
+	Approved int64 `json:"approved"`
+
+	// AsOf The database clock at the count.
+	AsOf       time.Time `json:"as_of"`
+	Draft      int64     `json:"draft"`
+	Published  int64     `json:"published"`
+	Superseded int64     `json:"superseded"`
+	Total      int64     `json:"total"`
+}
+
 // PictureFrame A frame of the common console frame (uspace-lab
 // schemas/common/envelope/v1 with the body named by `schema`).
 type PictureFrame struct {
@@ -7536,6 +7601,44 @@ type ClientInterface interface {
 	// Corresponds with GET /v1/outlines/circle (the `GetCircleOutline` operationId).
 	GetCircleOutline(ctx context.Context, params *GetCircleOutlineParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetOverviewAudit Audit events of the last 24 hours
+	//
+	// The events rows whose ts is within the `window_s` seconds (24
+	// hours) that end at the database clock's `as_of`, counted up to
+	// 100000 rows: at the bound `more` is true and the count is a
+	// lower bound. A count, not a read of the log: no
+	// row is returned and no `audit_events_viewed` row is written. The
+	// roles of listAuditEvents.
+	//
+	// Corresponds with GET /v1/overview/audit (the `GetOverviewAudit` operationId).
+	GetOverviewAudit(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetOverviewCertificates USSP and CISP certificates by status
+	//
+	// Every certificate counted by its derived status. The roles of
+	// listCertificates.
+	//
+	// Corresponds with GET /v1/overview/certificates (the `GetOverviewCertificates` operationId).
+	GetOverviewCertificates(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetOverviewRegistry Registered operators, UAS and remote pilots by status
+	//
+	// Every operator, UAS and remote pilot of the registry counted by
+	// its status, in one statement (one snapshot), with the database
+	// clock's time of the count. The roles of listRegistryOperators.
+	//
+	// Corresponds with GET /v1/overview/registry (the `GetOverviewRegistry` operationId).
+	GetOverviewRegistry(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetOverviewUSpace U-space airspaces by the state of their newest version
+	//
+	// The newest version of every U-space airspace (what
+	// listUSpaceAirspaces lists) counted by its state. The roles of
+	// listUSpaceAirspaces.
+	//
+	// Corresponds with GET /v1/overview/uspace (the `GetOverviewUSpace` operationId).
+	GetOverviewUSpace(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// QueryPoliceAircraft Who is flying in a box now, or was at an instant
 	//
 	// Without `at`: the tracks of the authority's picture last seen
@@ -10856,6 +10959,84 @@ func (c *Client) GetOccurrenceReporter(ctx context.Context, occurrenceId string,
 // Corresponds with GET /v1/outlines/circle (the `GetCircleOutline` operationId).
 func (c *Client) GetCircleOutline(ctx context.Context, params *GetCircleOutlineParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetCircleOutlineRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetOverviewAudit Audit events of the last 24 hours
+//
+// The events rows whose ts is within the `window_s` seconds (24
+// hours) that end at the database clock's `as_of`, counted up to
+// 100000 rows: at the bound `more` is true and the count is a
+// lower bound. A count, not a read of the log: no
+// row is returned and no `audit_events_viewed` row is written. The
+// roles of listAuditEvents.
+//
+// Corresponds with GET /v1/overview/audit (the `GetOverviewAudit` operationId).
+func (c *Client) GetOverviewAudit(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetOverviewAuditRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetOverviewCertificates USSP and CISP certificates by status
+//
+// Every certificate counted by its derived status. The roles of
+// listCertificates.
+//
+// Corresponds with GET /v1/overview/certificates (the `GetOverviewCertificates` operationId).
+func (c *Client) GetOverviewCertificates(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetOverviewCertificatesRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetOverviewRegistry Registered operators, UAS and remote pilots by status
+//
+// Every operator, UAS and remote pilot of the registry counted by
+// its status, in one statement (one snapshot), with the database
+// clock's time of the count. The roles of listRegistryOperators.
+//
+// Corresponds with GET /v1/overview/registry (the `GetOverviewRegistry` operationId).
+func (c *Client) GetOverviewRegistry(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetOverviewRegistryRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetOverviewUSpace U-space airspaces by the state of their newest version
+//
+// The newest version of every U-space airspace (what
+// listUSpaceAirspaces lists) counted by its state. The roles of
+// listUSpaceAirspaces.
+//
+// Corresponds with GET /v1/overview/uspace (the `GetOverviewUSpace` operationId).
+func (c *Client) GetOverviewUSpace(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetOverviewUSpaceRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -15994,6 +16175,114 @@ func NewGetCircleOutlineRequest(server string, params *GetCircleOutlineParams) (
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
 		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetOverviewAuditRequest constructs an http.Request for the GetOverviewAudit method
+func NewGetOverviewAuditRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/overview/audit")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetOverviewCertificatesRequest constructs an http.Request for the GetOverviewCertificates method
+func NewGetOverviewCertificatesRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/overview/certificates")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetOverviewRegistryRequest constructs an http.Request for the GetOverviewRegistry method
+func NewGetOverviewRegistryRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/overview/registry")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetOverviewUSpaceRequest constructs an http.Request for the GetOverviewUSpace method
+func NewGetOverviewUSpaceRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/overview/uspace")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -21783,6 +22072,52 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with GET /v1/outlines/circle (the `GetCircleOutline` operationId).
 	GetCircleOutlineWithResponse(ctx context.Context, params *GetCircleOutlineParams, reqEditors ...RequestEditorFn) (*GetCircleOutlineResponse, error)
 
+	// GetOverviewAuditWithResponse Audit events of the last 24 hours
+	//
+	// The events rows whose ts is within the `window_s` seconds (24
+	// hours) that end at the database clock's `as_of`, counted up to
+	// 100000 rows: at the bound `more` is true and the count is a
+	// lower bound. A count, not a read of the log: no
+	// row is returned and no `audit_events_viewed` row is written. The
+	// roles of listAuditEvents.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/overview/audit (the `GetOverviewAudit` operationId).
+	GetOverviewAuditWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOverviewAuditResponse, error)
+
+	// GetOverviewCertificatesWithResponse USSP and CISP certificates by status
+	//
+	// Every certificate counted by its derived status. The roles of
+	// listCertificates.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/overview/certificates (the `GetOverviewCertificates` operationId).
+	GetOverviewCertificatesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOverviewCertificatesResponse, error)
+
+	// GetOverviewRegistryWithResponse Registered operators, UAS and remote pilots by status
+	//
+	// Every operator, UAS and remote pilot of the registry counted by
+	// its status, in one statement (one snapshot), with the database
+	// clock's time of the count. The roles of listRegistryOperators.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/overview/registry (the `GetOverviewRegistry` operationId).
+	GetOverviewRegistryWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOverviewRegistryResponse, error)
+
+	// GetOverviewUSpaceWithResponse U-space airspaces by the state of their newest version
+	//
+	// The newest version of every U-space airspace (what
+	// listUSpaceAirspaces lists) counted by its state. The roles of
+	// listUSpaceAirspaces.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v1/overview/uspace (the `GetOverviewUSpace` operationId).
+	GetOverviewUSpaceWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOverviewUSpaceResponse, error)
+
 	// QueryPoliceAircraftWithResponse Who is flying in a box now, or was at an instant
 	//
 	// Without `at`: the tracks of the authority's picture last seen
@@ -26600,6 +26935,198 @@ func (r GetCircleOutlineResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetCircleOutlineResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetOverviewAuditResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *OverviewAudit
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetOverviewAuditResponse) GetJSON200() *OverviewAudit {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetOverviewAuditResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetOverviewAuditResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetOverviewAuditResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetOverviewAuditResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetOverviewAuditResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetOverviewCertificatesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *OverviewCertificates
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetOverviewCertificatesResponse) GetJSON200() *OverviewCertificates {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetOverviewCertificatesResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetOverviewCertificatesResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetOverviewCertificatesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetOverviewCertificatesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetOverviewCertificatesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetOverviewRegistryResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *OverviewRegistry
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetOverviewRegistryResponse) GetJSON200() *OverviewRegistry {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetOverviewRegistryResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetOverviewRegistryResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetOverviewRegistryResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetOverviewRegistryResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetOverviewRegistryResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetOverviewUSpaceResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *OverviewUSpace
+	// ApplicationproblemJSONDefault the response for an HTTP default `application/problem+json` response
+	ApplicationproblemJSONDefault *Problem
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetOverviewUSpaceResponse) GetJSON200() *OverviewUSpace {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSONDefault returns the response for an HTTP default `application/problem+json` response
+func (r GetOverviewUSpaceResponse) GetApplicationproblemJSONDefault() *Problem {
+	return r.ApplicationproblemJSONDefault
+}
+
+// GetBody returns the raw response body bytes
+func (r GetOverviewUSpaceResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetOverviewUSpaceResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetOverviewUSpaceResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetOverviewUSpaceResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -33132,6 +33659,76 @@ func (c *ClientWithResponses) GetCircleOutlineWithResponse(ctx context.Context, 
 	return ParseGetCircleOutlineResponse(rsp)
 }
 
+// GetOverviewAuditWithResponse Audit events of the last 24 hours
+//
+// The events rows whose ts is within the `window_s` seconds (24
+// hours) that end at the database clock's `as_of`, counted up to
+// 100000 rows: at the bound `more` is true and the count is a
+// lower bound. A count, not a read of the log: no
+// row is returned and no `audit_events_viewed` row is written. The
+// roles of listAuditEvents.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/overview/audit (the `GetOverviewAudit` operationId).
+func (c *ClientWithResponses) GetOverviewAuditWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOverviewAuditResponse, error) {
+	rsp, err := c.GetOverviewAudit(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetOverviewAuditResponse(rsp)
+}
+
+// GetOverviewCertificatesWithResponse USSP and CISP certificates by status
+//
+// Every certificate counted by its derived status. The roles of
+// listCertificates.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/overview/certificates (the `GetOverviewCertificates` operationId).
+func (c *ClientWithResponses) GetOverviewCertificatesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOverviewCertificatesResponse, error) {
+	rsp, err := c.GetOverviewCertificates(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetOverviewCertificatesResponse(rsp)
+}
+
+// GetOverviewRegistryWithResponse Registered operators, UAS and remote pilots by status
+//
+// Every operator, UAS and remote pilot of the registry counted by
+// its status, in one statement (one snapshot), with the database
+// clock's time of the count. The roles of listRegistryOperators.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/overview/registry (the `GetOverviewRegistry` operationId).
+func (c *ClientWithResponses) GetOverviewRegistryWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOverviewRegistryResponse, error) {
+	rsp, err := c.GetOverviewRegistry(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetOverviewRegistryResponse(rsp)
+}
+
+// GetOverviewUSpaceWithResponse U-space airspaces by the state of their newest version
+//
+// The newest version of every U-space airspace (what
+// listUSpaceAirspaces lists) counted by its state. The roles of
+// listUSpaceAirspaces.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v1/overview/uspace (the `GetOverviewUSpace` operationId).
+func (c *ClientWithResponses) GetOverviewUSpaceWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOverviewUSpaceResponse, error) {
+	rsp, err := c.GetOverviewUSpace(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetOverviewUSpaceResponse(rsp)
+}
+
 // QueryPoliceAircraftWithResponse Who is flying in a box now, or was at an instant
 //
 // Without `at`: the tracks of the authority's picture last seen
@@ -37981,6 +38578,138 @@ func ParseGetCircleOutlineResponse(rsp *http.Response) (*GetCircleOutlineRespons
 	return response, nil
 }
 
+// ParseGetOverviewAuditResponse parses an HTTP response from a GetOverviewAuditWithResponse call
+func ParseGetOverviewAuditResponse(rsp *http.Response) (*GetOverviewAuditResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetOverviewAuditResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OverviewAudit
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetOverviewCertificatesResponse parses an HTTP response from a GetOverviewCertificatesWithResponse call
+func ParseGetOverviewCertificatesResponse(rsp *http.Response) (*GetOverviewCertificatesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetOverviewCertificatesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OverviewCertificates
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetOverviewRegistryResponse parses an HTTP response from a GetOverviewRegistryWithResponse call
+func ParseGetOverviewRegistryResponse(rsp *http.Response) (*GetOverviewRegistryResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetOverviewRegistryResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OverviewRegistry
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetOverviewUSpaceResponse parses an HTTP response from a GetOverviewUSpaceWithResponse call
+func ParseGetOverviewUSpaceResponse(rsp *http.Response) (*GetOverviewUSpaceResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetOverviewUSpaceResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OverviewUSpace
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest Problem
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSONDefault = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseQueryPoliceAircraftResponse parses an HTTP response from a QueryPoliceAircraftWithResponse call
 func ParseQueryPoliceAircraftResponse(rsp *http.Response) (*QueryPoliceAircraftResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -41800,6 +42529,18 @@ type ServerInterface interface {
 	// GetCircleOutline The outline of a circle, drawn for the zone editor's map
 	// (GET /v1/outlines/circle)
 	GetCircleOutline(w http.ResponseWriter, r *http.Request, params GetCircleOutlineParams)
+	// GetOverviewAudit Audit events of the last 24 hours
+	// (GET /v1/overview/audit)
+	GetOverviewAudit(w http.ResponseWriter, r *http.Request)
+	// GetOverviewCertificates USSP and CISP certificates by status
+	// (GET /v1/overview/certificates)
+	GetOverviewCertificates(w http.ResponseWriter, r *http.Request)
+	// GetOverviewRegistry Registered operators, UAS and remote pilots by status
+	// (GET /v1/overview/registry)
+	GetOverviewRegistry(w http.ResponseWriter, r *http.Request)
+	// GetOverviewUSpace U-space airspaces by the state of their newest version
+	// (GET /v1/overview/uspace)
+	GetOverviewUSpace(w http.ResponseWriter, r *http.Request)
 	// QueryPoliceAircraft Who is flying in a box now, or was at an instant
 	// (GET /v1/police/aircraft)
 	QueryPoliceAircraft(w http.ResponseWriter, r *http.Request, params QueryPoliceAircraftParams)
@@ -43597,6 +44338,62 @@ func (siw *ServerInterfaceWrapper) GetCircleOutline(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetCircleOutline(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetOverviewAudit operation middleware
+func (siw *ServerInterfaceWrapper) GetOverviewAudit(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetOverviewAudit(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetOverviewCertificates operation middleware
+func (siw *ServerInterfaceWrapper) GetOverviewCertificates(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetOverviewCertificates(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetOverviewRegistry operation middleware
+func (siw *ServerInterfaceWrapper) GetOverviewRegistry(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetOverviewRegistry(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetOverviewUSpace operation middleware
+func (siw *ServerInterfaceWrapper) GetOverviewUSpace(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetOverviewUSpace(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -46939,6 +47736,10 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/retention/holds", wrapper.ListLegalHolds)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/retention/holds", wrapper.PlaceLegalHold)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/v1/retention/holds/{hold_id}/release", wrapper.ReleaseLegalHold)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/overview/registry", wrapper.GetOverviewRegistry)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/overview/uspace", wrapper.GetOverviewUSpace)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/overview/certificates", wrapper.GetOverviewCertificates)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/v1/overview/audit", wrapper.GetOverviewAudit)
 
 	return m
 }
@@ -50496,6 +51297,158 @@ type GetCircleOutlinedefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response GetCircleOutlinedefaultApplicationProblemPlusJSONResponse) VisitGetCircleOutlineResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOverviewAuditRequestObject struct {
+}
+
+type GetOverviewAuditResponseObject interface {
+	VisitGetOverviewAuditResponse(w http.ResponseWriter) error
+}
+
+type GetOverviewAudit200JSONResponse OverviewAudit
+
+func (response GetOverviewAudit200JSONResponse) VisitGetOverviewAuditResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOverviewAuditdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetOverviewAuditdefaultApplicationProblemPlusJSONResponse) VisitGetOverviewAuditResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOverviewCertificatesRequestObject struct {
+}
+
+type GetOverviewCertificatesResponseObject interface {
+	VisitGetOverviewCertificatesResponse(w http.ResponseWriter) error
+}
+
+type GetOverviewCertificates200JSONResponse OverviewCertificates
+
+func (response GetOverviewCertificates200JSONResponse) VisitGetOverviewCertificatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOverviewCertificatesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetOverviewCertificatesdefaultApplicationProblemPlusJSONResponse) VisitGetOverviewCertificatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOverviewRegistryRequestObject struct {
+}
+
+type GetOverviewRegistryResponseObject interface {
+	VisitGetOverviewRegistryResponse(w http.ResponseWriter) error
+}
+
+type GetOverviewRegistry200JSONResponse OverviewRegistry
+
+func (response GetOverviewRegistry200JSONResponse) VisitGetOverviewRegistryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOverviewRegistrydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetOverviewRegistrydefaultApplicationProblemPlusJSONResponse) VisitGetOverviewRegistryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOverviewUSpaceRequestObject struct {
+}
+
+type GetOverviewUSpaceResponseObject interface {
+	VisitGetOverviewUSpaceResponse(w http.ResponseWriter) error
+}
+
+type GetOverviewUSpace200JSONResponse OverviewUSpace
+
+func (response GetOverviewUSpace200JSONResponse) VisitGetOverviewUSpaceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOverviewUSpacedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetOverviewUSpacedefaultApplicationProblemPlusJSONResponse) VisitGetOverviewUSpaceResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -55461,6 +56414,18 @@ type StrictServerInterface interface {
 	// GetCircleOutline The outline of a circle, drawn for the zone editor's map
 	// (GET /v1/outlines/circle)
 	GetCircleOutline(ctx context.Context, request GetCircleOutlineRequestObject) (GetCircleOutlineResponseObject, error)
+	// GetOverviewAudit Audit events of the last 24 hours
+	// (GET /v1/overview/audit)
+	GetOverviewAudit(ctx context.Context, request GetOverviewAuditRequestObject) (GetOverviewAuditResponseObject, error)
+	// GetOverviewCertificates USSP and CISP certificates by status
+	// (GET /v1/overview/certificates)
+	GetOverviewCertificates(ctx context.Context, request GetOverviewCertificatesRequestObject) (GetOverviewCertificatesResponseObject, error)
+	// GetOverviewRegistry Registered operators, UAS and remote pilots by status
+	// (GET /v1/overview/registry)
+	GetOverviewRegistry(ctx context.Context, request GetOverviewRegistryRequestObject) (GetOverviewRegistryResponseObject, error)
+	// GetOverviewUSpace U-space airspaces by the state of their newest version
+	// (GET /v1/overview/uspace)
+	GetOverviewUSpace(ctx context.Context, request GetOverviewUSpaceRequestObject) (GetOverviewUSpaceResponseObject, error)
 	// QueryPoliceAircraft Who is flying in a box now, or was at an instant
 	// (GET /v1/police/aircraft)
 	QueryPoliceAircraft(ctx context.Context, request QueryPoliceAircraftRequestObject) (QueryPoliceAircraftResponseObject, error)
@@ -57301,6 +58266,102 @@ func (sh *strictHandler) GetCircleOutline(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetCircleOutlineResponseObject); ok {
 		if err := validResponse.VisitGetCircleOutlineResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetOverviewAudit operation middleware
+func (sh *strictHandler) GetOverviewAudit(w http.ResponseWriter, r *http.Request) {
+	var request GetOverviewAuditRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetOverviewAudit(ctx, request.(GetOverviewAuditRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetOverviewAudit")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetOverviewAuditResponseObject); ok {
+		if err := validResponse.VisitGetOverviewAuditResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetOverviewCertificates operation middleware
+func (sh *strictHandler) GetOverviewCertificates(w http.ResponseWriter, r *http.Request) {
+	var request GetOverviewCertificatesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetOverviewCertificates(ctx, request.(GetOverviewCertificatesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetOverviewCertificates")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetOverviewCertificatesResponseObject); ok {
+		if err := validResponse.VisitGetOverviewCertificatesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetOverviewRegistry operation middleware
+func (sh *strictHandler) GetOverviewRegistry(w http.ResponseWriter, r *http.Request) {
+	var request GetOverviewRegistryRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetOverviewRegistry(ctx, request.(GetOverviewRegistryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetOverviewRegistry")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetOverviewRegistryResponseObject); ok {
+		if err := validResponse.VisitGetOverviewRegistryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetOverviewUSpace operation middleware
+func (sh *strictHandler) GetOverviewUSpace(w http.ResponseWriter, r *http.Request) {
+	var request GetOverviewUSpaceRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetOverviewUSpace(ctx, request.(GetOverviewUSpaceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetOverviewUSpace")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetOverviewUSpaceResponseObject); ok {
+		if err := validResponse.VisitGetOverviewUSpaceResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
