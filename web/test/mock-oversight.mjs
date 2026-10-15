@@ -476,7 +476,16 @@ export function publicApi(req, res, url) {
             holder: "ussp",
             holder_name: "Test USSP Ltd",
             code: "USSPTST",
-            services: ["network_identification", "flight_authorisation"],
+            // Every service the schema names: the longest cell the page can show.
+            services: [
+              "network_identification",
+              "geo_awareness",
+              "flight_authorisation",
+              "traffic_information",
+              "conformance_monitoring",
+              "weather",
+              "common_information",
+            ],
             status: "operating",
             valid_from: "2026-01-01T00:00:00Z",
             valid_until: "2028-01-01T00:00:00Z",
