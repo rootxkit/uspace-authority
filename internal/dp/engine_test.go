@@ -268,6 +268,18 @@ func TestProviderBoundsAndRefusals(t *testing.T) {
 	if s[CounterProviderBadURL] == 0 || s[CounterPlainHTTP] == 0 || s[CounterProviderBadID] == 0 {
 		t.Fatalf("counters %v", s)
 	}
+	// The two refused ISAs are said: their flights are missing, and
+	// picture-ws says dp_isas_unpolled (never idle). isa-1 is polled.
+	if n := e.Unpolled(); n != 2 {
+		t.Fatalf("unpolled ISAs %d, want 2 (isa-2, isa-3)", n)
+	}
+	for _, tl := range tiles {
+		e.ISAs.FromSearch(tl.Key(), []f3411.IdentificationServiceArea{isa("isa-1", "ussp-lab-01", spBase)})
+	}
+	e.Reconcile(ctx)
+	if n := e.Unpolled(); n != 0 {
+		t.Fatalf("unpolled ISAs %d with every ISA polled, want 0", n)
+	}
 	if _, err := CheckBaseURL("http://127.0.0.1:8080"); err != nil {
 		t.Fatalf("plain http to loopback refused: %v", err)
 	}

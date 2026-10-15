@@ -304,18 +304,18 @@ func TestSelfStatusWithoutProviders(t *testing.T) {
 	if env.Body.DSS != DSSUnconfigured || env.Body.Providers != 0 {
 		t.Fatalf("no DSS configured: %+v", env.Body)
 	}
-	d := &Discovery{DSS: noDSS{}}
+	d := &Discovery{DSS: noDSS{}, ISAs: &ISAs{Max: 10}, Counters: &core.Counters{}}
 	e.Discovery = d
 	if b := st.Self(); b.DSS != dpviews.DSSUnknown || b.DSSSince != nil {
 		t.Fatalf("before a search: %+v", b)
 	}
-	d.setState(true, now)
+	d.Sync(context.Background(), []Tile{{Box: Box{MinLat: 41.70, MinLon: 44.80, MaxLat: 41.71, MaxLon: 44.81}}})
 	if b := st.Self(); b.DSS != dpviews.DSSAnswered || b.DSSSince != nil {
 		t.Fatalf("a search answered: %+v", b)
 	}
-	d.setState(false, now.Add(time.Second))
-	if b := st.Self(); b.DSS != dpviews.DSSUnavailable || b.DSSSince == nil || *b.DSSSince != bus.Stamp(now.Add(time.Second)) {
-		t.Fatalf("a search failed: %+v", b)
+	e.unpolled = 2
+	if b := st.Self(); b.UnpolledISAs != 2 {
+		t.Fatalf("unpolled ISAs not said: %+v", b)
 	}
 
 	raw, err := os.ReadFile("../../schemas/dp/status/v1.json")

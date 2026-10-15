@@ -21,7 +21,8 @@ import (
 // says on dp.v1.status that the DSS answered and it holds no provider,
 // which picture-ws shows as dp_state idle, not dp_unavailable. The DSS
 // down, it says dss_unavailable (so picture-ws says dp_unavailable);
-// back, answered again. An ISA appearing is polled at once.
+// back, answered again. An ISA naming a refused Service Provider is said
+// unpolled (dp_isas_unpolled, never idle); a pollable one is held.
 func TestScenarioDPIdleWithoutISAsInView(t *testing.T) {
 	s := ltest.New(t, ltest.Options{Name: "DP-idle"})
 	dss, sp := fakedss.NewDSS(), fakedss.NewSP()
@@ -75,8 +76,20 @@ func TestScenarioDPIdleWithoutISAsInView(t *testing.T) {
 	dss.SetDown(false)
 	s.Await("the DSS answering again", 60*time.Second, func() bool { b, _ := state(); return b.DSS == dpviews.DSSAnswered })
 
-	// An ISA appears: its provider is held and polled, no longer idle.
+	// An ISA whose Service Provider is refused (plain http to a
+	// non-loopback host) appears: not idle, it is said unpolled (its
+	// flight would be missing); gone, idle again.
 	now := time.Now()
+	dss.PutISA("isa-dp-refused", "ussp-LAB-02", "http://sp.example.test", box, now.Add(-time.Minute), now.Add(time.Hour))
+	s.Await("the refused ISA said unpolled", 60*time.Second, func() bool { b, _ := state(); return b.ISAs > 0 && b.UnpolledISAs == 1 })
+	if b, _ := state(); b.Providers != 0 {
+		t.Errorf("a refused Service Provider is held: %+v", b)
+	}
+	dss.DeleteISA("isa-dp-refused")
+	s.Await("the refused ISA gone", 60*time.Second, func() bool { b, _ := state(); return b.ISAs == 0 && b.UnpolledISAs == 0 })
+
+	// An ISA appears: its provider is held and polled, no longer idle.
+	now = time.Now()
 	dss.PutISA("isa-dp-idle", "ussp-LAB-01", ltest.HostURL(sp.URL()), box, now.Add(-time.Minute), now.Add(time.Hour))
 	s.Await("the ISA's provider held", 60*time.Second, func() bool { b, _ := state(); return b.Providers > 0 })
 	// No violation is expected: the scenario judges the Display

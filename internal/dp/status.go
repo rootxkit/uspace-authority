@@ -155,7 +155,7 @@ func (s *Status) Snapshot(p *Provider, now time.Time) StatusBody {
 // state, unknown until an ISA search answered.
 func (s *Status) Self() dpviews.Status {
 	e := s.Engine
-	b := dpviews.Status{DSS: dpviews.DSSUnconfigured, Tiles: len(e.Tiles()), Providers: len(e.Providers())}
+	b := dpviews.Status{DSS: dpviews.DSSUnconfigured, Tiles: len(e.Tiles()), Providers: len(e.Providers()), UnpolledISAs: e.Unpolled()}
 	if e.ISAs != nil {
 		b.ISAs = e.ISAs.Len()
 	}

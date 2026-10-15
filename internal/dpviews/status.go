@@ -29,4 +29,8 @@ type Status struct {
 	Tiles     int     `json:"tiles"`
 	ISAs      int     `json:"isas"`
 	Providers int     `json:"providers"`
+	// UnpolledISAs are ISAs in view whose Service Provider cannot be
+	// polled (bad owner, refused or clashing base URL, provider bound):
+	// their flights are missing.
+	UnpolledISAs int `json:"unpolled_isas"`
 }

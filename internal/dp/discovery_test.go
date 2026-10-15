@@ -2,6 +2,7 @@ package dp_test
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -206,5 +207,72 @@ func TestDiscoveryRemakesASubscriptionWhoseRenewalIsRefused(t *testing.T) {
 		if id == first || !d.Known(id) {
 			t.Fatalf("subscription %s (first %s)", id, first)
 		}
+	}
+}
+
+// scriptedDSS fails every call for a box in fail and answers the rest.
+type scriptedDSS struct {
+	mu   sync.Mutex
+	fail map[dp.Box]bool
+}
+
+func (s *scriptedDSS) failing(b dp.Box) bool { s.mu.Lock(); defer s.mu.Unlock(); return s.fail[b] }
+
+func (s *scriptedDSS) set(b dp.Box, fail bool) { s.mu.Lock(); defer s.mu.Unlock(); s.fail[b] = fail }
+
+func (s *scriptedDSS) SearchISAs(_ context.Context, b dp.Box, _, _ time.Time) ([]f3411.IdentificationServiceArea, error) {
+	if s.failing(b) {
+		return nil, errDSSDown
+	}
+	return nil, nil
+}
+
+// PutSubscription is never called: the test's discovery has no
+// uss_base_url, so it searches only.
+func (s *scriptedDSS) PutSubscription(context.Context, string, string, dp.Box, time.Time, time.Time, string) (*f3411.PutSubscriptionResponse, error) {
+	return nil, errDSSDown
+}
+
+func (s *scriptedDSS) DeleteSubscription(context.Context, string, string) error { return nil }
+
+var errDSSDown = errors.New("connection refused")
+
+// The DSS's state is every viewed tile's, not the last call's: one tile
+// whose search keeps failing keeps it dss_unavailable since its first
+// failure, whatever order the tiles are searched in and however many
+// others answer (a later success masked it before). The tile recovering,
+// or leaving the view, makes it ok.
+func TestDiscoveryStateAggregatesEveryTile(t *testing.T) {
+	now := time.Now().UTC()
+	clk := &clock{t: now}
+	a, b := dp.Box{MinLat: 41.70, MinLon: 44.80, MaxLat: 41.71, MaxLon: 44.81}, dp.Box{MinLat: 41.72, MinLon: 44.80, MaxLat: 41.73, MaxLon: 44.81}
+	dss := &scriptedDSS{fail: map[dp.Box]bool{a: true}}
+	d := &dp.Discovery{DSS: dss, ISAs: &dp.ISAs{Max: 100, Counters: &core.Counters{}}, Reread: time.Second, MaxSubscriptions: 10, Counters: &core.Counters{}, Now: clk.now}
+	tiles := []dp.Tile{{Box: a}, {Box: b}}
+	first := now
+	for range 5 {
+		d.Sync(context.Background(), tiles)
+		if st, since := d.State(); st != dp.DSSUnavailable || !since.Equal(first) {
+			t.Fatalf("tile a failing, b answering: %s since %v, want dss_unavailable since %v", st, since, first)
+		}
+		clk.add(2 * time.Second)
+	}
+	// Absence: every tile answering is ok.
+	dss.set(a, false)
+	d.Sync(context.Background(), tiles)
+	if st, since := d.State(); st != dp.DSSOK || since.IsZero() {
+		t.Fatalf("every tile answering: %s %v", st, since)
+	}
+	// a fails again, then leaves the view: ok.
+	clk.add(2 * time.Second)
+	dss.set(a, true)
+	d.Sync(context.Background(), tiles)
+	if st, _ := d.State(); st != dp.DSSUnavailable {
+		t.Fatalf("a failing again: %s", st)
+	}
+	clk.add(2 * time.Second)
+	d.Sync(context.Background(), []dp.Tile{{Box: b}})
+	if st, _ := d.State(); st != dp.DSSOK {
+		t.Fatalf("the failing tile no longer viewed: %s", st)
 	}
 }

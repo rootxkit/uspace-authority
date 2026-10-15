@@ -127,6 +127,9 @@ type Engine struct {
 
 	mu        sync.Mutex
 	providers map[string]*Provider // by base URL
+	// unpolled is how many ISAs in view at the last Reconcile name a
+	// Service Provider that cannot be polled (providerLocked nil).
+	unpolled int
 	// unnamed is since when no held ISA names a provider.
 	unnamed map[string]time.Time
 	pollers map[pollKey]*running
@@ -190,6 +193,16 @@ func (e *Engine) Tiles() []Tile {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	return slices.Clone(e.tiles)
+}
+
+// Unpolled is how many ISAs in view at the last Reconcile name a Service
+// Provider that cannot be polled: an owner that is not a subject token,
+// a refused base URL, a base URL another owner holds, or
+// DP_MAX_PROVIDERS reached. Their flights are missing from the picture.
+func (e *Engine) Unpolled() int {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	return e.unpolled
 }
 
 // Providers lists every Service Provider seen, by id.
@@ -284,6 +297,16 @@ func (e *Engine) Reconcile(ctx context.Context) {
 	isasPerSP := map[*Provider]map[string]bool{}
 	named, confirmed := e.ISAs.Named()
 	e.forgetLocked(named, now)
+	unpolled, polled := map[string]bool{}, map[string]bool{}
+	defer func() {
+		n := 0
+		for id := range unpolled {
+			if !polled[id] {
+				n++
+			}
+		}
+		e.unpolled = n
+	}()
 	for _, t := range tiles {
 		isas := e.ISAs.ForTile(t, now)
 		for i := range isas {
@@ -295,7 +318,12 @@ func (e *Engine) Reconcile(ctx context.Context) {
 					}
 				}
 			})
-			if p == nil || !e.Enabled(p.USSID) {
+			if p == nil {
+				unpolled[isa.Id] = true
+				continue
+			}
+			polled[isa.Id] = true
+			if !e.Enabled(p.USSID) {
 				continue
 			}
 			if isasPerSP[p] == nil {

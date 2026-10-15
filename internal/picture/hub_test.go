@@ -850,6 +850,10 @@ func TestDPIdleWhenTheDSSAnswersAndNoISAIsInView(t *testing.T) {
 		"no DSS configured":        {DSS: dpviews.DSSUnconfigured},
 		"no ISA search yet":        {DSS: dpviews.DSSUnknown},
 		"a provider not yet heard": {DSS: dpviews.DSSAnswered, ISAs: 1, Providers: 1},
+		// An ISA in view whose Service Provider cannot be polled: its
+		// flight is missing, never idle.
+		"an ISA in view, nothing polled": {DSS: dpviews.DSSAnswered, ISAs: 1, UnpolledISAs: 1},
+		"an ISA held, no provider":       {DSS: dpviews.DSSAnswered, ISAs: 1},
 	}
 	for name, b := range cases {
 		now = now.Add(time.Second)
@@ -858,12 +862,30 @@ func TestDPIdleWhenTheDSSAnswersAndNoISAIsInView(t *testing.T) {
 			t.Errorf("%s: dp_state %q, degraded %v; want unavailable", name, st.DPState, st.Degraded)
 		}
 	}
-	// A message that is not dp/status/v1 changes nothing and is counted.
+	// The reason is said: dp_isas_unpolled with the ISA unpolled, and
+	// only then.
+	now = now.Add(time.Second)
+	h.OfferDPStatus(dpMsg(t, dpviews.Status{DSS: dpviews.DSSAnswered, ISAs: 2, UnpolledISAs: 2}), now)
+	if st = tick(now); !has(st.Degraded, DegradedDPUnpolled) || !has(st.Degraded, DegradedDP) || st.DPState != DPUnavailable {
+		t.Fatalf("ISAs in view, none polled: dp_state %q, degraded %v; want unavailable with dp_isas_unpolled", st.DPState, st.Degraded)
+	}
+	now = now.Add(time.Second)
+	h.OfferDPStatus(dpMsg(t, dpviews.Status{DSS: dpviews.DSSAnswered, Tiles: 4}), now)
+	if st = tick(now); has(st.Degraded, DegradedDPUnpolled) || st.DPState != DPIdle {
+		t.Fatalf("no ISA in view: dp_state %q, degraded %v", st.DPState, st.Degraded)
+	}
+	// A message that is not dp/status/v1, or too large, changes nothing
+	// and is counted.
 	h.OfferDPStatus([]byte(`{"schema":"source/status/v1","body":{"dss":"ok"}}`), now)
 	if h.counters.Get(CounterDPStatusMalformed) != 1 {
 		t.Fatal("a foreign message was not refused")
 	}
-	if st = tick(now); st.DPState != DPUnavailable {
+	big := []byte(`{"schema":"dp/status/v1","body":{"dss":"dss_unavailable","pad":"` + strings.Repeat("x", maxMessageBytes) + `"}}`)
+	h.OfferDPStatus(big, now)
+	if h.counters.Get(CounterDPStatusMalformed) != 2 {
+		t.Fatal("a message over maxMessageBytes was not refused")
+	}
+	if st = tick(now); st.DPState != DPIdle {
 		t.Fatalf("a refused message changed dp_state to %q", st.DPState)
 	}
 }

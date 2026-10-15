@@ -14,6 +14,7 @@ export const DEGRADED_SLUGS: readonly Slug[] = [
   "cis_absent",
   "cis_stale",
   "dp_unavailable",
+  "dp_isas_unpolled",
   "manned_unavailable",
   "alerts_unconfirmed",
   "alerts_replaying",

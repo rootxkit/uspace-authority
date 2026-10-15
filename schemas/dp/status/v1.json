@@ -8,7 +8,7 @@
     "schema": { "const": "dp/status/v1" },
     "body": {
       "type": "object",
-      "required": ["dss", "dss_since", "tiles", "isas", "providers"],
+      "required": ["dss", "dss_since", "tiles", "isas", "providers", "unpolled_isas"],
       "additionalProperties": false,
       "properties": {
         "dss": {
@@ -18,7 +18,8 @@
         "dss_since": { "type": ["string", "null"], "format": "date-time", "description": "Since when the DSS is in a state other than ok." },
         "tiles": { "type": "integer", "minimum": 0, "description": "Root tiles of the viewed areas searched for ISAs." },
         "isas": { "type": "integer", "minimum": 0 },
-        "providers": { "type": "integer", "minimum": 0, "description": "Service Providers the held ISAs name." }
+        "providers": { "type": "integer", "minimum": 0, "description": "Service Providers the held ISAs name." },
+        "unpolled_isas": { "type": "integer", "minimum": 0, "description": "ISAs in view whose Service Provider cannot be polled (an owner that is not a subject token, a refused or clashing uss_base_url, DP_MAX_PROVIDERS reached): their flights are missing, and picture-ws says dp_isas_unpolled." }
       }
     }
   }

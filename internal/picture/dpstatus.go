@@ -21,6 +21,11 @@ type dpSelf struct {
 
 // OfferDPStatus takes one dp.v1.status message (dpviews.StatusSchema).
 func (h *Hub) OfferDPStatus(raw []byte, now time.Time) {
+	if len(raw) > maxMessageBytes {
+		h.counters.Inc(CounterDPStatusMalformed)
+		h.cfg.Limiter.Limited("picture_dp_status_malformed").Warn("Display Provider status refused", slog.Int("bytes", len(raw)))
+		return
+	}
 	var env struct {
 		Schema string         `json:"schema"`
 		Body   dpviews.Status `json:"body"`
@@ -35,17 +40,23 @@ func (h *Hub) OfferDPStatus(raw []byte, now time.Time) {
 	h.dp.mu.Unlock()
 }
 
-// dpIdle reports whether dp-poller said, within fresh of now, that the
-// DSS answered its ISA searches and it holds no Service Provider: the
-// Display Provider works and nothing in view has an ISA. That is not
-// unavailable (spec 02 F3411 row: views exist only where ISAs exist;
-// its failure modes are a USSP down or over its response time, shown on
-// that USSP's row, and the DSS down, dss_unavailable).
-func (h *Hub) dpIdle(now time.Time, fresh time.Duration) bool {
+// dpFresh is dp-poller's status when it came within fresh of now.
+func (h *Hub) dpFresh(now time.Time, fresh time.Duration) (dpviews.Status, bool) {
 	h.dp.mu.Lock()
 	defer h.dp.mu.Unlock()
 	if h.dp.at.IsZero() || fresh <= 0 || now.Sub(h.dp.at) > fresh {
-		return false
+		return dpviews.Status{}, false
 	}
-	return h.dp.body.DSS == dpviews.DSSAnswered && h.dp.body.Providers == 0
+	return h.dp.body, true
+}
+
+// dpIdle reports whether b says the Display Provider works and has
+// nothing to poll: the DSS answered its ISA searches, it holds no ISA in
+// view and no Service Provider. That is not unavailable (spec 02 F3411
+// row: views exist only where ISAs exist; its failure modes are a USSP
+// down or over its response time, shown on that USSP's row, and the DSS
+// down, dss_unavailable). An ISA in view that nothing polls is never
+// idle: its flight is missing (dp_isas_unpolled).
+func dpIdle(b dpviews.Status) bool {
+	return b.DSS == dpviews.DSSAnswered && b.ISAs == 0 && b.Providers == 0 && b.UnpolledISAs == 0
 }
