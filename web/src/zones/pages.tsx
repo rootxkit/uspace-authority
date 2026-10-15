@@ -14,7 +14,7 @@ import { inputToUtc } from "@rootxkit/uspace-ui/form";
 import { DataTable, columnsFor, tableColumn } from "@rootxkit/uspace-ui/table";
 import { Badge, Button, EmptyState, Input, Label } from "@rootxkit/uspace-ui/ui";
 import { must, outcomeOf, useConsole, useLoad, type Load } from "../authoring/api";
-import { Act, Can, Facts, Loaded, PageHeader, ProblemNotice, Section, UTC } from "../authoring/ui";
+import { Act, Can, Facts, HEADER_ACTION, Loaded, PageHeader, ProblemNotice, Section, UTC } from "../authoring/ui";
 import type { Role } from "../shell/nav";
 import { mapPath } from "../shell/paths";
 import { PublicationState } from "../publications/PublicationState";
@@ -80,11 +80,11 @@ export function AirspaceList({ dataset }: { dataset: Dataset }) {
     <div className="flex flex-col" data-testid={`${base(dataset)}-page`}>
       <PageHeader titleKey={titleOf(dataset)}>
         <Can roles={ROLES[dataset].author}>
-          <Link href={`${listPath(lang, dataset)}/new`} className="text-sm font-semibold underline" data-testid="zone-new">
+          <Link href={`${listPath(lang, dataset)}/new`} className={HEADER_ACTION} data-testid="zone-new">
             {t(dataset === "zones" ? "authority.zone.new" : "authority.uspace.new")}
           </Link>
           {dataset === "zones" && (
-            <Link href={`${listPath(lang, dataset)}/import`} className="text-sm font-semibold underline" data-testid="zone-import">
+            <Link href={`${listPath(lang, dataset)}/import`} className={HEADER_ACTION} data-testid="zone-import">
               {t("authority.zone.import")}
             </Link>
           )}
@@ -266,7 +266,7 @@ export function AirspaceDetail({ dataset, identifier }: { dataset: Dataset; iden
     <div className="flex flex-col" data-testid="zone-detail">
       <PageHeader titleKey={dataset === "zones" ? "authority.zone.detail" : "authority.uspace.detail"} vars={{ id: identifier }} back={{ href: listPath(lang, dataset), labelKey: titleOf(dataset) }}>
         <Can roles={ROLES[dataset].author}>
-          <Link href={`${zonePath(lang, dataset, identifier)}/edit`} className="text-sm font-semibold underline" data-testid="zone-revise">
+          <Link href={`${zonePath(lang, dataset, identifier)}/edit`} className={HEADER_ACTION} data-testid="zone-revise">
             {t("authority.zone.revise")}
           </Link>
         </Can>

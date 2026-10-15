@@ -16,7 +16,7 @@ import type { components } from "../api/types";
 import { must, useConsole, useLoad } from "../authoring/api";
 import { compact } from "../authoring/fields";
 import { PersonalData } from "../authoring/PersonalData";
-import { Can, Facts, Loaded, PageHeader, Section } from "../authoring/ui";
+import { Can, Facts, HEADER_ACTION, Loaded, PageHeader, Section } from "../authoring/ui";
 import { Filters, RegistryList, RegistryTabs, StatusBadge, StatusChange, registryPath } from "./common";
 import { NotYourRole, StatusFilter } from "./operators";
 import { byAt } from "./words";
@@ -87,7 +87,7 @@ export function PilotsPage() {
     <div className="flex flex-col" data-testid="pilots-page">
       <PageHeader titleKey="authority.registry.pilots.title">
         <Can roles={["registrar"]}>
-          <Link href={registryPath(lang, "pilots/new")} className="text-sm font-semibold underline" data-testid="pilot-new">
+          <Link href={registryPath(lang, "pilots/new")} className={HEADER_ACTION} data-testid="pilot-new">
             {t("authority.registry.pilots.new")}
           </Link>
         </Can>

@@ -17,12 +17,20 @@
   color: var(--authority-on-police-band);
 }
 
-.police-band a {
+/* The realm's two pages on the band: the current one is a filled tab. */
+.police-tab {
   color: inherit;
 }
 
-/* A control on the band keeps the kit's own surface and text colours. */
-.police-band button {
-  background: var(--us-surface-raised);
-  color: var(--us-text);
+.police-tab:hover {
+  background: color-mix(in srgb, var(--authority-on-police-band) 14%, transparent);
+}
+
+.police-tab[aria-current="page"] {
+  background: var(--authority-on-police-band);
+  color: var(--authority-police-band);
+}
+
+.police-tab:focus-visible {
+  outline-color: var(--authority-on-police-band);
 }

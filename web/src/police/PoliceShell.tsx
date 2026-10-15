@@ -2,9 +2,9 @@
 
 // The police realm's own frame (WP-23; spec 02 F10, 06 §5): a colour band
 // that no console page has, so an officer always knows the realm; no
-// console navigation; the realm's two pages; the language switch and
-// sign-out. The realm never opens the picture WebSocket: every view of
-// the airspace here is a police query, which api checks against the
+// console navigation; the realm's two pages; the scheme and language
+// switches and sign-out, on the kit's tokens like the console's frame.
+// The realm never opens the picture WebSocket: every view of the airspace here is a police query, which api checks against the
 // account's address list and records with its purpose and case reference
 // (docs/runbooks/police-realm.md, "Threats").
 import Link from "next/link";
@@ -14,9 +14,10 @@ import { SessionProvider, useSession } from "@rootxkit/uspace-ui/auth/client";
 import { useLang, useT } from "@rootxkit/uspace-ui/i18n";
 import type { SessionDisplay } from "@rootxkit/uspace-ui/model";
 import { useTheme } from "@rootxkit/uspace-ui/theme";
-import { Button } from "@rootxkit/uspace-ui/ui";
+import { Button, LanguageSwitch } from "@rootxkit/uspace-ui/ui";
 import { consoleClient } from "../api/client";
-import { LocaleSwitch } from "../components/LocaleSwitch";
+import { BrandMark } from "../shell/brand";
+import { SchemeToggle } from "../shell/SchemeToggle";
 import { loginPath, policePath } from "../shell/paths";
 import type { PoliceConfigResult } from "./config";
 
@@ -85,52 +86,73 @@ export function PoliceShell({ session, config, children }: { session: SessionDis
     <SessionProvider session={session}>
       <PoliceConfigContext.Provider value={config}>
         <SessionCheck />
-        <div className="flex min-h-full flex-col" data-realm="police">
-          <a href="#main" className="sr-only focus:not-sr-only">
+        <div className="flex min-h-dvh flex-col bg-background text-foreground" data-realm="police">
+          <a
+            href="#main"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-card focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-foreground focus:shadow-overlay"
+          >
             {t("authority.skip")}
           </a>
-          <header className="police-band flex flex-wrap items-center justify-between gap-4 px-4 py-2" data-testid="police-band">
-            <div>
-              <p className="m-0 text-lg font-bold" data-testid="police-title">
-                {t("authority.police.title", { name: brand.shortName })}
-              </p>
-              <p className="m-0 text-xs">{t("authority.police.tagline")}</p>
+          <header className="sticky top-0 z-30 shadow-panel">
+            <div className="police-band flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3 sm:px-6" data-testid="police-band">
+              <div className="flex min-w-0 items-center gap-3">
+                <span aria-hidden="true" className="inline-flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md">
+                  <BrandMark />
+                </span>
+                <div className="min-w-0">
+                  <p className="m-0 text-base font-bold" data-testid="police-title">
+                    {t("authority.police.title", { name: brand.shortName })}
+                  </p>
+                  <p className="m-0 text-xs opacity-90">{t("authority.police.tagline")}</p>
+                </div>
+              </div>
+              <nav aria-label={t("authority.police.nav.label")} data-testid="police-nav">
+                <ul className="m-0 flex list-none flex-wrap gap-1 p-0">
+                  {ITEMS.map((i) => {
+                    const href = `${policePath(lang)}${i.sub}`;
+                    const current = pathname === href;
+                    return (
+                      <li key={i.sub}>
+                        <Link
+                          href={href}
+                          aria-current={current ? "page" : undefined}
+                          className="police-tab inline-flex h-8 items-center rounded-md px-3 text-sm font-semibold no-underline focus-visible:outline-2 focus-visible:outline-offset-2"
+                        >
+                          {t(i.labelKey)}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </nav>
             </div>
-            <nav aria-label={t("authority.police.nav.label")} className="flex flex-wrap gap-4 text-sm" data-testid="police-nav">
-              {ITEMS.map((i) => {
-                const href = `${policePath(lang)}${i.sub}`;
-                const current = pathname === href;
-                return (
-                  <Link key={i.sub} href={href} aria-current={current ? "page" : undefined} className={current ? "font-bold underline underline-offset-4" : "underline-offset-4 hover:underline"}>
-                    {t(i.labelKey)}
-                  </Link>
-                );
-              })}
-            </nav>
-            <div className="flex items-center gap-4">
-              <LocaleSwitch />
-              <SignOut />
+            <div className="flex flex-col gap-2 border-b border-border bg-topbar px-4 py-2 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
+              <p className="m-0 min-w-0 flex-1 text-xs text-muted-foreground" data-testid="police-record-notice">
+                {t("authority.police.record_notice")}
+              </p>
+              <div className="flex shrink-0 items-center gap-2">
+                <SchemeToggle />
+                <LanguageSwitch />
+                <SignOut />
+              </div>
             </div>
           </header>
-          <p className="m-0 border-b border-[var(--us-border)] px-4 py-1 text-xs" data-testid="police-record-notice">
-            {t("authority.police.record_notice")}
-          </p>
           {"problem" in config && (
-            <p role="alert" className="m-0 px-4 py-2 text-sm text-[var(--us-danger)]" data-testid="police-config-problem">
+            <p role="alert" className="m-0 border-b border-border px-4 py-2 text-sm text-[var(--us-danger)] sm:px-6" data-testid="police-config-problem">
               {t("authority.police.config_problem", { problem: config.problem })}
             </p>
           )}
           {"config" in config && config.config.pendingGcaa && (
-            <p role="note" className="m-0 px-4 py-1 text-xs text-[var(--us-text-muted)]" data-testid="police-pending-gcaa">
+            <p role="note" className="m-0 border-b border-border px-4 py-1.5 text-xs text-muted-foreground sm:px-6" data-testid="police-pending-gcaa">
               {t("authority.police.pending_gcaa")}
             </p>
           )}
-          <main id="main" className="flex flex-1 flex-col">
+          <main id="main" tabIndex={-1} className="mx-auto flex w-full max-w-[96rem] flex-1 flex-col outline-none sm:px-2">
             {children}
           </main>
-          <footer className="border-t border-[var(--us-border)] px-4 py-1 text-xs text-[var(--us-text-muted)]">
+          <footer className="flex flex-wrap gap-x-4 gap-y-1 border-t border-border px-4 py-2 text-xs text-muted-foreground sm:px-6">
             <span>{t("authority.footer.operator", { name: brand.name })}</span>
-            <span className="ms-4">{t("authority.police.footer")}</span>
+            <span>{t("authority.police.footer")}</span>
           </footer>
         </div>
       </PoliceConfigContext.Provider>

@@ -6,7 +6,7 @@
 // personal-data purpose; a legal export built and downloaded. Every wait
 // is on a condition, never on a sleep.
 import { expect, test } from "@playwright/test";
-import { INSPECTOR, POLICE, apiCalls, resetMock, signInTo } from "./helpers";
+import { INSPECTOR, POLICE, apiCalls, consoleNav, openPicture, resetMock, signInTo } from "./helpers";
 
 test.beforeEach(async ({ request }) => {
   await resetMock(request);
@@ -27,7 +27,7 @@ test("the realm has its own band and navigation, and never opens the picture Web
   await signInTo(page, "en", POLICE, POLICE_HOME);
   await expect(page.getByTestId("police-band")).toBeVisible();
   await expect(page.getByTestId("police-title")).toContainText("police realm");
-  await expect(page.getByTestId("nav")).toHaveCount(0);
+  await expect(consoleNav(page)).toHaveCount(0);
   await expect(page.getByTestId("police-nav").getByRole("link")).toHaveCount(2);
   await expect(page.getByTestId("police-pending-gcaa")).toBeVisible();
   // The console's map sends a police session back to its realm.
@@ -43,6 +43,9 @@ test("the realm has its own band and navigation, and never opens the picture Web
 
 test("a console session opens the picture WebSocket and is sent away from the police realm (the pair above)", async ({ page, request }) => {
   await signInTo(page, "en", INSPECTOR, /\/en$/);
+  // The pair of the police realm's absent navigation: a console session has it.
+  await expect(consoleNav(page)).toBeVisible();
+  await openPicture(page);
   await expect(page.getByTestId("track-list")).toBeVisible();
   await expect.poll(async () => (await (await request.get("/__mock/upgrades")).json()) as { realm: string }[]).toContainEqual({ realm: "console" });
   await page.goto("/en/police");

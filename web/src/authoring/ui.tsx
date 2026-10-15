@@ -4,31 +4,36 @@
 // refused or failed to answer (in words, with its field problems by
 // path), a list of facts, the role courtesy, and an act that confirms
 // its exact effect before it runs.
-import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { ApiError } from "@rootxkit/uspace-ui/api";
 import { RequireRole, useSession } from "@rootxkit/uspace-ui/auth/client";
 import { ConfirmDialog, FieldErrors } from "@rootxkit/uspace-ui/form";
 import { fmtTimeUTC, useLang, useT, type Vars } from "@rootxkit/uspace-ui/i18n";
-import { Button, Skeleton } from "@rootxkit/uspace-ui/ui";
+import { Button, PageHeader as KitPageHeader, Skeleton, buttonVariants } from "@rootxkit/uspace-ui/ui";
+import { renderLink } from "../shell/link";
+import { useTrail } from "../shell/trail";
 import type { Role } from "../shell/nav";
 import { outcomeOf, type Load } from "./api";
 
-/** A page's heading, the way back, and its actions. */
+/** The look of a link among a page header's actions: an outline button. */
+export const HEADER_ACTION = buttonVariants({ variant: "outline", size: "sm" });
+
+/** A page's heading, its trail with the way back, and its actions, on the kit's PageHeader. */
 export function PageHeader(props: { titleKey: string; vars?: Vars; back?: { href: string; labelKey: string }; children?: ReactNode }) {
   const t = useT();
+  const title = t(props.titleKey, props.vars);
+  const back = props.back === undefined ? undefined : { href: props.back.href, label: t(props.back.labelKey) };
+  const trail = useTrail(title, back);
+  // A page outside the console's navigation still shows its way back.
+  const crumbs = trail ?? (back === undefined ? undefined : [{ label: back.label, href: back.href }, { label: title }]);
   return (
-    <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--us-border)] px-4 py-3">
-      <div className="flex flex-col gap-1">
-        {props.back !== undefined && (
-          <Link href={props.back.href} className="text-sm underline underline-offset-2">
-            {t(props.back.labelKey)}
-          </Link>
-        )}
-        <h1 className="m-0 text-xl font-bold">{t(props.titleKey, props.vars)}</h1>
-      </div>
-      {props.children !== undefined && <div className="flex flex-wrap items-center gap-2">{props.children}</div>}
-    </header>
+    <KitPageHeader
+      className="px-4 pt-5 pb-3"
+      title={title}
+      {...(crumbs === undefined ? {} : { breadcrumbs: crumbs })}
+      {...(props.children === undefined ? {} : { actions: props.children })}
+      renderLink={renderLink}
+    />
   );
 }
 

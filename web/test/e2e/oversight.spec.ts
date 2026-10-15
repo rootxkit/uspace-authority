@@ -6,7 +6,7 @@
 // the sources with their switches, and the audit log. Every wait is on a
 // condition, never on a sleep.
 import { expect, test, type Page } from "@playwright/test";
-import { ADMIN, AUDITOR, INSPECTOR, OFFICER, apiCalls, resetMock, signInTo } from "./helpers";
+import { ADMIN, AUDITOR, INSPECTOR, OFFICER, apiCalls, consoleNav, resetMock, signInTo } from "./helpers";
 
 test.beforeEach(async ({ request }) => {
   await resetMock(request);
@@ -24,7 +24,7 @@ async function openViolation(page: Page, kindText: string) {
 
 test("a violation with a hole: the hole is labelled, nothing is drawn across it, and every AGL number names its ground", async ({ page }) => {
   await signInTo(page, "en", INSPECTOR, MAP);
-  await expect(page.getByTestId("nav").getByRole("link", { name: "Violations" })).toBeVisible();
+  await expect(consoleNav(page).getByRole("link", { name: "Violations" })).toBeVisible();
   await openViolation(page, "Above the height limit");
 
   const hole = page.getByTestId("excerpt-hole");
@@ -81,7 +81,7 @@ test("escalating broadcast evidence: blocked without a note, refused by api with
 
 test("an inspector cannot reach the occurrence routes: no entry, a refusal, and nothing read", async ({ page, request }) => {
   await signInTo(page, "en", INSPECTOR, MAP);
-  await expect(page.getByTestId("nav").getByRole("link", { name: "Occurrence reports" })).toHaveCount(0);
+  await expect(consoleNav(page).getByRole("link", { name: "Occurrence reports" })).toHaveCount(0);
   for (const path of ["/en/occurrences", "/en/occurrences/export", "/en/occurrences/01K6H3BV4H15G5E4G7X0NT0001"]) {
     await page.goto(path);
     await expect(page.getByTestId("role-refused")).toContainText("incident officer");
@@ -91,7 +91,7 @@ test("an inspector cannot reach the occurrence routes: no entry, a refusal, and 
 
 test("an incident officer can (the pair above): the queue with the 72 h flag, the reporter only when api returns it, the export's warning", async ({ page, request }) => {
   await signInTo(page, "en", OFFICER, MAP);
-  await page.getByTestId("nav").getByRole("link", { name: "Occurrence reports" }).click();
+  await consoleNav(page).getByRole("link", { name: "Occurrence reports" }).click();
   const table = page.getByTestId("occurrences-table");
   await expect(table.locator("[data-occurrence-row]")).toHaveCount(2);
   await expect(table.locator('[data-within="false"]')).toHaveText("late: received after the deadline");
@@ -158,7 +158,7 @@ test("an incident: open it, add a note, build an oversight pack, read its manife
 
 test("sources: disabled says by whom and why; a switch needs a reason and is recorded", async ({ page, request }) => {
   await signInTo(page, "en", ADMIN, MAP);
-  await page.getByTestId("nav").getByRole("link", { name: "Sources" }).click();
+  await consoleNav(page).getByRole("link", { name: "Sources" }).click();
   const table = page.getByTestId("sources-table");
   await expect(table.locator('[data-source="direct_rid/rx-test-2"]').getByTestId("disabled-by")).toContainText("admin:test.admin: test maintenance");
   await expect(table.locator('[data-source="network_rid/ussp-test"]')).toContainText("lagging by 12 s");
@@ -180,7 +180,7 @@ test("sources: disabled says by whom and why; a switch needs a reason and is rec
 
 test("audit: the log, a month verified, a month without rows never called intact, and the DPO report", async ({ page }) => {
   await signInTo(page, "en", AUDITOR, MAP);
-  await page.getByTestId("nav").getByRole("link", { name: "Audit log" }).click();
+  await consoleNav(page).getByRole("link", { name: "Audit log" }).click();
   await page.getByTestId("audit-search").click();
   await expect(page.getByTestId("audit-table").locator("[data-event]")).toHaveCount(2);
 

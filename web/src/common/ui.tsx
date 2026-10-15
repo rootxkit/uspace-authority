@@ -2,10 +2,12 @@
 
 // Small display pieces shared by WP-23's pages, on the kit's shadcn set:
 // a list of facts, a page header, a labelled native choice and a labelled
-// input. Every label is a catalogue key; values are what api sent.
+// input; the header and the parts are the kit's frame components. Every label is a catalogue key; values are what api sent.
 import { useId, type ReactNode } from "react";
 import { useT } from "@rootxkit/uspace-ui/i18n";
-import { Input, Label, Textarea } from "@rootxkit/uspace-ui/ui";
+import { Input, Label, PageHeader as KitPageHeader, Panel, Textarea } from "@rootxkit/uspace-ui/ui";
+import { renderLink } from "../shell/link";
+import { useTrail } from "../shell/trail";
 
 export interface Fact {
   /** The catalogue key of the term. */
@@ -31,29 +33,29 @@ export function Facts({ items, testId }: { items: readonly Fact[]; testId?: stri
   );
 }
 
-/** A page's title and its one-line explanation. */
+/** A page's title, its trail and its one-line explanation, on the kit's PageHeader; `children` are the page's actions or what stands beside the title. */
 export function PageHeader({ titleKey, introKey, vars, children }: { titleKey: string; introKey?: string; vars?: Record<string, string | number>; children?: ReactNode }) {
   const t = useT();
+  const title = t(titleKey, vars);
+  const trail = useTrail(title);
   return (
-    <header className="flex flex-col gap-1">
-      <h1 className="m-0 text-xl font-bold">{t(titleKey, vars)}</h1>
-      {introKey !== undefined && <p className="m-0 text-sm text-[var(--us-text-muted)]">{t(introKey, vars)}</p>}
-      {children}
-    </header>
+    <KitPageHeader
+      title={title}
+      {...(trail === undefined ? {} : { breadcrumbs: trail })}
+      {...(introKey === undefined ? {} : { description: t(introKey, vars) })}
+      {...(children === undefined ? {} : { actions: children })}
+      renderLink={renderLink}
+    />
   );
 }
 
-/** A titled part of a page. */
+/** A titled part of a page: a kit Panel named by its heading. */
 export function Part({ titleKey, children, testId, vars }: { titleKey: string; children: ReactNode; testId?: string; vars?: Record<string, string | number> }) {
   const t = useT();
-  const id = useId();
   return (
-    <section aria-labelledby={id} className="flex flex-col gap-2 rounded-md border border-[var(--us-border)] bg-[var(--us-surface-raised)] p-3" data-testid={testId}>
-      <h2 id={id} className="m-0 text-base font-semibold">
-        {t(titleKey, vars)}
-      </h2>
+    <Panel title={t(titleKey, vars)} data-testid={testId} bodyClassName="flex flex-col gap-2">
       {children}
-    </section>
+    </Panel>
   );
 }
 

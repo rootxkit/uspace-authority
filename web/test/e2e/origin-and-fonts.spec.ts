@@ -4,7 +4,7 @@
 // the CSP, the Georgian catalogue renders in Noto Sans Georgian, and the
 // language choice is kept in a Secure cookie.
 import { expect, test } from "@playwright/test";
-import { BROADCAST_TRACK, INSPECTOR, resetMock, signIn } from "./helpers";
+import { BROADCAST_TRACK, INSPECTOR, openPicture, resetMock, signIn } from "./helpers";
 
 test.beforeEach(async ({ request }) => {
   await resetMock(request);
@@ -17,6 +17,9 @@ test("no request leaves the origin during sign-in and the map", async ({ page, b
   // A WebSocket is not a request event in Playwright; it is listed on its own.
   page.on("websocket", (ws) => urls.push(ws.url()));
   await signIn(page, "en", INSPECTOR);
+  // The overview opens the picture and its map too; then the live picture itself.
+  await expect(page.getByTestId("overview")).toBeVisible();
+  await openPicture(page);
   await expect(page.getByTestId("track-list").locator(`[data-track="${BROADCAST_TRACK}"]`)).toBeVisible();
   const elsewhere = urls.filter((u) => {
     if (u.startsWith("data:") || u.startsWith("blob:")) return false;
@@ -85,7 +88,7 @@ test("the Georgian catalogue renders in Noto Sans Georgian", async ({ page }) =>
 
 test("the language switch remembers the choice in a Secure cookie", async ({ page, context }) => {
   await signIn(page, "en", INSPECTOR);
-  await page.getByRole("link", { name: "ქართული" }).click();
+  await page.getByRole("button", { name: "ქართული" }).click();
   await expect(page).toHaveURL(/\/ka$/);
   const lang = (await context.cookies()).find((c) => c.name === "uspace_lang");
   expect(lang?.value).toBe("ka");
