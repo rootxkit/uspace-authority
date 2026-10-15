@@ -15,6 +15,7 @@ import (
 	"github.com/rootxkit/uspace-authority/internal/cell"
 	"github.com/rootxkit/uspace-authority/internal/picture"
 	"github.com/rootxkit/uspace-authority/internal/sources"
+	"github.com/rootxkit/uspace-authority/internal/store/storetest"
 	"github.com/rootxkit/uspace-authority/internal/violation"
 )
 
@@ -293,4 +294,59 @@ func TestIntegrationFloodRaisesDroppedFramesAndTheConsoleStays(t *testing.T) {
 		t.Fatalf("the console was closed: %v", err)
 	default:
 	}
+}
+
+// cis_stale on the console is the age of the CISP's last confirmation of
+// the restrictions version held (proj_restrictions_state.confirmed_at,
+// timeseries 00014; spec 02 F3), not of the projection's write: a
+// projection written an hour ago and confirmed now is current, the
+// never-published dataset (version 0) included; one not confirmed for
+// an hour is stale, and so is one never confirmed whose write is an
+// hour old. On the staging droplet the age was the write's and the
+// console showed cis_stale while the CISP confirmed every minute.
+func TestIntegrationCISStaleIsTheAgeOfTheLastConfirmation(t *testing.T) {
+	natsURL(t)
+	api := newSessionAPI(t)
+	var tsURL string
+	p := startPicture(t, api, natsURL(t), func(m map[string]string) { tsURL = m["TS_URL"] })
+	db := storetest.Open(t, tsURL)
+	set := func(q string) {
+		t.Helper()
+		if _, err := db.Exec(q); err != nil {
+			t.Fatal(err)
+		}
+	}
+	c := dialConsole(t, p.ws, api.session(t, "cis-age"), 0)
+	status := func(ok func(picture.StatusBody) bool) picture.StatusBody {
+		t.Helper()
+		return statusBody(t, c.until(t, picture.SchemaStatus, 10*time.Second, func(e envelope) bool {
+			var b picture.StatusBody
+			return json.Unmarshal(e.Body, &b) == nil && ok(b)
+		}))
+	}
+	written := `INSERT INTO proj_restrictions_state (id, cis_version, etag, projected_at, confirmed_at)
+		VALUES (true, 0, '"restrictions:0"', now() - interval '1 hour', %s)
+		ON CONFLICT (id) DO UPDATE SET projected_at = EXCLUDED.projected_at, confirmed_at = EXCLUDED.confirmed_at`
+
+	// Written an hour ago, confirmed now: current.
+	set(fmt.Sprintf(written, "now()"))
+	st := status(func(b picture.StatusBody) bool { return b.CISAgeS != nil && *b.CISAgeS < 60 })
+	if has(st.Degraded, picture.DegradedCISStale) || has(st.Degraded, picture.DegradedCISAbsent) || st.CISVersion == nil || *st.CISVersion != "0" {
+		t.Fatalf("a version confirmed now: degraded %v, version %v", st.Degraded, st.CISVersion)
+	}
+
+	// Not confirmed for an hour: stale.
+	set(`UPDATE proj_restrictions_state SET confirmed_at = now() - interval '1 hour'`)
+	status(func(b picture.StatusBody) bool { return has(b.Degraded, picture.DegradedCISStale) })
+
+	// Confirmed again: fresh, though the write is still an hour old.
+	set(`UPDATE proj_restrictions_state SET confirmed_at = now()`)
+	status(func(b picture.StatusBody) bool {
+		return b.CISAgeS != nil && *b.CISAgeS < 60 && !has(b.Degraded, picture.DegradedCISStale)
+	})
+
+	// Never confirmed (a direct restriction before the first read): the
+	// write's age, an hour, so stale.
+	set(fmt.Sprintf(written, "NULL"))
+	status(func(b picture.StatusBody) bool { return has(b.Degraded, picture.DegradedCISStale) })
 }

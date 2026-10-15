@@ -27,7 +27,17 @@ FROM (SELECT unnest(sqlc.arg(identifiers)::text[]) AS identifier,
              unnest(sqlc.arg(airspace_ids)::text[]) AS uspace_airspace_id) AS r;
 
 -- name: UpsertRestrictionsState :exec
-INSERT INTO proj_restrictions_state (id, cis_version, etag, projected_at)
-VALUES (true, sqlc.arg(cis_version), sqlc.arg(etag), sqlc.arg(projected_at))
+-- confirmed_at is when the CISP last confirmed the version (00014), NULL
+-- when it has not yet.
+INSERT INTO proj_restrictions_state (id, cis_version, etag, projected_at, confirmed_at)
+VALUES (true, sqlc.arg(cis_version), sqlc.arg(etag), sqlc.arg(projected_at), sqlc.narg(confirmed_at))
 ON CONFLICT (id) DO UPDATE SET
-    cis_version = EXCLUDED.cis_version, etag = EXCLUDED.etag, projected_at = EXCLUDED.projected_at;
+    cis_version = EXCLUDED.cis_version, etag = EXCLUDED.etag, projected_at = EXCLUDED.projected_at,
+    confirmed_at = EXCLUDED.confirmed_at;
+
+-- name: ConfirmRestrictionsState :execrows
+-- The CISP confirmed the version the projection holds: only that
+-- version's row, and never moved back.
+UPDATE proj_restrictions_state SET confirmed_at = sqlc.arg(confirmed_at)::timestamptz
+WHERE id AND cis_version = sqlc.arg(cis_version)::bigint
+  AND (confirmed_at IS NULL OR confirmed_at < sqlc.arg(confirmed_at)::timestamptz);

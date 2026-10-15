@@ -49,7 +49,8 @@ func (q *Queries) ReadRestrictions(ctx context.Context) ([]ProjRestriction, erro
 }
 
 const readRestrictionsState = `-- name: ReadRestrictionsState :one
-SELECT cis_version, etag, projected_at, extract(epoch FROM now() - projected_at)::double precision AS age_s
+SELECT cis_version, etag, projected_at, confirmed_at,
+       extract(epoch FROM now() - coalesce(confirmed_at, projected_at))::double precision AS age_s
 FROM proj_restrictions_state WHERE id
 `
 
@@ -57,6 +58,7 @@ type ReadRestrictionsStateRow struct {
 	CisVersion  int64
 	Etag        string
 	ProjectedAt time.Time
+	ConfirmedAt *time.Time
 	AgeS        float64
 }
 
@@ -68,6 +70,7 @@ func (q *Queries) ReadRestrictionsState(ctx context.Context) (ReadRestrictionsSt
 		&i.CisVersion,
 		&i.Etag,
 		&i.ProjectedAt,
+		&i.ConfirmedAt,
 		&i.AgeS,
 	)
 	return i, err

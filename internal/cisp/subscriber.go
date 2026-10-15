@@ -432,7 +432,10 @@ func (s *Subscriber) project(ctx context.Context, v *Version) {
 	if v != nil {
 		version, etag = v.Number, v.ETag
 	}
-	err := s.cfg.Projector.ProjectRestrictions(ctx, version, etag, rows, s.cfg.Now().UTC())
+	s.mu.Lock()
+	confirmed := s.st[DatasetRestrictions].checkedAt
+	s.mu.Unlock()
+	err := s.cfg.Projector.ProjectRestrictions(ctx, version, etag, rows, s.cfg.Now().UTC(), confirmed)
 	switch {
 	case errors.Is(err, ErrProjectionNewer):
 		s.cfg.Counters.Inc(CounterProjectionOlder)
@@ -457,12 +460,16 @@ func (s *Subscriber) announce(ctx context.Context, c *Cached) {
 
 // confirm records that the CISP confirmed the version held.
 func (s *Subscriber) confirm(ctx context.Context, d Dataset, cur *Version) {
+	now := s.cfg.Now()
 	s.mu.Lock()
 	st := s.st[d]
-	st.checkedAt, st.lastErr = s.cfg.Now(), ""
+	st.checkedAt, st.lastErr = now, ""
 	s.mu.Unlock()
 	if cur == nil {
 		return
+	}
+	if d == DatasetRestrictions {
+		s.confirmProjection(ctx, cur.Number, now)
 	}
 	s.clearPending(d, cur.Number)
 	if s.cfg.Store != nil {
@@ -477,15 +484,42 @@ func (s *Subscriber) confirm(ctx context.Context, d Dataset, cur *Version) {
 // empty dataset, not an unknown one. The restrictions projection says so
 // (version 0, no rows), so the detectors tell "no restriction" from
 // "never projected".
+//
+// Every later answer is a confirmation like a 304 (spec 02 F3: the
+// version held, here none, is current while the CISP answers), so the
+// projection's confirmed_at moves with it and picture-ws does not show
+// the never-published dataset as cis_stale.
 func (s *Subscriber) confirmEmpty(ctx context.Context, d Dataset) {
+	now := s.cfg.Now()
 	s.mu.Lock()
 	st := s.st[d]
 	first := !st.empty
-	st.empty, st.checkedAt, st.lastErr = st.cur == nil, s.cfg.Now(), ""
+	st.empty, st.checkedAt, st.lastErr = st.cur == nil, now, ""
 	empty := st.empty
 	s.mu.Unlock()
-	if empty && first && d == DatasetRestrictions {
+	switch {
+	case !empty || d != DatasetRestrictions:
+	case first:
 		s.project(ctx, nil)
+	default:
+		s.confirmProjection(ctx, 0, now)
+	}
+}
+
+// confirmProjection moves the restrictions projection's confirmed_at
+// (picture-ws's cis_age_s) to at, the CISP's confirmation of version.
+func (s *Subscriber) confirmProjection(ctx context.Context, version int64, at time.Time) {
+	if s.cfg.Projector == nil {
+		return
+	}
+	if err := s.cfg.Projector.ConfirmRestrictions(ctx, version, at.UTC()); err != nil {
+		s.cfg.Counters.Inc(CounterProjectionFailed)
+		l := s.cfg.Logger
+		if s.cfg.Limiter != nil {
+			l = s.cfg.Limiter.Limited("cisp-confirm-restrictions")
+		}
+		l.Warn("restrictions confirmation not written; the console's cis_age_s ages", slog.Int64("cis_version", version),
+			slog.String("error", short(err.Error())))
 	}
 }
 

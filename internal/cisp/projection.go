@@ -52,8 +52,12 @@ func RestrictionRows(v *Version) []RestrictionRow {
 var ErrProjectionNewer = errors.New("the restrictions projection holds a newer version")
 
 // Projector writes the restrictions projection the detectors read.
+// confirmed is when the CISP last confirmed version (zero: not yet);
+// picture-ws shows its age as cis_age_s, so ConfirmRestrictions moves it
+// on every confirmation of the version held, which writes nothing else.
 type Projector interface {
-	ProjectRestrictions(ctx context.Context, version int64, etag string, rows []RestrictionRow, at time.Time) error
+	ProjectRestrictions(ctx context.Context, version int64, etag string, rows []RestrictionRow, at, confirmed time.Time) error
+	ConfirmRestrictions(ctx context.Context, version int64, confirmed time.Time) error
 }
 
 // TSProjector is Projector on the telemetry database, as
@@ -65,7 +69,7 @@ type TSProjector struct {
 }
 
 // ProjectRestrictions implements Projector.
-func (p TSProjector) ProjectRestrictions(ctx context.Context, version int64, etag string, rows []RestrictionRow, at time.Time) error {
+func (p TSProjector) ProjectRestrictions(ctx context.Context, version int64, etag string, rows []RestrictionRow, at, confirmed time.Time) error {
 	tx, err := p.P.Begin(ctx)
 	if err != nil {
 		return err
@@ -100,8 +104,30 @@ func (p TSProjector) ProjectRestrictions(ctx context.Context, version int64, eta
 			return err
 		}
 	}
+	var conf *time.Time
+	if !confirmed.IsZero() {
+		c := confirmed.UTC()
+		conf = &c
+	}
 	if err := tx.Q.UpsertRestrictionsState(ctx, projector.UpsertRestrictionsStateParams{
-		CisVersion: version, Etag: etag, ProjectedAt: at,
+		CisVersion: version, Etag: etag, ProjectedAt: at, ConfirmedAt: conf,
+	}); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+// ConfirmRestrictions implements Projector: confirmed_at of the state
+// row when it still holds version, never moved back; a projection of
+// another version, or none, is left as it is.
+func (p TSProjector) ConfirmRestrictions(ctx context.Context, version int64, confirmed time.Time) error {
+	tx, err := p.P.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	if _, err := tx.Q.ConfirmRestrictionsState(ctx, projector.ConfirmRestrictionsStateParams{
+		ConfirmedAt: confirmed.UTC(), CisVersion: version,
 	}); err != nil {
 		return err
 	}

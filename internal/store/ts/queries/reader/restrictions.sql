@@ -7,5 +7,6 @@ FROM proj_restrictions ORDER BY identifier;
 
 -- name: ReadRestrictionsState :one
 -- No row: never projected.
-SELECT cis_version, etag, projected_at, extract(epoch FROM now() - projected_at)::double precision AS age_s
+SELECT cis_version, etag, projected_at, confirmed_at,
+       extract(epoch FROM now() - coalesce(confirmed_at, projected_at))::double precision AS age_s
 FROM proj_restrictions_state WHERE id;

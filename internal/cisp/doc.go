@@ -79,7 +79,11 @@
 //     one), then announced on cis.v1.<dataset> (schemas/cache/cis/v1)
 //     for detect (WP-12, Z-12). A known empty dataset is projected as
 //     version 0 with no rows, so "no restriction" never looks like
-//     "never projected".
+//     "never projected". The state row's confirmed_at (timeseries
+//     00014) is the CISP's last confirmation of the version held,
+//     moved by every 304 and, for the never-published dataset, every
+//     404 no_version without a rewrite; picture-ws's cis_age_s and
+//     cis_stale are its age (spec 02 F3), never the write's.
 //   - Receiver, POST /v1/cis/notifications (M1), served outside the
 //     generated server (x-cis-delivery): application/jose of at most
 //     256 KiB, a compact JWS verified by core's CompactVerifier against
