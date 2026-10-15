@@ -8,8 +8,9 @@
 // - api (the shapes of api/openapi.yaml): POST /v1/auth/login, POST
 //   /v1/auth/mfa, GET /v1/auth/session, POST /v1/auth/logout, the
 //   registry, zone, U-space, publication and certificate operations of
-//   test/mock/authoring.mjs (WP-22), which holds the zones too, and
-//   WP-23's operations (test/mock-oversight.mjs). The BFF
+//   test/mock/authoring.mjs (WP-22), which holds the zones too,
+//   WP-23's operations (test/mock-oversight.mjs) and the overview's
+//   counts (test/mock/overview.mjs). The BFF
 //   reaches these here too (WEB_API_INTERNAL_URL).
 // - picture-ws (docs/runbooks/picture.md): WS /v1/picture/ws with the
 //   same-origin and cookie rules of M22 (a foreign Origin is 403, no
@@ -34,6 +35,7 @@
 //   /__mock/authoring/*                   test/mock/authoring.mjs's controls
 //   GET  /__mock/oversight                the police queries the stub recorded
 //   GET  /__mock/upgrades                 the picture WebSocket upgrades: the realm of each
+//   POST /__mock/overview                 test/mock/overview.mjs's control
 //
 // The accounts and the code below are test data of this file, not
 // credentials of anything.
@@ -42,6 +44,7 @@ import { readFileSync } from "node:fs";
 import http from "node:http";
 import { AUTHORING_ACCOUNTS, createAuthoring } from "./mock/authoring.mjs";
 import { oversightApi, oversightRecords, publicApi, resetOversight } from "./mock-oversight.mjs";
+import { overviewApi, overviewControl, resetOverview } from "./mock/overview.mjs";
 
 const PORT = Number(process.env.MOCK_PORT ?? "3000");
 const UPSTREAM = new URL(process.env.MOCK_UPSTREAM ?? "http://127.0.0.1:3100");
@@ -84,6 +87,7 @@ function reset() {
   upgrades.length = 0;
   for (const s of sockets) s.close(1001);
   resetOversight();
+  resetOverview();
 }
 reset();
 
@@ -266,6 +270,8 @@ async function api(req, res, url) {
   // The registry, zones, U-space, publications and certificates (WP-22).
   if (authoring.handle(req, res, url, s, body, raw)) return;
   if (await oversightApi(req, res, url, s, body)) return;
+  // The overview's counts (test/mock/overview.mjs).
+  if (overviewApi(req, res, url, s, problem, json)) return;
   return problem(res, 404, "not_found", "Not found", `${req.method} ${p}`);
 }
 
@@ -452,6 +458,7 @@ async function control(req, res, path) {
   if (path === "/__mock/oversight") return json(res, 200, oversightRecords());
   if (path === "/__mock/upgrades") return json(res, 200, upgrades);
   const input = await readJson(req);
+  if (path === "/__mock/overview") return json(res, 200, overviewControl(input));
   if (path === "/__mock/reset") {
     reset();
   } else if (path === "/__mock/state") {
