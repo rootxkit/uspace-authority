@@ -125,7 +125,12 @@ func (v *ViewReader) readConsoles(ctx context.Context) ([]dpviews.Console, bool)
 		}
 		keys = append(keys, k)
 	}
-	if err := lister.Stop(); err != nil && !errors.Is(err, jetstream.ErrNoKeysFound) {
+	// The lister stops its own watcher once it has sent every key (or
+	// ctx ended) and then closes Keys, so a Stop here would unsubscribe
+	// a second time and always answer nats: invalid subscription: every
+	// complete listing would be refused and no console ever polled. A
+	// listing cut short by ctx is the one that is incomplete.
+	if err := ctx.Err(); err != nil {
 		v.warn("console viewports not listed; keeping the viewports held", err)
 		return nil, false
 	}

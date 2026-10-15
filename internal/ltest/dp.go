@@ -2,6 +2,7 @@ package ltest
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"sync"
@@ -71,6 +72,26 @@ func (s *Stack) PutOversight(d *DPPoller, version int64, areas ...dpviews.Area) 
 	}
 	if ok, err := dpviews.PutOversight(ctx, kv, dpviews.Oversight{Version: version, Areas: areas}, 3); err != nil || !ok {
 		s.T.Fatalf("ltest: oversight areas: %v %v", ok, err)
+	}
+}
+
+// PutConsoleView reports a console's viewports to dp-poller, as
+// picture-ws does (KV dp_views, one key per instance, expiring after
+// dpviews.ConsoleTTL unless reported again).
+func (s *Stack) PutConsoleView(d *DPPoller, instance string, boxes ...dpviews.BBox) {
+	s.T.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	kv, err := bus.OpenBucket(ctx, s.BP.JS, dpviews.ConsoleBucketConfig(d.ViewsBucket))
+	if err != nil {
+		s.T.Fatalf("ltest: console views bucket: %v", err)
+	}
+	raw, err := json.Marshal(dpviews.Console{Instance: instance, At: time.Now().UTC(), BBoxes: boxes})
+	if err != nil {
+		s.T.Fatalf("ltest: console view: %v", err)
+	}
+	if _, err := kv.Put(ctx, dpviews.ConsoleKey(instance), raw); err != nil {
+		s.T.Fatalf("ltest: console view: %v", err)
 	}
 }
 
