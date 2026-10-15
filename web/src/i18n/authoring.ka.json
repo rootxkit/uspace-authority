@@ -624,5 +624,14 @@
   "authority.zone.publish_item": "{id}, ვერსია {version}",
   "authority.zone.publish_more": "კიდევ {n}",
   "authority.zone.clock_api": "API-ს საათით",
-  "authority.zone.clock_browser": "ამ ბრაუზერის საათით, რადგან API-მ დრო არ გამოგზავნა"
+  "authority.zone.clock_browser": "ამ ბრაუზერის საათით, რადგან API-მ დრო არ გამოგზავნა",
+  "authority.zone.col.identifier_name": "იდენტიფიკატორი, სახელწოდება",
+  "authority.zone.col.type": "ტიპი",
+  "authority.zone.col.version_state": "ვერსია, მდგომარეობა",
+  "authority.zone.col.valid": "მოქმედებს",
+  "authority.uspace.col.designated": "განსაზღვრულია",
+  "authority.zone.version_badge": "ვ{version}",
+  "authority.zone.version_full": "ვერსია {version}",
+  "authority.zone.valid_from_line": "{at}-დან",
+  "authority.zone.valid_to_line": "{at}-მდე"
 }

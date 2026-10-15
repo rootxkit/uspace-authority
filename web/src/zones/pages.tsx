@@ -11,8 +11,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { fmtNum, fmtTimeUTC, useLang, useT } from "@rootxkit/uspace-ui/i18n";
 import { inputToUtc } from "@rootxkit/uspace-ui/form";
-import { DataTable, columnsFor, tableColumn } from "@rootxkit/uspace-ui/table";
-import { Badge, Button, EmptyState, Input, Label, TABLE_NOWRAP } from "@rootxkit/uspace-ui/ui";
+import { DataTable, kitColumnMeta, tableColumn } from "@rootxkit/uspace-ui/table";
+import { Badge, Button, EmptyState, Input, Label } from "@rootxkit/uspace-ui/ui";
 import { must, outcomeOf, useConsole, useLoad, type Load } from "../authoring/api";
 import { Act, Can, Facts, HEADER_ACTION, Loaded, PageHeader, ProblemNotice, Section, UTC } from "../authoring/ui";
 import type { Role } from "../shell/nav";
@@ -24,7 +24,11 @@ import { PUBLISH_NAMED_MAX, ZONE_STATES, approve, getOne, listAll, listPage, pub
 import { diff } from "./diff";
 import { ZoneEditor, zonePath } from "./editor/ZoneEditor";
 import { ZonesMap } from "./ZonesMap";
-import { byAt } from "../registry/words";
+import { ZoneTypeBadge } from "./ZoneTypeBadge";
+import { ApiPager } from "../common/ApiPager";
+import { ShortId } from "../common/ids";
+import { SIDE_LAYOUT, SIDE_PANELS } from "../common/layout";
+import { byAt, byAtText } from "../registry/words";
 
 /** The operations' x-roles (api/openapi.yaml). */
 export const ROLES: Record<Dataset, { read: readonly Role[]; author: readonly Role[]; approve: readonly Role[]; publish: readonly Role[] }> = {
@@ -37,6 +41,41 @@ const titleOf = (ds: Dataset) => (ds === "zones" ? "authority.zones.title" : "au
 
 export function listPath(lang: string, ds: Dataset): string {
   return `${mapPath(lang)}/${base(ds)}`;
+}
+
+/**
+ * The list's column widths, CSS pixels: what the kit's DataTable sums into
+ * the table's minimum width (TanStack's 150 each otherwise, wider than the
+ * page at 1024 px). Display-only constants; a cell's content still widens
+ * its column.
+ */
+export const LIST_COL_PX = { zone: 170, type: 190, version_state: 130, valid: 160 } as const;
+
+/** The version and the state as two compact badges, one over the other. */
+function VersionState({ version, state }: { version: number; state: string }) {
+  const t = useT();
+  return (
+    <span className="flex flex-col items-start gap-1 whitespace-nowrap">
+      <Badge variant="outline" title={t("authority.zone.version_full", { version })} data-testid="zone-version" data-version={version}>
+        <span aria-hidden="true">{t("authority.zone.version_badge", { version })}</span>
+        <span className="sr-only">{t("authority.zone.version_full", { version })}</span>
+      </Badge>
+      <StateBadge state={state} />
+    </span>
+  );
+}
+
+/** The period of validity (or designation) on two lines, the header saying UTC. */
+function ValidLines({ from, to }: { from: string; to: string | null | undefined }) {
+  const t = useT();
+  const { lang } = useLang();
+  const at = (iso: string | null | undefined) => fmtTimeUTC(iso ?? null, lang).replace(/ UTC$/, "");
+  return (
+    <span className="flex flex-col text-xs whitespace-nowrap tabular-nums" data-testid="zone-valid">
+      <span>{t("authority.zone.valid_from_line", { at: at(from) })}</span>
+      <span>{t("authority.zone.valid_to_line", { at: at(to) })}</span>
+    </span>
+  );
 }
 
 function StateBadge({ state }: { state: string }) {
@@ -58,22 +97,61 @@ export function AirspaceList({ dataset }: { dataset: Dataset }) {
   const [round, setRound] = useState(0);
   const after = cursors[cursors.length - 1];
   const { state: load } = useLoad(`${dataset}|list|${state}|${after ?? ""}|${round}`, (c) => listPage(c, dataset, state === "" ? undefined : state, after));
-  const c = columnsFor<ZoneVersion>();
   const cols = useMemo(
     () => [
-      c.text("identifier", { headerKey: "authority.zone.f.identifier", mono: true }),
-      tableColumn<ZoneVersion, unknown>({
-        id: "name",
-        accessorFn: (z) => localText((z.feature as { properties?: { name?: unknown } }).properties?.name, lang) ?? "",
-        header: () => t("authority.zone.f.name"),
+      // The identifier with the name under it: two columns of their own
+      // do not fit beside the type and the period at 1024 px.
+      tableColumn<ZoneVersion, string>({
+        id: "identifier",
+        accessorKey: "identifier",
+        header: () => t("authority.zone.col.identifier_name"),
+        meta: kitColumnMeta({ headerKey: "authority.zone.col.identifier_name" }),
+        cell: (x) => {
+          const name = localText((x.row.original.feature as { properties?: { name?: unknown } }).properties?.name, lang);
+          return (
+            <span className="flex flex-col">
+              <span className="font-mono text-xs whitespace-nowrap" data-testid="zone-identifier">
+                {x.getValue()}
+              </span>
+              {name !== null && name !== "" && (
+                <span className="text-xs text-[var(--us-text-muted)]" data-testid="zone-name">
+                  {name}
+                </span>
+              )}
+            </span>
+          );
+        },
+        size: LIST_COL_PX.zone,
       }),
-      c.text("type", { headerKey: "authority.zone.f.type" }),
-      tableColumn<ZoneVersion, number>({ id: "zone_version", accessorKey: "zone_version", header: () => t("authority.zone.f.zone_version"), cell: (x) => <span className={TABLE_NOWRAP}>{x.getValue()}</span> }),
-      tableColumn<ZoneVersion, string>({ id: "state", accessorKey: "state", header: () => t("authority.zone.f.state"), cell: (x) => <StateBadge state={x.getValue()} /> }),
-      c.utc("valid_from", { headerKey: dataset === "zones" ? "authority.zone.f.valid_from" : "authority.uspace.f.designated_from" }),
-      c.utc("valid_to", { headerKey: dataset === "zones" ? "authority.zone.f.valid_to" : "authority.uspace.f.designated_to" }),
+      tableColumn<ZoneVersion, string>({
+        id: "type",
+        accessorKey: "type",
+        header: () => t("authority.zone.col.type"),
+        meta: kitColumnMeta({ headerKey: "authority.zone.col.type", nowrap: true }),
+        cell: (x) => <ZoneTypeBadge type={x.getValue()} />,
+        size: LIST_COL_PX.type,
+      }),
+      tableColumn<ZoneVersion, number>({
+        id: "zone_version",
+        accessorKey: "zone_version",
+        header: () => t("authority.zone.col.version_state"),
+        meta: kitColumnMeta({ headerKey: "authority.zone.col.version_state", nowrap: true }),
+        cell: (x) => <VersionState version={x.getValue()} state={x.row.original.state} />,
+        size: LIST_COL_PX.version_state,
+      }),
+      tableColumn<ZoneVersion, number | undefined>({
+        id: "valid",
+        accessorFn: (z) => {
+          const ms = Date.parse(z.valid_from);
+          return Number.isNaN(ms) ? undefined : ms;
+        },
+        sortUndefined: "last",
+        header: () => t(dataset === "zones" ? "authority.zone.col.valid" : "authority.uspace.col.designated"),
+        meta: kitColumnMeta({ headerKey: dataset === "zones" ? "authority.zone.col.valid" : "authority.uspace.col.designated", utc: true, nowrap: true }),
+        cell: (x) => <ValidLines from={x.row.original.valid_from} to={x.row.original.valid_to} />,
+        size: LIST_COL_PX.valid,
+      }),
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [t, lang, dataset],
   );
   return (
@@ -90,8 +168,8 @@ export function AirspaceList({ dataset }: { dataset: Dataset }) {
           )}
         </Can>
       </PageHeader>
-      <div className="grid gap-3 px-4 py-3 lg:grid-cols-[1fr_24rem]">
-        <div className="flex flex-col gap-3">
+      <div className={SIDE_LAYOUT}>
+        <div className="flex min-w-0 flex-col gap-3">
           <div className="flex flex-col gap-1 self-start">
             <Label htmlFor="zone-state-filter">{t("authority.zone.f.state")}</Label>
             <select
@@ -126,19 +204,12 @@ export function AirspaceList({ dataset }: { dataset: Dataset }) {
                   onSelect={(z) => router.push(zonePath(lang, dataset, z.identifier))}
                   empty={<EmptyState title={t(state === "" ? "authority.zone.empty_any" : "authority.zone.empty", { state: state === "" ? "" : t(`authority.zone.state.${state}`) })} />}
                 />
-                <div className="flex gap-2">
-                  <Button type="button" size="sm" variant="outline" disabled={cursors.length === 1} onClick={() => setCursors((x) => x.slice(0, -1))}>
-                    {t("authority.act.api_previous")}
-                  </Button>
-                  <Button type="button" size="sm" variant="outline" disabled={page.next === undefined} onClick={() => setCursors((x) => [...x, page.next])}>
-                    {t("authority.act.api_next")}
-                  </Button>
-                </div>
+                <ApiPager hasPrevious={cursors.length > 1} hasNext={page.next !== undefined} onPrevious={() => setCursors((x) => x.slice(0, -1))} onNext={() => setCursors((x) => [...x, page.next])} />
               </>
             )}
           </Loaded>
         </div>
-        <aside className="flex flex-col gap-3">
+        <aside className={SIDE_PANELS}>
           <Can roles={ROLES[dataset].publish}>
             <PublishPanel dataset={dataset} onPublished={() => setRound((r) => r + 1)} />
           </Can>
@@ -321,7 +392,7 @@ function VersionFacts({ z, dataset }: { z: ZoneVersion; dataset: Dataset }) {
         items={[
           ["authority.zone.f.identifier", <span key="i" className="font-mono">{z.identifier}</span>],
           ["authority.zone.f.name", localText(p["name"], lang)],
-          ["authority.zone.f.type", z.type],
+          ["authority.zone.f.type", <ZoneTypeBadge key="ty" type={z.type} />],
           ["authority.zone.f.country", z.country],
           ["authority.zone.f.zone_version", String(z.zone_version)],
           ["authority.zone.f.state", <StateBadge key="s" state={z.state} />],
@@ -330,7 +401,7 @@ function VersionFacts({ z, dataset }: { z: ZoneVersion; dataset: Dataset }) {
           ["authority.zone.f.limits", t("authority.zone.limits", { lower: String(layer["lower"] ?? dash), lower_ref: String(layer["lowerReference"] ?? dash), upper: String(layer["upper"] ?? dash), upper_ref: String(layer["upperReference"] ?? dash), uom: String(layer["uom"] ?? "m") })],
           ["authority.zone.f.created", byAt(t, lang, z.created_by, z.created_at)],
           ["authority.zone.f.approved", byAt(t, lang, z.approved_by, z.approved_at)],
-          ["authority.zone.f.published", z.published_version === undefined ? null : t("authority.zone.published_as", { version: z.published_version, by_at: byAt(t, lang, z.published_by, z.published_at) ?? dash })],
+          ["authority.zone.f.published", z.published_version === undefined ? null : t("authority.zone.published_as", { version: z.published_version, by_at: byAtText(t, lang, z.published_by, z.published_at) ?? dash })],
           ...(dataset === "uspace_airspace"
             ? ([
                 ["authority.uspace.f.airspace_name", z.designation?.airspace_name],
@@ -430,7 +501,7 @@ function History({ state, onOlder, onNewer, canNewer }: { state: Load<{ rows: Zo
                         <StateBadge state={v.state} />
                       </td>
                       <td>
-                        {v.created_by} <UTC iso={v.created_at} />
+                        <ShortId id={v.created_by} /> <UTC iso={v.created_at} />
                       </td>
                       <td>
                         <input type="radio" name="diff-from" aria-label={t("authority.zone.diff_from_v", { version: v.zone_version })} checked={pair[0] === v.zone_version} onChange={() => setPair([v.zone_version, pair[1]])} />
