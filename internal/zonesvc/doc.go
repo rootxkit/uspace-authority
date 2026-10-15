@@ -53,9 +53,10 @@
 //     and imports the ED-269 it makes.
 //   - Publication (spec 02 F1): under LockProjection, in one relational
 //     transaction, the approved versions become published under a new
-//     zones_version_seq value, the full set in force now is exported
-//     (ed318.Export, collection metadata in ed318.Metadata's names:
-//     issued, provider) into the publications outbox row (pending,
+//     zones_version_seq value, per identifier the version in force now,
+//     else the first to come into force later (publicationSet), is
+//     exported (ed318.Export, collection metadata in ed318.Metadata's
+//     names: issued, provider) into the publications outbox row (pending,
 //     validated against the CISP's checks and signed by WP-6's outbox,
 //     internal/cisp, which sends it), and the
 //     projection is rewritten before the relational commit: a failed
@@ -65,6 +66,14 @@
 //     zones.v1.changed and KV zones_version announce the version
 //     (BusPublisher); a failed announcement is counted and the readers'
 //     re-read catches up.
+//   - Period of validity on the wire (2019/947 Art. 15(3)): every
+//     feature that leaves the authority (publication, export) carries
+//     its version's valid_from and valid_to as limitedApplicability,
+//     ED-318's only per-zone validity (withinValidity): one TimePeriod
+//     {startDateTime, endDateTime} when it has none, each period clipped
+//     to them when it has some. The stored master copy is not rewritten.
+//     The applicability preview is bounded the same way; a zone whose
+//     applicability never meets its period is refused at the write.
 //   - Export (M17): the newest published version of each identifier in
 //     force at the instant; `at` filters to what applies (ed318.Applies
 //     at the centre of the feature's box) and keeps what cannot be

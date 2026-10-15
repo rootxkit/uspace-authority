@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"sort"
 	"sync"
 	"time"
 
@@ -243,6 +244,9 @@ func prepare(ds Dataset, in *DraftInput) (*Draft, error) {
 		return nil, validation("", []*core.FieldError{core.Fieldf("feature.properties.identifier",
 			"%q is not the path's identifier %q", c.identifier, in.Identifier)}, 0)
 	}
+	if fe := checkValidity(c.feature, *in.ValidFrom, *in.ValidTo, "feature."+FieldLimitedApplicability); fe != nil {
+		return nil, validation("", []*core.FieldError{fe}, 0)
+	}
 	return &Draft{
 		Dataset: ds, Identifier: c.identifier, Feature: c.feature, Columns: c.columns,
 		ValidFrom: in.ValidFrom.UTC(), ValidTo: in.ValidTo.UTC(), Designation: in.Designation,
@@ -369,6 +373,15 @@ func (s *Service) Import(ctx context.Context, in ImportInput, actor audit.Actor)
 	}
 	if errs := checkPeriod("valid_from", "valid_to", from, to); len(errs) > 0 {
 		return "", nil, s.refused(validation("the import names no period of validity", errs, 0))
+	}
+	for i := range im.features {
+		if fe := checkValidity(im.features[i].feature, *from, *to, fmt.Sprintf("features[%d].%s", i, FieldLimitedApplicability)); fe != nil {
+			errs = append(errs, fe)
+		}
+	}
+	if len(errs) > 0 {
+		capped, more := capErrors(errs)
+		return "", nil, s.refused(validation("the file was refused whole; nothing was imported", capped, more))
 	}
 	var out []Version
 	err := s.Store.InTx(ctx, func(tx Tx) error {
@@ -501,10 +514,55 @@ func checkAdjacent(set []Version) error {
 	return nil
 }
 
+// publicationSet is what a publication of ds carries, from the
+// published versions whose period has not ended at now (Projectable):
+// per identifier, the newest version in force at now (as InForce), else
+// the one that comes into force first after now (the newest of those
+// starting together). Each is published with its period of validity
+// (withinValidity), so a zone whose period starts later is on the CISP
+// before it applies, as not applying, instead of missing until the next
+// publication. An identifier has one feature per publication: a version
+// that starts when the one in force now ends reaches the CISP with the
+// first publication after that.
+func publicationSet(rows []Version, ds Dataset, now time.Time) []Version {
+	best := map[string]int{}
+	var out []Version
+	better := func(a, b *Version) bool {
+		aNow := !now.Before(a.ValidFrom) && !now.After(a.ValidTo)
+		bNow := !now.Before(b.ValidFrom) && !now.After(b.ValidTo)
+		switch {
+		case aNow != bNow:
+			return aNow
+		case aNow:
+			return a.ZoneVersion > b.ZoneVersion
+		case !a.ValidFrom.Equal(b.ValidFrom):
+			return a.ValidFrom.Before(b.ValidFrom)
+		}
+		return a.ZoneVersion > b.ZoneVersion
+	}
+	for i := range rows {
+		r := &rows[i]
+		if r.Dataset != ds || now.After(r.ValidTo) {
+			continue
+		}
+		if j, ok := best[r.Identifier]; ok {
+			if better(r, &out[j]) {
+				out[j] = *r
+			}
+			continue
+		}
+		best[r.Identifier] = len(out)
+		out = append(out, *r)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Identifier < out[j].Identifier })
+	return out
+}
+
 // Publish publishes every approved version of ds (spec 02 F1): in one
 // transaction under LockProjection, the versions become published under
 // a new zones version and supersede their identifiers' older published
-// versions; the full set in force now is exported into the outbox row
+// versions; the set in force now or later (publicationSet), each
+// feature with its period of validity, is exported into the outbox row
 // (pending, validated and signed by WP-6's outbox); the projection is rewritten in the
 // telemetry database before the relational commit, so a failed
 // projection write rolls the publication back (503
@@ -537,16 +595,17 @@ func (s *Service) Publish(ctx context.Context, ds Dataset, actor audit.Actor) (P
 				return err
 			}
 		}
-		set, err := tx.InForce(ctx, ds, now)
+		rows, err := tx.Projectable(ctx, now)
 		if err != nil {
 			return err
 		}
+		set := publicationSet(rows, ds, now)
 		if ds == DatasetUSpace {
 			if err := checkAdjacent(set); err != nil {
 				return err
 			}
 		}
-		payload, n, err := buildExport(featuresOf(set), s.metadata(now), ExportAll, now, nil)
+		payload, n, err := buildExport(set, s.metadata(now), ExportAll, now, nil)
 		if err != nil {
 			return err
 		}
@@ -574,10 +633,6 @@ func (s *Service) Publish(ctx context.Context, ds Dataset, actor audit.Actor) (P
 			Payload: map[string]any{"zones_version": version, "published": ids, "publication_id": pub.ID,
 				"payload_hash": pub.PayloadHash, "feature_count": n},
 		}); err != nil {
-			return err
-		}
-		rows, err := tx.Projectable(ctx, now)
-		if err != nil {
 			return err
 		}
 		if err := s.writeProjection(ctx, rows, now, version); err != nil {
@@ -688,7 +743,7 @@ func (s *Service) Export(ctx context.Context, in ExportInput, actor audit.Actor)
 			return err
 		}
 		var n int
-		if out, n, err = buildExport(featuresOf(set), s.metadata(now), mode, instant, s.daylight()); err != nil {
+		if out, n, err = buildExport(set, s.metadata(now), mode, instant, s.daylight()); err != nil {
 			return err
 		}
 		return tx.Record(ctx, audit.Event{
@@ -749,7 +804,9 @@ type ApplicabilityAnswer struct {
 }
 
 // Applies answers whether the newest version of identifier (or
-// zoneVersion when not 0) applies at at, through ed318.Applies. A
+// zoneVersion when not 0) applies at at, through ed318.Applies over its
+// limitedApplicability bounded by its period of validity
+// (withinValidity), so outside valid_from to valid_to it does not. A
 // question that needs a daylight event while none can be resolved is
 // refused 503 daylight_unavailable, never guessed.
 func (s *Service) Applies(ctx context.Context, identifier string, zoneVersion int, at time.Time) (ApplicabilityAnswer, error) {
@@ -768,6 +825,14 @@ func (s *Service) Applies(ctx context.Context, identifier string, zoneVersion in
 	fc, err := collect([]json.RawMessage{v.Feature})
 	if err != nil {
 		return ApplicabilityAnswer{}, err
+	}
+	// The period of validity bounds the answer as it bounds what is
+	// published (withinValidity): after valid_to the zone does not apply.
+	// A version that never meets its period (refused at the write since
+	// 2026-10-16, possible in older rows) does not apply, with the reason.
+	var never *core.FieldError
+	if errors.As(withinValidity(&fc.Features[0], v.ValidFrom, v.ValidTo), &never) {
+		return ApplicabilityAnswer{Identifier: v.Identifier, ZoneVersion: v.ZoneVersion, At: at, Answer: NotApplicable, Reason: never.Error()}, nil
 	}
 	a, err := applicabilityOf(&fc.Features[0], at, s.daylight())
 	out := ApplicabilityAnswer{Identifier: v.Identifier, ZoneVersion: v.ZoneVersion, At: at, Answer: a}
