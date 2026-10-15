@@ -15,6 +15,7 @@ import type { ConsoleClient } from "../api/client";
 import { useLoad } from "../authoring/api";
 import { Act, Can, Loaded } from "../authoring/ui";
 import { registryPath } from "./paths";
+import { ApiPager } from "../common/ApiPager";
 
 export type RegistryStatus = components["schemas"]["RegistryStatus"];
 export type SettableStatus = components["schemas"]["RegistryStatusInput"]["status"];
@@ -167,14 +168,13 @@ export function RegistryList<Row>(props: {
               empty={<EmptyState title={t(props.emptyKey)} />}
               onSelect={props.onSelect}
             />
-            <div className="flex gap-2">
-              <Button type="button" size="sm" variant="outline" disabled={cursors.length === 1} onClick={() => setCursors((c) => c.slice(0, -1))}>
-                {t("authority.act.api_previous")}
-              </Button>
-              <Button type="button" size="sm" variant="outline" disabled={page.next === undefined} onClick={() => setCursors((c) => [...c, page.next])} data-testid={`${props.testId}-next`}>
-                {t("authority.act.api_next")}
-              </Button>
-            </div>
+            <ApiPager
+              hasPrevious={cursors.length > 1}
+              hasNext={page.next !== undefined}
+              onPrevious={() => setCursors((c) => c.slice(0, -1))}
+              onNext={() => setCursors((c) => [...c, page.next])}
+              testId={props.testId}
+            />
           </>
         )}
       </Loaded>

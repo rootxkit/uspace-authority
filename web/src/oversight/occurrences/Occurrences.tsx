@@ -20,6 +20,7 @@ import { Choice, Facts, PageHeader, Part, TextInput, saveBlob } from "../../comm
 import { must, useClient, useLoad } from "../../common/useApi";
 import { consolePath } from "../../shell/paths";
 import { ANALYSIS_STATES, OCCURRENCE_CATEGORIES, OCCURRENCE_CHANNELS, OCCURRENCE_STATES } from "../enums";
+import { ApiPager } from "../../common/ApiPager";
 
 type S = components["schemas"];
 type Occurrence = S["Occurrence"];
@@ -119,14 +120,15 @@ export function OccurrenceQueue() {
           </TableBody>
         </Table>
       )}
-      <div className="flex gap-2">
-        <Button type="button" variant="outline" disabled={cursors.length === 0} onClick={() => setCursors(cursors.slice(0, -1))}>
-          {t("authority.common.previous")}
-        </Button>
-        <Button type="button" variant="outline" disabled={next === undefined} onClick={() => next !== undefined && setCursors([...cursors, next])}>
-          {t("authority.common.next")}
-        </Button>
-      </div>
+      <ApiPager
+        hasPrevious={cursors.length > 0}
+        hasNext={next !== undefined}
+        onPrevious={() => setCursors(cursors.slice(0, -1))}
+        onNext={() => next !== undefined && setCursors([...cursors, next])}
+        previousKey="authority.common.previous"
+        nextKey="authority.common.next"
+        size="default"
+      />
     </div>
   );
 }

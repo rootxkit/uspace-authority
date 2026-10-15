@@ -11,12 +11,13 @@ import { useMemo, useState } from "react";
 import { useT, fmtRegistrationNumber } from "@rootxkit/uspace-ui/i18n";
 import { DataTable, columnsFor } from "@rootxkit/uspace-ui/table";
 import { inputToUtc } from "@rootxkit/uspace-ui/form";
-import { Button, EmptyState, Input, Label } from "@rootxkit/uspace-ui/ui";
+import { EmptyState, Input, Label } from "@rootxkit/uspace-ui/ui";
 import type { components } from "../api/types";
 import { must, useConsole, useLoad } from "../authoring/api";
 import { PersonalData } from "../authoring/PersonalData";
 import { Act, Can, Facts, PageHeader, ProblemNotice, Section, UTC } from "../authoring/ui";
 import { RegistryTabs } from "./common";
+import { ApiPager } from "../common/ApiPager";
 import { NotYourRole } from "./operators";
 
 type Application = components["schemas"]["RegistryApplication"];
@@ -101,20 +102,12 @@ function Queue() {
             onSelect={(r: Application) => setSelected(r)}
             empty={<EmptyState title={t("authority.registry.applications.empty", { state: t(`authority.registry.applications.state.${state}`) })} />}
           />
-          <div className="flex gap-2">
-            <Button type="button" size="sm" variant="outline" disabled={cursors.length === 1} onClick={() => setCursors((x) => x.slice(0, -1))}>
-              {t("authority.act.api_previous")}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={load.data.next_cursor === undefined}
-              onClick={() => setCursors((x) => [...x, load.data.next_cursor])}
-            >
-              {t("authority.act.api_next")}
-            </Button>
-          </div>
+          <ApiPager
+            hasPrevious={cursors.length > 1}
+            hasNext={load.data.next_cursor !== undefined}
+            onPrevious={() => setCursors((x) => x.slice(0, -1))}
+            onNext={() => setCursors((x) => [...x, load.data.next_cursor])}
+          />
         </>
       )}
       {selected !== null && (

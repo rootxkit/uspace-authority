@@ -686,6 +686,8 @@ export async function oversightApi(req, res, url, s, body) {
     const h = (n) => createHash("sha256").update(String(n)).digest("hex");
     send(res, 200, {
       events: [
+        // An account id and an entity id as long as api's (32 hex, a ULID): the table shows them short.
+        { id: 13, ts: iso(T0 + 1000), actor_type: "user", actor_id: "315c707cc1b7d07d2ff8a23f5af46d97", realm: "console", entity_type: "zone", entity_id: "01JTESTZONE0000000000000000", event_type: "zone_published", payload: {}, prev_hash: h(12), hash: h(13) },
         { id: 12, ts: iso(T0), actor_type: "user", actor_id: "user-inspector1", realm: "console", entity_type: "violation", entity_id: st.violations[0].violation_id, event_type: "violation_reviewed", payload: {}, prev_hash: h(11), hash: h(12) },
         { id: 11, ts: iso(T0 - 1000), actor_type: "system", actor_id: "detect", entity_type: "violation", entity_id: st.violations[0].violation_id, event_type: "violation_raised", payload: {}, prev_hash: h(10), hash: h(11) },
       ],

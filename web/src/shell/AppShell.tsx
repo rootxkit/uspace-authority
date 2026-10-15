@@ -36,6 +36,7 @@ import {
 import { isCurrent, knownRoles, navGroupsFor, type NavIcon } from "./nav";
 import { loginPath, mapPath } from "./paths";
 import { SchemeToggle } from "./SchemeToggle";
+import { shortId } from "../common/ids";
 
 const ICONS: Record<NavIcon, () => ReactNode> = {
   overview: OverviewIcon,
@@ -60,11 +61,17 @@ function AccountMenu() {
   if (session === null) return null;
   const roles = knownRoles(session.roles);
   return (
-    <div className="flex items-center gap-2" data-testid="account-menu">
+    // api's session names the account by its id only (SessionInfo.sub; no
+    // username), so the menu shows the id shortened, whole in the tooltip
+    // and in the menu.
+    <div className="flex items-center gap-2" data-testid="account-menu" title={session.sub} data-id={session.sub}>
       <UserMenu
-        name={session.sub}
+        name={shortId(session.sub)}
         detail={
           <span className="grid gap-0.5">
+            <span className="font-mono break-all" data-testid="account-id">
+              {t("authority.account.id", { id: session.sub })}
+            </span>
             <span>{t(session.realm === "police" ? "authority.realm.police" : "authority.realm.console")}</span>
             <span data-testid="account-roles">
               {roles.length === 0
@@ -136,7 +143,12 @@ function Frame({ session, children }: { session: SessionDisplay; children: React
   }));
   return (
     <KitShell
-      systemName={t("authority.app.title", { name: brand.shortName })}
+      systemName={
+        // Two lines rather than an ellipsis when the brand's name is long.
+        <span className="line-clamp-2 block leading-tight whitespace-normal" data-testid="system-name">
+          {t("authority.app.title", { name: brand.shortName })}
+        </span>
+      }
       logo={<BrandMark />}
       nav={nav}
       renderLink={renderLink}

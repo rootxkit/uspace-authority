@@ -182,7 +182,7 @@ test("audit: the log, a month verified, a month without rows never called intact
   await signInTo(page, "en", AUDITOR, MAP);
   await consoleNav(page).getByRole("link", { name: "Audit log" }).click();
   await page.getByTestId("audit-search").click();
-  await expect(page.getByTestId("audit-table").locator("[data-event]")).toHaveCount(2);
+  await expect(page.getByTestId("audit-table").locator("[data-event]")).toHaveCount(3);
 
   await page.getByTestId("chain-month").fill("2026-10");
   await page.getByTestId("chain-verify").click();

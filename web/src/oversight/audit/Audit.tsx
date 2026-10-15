@@ -16,10 +16,50 @@ import type { components } from "../../api/types";
 import { LoadNotice, ProblemText } from "../../common/Problem";
 import { Facts, PageHeader, Part, TextInput } from "../../common/ui";
 import { must, useClient, useLoad } from "../../common/useApi";
+import { CopyId, ShortId, shortId } from "../../common/ids";
+import { ApiPager } from "../../common/ApiPager";
 
 type S = components["schemas"];
 
 const EVENTS_LIMIT = 100;
+/** The hex digits of a row's hash shown; the whole hash is the cell's tooltip. A display bound. */
+const HASH_SHOWN = 8;
+
+const ACTOR_TYPES = ["user", "client", "receiver", "system"] as const;
+
+/** A time on two lines, the date over the time with its seconds; the header says UTC. */
+function TwoLineTime({ iso }: { iso: string }) {
+  const { lang } = useLang();
+  const [date, time] = fmtTimeUTC(iso, lang, { seconds: true }).replace(/ UTC$/, "").split(" ");
+  return (
+    <span className="flex flex-col tabular-nums">
+      <span>{date}</span>
+      {time !== undefined && <span className="text-xs text-[var(--us-text-muted)]">{time}</span>}
+    </span>
+  );
+}
+
+/** Who acted: the id api recorded (short, whole in its tooltip), its kind and realm on a second line. */
+function Actor({ type, id, realm }: { type: string; id: string; realm?: string | null | undefined }) {
+  const t = useT();
+  const kind = (ACTOR_TYPES as readonly string[]).includes(type) ? t(`authority.audit.actor_type.${type}`) : type;
+  return (
+    <span className="flex flex-col">
+      <ShortId id={id} className="font-mono text-xs" />
+      <span className="text-xs whitespace-nowrap text-[var(--us-text-muted)]">{t("authority.audit.actor_line", { type: kind, realm: realm ?? "—" })}</span>
+    </span>
+  );
+}
+
+/** What was acted on: its type, and its id short with a copy button. */
+function Entity({ type, id }: { type: string; id?: string | null | undefined }) {
+  return (
+    <span className="flex flex-col">
+      <span className="font-mono text-xs whitespace-nowrap">{type}</span>
+      {id !== undefined && id !== null && id !== "" && <CopyId id={id} className="font-mono text-xs" />}
+    </span>
+  );
+}
 const MONTH = /^[0-9]{4}-(0[1-9]|1[0-2])$/;
 
 interface EventFilters {
@@ -36,7 +76,6 @@ const EMPTY: EventFilters = { entity_type: "", entity_id: "", actor_id: "", even
 
 function EventSearch() {
   const t = useT();
-  const { lang } = useLang();
   const [draft, setDraft] = useState<EventFilters>(EMPTY);
   const [applied, setApplied] = useState<EventFilters | null>(null);
   const [before, setBefore] = useState<number[]>([]);
@@ -95,45 +134,64 @@ function EventSearch() {
           <TableCaption>{t("authority.audit.caption")}</TableCaption>
           <TableHeader>
             <TableRow>
-              <TableHead className={TABLE_NOWRAP}>{t("authority.audit.id")}</TableHead>
-              <TableHead>{t("authority.audit.ts")}</TableHead>
+              <TableHead className={TABLE_NOWRAP}>
+                <span className="flex flex-col">
+                  <span>{t("authority.audit.id")}</span>
+                  <span className="text-xs font-normal">{t("authority.audit.hash")}</span>
+                </span>
+              </TableHead>
+              <TableHead className={TABLE_NOWRAP}>{t("authority.audit.ts")}</TableHead>
               <TableHead>{t("authority.audit.actor")}</TableHead>
               <TableHead>{t("authority.audit.event_type")}</TableHead>
               <TableHead>{t("authority.audit.entity")}</TableHead>
               <TableHead>{t("authority.audit.purpose")}</TableHead>
-              <TableHead className={TABLE_NOWRAP}>{t("authority.audit.hash")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {state.data.events.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7}>{t("authority.audit.empty")}</TableCell>
+                <TableCell colSpan={6}>{t("authority.audit.empty")}</TableCell>
               </TableRow>
             )}
             {state.data.events.map((ev) => (
               <TableRow key={ev.id} data-event={ev.id}>
-                <TableCell className={TABLE_NOWRAP}>{ev.id}</TableCell>
-                <TableCell className={TABLE_NOWRAP}>{fmtTimeUTC(ev.ts, lang, { seconds: true })}</TableCell>
-                <TableCell>{t("authority.audit.actor_value", { type: ev.actor_type, id: ev.actor_id, realm: ev.realm ?? "—" })}</TableCell>
-                <TableCell className={`font-mono text-xs ${TABLE_NOWRAP}`}>{ev.event_type}</TableCell>
-                <TableCell className="font-mono text-xs">{`${ev.entity_type}${ev.entity_id === undefined ? "" : `/${ev.entity_id}`}`}</TableCell>
-                <TableCell>{ev.purpose ?? "—"}</TableCell>
-                <TableCell className={`font-mono text-xs ${TABLE_NOWRAP}`} title={ev.hash}>
-                  {ev.hash.slice(0, 12)}
+                <TableCell className={TABLE_NOWRAP}>
+                  <span className="flex flex-col">
+                    <span>{ev.id}</span>
+                    <span className="font-mono text-xs text-[var(--us-text-muted)]" title={ev.hash} data-testid="audit-hash">
+                      {ev.hash.slice(0, HASH_SHOWN)}
+                    </span>
+                  </span>
                 </TableCell>
+                <TableCell className={TABLE_NOWRAP}>
+                  <TwoLineTime iso={ev.ts} />
+                </TableCell>
+                <TableCell data-testid="audit-actor">
+                  <Actor type={ev.actor_type} id={ev.actor_id} realm={ev.realm} />
+                </TableCell>
+                <TableCell className={TABLE_NOWRAP}>
+                  <Badge variant="outline" className="font-mono whitespace-nowrap" data-testid="audit-event-type">
+                    {ev.event_type}
+                  </Badge>
+                </TableCell>
+                <TableCell data-testid="audit-entity">
+                  <Entity type={ev.entity_type} id={ev.entity_id} />
+                </TableCell>
+                <TableCell>{ev.purpose ?? "—"}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       )}
-      <div className="flex gap-2">
-        <Button type="button" variant="outline" disabled={before.length === 0} onClick={() => setBefore(before.slice(0, -1))}>
-          {t("authority.common.previous")}
-        </Button>
-        <Button type="button" variant="outline" disabled={next === undefined} onClick={() => next !== undefined && setBefore([...before, next])}>
-          {t("authority.common.next")}
-        </Button>
-      </div>
+      <ApiPager
+        hasPrevious={before.length > 0}
+        hasNext={next !== undefined}
+        onPrevious={() => setBefore(before.slice(0, -1))}
+        onNext={() => next !== undefined && setBefore([...before, next])}
+        previousKey="authority.common.previous"
+        nextKey="authority.common.next"
+        size="default"
+      />
     </Part>
   );
 }
@@ -261,7 +319,7 @@ function DpoReport() {
               {report.police_queries.map((q) => (
                 <TableRow key={q.id}>
                   <TableCell className={TABLE_NOWRAP}>{fmtTimeUTC(q.at, lang, { seconds: true })}</TableCell>
-                  <TableCell>{t("authority.dpo.who_value", { user: q.user_id, agency: q.agency, ip: q.remote_ip })}</TableCell>
+                  <TableCell title={q.user_id}>{t("authority.dpo.who_value", { user: shortId(q.user_id), agency: q.agency, ip: q.remote_ip })}</TableCell>
                   <TableCell>{q.kind}</TableCell>
                   <TableCell>{q.purpose}</TableCell>
                   <TableCell className={TABLE_NOWRAP}>{q.case_ref}</TableCell>
@@ -293,9 +351,13 @@ function DpoReport() {
                 <TableRow key={v.event_id}>
                   <TableCell className={TABLE_NOWRAP}>{fmtTimeUTC(v.ts, lang, { seconds: true })}</TableCell>
                   <TableCell className={`font-mono text-xs ${TABLE_NOWRAP}`}>{v.event_type}</TableCell>
-                  <TableCell>{t("authority.audit.actor_value", { type: v.actor_type, id: v.actor_id, realm: v.realm ?? "—" })}</TableCell>
+                  <TableCell>
+                    <Actor type={v.actor_type} id={v.actor_id} realm={v.realm} />
+                  </TableCell>
                   <TableCell>{v.purpose ?? "—"}</TableCell>
-                  <TableCell className="font-mono text-xs">{`${v.entity_type}/${v.entity_id ?? ""}`}</TableCell>
+                  <TableCell>
+                    <Entity type={v.entity_type} id={v.entity_id} />
+                  </TableCell>
                   <TableCell className={TABLE_NOWRAP}>{v.case_ref ?? "—"}</TableCell>
                 </TableRow>
               ))}

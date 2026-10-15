@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { adaptZone, localText, type ZoneVersion } from "./adapt";
+import { adaptZone, circleOf, localText, type ZoneVersion } from "./adapt";
 
 function zone(geometry: Record<string, unknown>, type = "PROHIBITED"): ZoneVersion {
   return {
@@ -72,5 +72,43 @@ describe("adaptZone", () => {
     expect(localText(names, "en")).toBe("Zone");
     expect(localText([{ lang: "de-DE", text: "Zone DE" }], "en")).toBe("Zone DE");
     expect(localText(undefined, "en")).toBeNull();
+  });
+});
+
+describe("a circle drawn by api's outline", () => {
+  const circle = { type: "Point", coordinates: [44.85, 41.7], extent: { subType: "Circle", radius: 500 }, layer: polygon.layer };
+  const outline: GeoJSON.Polygon = {
+    type: "Polygon",
+    coordinates: [
+      [
+        [44.84, 41.69],
+        [44.86, 41.69],
+        [44.86, 41.71],
+        [44.84, 41.69],
+      ],
+    ],
+  };
+
+  it("reads the centre and radius of a published circle, and nothing from a polygon", () => {
+    expect(circleOf(zone(circle))).toEqual({ lat: 41.7, lng: 44.85, radiusM: 500 });
+    expect(circleOf(zone(polygon))).toBeNull();
+  });
+
+  it("draws a circle with the outline api drew, its limits as published", () => {
+    const a = adaptZone(zone(circle), "en", outline);
+    expect(a.drawn).toBe(true);
+    if (!a.drawn) return;
+    expect(a.view.geometry).toEqual(outline);
+    expect(a.view).toMatchObject({ upperLimitM: 120, upperRef: "AGL" });
+  });
+
+  it("lists a circle api did not draw as not drawn (the pair)", () => {
+    expect(adaptZone(zone(circle), "en", null)).toMatchObject({ drawn: false, reason: "geometry" });
+    expect(adaptZone(zone(circle), "en")).toMatchObject({ drawn: false, reason: "geometry" });
+  });
+
+  it("never draws a polygon with an outline it was handed", () => {
+    const a = adaptZone(zone(polygon), "en", outline);
+    expect(a.drawn && a.view.geometry).toEqual({ type: "Polygon", coordinates: polygon.coordinates });
   });
 });

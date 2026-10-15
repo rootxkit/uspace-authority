@@ -12,7 +12,8 @@ import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { fmtTimeUTC, useLang, useT } from "@rootxkit/uspace-ui/i18n";
 import { EnumField, Form, SelectField, TextField, UTCDateTimeField, shapes } from "@rootxkit/uspace-ui/form";
-import { DataTable, columnsFor, tableColumn } from "@rootxkit/uspace-ui/table";
+import { DataTable, columnsFor, kitColumnMeta, tableColumn } from "@rootxkit/uspace-ui/table";
+import { SIDE_LAYOUT, SIDE_PANELS } from "../common/layout";
 import { Badge, Button, EmptyState, Input, Label } from "@rootxkit/uspace-ui/ui";
 import type { components } from "../api/types";
 import { must, useConsole, useLoad } from "../authoring/api";
@@ -69,6 +70,12 @@ function CertTabs() {
   );
 }
 
+/**
+ * The list's column widths, CSS pixels, which the kit's DataTable sums into
+ * the table's minimum width (150 each otherwise). Display-only constants.
+ */
+export const CERT_COL_PX = { code: 110, holder_name: 160, holder: 110, status: 120, valid_until: 170 } as const;
+
 export function CertificatesPage() {
   const t = useT();
   const { lang } = useLang();
@@ -83,11 +90,18 @@ export function CertificatesPage() {
   const c = columnsFor<Certificate>();
   const cols = useMemo(
     () => [
-      c.text("code", { headerKey: "authority.cert.f.code", mono: true }),
-      c.text("holder_name", { headerKey: "authority.cert.f.holder_name" }),
-      c.enum("holder", "authority.cert.holder", { headerKey: "authority.cert.f.holder" }),
-      tableColumn<Certificate, string>({ id: "status", accessorKey: "status", header: () => t("authority.cert.f.status"), cell: (x) => <CertStatus status={x.getValue()} /> }),
-      c.utc("valid_until", { headerKey: "authority.cert.f.valid_until" }),
+      { ...c.text("code", { headerKey: "authority.cert.f.code", mono: true }), size: CERT_COL_PX.code },
+      { ...c.text("holder_name", { headerKey: "authority.cert.f.holder_name" }), size: CERT_COL_PX.holder_name },
+      { ...c.enum("holder", "authority.cert.holder", { headerKey: "authority.cert.f.holder", nowrap: true }), size: CERT_COL_PX.holder },
+      tableColumn<Certificate, string>({
+        id: "status",
+        accessorKey: "status",
+        header: () => t("authority.cert.f.status"),
+        meta: kitColumnMeta({ headerKey: "authority.cert.f.status", nowrap: true }),
+        cell: (x) => <CertStatus status={x.getValue()} />,
+        size: CERT_COL_PX.status,
+      }),
+      { ...c.utc("valid_until", { headerKey: "authority.cert.f.valid_until" }), size: CERT_COL_PX.valid_until },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [t],
@@ -97,8 +111,8 @@ export function CertificatesPage() {
       <PageHeader titleKey="authority.cert.title" />
       <CertTabs />
       <Can roles={["admin"]} fallback={<p className="m-0 px-4 py-3 text-sm">{t("authority.act.not_your_role")}</p>}>
-        <div className="grid gap-3 px-4 py-3 lg:grid-cols-[1fr_24rem]">
-          <div className="flex flex-col gap-3">
+        <div className={SIDE_LAYOUT}>
+          <div className="flex min-w-0 flex-col gap-3">
             <div className="flex flex-wrap gap-3">
               <div className="flex flex-col gap-1">
                 <Label htmlFor="cert-status">{t("authority.cert.f.status")}</Label>
@@ -138,7 +152,7 @@ export function CertificatesPage() {
               )}
             </Loaded>
           </div>
-          <aside className="flex flex-col gap-3">
+          <aside className={SIDE_PANELS}>
             <section className="flex flex-col gap-2 rounded border border-[var(--us-border)] p-3" aria-label={t("authority.cert.list_title")} data-testid="ussp-list">
               <h2 className="m-0 text-base font-semibold">{t("authority.cert.list_title")}</h2>
               <p className="m-0 text-sm">{t("authority.cert.list_intro")}</p>

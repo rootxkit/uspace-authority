@@ -19,6 +19,7 @@ import { Choice, PageHeader, Part, TextInput } from "../../common/ui";
 import { must, useClient, useLoad } from "../../common/useApi";
 import { consolePath } from "../../shell/paths";
 import { INCIDENT_KINDS, INCIDENT_OPENED_BY_HAND, INCIDENT_SEVERITIES, INCIDENT_STATUSES } from "../enums";
+import { ApiPager } from "../../common/ApiPager";
 
 type S = components["schemas"];
 
@@ -191,14 +192,15 @@ export function IncidentsList() {
           </TableBody>
         </Table>
       )}
-      <div className="flex gap-2">
-        <Button type="button" variant="outline" disabled={cursors.length === 0} onClick={() => setCursors(cursors.slice(0, -1))}>
-          {t("authority.common.previous")}
-        </Button>
-        <Button type="button" variant="outline" disabled={next === undefined} onClick={() => next !== undefined && setCursors([...cursors, next])}>
-          {t("authority.common.next")}
-        </Button>
-      </div>
+      <ApiPager
+        hasPrevious={cursors.length > 0}
+        hasNext={next !== undefined}
+        onPrevious={() => setCursors(cursors.slice(0, -1))}
+        onNext={() => next !== undefined && setCursors([...cursors, next])}
+        previousKey="authority.common.previous"
+        nextKey="authority.common.next"
+        size="default"
+      />
       <Part titleKey="authority.incidents.open_title">
         <OpenIncident />
       </Part>

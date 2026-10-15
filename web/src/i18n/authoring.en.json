@@ -624,5 +624,14 @@
   "authority.zone.publish_item": "{id} version {version}",
   "authority.zone.publish_more": "{n} more",
   "authority.zone.clock_api": "the API's clock",
-  "authority.zone.clock_browser": "this browser's clock, as the API sent no time"
+  "authority.zone.clock_browser": "this browser's clock, as the API sent no time",
+  "authority.zone.col.identifier_name": "Identifier, name",
+  "authority.zone.col.type": "Type",
+  "authority.zone.col.version_state": "Version, state",
+  "authority.zone.col.valid": "Valid",
+  "authority.uspace.col.designated": "Designated",
+  "authority.zone.version_badge": "v{version}",
+  "authority.zone.version_full": "Version {version}",
+  "authority.zone.valid_from_line": "from {at}",
+  "authority.zone.valid_to_line": "to {at}"
 }
