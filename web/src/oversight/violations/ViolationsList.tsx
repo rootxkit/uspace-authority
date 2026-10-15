@@ -17,6 +17,7 @@ import { Choice, PageHeader, TextInput } from "../../common/ui";
 import { must, useLoad } from "../../common/useApi";
 import { consolePath } from "../../shell/paths";
 import { VIOLATION_KINDS, VIOLATION_STATUSES } from "../enums";
+import { ApiPager } from "../../common/ApiPager";
 
 type Summary = components["schemas"]["ViolationSummary"];
 
@@ -175,14 +176,15 @@ export function ViolationsList() {
           </TableBody>
         </Table>
       )}
-      <div className="flex gap-2">
-        <Button type="button" variant="outline" disabled={cursors.length === 0} onClick={() => setCursors(cursors.slice(0, -1))}>
-          {t("authority.common.previous")}
-        </Button>
-        <Button type="button" variant="outline" disabled={next === undefined} onClick={() => next !== undefined && setCursors([...cursors, next])} data-testid="next-page">
-          {t("authority.common.next")}
-        </Button>
-      </div>
+      <ApiPager
+        hasPrevious={cursors.length > 0}
+        hasNext={next !== undefined}
+        onPrevious={() => setCursors(cursors.slice(0, -1))}
+        onNext={() => next !== undefined && setCursors([...cursors, next])}
+        previousKey="authority.common.previous"
+        nextKey="authority.common.next"
+        size="default"
+      />
     </div>
   );
 }
