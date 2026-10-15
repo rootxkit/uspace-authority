@@ -535,6 +535,17 @@ Unreleased; the format follows Keep a Changelog.
   `CIS_DIRECT_KEEP_S` (86400, pending GCAA). The ANSP's contract fixture
   is vendored in `internal/cisp/testdata/ansp-direct` at the commit its
   `SOURCE` names.
+- WP-5 period of validity (bug fix, live use): a zone's `valid_from` and
+  `valid_to` (2019/947 Art. 15(3)) never left the authority. The CISP
+  publication and the export sent the feature without them, so the CISP
+  answered `applies` for a zone after its `valid_to`; the console's
+  applicability check ignored them too. Every published and exported
+  feature now carries the period as `limitedApplicability` (one
+  TimePeriod, or each period clipped to it), the applicability answer is
+  bounded by it, a `limitedApplicability` that never meets it is refused
+  at the write, and a publication also carries a zone whose period starts
+  later. Zones published earlier carry no end at the CISP until they are
+  published again (`docs/runbooks/zones.md`).
 - Kit 1.0.0 (U-M4): `web/` pins `@rootxkit/uspace-ui` `v1.0.0`, its release
   tarball checked against `SHA256SUMS` and its provenance attestation;
   the generated types carry the new generator version.

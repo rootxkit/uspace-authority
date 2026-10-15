@@ -33,7 +33,8 @@ Rules every write follows:
   it and never repaired. Problems come back by JSON path
   (`feature.properties.type`).
 - The period of validity is mandatory (2019/947 Art. 15(3)); `valid_to`
-  after `valid_from`.
+  after `valid_from`; a `limitedApplicability` must meet it (see
+  "Period of validity on the wire").
 - The zone must be judgeable: every ring closed and at most 5000
   positions, limits finite with their reference, a lower limit below an
   upper one in the same reference, and an applicability the judgement can
@@ -158,9 +159,35 @@ a period starts or ends; a failed read keeps the index held. Counters:
 `zones_projection_rows_deleted`, `zones_announce_failed`,
 `zones_projection_read_failed`, `zones_not_judged`.
 
-## Known gap
+## Period of validity on the wire
 
-ED-318 has no per-feature period of validity. A publication carries the
-versions in force when it is made; a version whose period starts later
-reaches the CISP with the next publication. The authority's own export
-and projection hold every period.
+ED-318 has no per-feature validity member of its own; its collection
+`metadata.validFrom` / `validTo` belong to the dataset, not to a zone.
+The period of validity (2019/947 Art. 15(3)) is therefore published as
+the feature's `limitedApplicability`, the only per-zone time ED-318 has,
+on every feature that leaves the authority (the CISP publication and
+`/v1/zones/export`):
+
+- a zone without `limitedApplicability` gets one TimePeriod
+  `{"startDateTime": valid_from, "endDateTime": valid_to}`;
+- each TimePeriod of a zone with `limitedApplicability` has its
+  `startDateTime` and `endDateTime` clipped to `valid_from` and
+  `valid_to` (a missing one is set to them), its schedule kept, and is
+  dropped when nothing of it is left;
+- a zone none of whose periods meets its period of validity would never
+  apply, which ED-318 cannot say: the draft or import is refused 400 at
+  `feature.properties.limitedApplicability`.
+
+The stored master copy is not rewritten. `GET /v1/zones/{id}/applies`
+is bounded the same way: outside the period it answers `not_applicable`.
+Until 2026-10-16 the period was left out, so every consumer of the CISP
+showed a published zone in force after its `valid_to`; a zone published
+before then carries no end at the CISP until it is published again
+(draft the same feature as a new version, approve, publish).
+
+A publication carries, per identifier, the version in force at the time
+of publication, else the first to come into force later, so a zone
+whose period starts later is at the CISP before it applies (as not
+applying). Known gap: one feature per identifier is published, so a
+version that starts when the one in force ends reaches the CISP with
+the first publication after that.
