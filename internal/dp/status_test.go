@@ -306,15 +306,15 @@ func TestSelfStatusWithoutProviders(t *testing.T) {
 	}
 	d := &Discovery{DSS: noDSS{}}
 	e.Discovery = d
-	if b := st.Self(now); b.DSS != dpviews.DSSUnknown || b.DSSSince != nil {
+	if b := st.Self(); b.DSS != dpviews.DSSUnknown || b.DSSSince != nil {
 		t.Fatalf("before a search: %+v", b)
 	}
 	d.setState(true, now)
-	if b := st.Self(now); b.DSS != dpviews.DSSAnswered || b.DSSSince != nil {
+	if b := st.Self(); b.DSS != dpviews.DSSAnswered || b.DSSSince != nil {
 		t.Fatalf("a search answered: %+v", b)
 	}
 	d.setState(false, now.Add(time.Second))
-	if b := st.Self(now); b.DSS != dpviews.DSSUnavailable || b.DSSSince == nil || *b.DSSSince != bus.Stamp(now.Add(time.Second)) {
+	if b := st.Self(); b.DSS != dpviews.DSSUnavailable || b.DSSSince == nil || *b.DSSSince != bus.Stamp(now.Add(time.Second)) {
 		t.Fatalf("a search failed: %+v", b)
 	}
 

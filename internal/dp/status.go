@@ -151,9 +151,9 @@ func (s *Status) Snapshot(p *Provider, now time.Time) StatusBody {
 	return b
 }
 
-// Self is the Display Provider's own status at now (dpviews.Status):
-// the DSS's state, unknown until an ISA search answered.
-func (s *Status) Self(now time.Time) dpviews.Status {
+// Self is the Display Provider's own status (dpviews.Status): the DSS's
+// state, unknown until an ISA search answered.
+func (s *Status) Self() dpviews.Status {
 	e := s.Engine
 	b := dpviews.Status{DSS: dpviews.DSSUnconfigured, Tiles: len(e.Tiles()), Providers: len(e.Providers())}
 	if e.ISAs != nil {
@@ -176,7 +176,7 @@ func (s *Status) Self(now time.Time) dpviews.Status {
 // Publish sends the Display Provider's own status and every provider's
 // once, and returns how many providers' it sent.
 func (s *Status) Publish(now time.Time) int {
-	env := bus.SystemEnvelope(dpviews.StatusSchema, Producer, now, s.Self(now))
+	env := bus.SystemEnvelope(dpviews.StatusSchema, Producer, now, s.Self())
 	if err := bus.PublishCore(s.Pub, dpviews.StatusSubject, env); err != nil && s.Limiter != nil {
 		s.Limiter.Limited("dp_self_status_publish").Warn("Display Provider status not published", slog.String("error", err.Error()))
 	}
