@@ -66,7 +66,7 @@ in `subscribes_coalesced`.
 | `sources[]` | every source: the type rows (`source_instance: null`) and every instance heard or switched off, each `source/status/v1`'s body plus `lagging` and `lag_s` |
 | `projection_age_s` | age of the registry projection on the database's clock; absent while never projected |
 | `cis_version`, `cis_age_s` | the restrictions version of the CIS cache and its age; absent while never projected |
-| `dp_state` | `polling`, `stale`, `disabled` or `unavailable`: the F3411 Display Provider (`network_rid` sources). `unavailable` until WP-14 lands |
+| `dp_state` | `polling`, `stale`, `disabled` or `unavailable`: the F3411 Display Provider (`network_rid` sources). `unavailable` while the `network_rid` sources are neither live, stale nor disabled (none heard yet) |
 | `nats`, `nats_since` | `connected`, or `unavailable` with the instant the bus was lost |
 
 `track/telemetry/v1` body (`schemas/picture/track/v1.json`):

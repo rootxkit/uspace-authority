@@ -110,8 +110,8 @@ a `status` line follows at once and then every `STATUS_INTERVAL_S`.
 the readiness checks (`relational`); `/metrics` is the Prometheus text.
 The status line carries `policy_version` once api has read the active
 policy. On `API_ADDR` (127.0.0.1:8080) `/v1/policy*` and
-`/v1/audit/events` answer `401 unauthenticated` until WP-2 brings
-console sessions; any other path answers a `not_found` problem. Started
+`/v1/audit/events` answer `401 unauthenticated` without a console
+session; any other path answers a `not_found` problem. Started
 without the relational database (or below the schema version it needs),
 api logs `process failed` naming it and exits 1. SIGTERM (or Ctrl-C) drains within `SHUTDOWN_TIMEOUT_S` and exits
 0 with a `stopped` line. With a required variable missing the process
