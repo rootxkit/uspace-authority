@@ -18,13 +18,20 @@ operator and to the USSP (spec `01 §1`).
 
 ## Status
 
-WP-0 (scaffold): the Go module, the seven process stubs behind one
-`uspace-authority` entrypoint, the config, logging, metrics, tracing and
-HTTP baselines, the OpenAPI skeleton, the two empty migration trees, CI,
-the image and the development stack. `docs/PLAN.md` and the work package
-briefs under `docs/WORKPACKAGES/` are the plan for the rest; milestones
-A-M1..A-M5 follow `uspace-lab/docs/spec/07-roadmap.md` phase 3.
-Development setup: [`docs/runbooks/dev-setup.md`](docs/runbooks/dev-setup.md).
+Work packages WP-0 through WP-27 are built (the registry, zones and the
+CISP client, Remote ID ingest and the picture feed, the violation
+detectors, the Display Provider, manned ingest, certificates, incidents
+and evidence packs, occurrence reports, the police realm, the
+`uas.gov.ge` registry import, the console under `web/`, the
+`no_authorisation` detector, retention and archive, the scenario harness
+and the staging deployment); `CHANGELOG.md` has one line per package and
+lists them under Unreleased, as nothing is tagged yet. `docs/PLAN.md` and
+the briefs under `docs/WORKPACKAGES/` are the plan; milestones A-M1..A-M5
+follow `uspace-lab/docs/spec/07-roadmap.md` phase 3. The runbooks are in
+`docs/runbooks/`. Development setup:
+[`docs/runbooks/dev-setup.md`](docs/runbooks/dev-setup.md).
+
+Live demo: https://uspace-authority.chikox.net
 
 ## Layout
 

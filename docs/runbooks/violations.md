@@ -20,8 +20,9 @@ and never warns of proximity: conflicts are the USSP's (plan D5).
 Not raised: conflicts (CPA, counted `conflict_events_ignored`), presence
 in a U-space airspace (a USPACE zone is recorded as `in_uspace: true` on
 the aircraft's violations, never a violation itself), anything from a
-`backlog` sample (T-04), and `no_authorisation` and `rid_absent`, which
-are later detectors (WP-26, plan Q-A6).
+`backlog` sample (T-04), and `rid_absent`, which is a later detector
+(plan Q-A6). `no_authorisation` is raised by WP-26
+(`docs/runbooks/no-authorisation.md`).
 
 ## What each field means
 
@@ -122,5 +123,6 @@ api: `VIOLATIONS_EXCERPT_MAX_SAMPLES`, `VIOLATIONS_SILENT_AFTER_S`,
 `VIOLATIONS_WRITE_TIMEOUT_S`. The thresholds are not configuration: they
 are the active policy (`/v1/policy`), which api writes to KV `policy`
 and detect follows; `height_limit_in_uspace: skip_when_authorised` has no
-effect until WP-26 (the height limit is evaluated everywhere, and detect
-says so).
+effect while no U-space airspace is designated or no DSS is configured
+(the height limit is evaluated everywhere, and detect says so;
+`docs/runbooks/no-authorisation.md`).
