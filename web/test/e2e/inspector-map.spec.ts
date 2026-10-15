@@ -85,6 +85,11 @@ test("the bus lost: the banner says since when, and the tracks stay and age", as
   await mockState(request, { nats: "unavailable", natsSince: "2026-10-02T09:20:00.000Z" });
   const banner = page.getByTestId("degraded-banner");
   await expect(banner.locator('[data-slug="nats_unavailable"]')).toContainText("The bus is unavailable since 2026-10-02 09:20:00 UTC");
+  // The status line names it in words, the server's code in the tooltip.
+  const line = page.getByTestId("status-degraded");
+  await expect(line.locator('[data-slug="nats_unavailable"]')).toHaveText("Bus unavailable");
+  await expect(line.locator('[data-slug="nats_unavailable"]')).toHaveAttribute("title", "Server code: nats_unavailable");
+  await expect(page.getByTestId("feed-strip")).not.toContainText("as the server names it");
 
   // E-02: nothing leaves the picture, and the age keeps counting.
   await expect(row).toBeVisible();
@@ -96,6 +101,7 @@ test("the bus lost: the banner says since when, and the tracks stay and age", as
   // The pair: the bus back, the banner goes.
   await mockState(request, { nats: "connected" });
   await expect(page.getByTestId("degraded-banner")).toHaveCount(0);
+  await expect(page.getByTestId("status-degraded")).toHaveCount(0);
 });
 
 test("a revoked session closes the picture with 4401 and the page returns to sign-in", async ({ page, request }) => {

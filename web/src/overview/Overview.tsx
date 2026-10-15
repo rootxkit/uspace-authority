@@ -24,7 +24,7 @@ import { TrackLegend, ZoneLegend } from "@rootxkit/uspace-ui/legend";
 import { subscribeFrame, useNowMs } from "@rootxkit/uspace-ui/live";
 import { MapControls, MapView, type BBox, type LayerToggle } from "@rootxkit/uspace-ui/map";
 import type { Trust, ZoneType } from "@rootxkit/uspace-ui/model";
-import { FeedStatusBar, SourcesPanel } from "@rootxkit/uspace-ui/status";
+import { SourcesPanel } from "@rootxkit/uspace-ui/status";
 import { SEVERITY_KEYS } from "@rootxkit/uspace-ui/symbology";
 import { useTheme, type StatusTone } from "@rootxkit/uspace-ui/theme";
 import { Button, EmptyState, KpiRow, MapPanel, PageHeader, Panel, StatTile, StatusBadge } from "@rootxkit/uspace-ui/ui";
@@ -34,6 +34,7 @@ import { LoadNotice } from "../common/Problem";
 import { must, useLoad, type Load } from "../common/useApi";
 import { isUnverifiedClaim } from "../picture/adapt";
 import { headerNowMs } from "../picture/feedAge";
+import { StatusLine } from "../picture/StatusLine";
 import { BBoxWatcher } from "../picture/InspectorMap";
 import { SUBSCRIBE_LAYERS, TRAIL_POINTS, usePicture } from "../picture/usePicture";
 import { useReportFeed } from "../shell/feedPill";
@@ -642,7 +643,7 @@ export function Overview() {
         {/* The kit's SourcesPanel is a panel of its own, with its heading. */}
         <div className="grid content-start gap-3" data-testid="overview-sources">
           <SourcesPanel sources={picture.sources} nowMs={nowMs} canSwitch={false} />
-          <FeedStatusBar status={feed} nowMs={headerNowMs(nowMs, feed.lastFrameAtMs)} />
+          <StatusLine status={feed} nowMs={headerNowMs(nowMs, feed.lastFrameAtMs)} />
         </div>
       </div>
     </div>

@@ -14,7 +14,7 @@ import { TrackLayer, ZoneLayer } from "@rootxkit/uspace-ui/layers";
 import { subscribeFrame, useNowMs } from "@rootxkit/uspace-ui/live";
 import { MapControls, MapView, subscriptionBBox, useBBoxSubscription, useMapContext, type BBox, type LayerToggle } from "@rootxkit/uspace-ui/map";
 import type { Trust, ZoneType } from "@rootxkit/uspace-ui/model";
-import { FeedStatusBar, FrozenOverlay, SourcesPanel } from "@rootxkit/uspace-ui/status";
+import { FrozenOverlay, SourcesPanel } from "@rootxkit/uspace-ui/status";
 import { identDrawn, type IdentKey } from "@rootxkit/uspace-ui/symbology";
 import { useTheme } from "@rootxkit/uspace-ui/theme";
 import { PageHeader } from "@rootxkit/uspace-ui/ui";
@@ -24,6 +24,7 @@ import { renderLink } from "../shell/link";
 import { loginPath } from "../shell/paths";
 import { useZones } from "../zones/useZones";
 import { headerNowMs } from "./feedAge";
+import { StatusLine } from "./StatusLine";
 import { DegradedBanner, FeedFacts, TrackDetail, TrackList, ViolationsPanel } from "./panels";
 import { SUBSCRIBE_LAYERS, TRAIL_POINTS, usePicture } from "./usePicture";
 
@@ -140,7 +141,7 @@ export function InspectorMap() {
         data-testid="feed-strip"
         data-connection={feed.connection}
       >
-        <FeedStatusBar status={feed} nowMs={headerNowMs(nowMs, feed.lastFrameAtMs)} />
+        <StatusLine status={feed} nowMs={headerNowMs(nowMs, feed.lastFrameAtMs)} />
         <FeedFacts feed={feed} counters={picture.counters} tracksEvicted={picture.tracksEvicted} trackCount={tracks.length} />
       </section>
       <DegradedBanner feed={feed} natsSince={picture.natsSince} />
