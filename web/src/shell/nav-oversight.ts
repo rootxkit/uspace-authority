@@ -8,9 +8,9 @@
 import type { NavItem } from "./nav";
 
 export const OVERSIGHT_NAV_ITEMS: readonly NavItem[] = [
-  { path: "/violations", labelKey: "authority.nav.violations", roles: ["inspector"], realms: ["console"] },
-  { path: "/incidents", labelKey: "authority.nav.incidents", roles: ["inspector", "incident_officer"], realms: ["console"] },
-  { path: "/occurrences", labelKey: "authority.nav.occurrences", roles: ["incident_officer"], realms: ["console"] },
-  { path: "/sources", labelKey: "authority.nav.sources", roles: ["admin"], realms: ["console"] },
-  { path: "/audit", labelKey: "authority.nav.audit", roles: ["admin", "auditor"], realms: ["console"] },
+  { path: "/violations", group: "operations", icon: "violations", labelKey: "authority.nav.violations", roles: ["inspector"], realms: ["console"] },
+  { path: "/incidents", group: "operations", icon: "incidents", labelKey: "authority.nav.incidents", roles: ["inspector", "incident_officer"], realms: ["console"] },
+  { path: "/occurrences", group: "operations", icon: "occurrences", labelKey: "authority.nav.occurrences", roles: ["incident_officer"], realms: ["console"] },
+  { path: "/sources", group: "administration", icon: "sources", labelKey: "authority.nav.sources", roles: ["admin"], realms: ["console"] },
+  { path: "/audit", group: "administration", icon: "audit", labelKey: "authority.nav.audit", roles: ["admin", "auditor"], realms: ["console"] },
 ];

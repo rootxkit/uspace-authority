@@ -4,7 +4,7 @@
 // ages, a revoked session closed with 4401, and the role-shaped zones.
 // Every wait is on a condition, never on a sleep.
 import { expect, test } from "@playwright/test";
-import { AUTHENTICATED_TRACK, BROADCAST_TRACK, INSPECTOR, PROVIDER_TRACK, REGISTRAR, mockState, resetMock, signIn } from "./helpers";
+import { AUTHENTICATED_TRACK, BROADCAST_TRACK, INSPECTOR, PROVIDER_TRACK, REGISTRAR, mockState, openPicture, resetMock, signIn } from "./helpers";
 
 test.beforeEach(async ({ request }) => {
   await resetMock(request);
@@ -28,6 +28,7 @@ test("sign-in → map → the tracks appear with trust, identification and age",
   expect(cookies.some((c) => c.name === "uspace_mfa")).toBe(false);
   expect(await page.evaluate(() => document.cookie)).not.toContain("uspace_session");
 
+  await openPicture(page);
   const list = page.getByTestId("track-list");
   await expect(list.locator(`[data-track="${BROADCAST_TRACK}"]`)).toBeVisible();
   await expect(list.locator(`[data-track="${AUTHENTICATED_TRACK}"]`)).toBeVisible();
@@ -61,6 +62,7 @@ test("sign-in → map → the tracks appear with trust, identification and age",
 
 test("the provider track's operator position and the registration secret never reach the page", async ({ page }) => {
   await signIn(page, "en", INSPECTOR);
+  await openPicture(page);
   const row = page.getByTestId("track-list").locator(`[data-track="${PROVIDER_TRACK}"]`);
   await row.getByRole("button").click();
   const detail = page.getByTestId("track-detail");
@@ -75,6 +77,7 @@ test("the provider track's operator position and the registration secret never r
 
 test("the bus lost: the banner says since when, and the tracks stay and age", async ({ page, request }) => {
   await signIn(page, "en", INSPECTOR);
+  await openPicture(page);
   const row = page.getByTestId("track-list").locator(`[data-track="${BROADCAST_TRACK}"]`);
   await expect(row).toBeVisible();
   await expect(page.getByTestId("degraded-banner")).toHaveCount(0);
@@ -97,6 +100,7 @@ test("the bus lost: the banner says since when, and the tracks stay and age", as
 
 test("a revoked session closes the picture with 4401 and the page returns to sign-in", async ({ page, request }) => {
   await signIn(page, "en", INSPECTOR);
+  await openPicture(page);
   await expect(page.getByTestId("track-list")).toBeVisible();
   await mockState(request, { revoke: true });
   await expect(page).toHaveURL(/\/en\/login$/, { timeout: 15_000 });
@@ -104,7 +108,7 @@ test("a revoked session closes the picture with 4401 and the page returns to sig
 
 test("sign-out ends the session at api and clears the cookies", async ({ page, request, context }) => {
   await signIn(page, "en", INSPECTOR);
-  await page.getByTestId("account-menu").click();
+  await page.getByRole("button", { name: /^Account menu: / }).click();
   await expect(page.getByTestId("account-roles")).toHaveText("Roles: inspector");
   await page.getByTestId("sign-out").click();
   await expect(page).toHaveURL(/\/en\/login$/);
@@ -115,11 +119,13 @@ test("sign-out ends the session at api and clears the cookies", async ({ page, r
 
 test("zones: drawn for an inspector, the circle listed as not drawn; refused for a registrar, and said", async ({ page, browser }) => {
   await signIn(page, "en", INSPECTOR);
+  await openPicture(page);
   await expect(page.getByTestId("zones-undrawn")).toContainText("TSTC001");
   await expect(page.getByTestId("zones-refused")).toHaveCount(0);
 
   const other = await browser.newPage();
   await signIn(other, "en", REGISTRAR);
+  await openPicture(other);
   await expect(other.getByTestId("zones-refused")).toContainText("status 403");
   await other.close();
 });

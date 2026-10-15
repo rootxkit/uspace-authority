@@ -46,6 +46,15 @@ for (const setup of [
       await check(page, `/${l}/check`, "check-form");
       await check(page, `/${l}/register`, "register-table");
       await check(page, `/${l}/rules`, l === "en" ? "rules" : "rules-problem");
+      await check(page, `/${l}/login`, "login-panel");
+    });
+
+    test("the inspector's overview and live picture", async ({ page }) => {
+      await signInTo(page, l, INSPECTOR, new RegExp(`/${l}$`));
+      await expect(page.getByTestId("kpi-review")).toHaveAttribute("data-state", "loaded");
+      await expect(page.getByTestId("kpi-tracks")).toHaveAttribute("data-count", /^[0-9]+$/);
+      expect(await axeViolations(page), "overview").toEqual([]);
+      await check(page, `/${l}/picture`, "track-list");
     });
 
     test("the inspector's violations", async ({ page }) => {
@@ -59,6 +68,8 @@ for (const setup of [
 
     test("the incident officer's occurrence reports", async ({ page }) => {
       await signInTo(page, l, OFFICER, new RegExp(`/${l}$`));
+      await expect(page.getByTestId("kpi-occurrences")).toHaveAttribute("data-state", "loaded");
+      expect(await axeViolations(page), "overview").toEqual([]);
       await check(page, `/${l}/occurrences`, "occurrences-table");
       await check(page, `/${l}/occurrences/export`, "narrative-warning");
     });

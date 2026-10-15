@@ -1,4 +1,4 @@
-import { expect, type APIRequestContext, type Page } from "@playwright/test";
+import { expect, type APIRequestContext, type Locator, type Page } from "@playwright/test";
 
 // The fixture server's test accounts and code (test/mock-origin.mjs), not credentials.
 export const INSPECTOR = { username: "inspector1", password: "inspector1-test-password" };
@@ -48,6 +48,17 @@ export async function signInTo(page: Page, lang: "en" | "ka", account: { usernam
   await otp.fill(CODE);
   await page.locator('form button[type="submit"]').first().click();
   await expect(page).toHaveURL(landing);
+}
+
+/** The console's sidebar navigation (the kit's AppShell names it "Main navigation" in English). */
+export function consoleNav(page: Page): Locator {
+  return page.getByRole("navigation", { name: "Main navigation" });
+}
+
+/** The live picture of `lang`: since the overview is the landing page, the map is a page of its own. */
+export async function openPicture(page: Page, lang: "en" | "ka" = "en"): Promise<void> {
+  await page.goto(`/${lang}/picture`);
+  await expect(page.getByTestId("feed-strip")).toBeVisible();
 }
 
 /** The api requests the stub answered. */

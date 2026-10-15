@@ -17,7 +17,10 @@ import type { Trust, ZoneType } from "@rootxkit/uspace-ui/model";
 import { FeedStatusBar, FrozenOverlay, SourcesPanel } from "@rootxkit/uspace-ui/status";
 import { identDrawn, type IdentKey } from "@rootxkit/uspace-ui/symbology";
 import { useTheme } from "@rootxkit/uspace-ui/theme";
+import { PageHeader } from "@rootxkit/uspace-ui/ui";
 import { useRuntimeConfig } from "../components/Providers";
+import { useReportFeed } from "../shell/feedPill";
+import { renderLink } from "../shell/link";
 import { loginPath } from "../shell/paths";
 import { useZones } from "../zones/useZones";
 import { headerNowMs } from "./feedAge";
@@ -42,7 +45,7 @@ const TICK_MS = 1000;
  * the browser has no WebGL, so the picture still arrives in the lists),
  * then the map's on load and after every settled move.
  */
-function BBoxWatcher({ onChange }: { onChange(b: BBox): void }) {
+export function BBoxWatcher({ onChange }: { onChange(b: BBox): void }) {
   const { map, initialBBox } = useMapContext();
   useEffect(() => {
     if (map === null) onChange(subscriptionBBox(initialBBox, BBOX_MARGIN_FRACTION, BBOX_QUANTIZE_DEG));
@@ -70,6 +73,7 @@ export function InspectorMap() {
   const picture = usePicture(toLogin);
   const { feed } = picture;
   const nowMs = useNowMs(TICK_MS);
+  useReportFeed(feed, nowMs);
   const zones = useZones(lang);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showTracks, setShowTracks] = useState(true);
@@ -123,6 +127,13 @@ export function InspectorMap() {
 
   return (
     <div className="flex flex-1 flex-col">
+      <PageHeader
+        className="border-b border-border px-4 pt-5 pb-3"
+        breadcrumbs={[{ label: t("authority.nav.group.operations") }, { label: t("authority.nav.map") }]}
+        renderLink={renderLink}
+        title={t("authority.nav.map")}
+        description={t("authority.picture.intro")}
+      />
       <section
         aria-label={t("authority.feed.label")}
         className="flex flex-wrap items-start gap-x-6 gap-y-1 border-b border-[var(--us-border)] bg-[var(--us-surface-sunken)] px-4 py-2 text-xs"
@@ -151,7 +162,7 @@ export function InspectorMap() {
           {zones.truncated && t("authority.zones.truncated")} {zones.undrawn.length > 0 && t("authority.zones.undrawn", { ids: zones.undrawn.join(", ") })}
         </p>
       )}
-      <div className="flex flex-1 flex-col lg:h-[75vh] lg:flex-row">
+      <div className="flex flex-col lg:h-[calc(100dvh-var(--us-topbar-height))] lg:min-h-[32rem] lg:flex-row">
         <div className="relative h-[55vh] lg:h-auto lg:flex-1">
           {cfg.mapView === null ? (
             <p role="alert" className="p-4 text-[var(--us-danger)]" data-testid="map-not-configured">

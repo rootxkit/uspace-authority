@@ -14,7 +14,7 @@ import { Input, Label } from "@rootxkit/uspace-ui/ui";
 import type { components } from "../api/types";
 import { must, useConsole, useLoad } from "../authoring/api";
 import { compact } from "../authoring/fields";
-import { Can, Facts, Loaded, PageHeader, Section, UTC } from "../authoring/ui";
+import { Can, Facts, HEADER_ACTION, Loaded, PageHeader, Section, UTC } from "../authoring/ui";
 import { Filters, RegistryList, RegistryTabs, StatusBadge, StatusChange, registryPath } from "./common";
 import { byAt } from "./words";
 import { NotYourRole, StatusFilter } from "./operators";
@@ -88,7 +88,7 @@ export function UASPage() {
     <div className="flex flex-col" data-testid="uas-page">
       <PageHeader titleKey="authority.registry.uas.title">
         <Can roles={["registrar"]}>
-          <Link href={registryPath(lang, "uas/new")} className="text-sm font-semibold underline" data-testid="uas-new">
+          <Link href={registryPath(lang, "uas/new")} className={HEADER_ACTION} data-testid="uas-new">
             {t("authority.registry.uas.new")}
           </Link>
         </Can>

@@ -11,10 +11,11 @@ import { useState, type ReactNode } from "react";
 import { ApiError } from "@rootxkit/uspace-ui/api";
 import { fmtTimeUTC, useLang, useT } from "@rootxkit/uspace-ui/i18n";
 import { useTheme } from "@rootxkit/uspace-ui/theme";
-import { Badge, Button, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@rootxkit/uspace-ui/ui";
+import { Badge, Button, LanguageSwitch, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@rootxkit/uspace-ui/ui";
 import { Table } from "../common/Table";
 import type { components } from "../api/types";
-import { LocaleSwitch } from "../components/LocaleSwitch";
+import { BrandMark } from "../shell/brand";
+import { SchemeToggle } from "../shell/SchemeToggle";
 import { LoadNotice, ProblemText } from "../common/Problem";
 import { PageHeader, TextInput } from "../common/ui";
 import { must, useClient, useLoad } from "../common/useApi";
@@ -35,35 +36,52 @@ export function PublicShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { brand } = useTheme();
   return (
-    <div className="flex min-h-full flex-col">
-      <a href="#main" className="sr-only focus:not-sr-only">
+    <div className="flex min-h-dvh flex-col bg-background text-foreground">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-card focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-foreground focus:shadow-overlay"
+      >
         {t("authority.skip")}
       </a>
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--us-border)] bg-[var(--us-surface-raised)] px-4 py-2">
-        <p className="m-0 text-lg font-bold">{t("authority.public.title", { name: brand.name })}</p>
-        <nav aria-label={t("authority.public.nav.label")} className="flex flex-wrap gap-4 text-sm" data-testid="public-nav">
-          {PAGES.map((p) => {
-            const href = `/${lang}${p.sub}`;
-            return (
-              <Link key={p.sub} href={href} aria-current={pathname === href ? "page" : undefined} className={pathname === href ? "font-bold underline underline-offset-4" : "underline-offset-4 hover:underline"}>
-                {t(p.labelKey)}
-              </Link>
-            );
-          })}
+      <header className="sticky top-0 z-30 flex min-h-[var(--us-topbar-height)] flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-border bg-topbar px-4 py-2 sm:px-6">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span aria-hidden="true" className="inline-flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md">
+            <BrandMark />
+          </span>
+          <p className="m-0 truncate text-sm font-bold">{t("authority.public.title", { name: brand.name })}</p>
+        </div>
+        <nav aria-label={t("authority.public.nav.label")} data-testid="public-nav">
+          <ul className="m-0 flex list-none flex-wrap gap-1 p-0">
+            {PAGES.map((p) => {
+              const href = `/${lang}${p.sub}`;
+              return (
+                <li key={p.sub}>
+                  <Link
+                    href={href}
+                    aria-current={pathname === href ? "page" : undefined}
+                    className="inline-flex h-8 items-center rounded-md px-3 text-sm font-semibold text-sidebar-text no-underline transition-colors hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent-text"
+                  >
+                    {t(p.labelKey)}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         </nav>
-        <div className="flex items-center gap-4">
-          <LocaleSwitch />
-          <Link className="text-sm underline underline-offset-2" href={loginPath(lang)}>
-            {t("authority.public.sign_in")}
-          </Link>
+        <div className="flex items-center gap-2">
+          <SchemeToggle />
+          <LanguageSwitch />
+          <Button asChild size="sm" variant="outline">
+            <Link href={loginPath(lang)}>{t("authority.public.sign_in")}</Link>
+          </Button>
         </div>
       </header>
-      <main id="main" className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4 p-4">
+      <main id="main" tabIndex={-1} className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 outline-none sm:px-6">
         {children}
       </main>
-      <footer className="border-t border-[var(--us-border)] px-4 py-1 text-xs text-[var(--us-text-muted)]">
+      <footer className="flex flex-wrap gap-x-4 gap-y-1 border-t border-border px-4 py-2 text-xs text-muted-foreground sm:px-6">
         <span>{t("authority.footer.operator", { name: brand.name })}</span>
-        {brand.contact !== null && <span className="ms-4">{t("authority.footer.contact", { contact: brand.contact })}</span>}
+        {brand.contact !== null && <span>{t("authority.footer.contact", { contact: brand.contact })}</span>}
       </footer>
     </div>
   );

@@ -3,9 +3,14 @@ export function loginPath(lang: string): string {
   return `/${lang}/login`;
 }
 
-/** The inspector map of `lang`. */
+/** The console's home of `lang`: the overview. */
 export function mapPath(lang: string): string {
   return `/${lang}`;
+}
+
+/** The live picture (the inspector map) of `lang`. */
+export function picturePath(lang: string): string {
+  return `/${lang}/picture`;
 }
 
 /** The police realm's home of `lang` (WP-23): its own layout, no console navigation. */

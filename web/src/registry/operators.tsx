@@ -17,7 +17,7 @@ import type { components } from "../api/types";
 import { must, useConsole, useLoad } from "../authoring/api";
 import { TextareaField, compact } from "../authoring/fields";
 import { PersonalData } from "../authoring/PersonalData";
-import { Can, Facts, Loaded, PageHeader, Section, UTC } from "../authoring/ui";
+import { Can, Facts, HEADER_ACTION, Loaded, PageHeader, Section, UTC } from "../authoring/ui";
 import { Filters, REGISTRY_STATUSES, RegistryList, RegistryTabs, StatusBadge, StatusChange, registryPath } from "./common";
 import { UASTable } from "./uas";
 import { byAt } from "./words";
@@ -59,7 +59,7 @@ export function OperatorsPage() {
     <div className="flex flex-col" data-testid="operators-page">
       <PageHeader titleKey="authority.registry.operators.title">
         <Can roles={["registrar"]}>
-          <Link href={registryPath(lang, "operators/new")} className="text-sm font-semibold underline" data-testid="operator-new">
+          <Link href={registryPath(lang, "operators/new")} className={HEADER_ACTION} data-testid="operator-new">
             {t("authority.registry.operators.new")}
           </Link>
         </Can>

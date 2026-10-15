@@ -227,7 +227,7 @@ test("a viewer sees no edit control; an inspector sees them (E-01)", async ({ pa
   await signIn(page, "en", VIEWER);
   await page.goto("/en/zones");
   await expect(page.getByTestId("zones-list-loading")).toHaveCount(0);
-  await expect(page.locator("[data-state]").first()).toBeVisible();
+  await expect(page.getByRole("main").locator("[data-state]").first()).toBeVisible();
   await expect(page.getByTestId("zone-new")).toHaveCount(0);
   await expect(page.getByTestId("zone-import")).toHaveCount(0);
   await expect(page.getByTestId("publish-panel")).toHaveCount(0);

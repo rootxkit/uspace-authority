@@ -4,7 +4,7 @@
 // an inspector, whose roles hold none of the operations, is offered
 // none of it (E-01).
 import { expect, test } from "@playwright/test";
-import { INSPECTOR, resetMock, signIn } from "./helpers";
+import { INSPECTOR, consoleNav, resetMock, signIn } from "./helpers";
 import { ADMIN, expectAccessible, field, recorded } from "./authoring";
 
 test.beforeEach(async ({ request }) => {
@@ -13,6 +13,9 @@ test.beforeEach(async ({ request }) => {
 
 test("an admin designates a U-space airspace with the Art. 3(4) block; an inspector is not offered it (E-01)", async ({ page, request, browser }) => {
   await signIn(page, "en", ADMIN);
+  // The pair of the inspector's absent entries below: an admin is offered both.
+  await expect(consoleNav(page).getByRole("link", { name: "U-space airspace", exact: true })).toBeVisible();
+  await expect(consoleNav(page).getByRole("link", { name: "Certificates", exact: true })).toBeVisible();
   await page.goto("/en/uspace/new");
   await field(page, "feature.properties.identifier").fill("TSU001");
   await field(page, "feature.properties.country").fill("GEO");
@@ -59,8 +62,8 @@ test("an admin designates a U-space airspace with the Art. 3(4) block; an inspec
 
   const insp = await browser.newPage();
   await signIn(insp, "en", INSPECTOR);
-  await expect(insp.getByTestId("nav").getByText("U-space airspace")).toHaveCount(0);
-  await expect(insp.getByTestId("nav").getByText("Certificates")).toHaveCount(0);
+  await expect(consoleNav(insp).getByRole("link", { name: "U-space airspace", exact: true })).toHaveCount(0);
+  await expect(consoleNav(insp).getByRole("link", { name: "Certificates", exact: true })).toHaveCount(0);
   await insp.goto("/en/uspace/new");
   await expect(insp.getByTestId("not-your-role")).toBeVisible();
   await expect(insp.getByTestId("zone-editor")).toHaveCount(0);
