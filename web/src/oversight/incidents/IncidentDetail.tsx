@@ -12,7 +12,7 @@ import { useState } from "react";
 import { ApiError } from "@rootxkit/uspace-ui/api";
 import { inputToUtc } from "@rootxkit/uspace-ui/form";
 import { fmtNum, fmtRegistrationNumber, fmtTimeUTC, useLang, useT } from "@rootxkit/uspace-ui/i18n";
-import { Badge, Button, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@rootxkit/uspace-ui/ui";
+import { Badge, Button, TABLE_NOWRAP, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@rootxkit/uspace-ui/ui";
 import { Table } from "../../common/Table";
 import type { components } from "../../api/types";
 import { LoadNotice, ProblemText } from "../../common/Problem";
@@ -91,7 +91,7 @@ function Aircraft({ inc, onDone }: { inc: Incident; onDone(i: Incident): void })
         <TableCaption>{t("authority.incident_detail.aircraft_caption")}</TableCaption>
         <TableHeader>
           <TableRow>
-            <TableHead>{t("authority.incident_detail.serial")}</TableHead>
+            <TableHead className={TABLE_NOWRAP}>{t("authority.incident_detail.serial")}</TableHead>
             <TableHead>{t("authority.incident_detail.operator_reg")}</TableHead>
             <TableHead>{t("authority.incident_detail.tracks")}</TableHead>
             <TableHead>{t("authority.incident_detail.identification")}</TableHead>
@@ -106,8 +106,8 @@ function Aircraft({ inc, onDone }: { inc: Incident; onDone(i: Incident): void })
           )}
           {inc.aircraft.map((a) => (
             <TableRow key={a.id}>
-              <TableCell>{a.serial ?? "—"}</TableCell>
-              <TableCell>{fmtRegistrationNumber(a.operator_reg ?? null)}</TableCell>
+              <TableCell className={TABLE_NOWRAP}>{a.serial ?? "—"}</TableCell>
+              <TableCell className={TABLE_NOWRAP}>{fmtRegistrationNumber(a.operator_reg ?? null)}</TableCell>
               <TableCell className="font-mono text-xs">{a.track_ids.join(", ")}</TableCell>
               <TableCell>
                 {a.identification.status === undefined

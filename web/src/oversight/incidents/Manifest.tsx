@@ -8,7 +8,7 @@
 // and every file with its SHA-256. The manifest holds no personal data.
 // It is read defensively: api types it as an object.
 import { fmtAltitude, fmtTimeUTC, useLang, useT } from "@rootxkit/uspace-ui/i18n";
-import { TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@rootxkit/uspace-ui/ui";
+import { TABLE_NOWRAP, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@rootxkit/uspace-ui/ui";
 import { Table } from "../../common/Table";
 import { LoadNotice } from "../../common/Problem";
 import { Facts } from "../../common/ui";
@@ -57,10 +57,10 @@ export function ManifestView({ manifest, seal, signatureKid, purpose, caseRef }:
             const s = obj(raw);
             return (
               <TableRow key={name} data-section={name} data-state={str(s["state"])}>
-                <TableCell className="font-mono">{name}</TableCell>
+                <TableCell className={`font-mono ${TABLE_NOWRAP}`}>{name}</TableCell>
                 <TableCell>{str(s["state"])}</TableCell>
                 <TableCell>{str(s["basis"])}</TableCell>
-                <TableCell>{str(s["count"])}</TableCell>
+                <TableCell className={TABLE_NOWRAP}>{str(s["count"])}</TableCell>
                 <TableCell>{typeof s["reason"] === "string" ? s["reason"] : ""}</TableCell>
               </TableRow>
             );
@@ -81,10 +81,10 @@ export function ManifestView({ manifest, seal, signatureKid, purpose, caseRef }:
           <TableBody>
             {tracks.map((tr) => (
               <TableRow key={str(tr["track_id"])}>
-                <TableCell className="font-mono text-xs">{str(tr["track_id"])}</TableCell>
-                <TableCell>{str(tr["samples"])}</TableCell>
-                <TableCell>{str(tr["segments"])}</TableCell>
-                <TableCell>{str(tr["holes"])}</TableCell>
+                <TableCell className={`font-mono text-xs ${TABLE_NOWRAP}`}>{str(tr["track_id"])}</TableCell>
+                <TableCell className={TABLE_NOWRAP}>{str(tr["samples"])}</TableCell>
+                <TableCell className={TABLE_NOWRAP}>{str(tr["segments"])}</TableCell>
+                <TableCell className={TABLE_NOWRAP}>{str(tr["holes"])}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -134,7 +134,7 @@ export function ManifestView({ manifest, seal, signatureKid, purpose, caseRef }:
               <TableRow key={str(f["path"])}>
                 <TableCell className="font-mono text-xs">{str(f["path"])}</TableCell>
                 <TableCell className="font-mono text-xs break-all">{str(f["sha256"])}</TableCell>
-                <TableCell>{str(f["bytes"])}</TableCell>
+                <TableCell className={TABLE_NOWRAP}>{str(f["bytes"])}</TableCell>
               </TableRow>
             ))}
           </TableBody>

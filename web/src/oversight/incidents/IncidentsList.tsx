@@ -11,7 +11,7 @@ import { useState } from "react";
 import { ApiError } from "@rootxkit/uspace-ui/api";
 import { inputToUtc } from "@rootxkit/uspace-ui/form";
 import { fmtTimeUTC, useLang, useT } from "@rootxkit/uspace-ui/i18n";
-import { Badge, Button, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@rootxkit/uspace-ui/ui";
+import { Badge, Button, TABLE_NOWRAP, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@rootxkit/uspace-ui/ui";
 import { Table } from "../../common/Table";
 import type { components } from "../../api/types";
 import { LoadNotice, ProblemText } from "../../common/Problem";
@@ -173,7 +173,7 @@ export function IncidentsList() {
             )}
             {rows.map((i) => (
               <TableRow key={i.incident_id} data-incident-row={i.incident_id}>
-                <TableCell>
+                <TableCell className={TABLE_NOWRAP}>
                   <Link className="underline underline-offset-2" href={consolePath(lang, `/incidents/${i.incident_id}`)}>
                     {fmtTimeUTC(i.occurred_at, lang)}
                   </Link>
@@ -185,7 +185,7 @@ export function IncidentsList() {
                 <TableCell>{t(`authority.incident.status.${i.status}`)}</TableCell>
                 <TableCell>{t(`authority.incident.opened_from.${i.opened_from}`)}</TableCell>
                 <TableCell>{i.assignee ?? "—"}</TableCell>
-                <TableCell>{fmtTimeUTC(i.updated_at, lang)}</TableCell>
+                <TableCell className={TABLE_NOWRAP}>{fmtTimeUTC(i.updated_at, lang)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

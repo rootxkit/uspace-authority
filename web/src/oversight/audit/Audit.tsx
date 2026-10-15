@@ -10,7 +10,7 @@ import { useState } from "react";
 import { ApiError } from "@rootxkit/uspace-ui/api";
 import { inputToUtc } from "@rootxkit/uspace-ui/form";
 import { fmtTimeUTC, useLang, useT } from "@rootxkit/uspace-ui/i18n";
-import { Badge, Button, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@rootxkit/uspace-ui/ui";
+import { Badge, Button, TABLE_NOWRAP, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@rootxkit/uspace-ui/ui";
 import { Table } from "../../common/Table";
 import type { components } from "../../api/types";
 import { LoadNotice, ProblemText } from "../../common/Problem";
@@ -95,13 +95,13 @@ function EventSearch() {
           <TableCaption>{t("authority.audit.caption")}</TableCaption>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("authority.audit.id")}</TableHead>
+              <TableHead className={TABLE_NOWRAP}>{t("authority.audit.id")}</TableHead>
               <TableHead>{t("authority.audit.ts")}</TableHead>
               <TableHead>{t("authority.audit.actor")}</TableHead>
               <TableHead>{t("authority.audit.event_type")}</TableHead>
               <TableHead>{t("authority.audit.entity")}</TableHead>
               <TableHead>{t("authority.audit.purpose")}</TableHead>
-              <TableHead>{t("authority.audit.hash")}</TableHead>
+              <TableHead className={TABLE_NOWRAP}>{t("authority.audit.hash")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -112,13 +112,13 @@ function EventSearch() {
             )}
             {state.data.events.map((ev) => (
               <TableRow key={ev.id} data-event={ev.id}>
-                <TableCell>{ev.id}</TableCell>
-                <TableCell>{fmtTimeUTC(ev.ts, lang, { seconds: true })}</TableCell>
+                <TableCell className={TABLE_NOWRAP}>{ev.id}</TableCell>
+                <TableCell className={TABLE_NOWRAP}>{fmtTimeUTC(ev.ts, lang, { seconds: true })}</TableCell>
                 <TableCell>{t("authority.audit.actor_value", { type: ev.actor_type, id: ev.actor_id, realm: ev.realm ?? "—" })}</TableCell>
-                <TableCell className="font-mono text-xs">{ev.event_type}</TableCell>
+                <TableCell className={`font-mono text-xs ${TABLE_NOWRAP}`}>{ev.event_type}</TableCell>
                 <TableCell className="font-mono text-xs">{`${ev.entity_type}${ev.entity_id === undefined ? "" : `/${ev.entity_id}`}`}</TableCell>
                 <TableCell>{ev.purpose ?? "—"}</TableCell>
-                <TableCell className="font-mono text-xs" title={ev.hash}>
+                <TableCell className={`font-mono text-xs ${TABLE_NOWRAP}`} title={ev.hash}>
                   {ev.hash.slice(0, 12)}
                 </TableCell>
               </TableRow>
@@ -260,12 +260,12 @@ function DpoReport() {
               )}
               {report.police_queries.map((q) => (
                 <TableRow key={q.id}>
-                  <TableCell>{fmtTimeUTC(q.at, lang, { seconds: true })}</TableCell>
+                  <TableCell className={TABLE_NOWRAP}>{fmtTimeUTC(q.at, lang, { seconds: true })}</TableCell>
                   <TableCell>{t("authority.dpo.who_value", { user: q.user_id, agency: q.agency, ip: q.remote_ip })}</TableCell>
                   <TableCell>{q.kind}</TableCell>
                   <TableCell>{q.purpose}</TableCell>
-                  <TableCell>{q.case_ref}</TableCell>
-                  <TableCell>{q.result_count}</TableCell>
+                  <TableCell className={TABLE_NOWRAP}>{q.case_ref}</TableCell>
+                  <TableCell className={TABLE_NOWRAP}>{q.result_count}</TableCell>
                   <TableCell>{q.pii ? <Badge variant="destructive">{t("authority.common.yes")}</Badge> : t("authority.common.no")}</TableCell>
                 </TableRow>
               ))}
@@ -291,12 +291,12 @@ function DpoReport() {
               )}
               {report.pii_views.map((v) => (
                 <TableRow key={v.event_id}>
-                  <TableCell>{fmtTimeUTC(v.ts, lang, { seconds: true })}</TableCell>
-                  <TableCell className="font-mono text-xs">{v.event_type}</TableCell>
+                  <TableCell className={TABLE_NOWRAP}>{fmtTimeUTC(v.ts, lang, { seconds: true })}</TableCell>
+                  <TableCell className={`font-mono text-xs ${TABLE_NOWRAP}`}>{v.event_type}</TableCell>
                   <TableCell>{t("authority.audit.actor_value", { type: v.actor_type, id: v.actor_id, realm: v.realm ?? "—" })}</TableCell>
                   <TableCell>{v.purpose ?? "—"}</TableCell>
                   <TableCell className="font-mono text-xs">{`${v.entity_type}/${v.entity_id ?? ""}`}</TableCell>
-                  <TableCell>{v.case_ref ?? "—"}</TableCell>
+                  <TableCell className={TABLE_NOWRAP}>{v.case_ref ?? "—"}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

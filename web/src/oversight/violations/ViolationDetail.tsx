@@ -14,7 +14,7 @@ import { useState } from "react";
 import { ApiError } from "@rootxkit/uspace-ui/api";
 import { fmtAltitude, fmtHeading, fmtNum, fmtRegistrationNumber, fmtSpeed, fmtTimeUTC, useLang, useT } from "@rootxkit/uspace-ui/i18n";
 import type { AltSource } from "@rootxkit/uspace-ui/model";
-import { Badge, Button, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@rootxkit/uspace-ui/ui";
+import { Badge, Button, TABLE_NOWRAP, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@rootxkit/uspace-ui/ui";
 import { Table } from "../../common/Table";
 import type { components } from "../../api/types";
 import { LoadNotice, ProblemText } from "../../common/Problem";
@@ -114,13 +114,13 @@ function SampleRow({ s }: { s: Sample }) {
   const { lang } = useLang();
   return (
     <TableRow data-sample={s.index}>
-      <TableCell>{fmtTimeUTC(s.capturedAt, lang, { seconds: true })}</TableCell>
-      <TableCell className="font-mono">{s.lat === null || s.lng === null ? "—" : `${fmtNum(s.lat, 6)}, ${fmtNum(s.lng, 6)}`}</TableCell>
-      <TableCell>
+      <TableCell className={TABLE_NOWRAP}>{fmtTimeUTC(s.capturedAt, lang, { seconds: true })}</TableCell>
+      <TableCell className={`font-mono ${TABLE_NOWRAP}`}>{s.lat === null || s.lng === null ? "—" : `${fmtNum(s.lat, 6)}, ${fmtNum(s.lng, 6)}`}</TableCell>
+      <TableCell className={TABLE_NOWRAP}>
         <SampleAltitude s={s} />
       </TableCell>
-      <TableCell>{fmtSpeed(s.speedMs, lang)}</TableCell>
-      <TableCell>{fmtHeading(s.trackDeg)}</TableCell>
+      <TableCell className={TABLE_NOWRAP}>{fmtSpeed(s.speedMs, lang)}</TableCell>
+      <TableCell className={TABLE_NOWRAP}>{fmtHeading(s.trackDeg)}</TableCell>
       <TableCell>{s.trust === null ? "—" : <TrustWords trust={s.trust} />}</TableCell>
     </TableRow>
   );

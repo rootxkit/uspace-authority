@@ -11,7 +11,7 @@ import { useState, type ReactNode } from "react";
 import { ApiError } from "@rootxkit/uspace-ui/api";
 import { fmtTimeUTC, useLang, useT } from "@rootxkit/uspace-ui/i18n";
 import { useTheme } from "@rootxkit/uspace-ui/theme";
-import { Badge, Button, LanguageSwitch, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@rootxkit/uspace-ui/ui";
+import { Badge, Button, LanguageSwitch, TABLE_NOWRAP, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@rootxkit/uspace-ui/ui";
 import { Table } from "../common/Table";
 import type { components } from "../api/types";
 import { BrandMark } from "../shell/brand";
@@ -134,10 +134,6 @@ export function RegistrationCheck() {
   );
 }
 
-// The kit's TableCell is whitespace-nowrap (uspace-ui src/ui/table.tsx:92); the
-// register's cells hold prose and lists, so they wrap here.
-const WRAP = "whitespace-normal";
-
 export function CertificateRegister() {
   const t = useT();
   const { lang } = useLang();
@@ -154,7 +150,7 @@ export function CertificateRegister() {
             <TableHeader>
               <TableRow>
                 <TableHead className="min-w-40">{t("authority.public.register.holder")}</TableHead>
-                <TableHead className="w-28">{t("authority.public.register.code")}</TableHead>
+                <TableHead className={`w-28 ${TABLE_NOWRAP}`}>{t("authority.public.register.code")}</TableHead>
                 <TableHead className="min-w-56">{t("authority.public.register.services")}</TableHead>
                 <TableHead>{t("authority.public.register.status")}</TableHead>
                 <TableHead>{t("authority.public.register.validity")}</TableHead>
@@ -169,16 +165,16 @@ export function CertificateRegister() {
               )}
               {state.data.certificates.map((c) => (
                 <TableRow key={c.certificate_id} data-certificate={c.code}>
-                  <TableCell className={WRAP}>
+                  <TableCell>
                     {c.holder_name}
                     <span className="ms-1 text-xs text-[var(--us-text-muted)]">{t(`authority.public.register.holder.${c.holder}`)}</span>
                   </TableCell>
-                  <TableCell className="font-mono">{c.code}</TableCell>
-                  <TableCell className={WRAP}>
+                  <TableCell className={`font-mono ${TABLE_NOWRAP}`}>{c.code}</TableCell>
+                  <TableCell>
                     <ul className="m-0 flex list-none flex-wrap gap-1 p-0">
                       {c.services.map((s) => (
                         <li key={s}>
-                          <Badge variant="secondary" className="whitespace-normal">
+                          <Badge variant="secondary">
                             {t(`authority.public.register.service.${s}`)}
                           </Badge>
                         </li>
@@ -188,8 +184,8 @@ export function CertificateRegister() {
                   <TableCell>
                     <Badge variant="outline">{t(`authority.public.register.state.${c.status}`)}</Badge>
                   </TableCell>
-                  <TableCell className={WRAP}>{t("authority.pack.window_value", { from: fmtTimeUTC(c.valid_from, lang), to: fmtTimeUTC(c.valid_until, lang) })}</TableCell>
-                  <TableCell className={WRAP}>{c.limitations.length === 0 ? "—" : c.limitations.join("; ")}</TableCell>
+                  <TableCell>{t("authority.pack.window_value", { from: fmtTimeUTC(c.valid_from, lang), to: fmtTimeUTC(c.valid_until, lang) })}</TableCell>
+                  <TableCell>{c.limitations.length === 0 ? "—" : c.limitations.join("; ")}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

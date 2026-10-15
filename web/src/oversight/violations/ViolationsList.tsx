@@ -9,7 +9,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { inputToUtc } from "@rootxkit/uspace-ui/form";
 import { fmtAltitude, fmtRegistrationNumber, fmtTimeUTC, useLang, useT } from "@rootxkit/uspace-ui/i18n";
-import { Badge, Button, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@rootxkit/uspace-ui/ui";
+import { Badge, Button, TABLE_NOWRAP, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@rootxkit/uspace-ui/ui";
 import { Table } from "../../common/Table";
 import type { components } from "../../api/types";
 import { LoadNotice } from "../../common/Problem";
@@ -143,7 +143,7 @@ export function ViolationsList() {
             )}
             {rows.map((v) => (
               <TableRow key={v.violation_id} data-violation-row={v.violation_id}>
-                <TableCell>
+                <TableCell className={TABLE_NOWRAP}>
                   <Link className="underline underline-offset-2" href={consolePath(lang, `/violations/${v.violation_id}`)}>
                     {fmtTimeUTC(v.opened_at, lang, { seconds: true })}
                   </Link>
@@ -156,7 +156,7 @@ export function ViolationsList() {
                 <TableCell>
                   {t("authority.violations.identity", { serial: v.serial ?? "—", operator: fmtRegistrationNumber(v.operator_reg ?? null) })}
                 </TableCell>
-                <TableCell>
+                <TableCell className={TABLE_NOWRAP}>
                   <Peak v={v} />
                 </TableCell>
                 <TableCell>

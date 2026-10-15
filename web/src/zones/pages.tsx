@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { fmtNum, fmtTimeUTC, useLang, useT } from "@rootxkit/uspace-ui/i18n";
 import { inputToUtc } from "@rootxkit/uspace-ui/form";
 import { DataTable, columnsFor, tableColumn } from "@rootxkit/uspace-ui/table";
-import { Badge, Button, EmptyState, Input, Label } from "@rootxkit/uspace-ui/ui";
+import { Badge, Button, EmptyState, Input, Label, TABLE_NOWRAP } from "@rootxkit/uspace-ui/ui";
 import { must, outcomeOf, useConsole, useLoad, type Load } from "../authoring/api";
 import { Act, Can, Facts, HEADER_ACTION, Loaded, PageHeader, ProblemNotice, Section, UTC } from "../authoring/ui";
 import type { Role } from "../shell/nav";
@@ -68,7 +68,7 @@ export function AirspaceList({ dataset }: { dataset: Dataset }) {
         header: () => t("authority.zone.f.name"),
       }),
       c.text("type", { headerKey: "authority.zone.f.type" }),
-      tableColumn<ZoneVersion, number>({ id: "zone_version", accessorKey: "zone_version", header: () => t("authority.zone.f.zone_version") }),
+      tableColumn<ZoneVersion, number>({ id: "zone_version", accessorKey: "zone_version", header: () => t("authority.zone.f.zone_version"), cell: (x) => <span className={TABLE_NOWRAP}>{x.getValue()}</span> }),
       tableColumn<ZoneVersion, string>({ id: "state", accessorKey: "state", header: () => t("authority.zone.f.state"), cell: (x) => <StateBadge state={x.getValue()} /> }),
       c.utc("valid_from", { headerKey: dataset === "zones" ? "authority.zone.f.valid_from" : "authority.uspace.f.designated_from" }),
       c.utc("valid_to", { headerKey: dataset === "zones" ? "authority.zone.f.valid_to" : "authority.uspace.f.designated_to" }),

@@ -11,7 +11,7 @@ import { useState } from "react";
 import { ApiError } from "@rootxkit/uspace-ui/api";
 import { ConfirmDialog } from "@rootxkit/uspace-ui/form";
 import { fmtAge, fmtTimeUTC, useLang, useT, type Lang, type Translate } from "@rootxkit/uspace-ui/i18n";
-import { Badge, Button, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@rootxkit/uspace-ui/ui";
+import { Badge, Button, TABLE_NOWRAP, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@rootxkit/uspace-ui/ui";
 import { Table } from "../../common/Table";
 import type { components } from "../../api/types";
 import { LoadNotice, ProblemText } from "../../common/Problem";
@@ -129,7 +129,7 @@ export function Sources() {
                             ? t("authority.sources.enabled")
                             : t("authority.sources.disabled_by", { who: c.actor, reason: c.reason })}
                       </TableCell>
-                      <TableCell>{c === undefined ? "—" : fmtTimeUTC(c.changed_at, lang)}</TableCell>
+                      <TableCell className={TABLE_NOWRAP}>{c === undefined ? "—" : fmtTimeUTC(c.changed_at, lang)}</TableCell>
                       <TableCell>
                         <SwitchButton type={ty} enabled={enabled} onDone={done} />
                       </TableCell>
@@ -165,7 +165,7 @@ export function Sources() {
                     <TableRow key={name} data-source={name} data-health={s.health} data-switch={s.switch}>
                       <TableCell>
                         {t(`authority.source_type.${s.source_type}`)}
-                        {s.instance_id !== undefined && <span className="ms-1 font-mono text-xs">{s.instance_id}</span>}
+                        {s.instance_id !== undefined && <span className={`ms-1 font-mono text-xs ${TABLE_NOWRAP}`}>{s.instance_id}</span>}
                       </TableCell>
                       <TableCell>
                         {s.switch === "enabled" ? (
@@ -179,8 +179,8 @@ export function Sources() {
                       <TableCell>
                         <Badge variant="outline">{sourceHealthText(t, s, lang)}</Badge>
                       </TableCell>
-                      <TableCell>{s.age_s === undefined ? t("authority.sources.never") : fmtAge(s.age_s, lang)}</TableCell>
-                      <TableCell>{s.status_age_s === undefined ? "—" : fmtAge(s.status_age_s, lang)}</TableCell>
+                      <TableCell className={TABLE_NOWRAP}>{s.age_s === undefined ? t("authority.sources.never") : fmtAge(s.age_s, lang)}</TableCell>
+                      <TableCell className={TABLE_NOWRAP}>{s.status_age_s === undefined ? "—" : fmtAge(s.status_age_s, lang)}</TableCell>
                       <TableCell className="font-mono text-xs">
                         {Object.entries(s.counters ?? {})
                           .map(([k, v]) => `${k}=${v}`)
