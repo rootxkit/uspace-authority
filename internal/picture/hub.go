@@ -93,7 +93,11 @@ const (
 // dp_state values (the authority defines them; the lab's schema takes a
 // slug).
 const (
-	DPPolling     = "polling"
+	DPPolling = "polling"
+	// DPIdle: no Service Provider heard, but dp-poller says within
+	// stale_after_s that the DSS answers its ISA searches and no ISA is
+	// in view, so there is nothing to poll; not degraded.
+	DPIdle        = "idle"
 	DPStale       = "stale"
 	DPDisabled    = "disabled"
 	DPUnavailable = "unavailable"
@@ -237,6 +241,7 @@ type Hub struct {
 	alerts   *alertSet
 	sources  *SourceView
 	counters *core.Counters
+	dp       dpSelf
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -613,6 +618,11 @@ func (h *Hub) parts(now time.Time, all []SourceState, unconfirmed int, unconfirm
 		p.dpState = DPStale
 		present[DegradedDP] = time.Time{}
 	default:
+		if h.dpIdle(now, time.Duration(p.policy.StaleAfterS*float64(time.Second))) {
+			// Working, and no ISA in view: nothing to poll.
+			p.dpState = DPIdle
+			break
+		}
 		p.dpState = DPUnavailable
 		present[DegradedDP] = time.Time{}
 	}

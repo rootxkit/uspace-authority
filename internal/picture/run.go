@@ -241,5 +241,8 @@ func subscribeBus(nc *nats.Conn, hub *Hub) ([]*nats.Subscription, error) {
 	if err := add(bus.SubjectAlrtAll, func(m *nats.Msg) { hub.OfferViolation(m.Data, time.Now()) }); err != nil {
 		return nil, err
 	}
+	if err := add(dpviews.StatusSubject, func(m *nats.Msg) { hub.OfferDPStatus(m.Data, time.Now()) }); err != nil {
+		return nil, err
+	}
 	return subs, nil
 }

@@ -9,6 +9,7 @@ import (
 	coresources "github.com/rootxkit/uspace-core/sources"
 
 	"github.com/rootxkit/uspace-authority/internal/bus"
+	"github.com/rootxkit/uspace-authority/internal/dpviews"
 	"github.com/rootxkit/uspace-authority/internal/logging"
 )
 
@@ -150,8 +151,35 @@ func (s *Status) Snapshot(p *Provider, now time.Time) StatusBody {
 	return b
 }
 
-// Publish sends every provider's status once and returns how many.
+// Self is the Display Provider's own status at now (dpviews.Status):
+// the DSS's state, unknown until an ISA search answered.
+func (s *Status) Self(now time.Time) dpviews.Status {
+	e := s.Engine
+	b := dpviews.Status{DSS: dpviews.DSSUnconfigured, Tiles: len(e.Tiles()), Providers: len(e.Providers())}
+	if e.ISAs != nil {
+		b.ISAs = e.ISAs.Len()
+	}
+	if e.Discovery != nil {
+		st, since := e.Discovery.State()
+		b.DSS = st
+		if st == DSSOK && since.IsZero() {
+			b.DSS = dpviews.DSSUnknown
+		}
+		if !since.IsZero() && st != DSSOK {
+			v := bus.Stamp(since)
+			b.DSSSince = &v
+		}
+	}
+	return b
+}
+
+// Publish sends the Display Provider's own status and every provider's
+// once, and returns how many providers' it sent.
 func (s *Status) Publish(now time.Time) int {
+	env := bus.SystemEnvelope(dpviews.StatusSchema, Producer, now, s.Self(now))
+	if err := bus.PublishCore(s.Pub, dpviews.StatusSubject, env); err != nil && s.Limiter != nil {
+		s.Limiter.Limited("dp_self_status_publish").Warn("Display Provider status not published", slog.String("error", err.Error()))
+	}
 	n := 0
 	for _, p := range s.Engine.Providers() {
 		subject, err := bus.Subjects.Src(SourceType, p.USSID)

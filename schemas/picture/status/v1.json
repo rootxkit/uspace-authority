@@ -43,8 +43,8 @@
         "cis_version": { "type": "string", "minLength": 1 },
         "cis_age_s": { "type": "number", "minimum": 0 },
         "dp_state": {
-          "description": "The F3411 Display Provider (network_rid) as the source rows say: polling (an instance live), stale (heard, none live), disabled (the type switched off), unavailable (never heard; until WP-14 always).",
-          "enum": ["polling", "stale", "disabled", "unavailable"]
+          "description": "The F3411 Display Provider (network_rid) as the source rows say: polling (an instance live), stale (heard, none live), disabled (the type switched off), idle (no Service Provider heard, and dp-poller says within stale_after_s on dp.v1.status, schemas/dp/status/v1, that the DSS answers its ISA searches and no ISA is in view: nothing to poll, not degraded), unavailable (otherwise: dp-poller silent, the DSS failing or unconfigured, no search yet, or a provider not yet answering).",
+          "enum": ["polling", "idle", "stale", "disabled", "unavailable"]
         },
         "nats": { "enum": ["connected", "unavailable"] },
         "nats_since": { "$ref": "#/$defs/timestamp" }

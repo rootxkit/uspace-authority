@@ -66,7 +66,7 @@ in `subscribes_coalesced`.
 | `sources[]` | every source: the type rows (`source_instance: null`) and every instance heard or switched off, each `source/status/v1`'s body plus `lagging` and `lag_s` |
 | `projection_age_s` | age of the registry projection on the database's clock; absent while never projected |
 | `cis_version`, `cis_age_s` | the restrictions version of the CIS cache and its age; absent while never projected |
-| `dp_state` | `polling`, `stale`, `disabled` or `unavailable`: the F3411 Display Provider (`network_rid` sources). `unavailable` while the `network_rid` sources are neither live, stale nor disabled (none heard yet) |
+| `dp_state` | `polling`, `idle`, `stale`, `disabled` or `unavailable`: the F3411 Display Provider (`network_rid` sources). `idle` when no `network_rid` source is heard but dp-poller's `dp.v1.status` (`schemas/dp/status/v1.json`), within `stale_after_s`, says the DSS answered its ISA searches and it holds no Service Provider: no ISA in view, nothing to poll, not degraded (spec 02, F3411 row). `unavailable` otherwise while the sources are neither live, stale nor disabled: dp-poller silent, the DSS failing or unconfigured, no search yet, or a provider not yet answering |
 | `nats`, `nats_since` | `connected`, or `unavailable` with the instant the bus was lost |
 
 `track/telemetry/v1` body (`schemas/picture/track/v1.json`):
@@ -107,7 +107,7 @@ margin.
 | `projections_unreadable` | the telemetry database cannot be read; the last ages are shown, ageing | projection ages are estimates |
 | `registry_projection_absent` | the registry was never projected | identifications say `registry_unavailable` |
 | `cis_absent`, `cis_stale` | no CIS restrictions version, or older than the policy's `cis_stale_bound_s` | restrictions may be missing or old |
-| `dp_unavailable` | no Display Provider view (`dp_state`) | provider-trust tracks are missing |
+| `dp_unavailable` | `dp_state` `stale` or `unavailable` (not `idle`) | provider-trust tracks are missing |
 | `manned_unavailable` | the ANSP manned traffic feed (`ansp_feed`) is not live: down since T, stale, or never heard (WP-15) | manned aircraft are missing or old; the sky is not empty. Not raised while the feed is switched off, which its source row says, with by whom |
 | `alerts_unconfirmed` | an active violation was not republished for `PICTURE_ALERT_SILENT_S` (detect silent, C-08) | the violation may have ended; it is kept, not dropped |
 | `alerts_replaying` | ALRT is being read back (start, or the bus came back) | violations are filling in |
