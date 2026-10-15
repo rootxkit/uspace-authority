@@ -79,4 +79,7 @@ func TestScenarioDPIdleWithoutISAsInView(t *testing.T) {
 	now := time.Now()
 	dss.PutISA("isa-dp-idle", "ussp-LAB-01", ltest.HostURL(sp.URL()), box, now.Add(-time.Minute), now.Add(time.Hour))
 	s.Await("the ISA's provider held", 60*time.Second, func() bool { b, _ := state(); return b.Providers > 0 })
+	// No violation is expected: the scenario judges the Display
+	// Provider's status, and the report says no alert was raised.
+	s.Verify()
 }
