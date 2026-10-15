@@ -130,6 +130,18 @@ func TestIntegrationZoneAuthoredApprovedAndPublishedThroughTheAPI(t *testing.T) 
 		!strings.Contains(body, `"provider":[{"text":"Test authority","lang":"en-GB"}]`) {
 		t.Fatalf("export: %d %s", code, body)
 	}
+	// The period of validity is in the export (limitedApplicability) and
+	// bounds the console's applicability answer: applies before valid_to,
+	// not after it (2019/947 Art. 15(3)).
+	if !strings.Contains(body, `"endDateTime":"`+now.Add(24*time.Hour).Format(time.RFC3339)+`"`) {
+		t.Fatalf("the export lacks the period of validity: %s", body)
+	}
+	for at, want := range map[time.Time]string{now: "applies", now.Add(25 * time.Hour): "not_applicable"} {
+		var a map[string]any
+		if code, body := doAs(t, "viewer", http.MethodGet, base+"/v1/zones/TST001/applies?at="+at.Format(time.RFC3339), "", "", &a); code != http.StatusOK || a["applicability"] != want {
+			t.Fatalf("applies at %s: %d %s, want %s", at.Format(time.RFC3339), code, body, want)
+		}
+	}
 	if code, body := doAs(t, "viewer", http.MethodGet, base+"/v1/zones/export?at="+now.Format(time.RFC3339)+"&applies_at="+now.Format(time.RFC3339), "", "", nil); code != http.StatusBadRequest || !strings.Contains(body, "filter_conflict") {
 		t.Fatalf("both filters: %d %s", code, body)
 	}

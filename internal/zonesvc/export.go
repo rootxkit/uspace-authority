@@ -102,6 +102,53 @@ func featureBBox(f *ed318.Feature) BBox {
 	return b
 }
 
+// FieldLimitedApplicability is where a feature's applicability lives,
+// and so where its period of validity is published.
+const FieldLimitedApplicability = "properties.limitedApplicability"
+
+// withinValidity bounds f's applicability by its version's period of
+// validity (valid_from to valid_to, both included; 2019/947 Art. 15(3)),
+// the only form in which an ED-318 feature carries it: ED-318 has no
+// other per-zone validity member, and the collection's metadata
+// validFrom and validTo belong to the dataset, not to a zone (spec 02
+// F1; 03 §1 geo_zones). A feature without limitedApplicability is given
+// the one TimePeriod {startDateTime: valid_from, endDateTime:
+// valid_to}; each TimePeriod of one with limitedApplicability has its
+// startDateTime and endDateTime clipped to the period, its schedule
+// kept, and is dropped when nothing of it is left. Without this a
+// published zone carries no end, and every consumer (the CISP, a USSP,
+// the public map) shows it in force for ever.
+//
+// A feature none of whose periods meets its period of validity never
+// applies; ED-318 cannot say that (no limitedApplicability means
+// "always"), so it is an error naming the field, never an empty list.
+func withinValidity(f *ed318.Feature, from, to time.Time) error {
+	from, to = from.UTC(), to.UTC()
+	tps := f.Properties.LimitedApplicability
+	if len(tps) == 0 {
+		f.Properties.LimitedApplicability = []ed318.TimePeriod{{StartDateTime: &ed318.DateTime{Time: from}, EndDateTime: &ed318.DateTime{Time: to}}}
+		return nil
+	}
+	out := make([]ed318.TimePeriod, 0, len(tps))
+	for _, tp := range tps {
+		if tp.StartDateTime == nil || tp.StartDateTime.Time.Before(from) {
+			tp.StartDateTime = &ed318.DateTime{Time: from}
+		}
+		if tp.EndDateTime == nil || tp.EndDateTime.Time.After(to) {
+			tp.EndDateTime = &ed318.DateTime{Time: to}
+		}
+		if tp.StartDateTime.Time.Before(tp.EndDateTime.Time) {
+			out = append(out, tp)
+		}
+	}
+	if len(out) == 0 {
+		return core.Fieldf(FieldLimitedApplicability, "no time period meets the period of validity %s to %s, so the zone would never apply",
+			from.Format(time.RFC3339), to.Format(time.RFC3339))
+	}
+	f.Properties.LimitedApplicability = out
+	return nil
+}
+
 // applicabilityOf answers whether f applies at at, through uspace-core
 // ed318.Applies at the feature's centre: Unknown with the reason when
 // it cannot be evaluated, never a guess.
@@ -131,12 +178,24 @@ const (
 	ExportAnnotate
 )
 
-// buildExport writes the ED-318 collection of features with meta,
-// filtered or annotated at at as mode says, through ed318.Export.
-func buildExport(features []json.RawMessage, meta ed318.Metadata, mode ExportMode, at time.Time, dl ed318.Daylight) ([]byte, int, error) {
-	fc, err := collect(features)
+// buildExport writes the ED-318 collection of the versions with meta,
+// each feature bounded by its version's period of validity
+// (withinValidity), filtered or annotated at at as mode says, through
+// ed318.Export. A version whose applicability never meets its period of
+// validity refuses the export 409, naming it.
+func buildExport(set []Version, meta ed318.Metadata, mode ExportMode, at time.Time, dl ed318.Daylight) ([]byte, int, error) {
+	fc, err := collect(featuresOf(set))
 	if err != nil {
 		return nil, 0, err
+	}
+	for i := range fc.Features {
+		if err := withinValidity(&fc.Features[i], set[i].ValidFrom, set[i].ValidTo); err != nil {
+			var fe *core.FieldError
+			if errors.As(err, &fe) {
+				fe = core.Fieldf(fmt.Sprintf("%s@%d.feature.%s", set[i].Identifier, set[i].ZoneVersion, fe.Field), "%s", fe.Reason)
+			}
+			return nil, 0, conflict("a zone version never applies within its period of validity; replace it before publishing", fe)
+		}
 	}
 	if mode != ExportAll {
 		kept := fc.Features[:0]

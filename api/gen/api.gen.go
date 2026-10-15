@@ -5632,10 +5632,10 @@ type ZoneDraftInput struct {
 	// Feature One ED-318 UASZone feature (GeoJSON Feature), validated by uspace-core ed318.Parse; kept as given.
 	Feature ED318Feature `json:"feature"`
 
-	// ValidFrom Start of the period of validity (947 Art. 15(3)).
+	// ValidFrom Start of the period of validity (947 Art. 15(3)); published as limitedApplicability startDateTime.
 	ValidFrom time.Time `json:"valid_from"`
 
-	// ValidTo End of the period of validity; after valid_from.
+	// ValidTo End of the period of validity; after valid_from. Published as limitedApplicability endDateTime; a limitedApplicability that never meets the period is refused 400.
 	ValidTo time.Time `json:"valid_to"`
 }
 
@@ -8901,7 +8901,8 @@ type ClientInterface interface {
 	//
 	// Per identifier, the newest published version whose period of
 	// validity holds at the instant (both ends included): `at` when
-	// given, else the database's now. With `at` the features that do
+	// given, else the database's now, each with its period of validity
+	// as limitedApplicability (as published). With `at` the features that do
 	// not apply at `at` (uspace-core ed318.Applies at the centre of the
 	// feature's bounding box) are left out and every feature whose
 	// applicability cannot be evaluated is kept with
@@ -8982,8 +8983,12 @@ type ClientInterface interface {
 	// version becomes published under a new zones version and
 	// supersedes the identifier's older published versions; the zones
 	// projection is rewritten in the telemetry database (a failed write
-	// rolls the publication back, 503 projection_unavailable); the full
-	// set in force now is exported (ED-318, ed318.Export) into the F1
+	// rolls the publication back, 503 projection_unavailable); per
+	// identifier the version in force now, else the first to come into
+	// force later, is exported (ED-318, ed318.Export) with its period of
+	// validity as limitedApplicability (a feature without one gets
+	// {startDateTime: valid_from, endDateTime: valid_to}; each period of
+	// one with it is clipped to valid_from and valid_to) into the F1
 	// outbox row of dataset `zones`, state `pending`, after it passed
 	// the CISP's dataset checks (ed318.Parse) and was signed with the
 	// publication key (a detached JWS, WP-6); a payload that fails is
@@ -9027,8 +9032,10 @@ type ClientInterface interface {
 	// GetZoneApplicability Whether a zone version applies at an instant
 	//
 	// uspace-core ed318.Applies over the version's limitedApplicability
-	// at the centre of its bounding box (the newest version unless
-	// `zone_version` names one). A daylight event (BMCT, SR, SS, EECT)
+	// bounded by its period of validity (valid_from to valid_to, both
+	// included; 2019/947 Art. 15(3)), at the centre of its bounding box
+	// (the newest version unless `zone_version` names one): outside the
+	// period of validity the answer is `not_applicable`. A daylight event (BMCT, SR, SS, EECT)
 	// needs the ground package's sunrise and sunset; until it is wired
 	// such a question is refused 503 daylight_unavailable rather than
 	// guessed. Any other event that cannot be resolved answers
@@ -13439,7 +13446,8 @@ func (c *Client) CreateZone(ctx context.Context, body CreateZoneJSONRequestBody,
 //
 // Per identifier, the newest published version whose period of
 // validity holds at the instant (both ends included): `at` when
-// given, else the database's now. With `at` the features that do
+// given, else the database's now, each with its period of validity
+// as limitedApplicability (as published). With `at` the features that do
 // not apply at `at` (uspace-core ed318.Applies at the centre of the
 // feature's bounding box) are left out and every feature whose
 // applicability cannot be evaluated is kept with
@@ -13560,8 +13568,12 @@ func (c *Client) ImportGovGeZones(ctx context.Context, body ImportGovGeZonesJSON
 // version becomes published under a new zones version and
 // supersedes the identifier's older published versions; the zones
 // projection is rewritten in the telemetry database (a failed write
-// rolls the publication back, 503 projection_unavailable); the full
-// set in force now is exported (ED-318, ed318.Export) into the F1
+// rolls the publication back, 503 projection_unavailable); per
+// identifier the version in force now, else the first to come into
+// force later, is exported (ED-318, ed318.Export) with its period of
+// validity as limitedApplicability (a feature without one gets
+// {startDateTime: valid_from, endDateTime: valid_to}; each period of
+// one with it is clipped to valid_from and valid_to) into the F1
 // outbox row of dataset `zones`, state `pending`, after it passed
 // the CISP's dataset checks (ed318.Parse) and was signed with the
 // publication key (a detached JWS, WP-6); a payload that fails is
@@ -13645,8 +13657,10 @@ func (c *Client) ReplaceZone(ctx context.Context, identifier string, body Replac
 // GetZoneApplicability Whether a zone version applies at an instant
 //
 // uspace-core ed318.Applies over the version's limitedApplicability
-// at the centre of its bounding box (the newest version unless
-// `zone_version` names one). A daylight event (BMCT, SR, SS, EECT)
+// bounded by its period of validity (valid_from to valid_to, both
+// included; 2019/947 Art. 15(3)), at the centre of its bounding box
+// (the newest version unless `zone_version` names one): outside the
+// period of validity the answer is `not_applicable`. A daylight event (BMCT, SR, SS, EECT)
 // needs the ground package's sunrise and sunset; until it is wired
 // such a question is refused 503 daylight_unavailable rather than
 // guessed. Any other event that cannot be resolved answers
@@ -23470,7 +23484,8 @@ type ClientWithResponsesInterface interface {
 	//
 	// Per identifier, the newest published version whose period of
 	// validity holds at the instant (both ends included): `at` when
-	// given, else the database's now. With `at` the features that do
+	// given, else the database's now, each with its period of validity
+	// as limitedApplicability (as published). With `at` the features that do
 	// not apply at `at` (uspace-core ed318.Applies at the centre of the
 	// feature's bounding box) are left out and every feature whose
 	// applicability cannot be evaluated is kept with
@@ -23553,8 +23568,12 @@ type ClientWithResponsesInterface interface {
 	// version becomes published under a new zones version and
 	// supersedes the identifier's older published versions; the zones
 	// projection is rewritten in the telemetry database (a failed write
-	// rolls the publication back, 503 projection_unavailable); the full
-	// set in force now is exported (ED-318, ed318.Export) into the F1
+	// rolls the publication back, 503 projection_unavailable); per
+	// identifier the version in force now, else the first to come into
+	// force later, is exported (ED-318, ed318.Export) with its period of
+	// validity as limitedApplicability (a feature without one gets
+	// {startDateTime: valid_from, endDateTime: valid_to}; each period of
+	// one with it is clipped to valid_from and valid_to) into the F1
 	// outbox row of dataset `zones`, state `pending`, after it passed
 	// the CISP's dataset checks (ed318.Parse) and was signed with the
 	// publication key (a detached JWS, WP-6); a payload that fails is
@@ -23602,8 +23621,10 @@ type ClientWithResponsesInterface interface {
 	// GetZoneApplicabilityWithResponse Whether a zone version applies at an instant
 	//
 	// uspace-core ed318.Applies over the version's limitedApplicability
-	// at the centre of its bounding box (the newest version unless
-	// `zone_version` names one). A daylight event (BMCT, SR, SS, EECT)
+	// bounded by its period of validity (valid_from to valid_to, both
+	// included; 2019/947 Art. 15(3)), at the centre of its bounding box
+	// (the newest version unless `zone_version` names one): outside the
+	// period of validity the answer is `not_applicable`. A daylight event (BMCT, SR, SS, EECT)
 	// needs the ground package's sunrise and sunset; until it is wired
 	// such a question is refused 503 daylight_unavailable rather than
 	// guessed. Any other event that cannot be resolved answers
@@ -35759,7 +35780,8 @@ func (c *ClientWithResponses) CreateZoneWithResponse(ctx context.Context, body C
 //
 // Per identifier, the newest published version whose period of
 // validity holds at the instant (both ends included): `at` when
-// given, else the database's now. With `at` the features that do
+// given, else the database's now, each with its period of validity
+// as limitedApplicability (as published). With `at` the features that do
 // not apply at `at` (uspace-core ed318.Applies at the centre of the
 // feature's bounding box) are left out and every feature whose
 // applicability cannot be evaluated is kept with
@@ -35866,8 +35888,12 @@ func (c *ClientWithResponses) ImportGovGeZonesWithResponse(ctx context.Context, 
 // version becomes published under a new zones version and
 // supersedes the identifier's older published versions; the zones
 // projection is rewritten in the telemetry database (a failed write
-// rolls the publication back, 503 projection_unavailable); the full
-// set in force now is exported (ED-318, ed318.Export) into the F1
+// rolls the publication back, 503 projection_unavailable); per
+// identifier the version in force now, else the first to come into
+// force later, is exported (ED-318, ed318.Export) with its period of
+// validity as limitedApplicability (a feature without one gets
+// {startDateTime: valid_from, endDateTime: valid_to}; each period of
+// one with it is clipped to valid_from and valid_to) into the F1
 // outbox row of dataset `zones`, state `pending`, after it passed
 // the CISP's dataset checks (ed318.Parse) and was signed with the
 // publication key (a detached JWS, WP-6); a payload that fails is
@@ -35939,8 +35965,10 @@ func (c *ClientWithResponses) ReplaceZoneWithResponse(ctx context.Context, ident
 // GetZoneApplicabilityWithResponse Whether a zone version applies at an instant
 //
 // uspace-core ed318.Applies over the version's limitedApplicability
-// at the centre of its bounding box (the newest version unless
-// `zone_version` names one). A daylight event (BMCT, SR, SS, EECT)
+// bounded by its period of validity (valid_from to valid_to, both
+// included; 2019/947 Art. 15(3)), at the centre of its bounding box
+// (the newest version unless `zone_version` names one): outside the
+// period of validity the answer is `not_applicable`. A daylight event (BMCT, SR, SS, EECT)
 // needs the ground package's sunrise and sunset; until it is wired
 // such a question is refused 503 daylight_unavailable rather than
 // guessed. Any other event that cannot be resolved answers

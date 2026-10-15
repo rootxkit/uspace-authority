@@ -17,6 +17,8 @@ import (
 
 	"github.com/nats-io/nats.go"
 	"github.com/rootxkit/uspace-core/auth"
+	"github.com/rootxkit/uspace-core/core"
+	"github.com/rootxkit/uspace-core/ed318"
 
 	"github.com/rootxkit/uspace-authority/internal/audit"
 	"github.com/rootxkit/uspace-authority/internal/bus"
@@ -510,5 +512,58 @@ func TestIntegrationOutboxSupersedesThePendingSnapshot(t *testing.T) {
 	if err := admin.QueryRow(`SELECT count(*) FROM events WHERE event_type = 'publication_superseded' AND entity_id = $1`,
 		fmt.Sprint(a.ID)).Scan(&n); err != nil || n != 1 {
 		t.Fatalf("%v %d", err, n)
+	}
+}
+
+// The period of validity reaches the CISP (2019/947 Art. 15(3)): a zone
+// authored with valid_to and no limitedApplicability is sent, signed,
+// over https with limitedApplicability {startDateTime: valid_from,
+// endDateTime: valid_to}, and the bytes the CISP holds judge, through
+// core's ed318.Applies (what the CISP's internal/applicability calls),
+// as applying before the end and not applying after it. The authority's
+// own answer agrees on both sides of the end.
+func TestIntegrationPeriodOfValidityReachesTheCISP(t *testing.T) {
+	s := newStack(t, false)
+	ctx := context.Background()
+	from := time.Now().UTC().Add(-time.Hour).Truncate(time.Second)
+	to := from.Add(72 * time.Hour)
+	in := zonesvc.DraftInput{Feature: []byte(zoneFeature("TSV001")), ValidFrom: &from, ValidTo: &to}
+	v, err := s.zones.Draft(ctx, zonesvc.DatasetZones, in, true, admin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.zones.Approve(ctx, zonesvc.DatasetZones, "TSV001", v.ZoneVersion, admin); err != nil {
+		t.Fatal(err)
+	}
+	p, err := s.zones.Publish(ctx, zonesvc.DatasetZones, admin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, "the publication acknowledged", func() bool {
+		return s.one(t, s.pgAdmin, `SELECT state FROM publications WHERE id = $1`, p.Publication.ID) == "acknowledged"
+	})
+	cur := s.fake.Current("zones")
+	if cur == nil {
+		t.Fatal("the CISP holds no zones version")
+	}
+	want := fmt.Sprintf(`"limitedApplicability":[{"startDateTime":%q,"endDateTime":%q}]`, from.Format(time.RFC3339), to.Format(time.RFC3339))
+	if !bytes.Contains(cur.Published, []byte(want)) {
+		t.Fatalf("the CISP's bytes do not carry the period of validity %s: %s", want, cur.Published)
+	}
+	fc, probs := ed318.Parse(cur.Published, ed318.Limits{})
+	if probs != nil || len(fc.Features) != 1 {
+		t.Fatalf("%v", probs)
+	}
+	f := &fc.Features[0]
+	where := core.LatLon{LatDeg: 41.70, LonDeg: 44.80}
+	for at, want := range map[time.Time]bool{to.Add(-time.Minute): true, to.Add(time.Minute): false, to.AddDate(1, 3, 0): false} {
+		got, err := ed318.Applies(f.Properties.LimitedApplicability, at, where, nil)
+		if err != nil || got != want {
+			t.Errorf("at the CISP, applies at %s = %v %v, want %v", at.Format(time.RFC3339), got, err, want)
+		}
+		a, err := s.zones.Applies(ctx, "TSV001", 0, at)
+		if err != nil || (a.Answer == zonesvc.Applies) != want {
+			t.Errorf("at the authority, applies at %s = %+v %v, want %v", at.Format(time.RFC3339), a, err, want)
+		}
 	}
 }

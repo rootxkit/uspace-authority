@@ -389,3 +389,18 @@ func checkPeriod(fromField, toField string, from, to *time.Time) []*core.FieldEr
 	}
 	return errs
 }
+
+// checkValidity refuses, at field, a feature none of whose
+// limitedApplicability periods meets its period of validity: it would
+// never apply, and its publication would be refused (withinValidity).
+func checkValidity(feature json.RawMessage, from, to time.Time, field string) *core.FieldError {
+	fc, err := collect([]json.RawMessage{feature})
+	if err != nil {
+		return core.Fieldf(field, "%v", err)
+	}
+	var fe *core.FieldError
+	if errors.As(withinValidity(&fc.Features[0], from, to), &fe) {
+		return core.Fieldf(field, "%s", fe.Reason)
+	}
+	return nil
+}
