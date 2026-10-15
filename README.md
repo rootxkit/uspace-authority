@@ -31,7 +31,9 @@ follow `uspace-lab/docs/spec/07-roadmap.md` phase 3. The runbooks are in
 `docs/runbooks/`. Development setup:
 [`docs/runbooks/dev-setup.md`](docs/runbooks/dev-setup.md).
 
-Live demo: https://uspace-authority.chikox.net
+Live demo: the staging host, `AUTHORITY_HOST` in
+[`deploy/staging/hosts.env`](deploy/staging/hosts.env) (the only file that
+names the staging domain).
 
 ## Layout
 
