@@ -1,4 +1,5 @@
 {
+  "authority.account.id": "ანგარიშის იდენტიფიკატორი: {id}",
   "authority.account.no_roles": "კონსოლის როლი არ აქვს",
   "authority.account.roles": "როლები: {roles}",
   "authority.account.sign_out": "გასვლა",

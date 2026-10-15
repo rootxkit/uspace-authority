@@ -1,4 +1,5 @@
 {
+  "authority.account.id": "Account id {id}",
   "authority.account.no_roles": "No console role",
   "authority.account.roles": "Roles: {roles}",
   "authority.account.sign_out": "Sign out",
