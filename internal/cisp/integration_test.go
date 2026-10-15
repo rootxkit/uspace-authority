@@ -78,6 +78,7 @@ type stack struct {
 	pgAdmin *sql.DB
 	tsAdmin *sql.DB
 	pgURL   string
+	tsURL   string
 	ansp    *auth.KeyRing
 	nc      *nats.Conn
 	// callback is the receiver's URL (POST /v1/cis/notifications).
@@ -144,7 +145,7 @@ func newStack(t *testing.T, down bool, opts ...func(*cisp.Setup)) *stack {
 	}
 	runCtx, cancel := context.WithCancel(ctx)
 	s := &stack{fake: fake, parts: parts, zones: zp.Service, pgAdmin: storetest.Open(t, pgURL), tsAdmin: storetest.Open(t, tsURL),
-		pgURL: pgURL, ansp: ansp, nc: nc, cancel: cancel, done: make(chan struct{}), callback: rx.URL + cisp.NotificationsPath}
+		pgURL: pgURL, tsURL: tsURL, ansp: ansp, nc: nc, cancel: cancel, done: make(chan struct{}), callback: rx.URL + cisp.NotificationsPath}
 	go func() { parts.Run(runCtx); close(s.done) }()
 	t.Cleanup(s.stop)
 	return s
@@ -364,6 +365,63 @@ func TestIntegrationCISPDownForTheWholeRun(t *testing.T) {
 	if s.parts.Heartbeat.State().ConsecutiveFailures < 1 {
 		t.Fatal("the failing heartbeat is not shown")
 	}
+}
+
+// The restrictions dataset never published (404 no_version): projected
+// once as version 0, then every reconciliation confirms it, so the age
+// picture-ws reads (reader.PictureProjections, its cis_age_s) stays
+// within one reconciliation while the projection is not rewritten. The
+// CISP down, nothing confirms and the age rises past it. On the staging
+// droplet the age was the write's, and the console showed cis_stale
+// five minutes after every start.
+func TestIntegrationNeverPublishedRestrictionsStayCurrentWhileConfirmed(t *testing.T) {
+	s := newStack(t, false)
+	ctx := context.Background()
+	rd, err := ts.OpenReader(ctx, store.PoolOptions{URL: s.tsURL, ApplicationName: "uspace-authority-test"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(rd.Close)
+	waitFor(t, "the empty restrictions projected as version 0", func() bool {
+		return s.one(t, s.tsAdmin, `SELECT cis_version FROM proj_restrictions_state`) == "0"
+	})
+	projected := s.one(t, s.tsAdmin, `SELECT projected_at::text FROM proj_restrictions_state`)
+	age := func() float64 {
+		row, err := rd.Q.PictureProjections(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if row.CisVersion != 0 {
+			t.Fatalf("picture reads cis_version %d, want 0", row.CisVersion)
+		}
+		return row.CisAgeS
+	}
+	bound := 3 * itReconcile.Seconds()
+	deadline := time.Now().Add(6 * itReconcile)
+	for time.Now().Before(deadline) {
+		if a := age(); a < 0 || a > bound {
+			t.Fatalf("cis_age_s %.2f s while the CISP confirms every %s, want within %.2f s", a, itReconcile, bound)
+		}
+		time.Sleep(itReconcile / 4)
+	}
+	if p := s.one(t, s.tsAdmin, `SELECT projected_at::text FROM proj_restrictions_state`); p != projected {
+		t.Fatalf("the projection was rewritten (%s, then %s): a confirmation writes confirmed_at only", projected, p)
+	}
+	if s.one(t, s.tsAdmin, `SELECT (confirmed_at > projected_at)::text FROM proj_restrictions_state`) != "true" {
+		t.Fatal("confirmed_at did not move past the write")
+	}
+
+	// The CISP down: the age rises past the bound.
+	s.fake.SetDown(true)
+	waitFor(t, "cis_age_s past three reconciliations with the CISP down", func() bool { return age() > bound })
+	a1 := age()
+	time.Sleep(itReconcile)
+	if a2 := age(); a2 <= a1 {
+		t.Fatalf("cis_age_s %.2f then %.2f with the CISP down, want rising", a1, a2)
+	}
+	// Back: confirmed again.
+	s.fake.SetDown(false)
+	waitFor(t, "cis_age_s back within a reconciliation", func() bool { return age() <= bound })
 }
 
 // E-02 with a version held: a restart while the CISP is down serves the

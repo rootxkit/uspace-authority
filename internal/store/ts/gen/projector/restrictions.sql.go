@@ -10,6 +10,27 @@ import (
 	"time"
 )
 
+const confirmRestrictionsState = `-- name: ConfirmRestrictionsState :execrows
+UPDATE proj_restrictions_state SET confirmed_at = $1::timestamptz
+WHERE id AND cis_version = $2::bigint
+  AND (confirmed_at IS NULL OR confirmed_at < $1::timestamptz)
+`
+
+type ConfirmRestrictionsStateParams struct {
+	ConfirmedAt time.Time
+	CisVersion  int64
+}
+
+// The CISP confirmed the version the projection holds: only that
+// version's row, and never moved back.
+func (q *Queries) ConfirmRestrictionsState(ctx context.Context, arg ConfirmRestrictionsStateParams) (int64, error) {
+	result, err := q.db.Exec(ctx, confirmRestrictionsState, arg.ConfirmedAt, arg.CisVersion)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const deleteAllRestrictions = `-- name: DeleteAllRestrictions :execrows
 DELETE FROM proj_restrictions
 `
@@ -93,19 +114,28 @@ func (q *Queries) RestrictionsProjectionVersion(ctx context.Context) (int64, err
 }
 
 const upsertRestrictionsState = `-- name: UpsertRestrictionsState :exec
-INSERT INTO proj_restrictions_state (id, cis_version, etag, projected_at)
-VALUES (true, $1, $2, $3)
+INSERT INTO proj_restrictions_state (id, cis_version, etag, projected_at, confirmed_at)
+VALUES (true, $1, $2, $3, $4)
 ON CONFLICT (id) DO UPDATE SET
-    cis_version = EXCLUDED.cis_version, etag = EXCLUDED.etag, projected_at = EXCLUDED.projected_at
+    cis_version = EXCLUDED.cis_version, etag = EXCLUDED.etag, projected_at = EXCLUDED.projected_at,
+    confirmed_at = EXCLUDED.confirmed_at
 `
 
 type UpsertRestrictionsStateParams struct {
 	CisVersion  int64
 	Etag        string
 	ProjectedAt time.Time
+	ConfirmedAt *time.Time
 }
 
+// confirmed_at is when the CISP last confirmed the version (00014), NULL
+// when it has not yet.
 func (q *Queries) UpsertRestrictionsState(ctx context.Context, arg UpsertRestrictionsStateParams) error {
-	_, err := q.db.Exec(ctx, upsertRestrictionsState, arg.CisVersion, arg.Etag, arg.ProjectedAt)
+	_, err := q.db.Exec(ctx, upsertRestrictionsState,
+		arg.CisVersion,
+		arg.Etag,
+		arg.ProjectedAt,
+		arg.ConfirmedAt,
+	)
 	return err
 }

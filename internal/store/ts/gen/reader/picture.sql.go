@@ -20,7 +20,9 @@ SELECT
     coalesce(extract(epoch FROM now() - (SELECT max(projected_at) FROM proj_zones)), -1)::double precision AS zones_age_s,
     coalesce((SELECT max(zones_version) FROM proj_zones), -1)::bigint AS zones_version,
     coalesce((SELECT cis_version FROM proj_restrictions_state WHERE id), -1)::bigint AS cis_version,
-    coalesce((SELECT extract(epoch FROM now() - projected_at) FROM proj_restrictions_state WHERE id), -1)::double precision AS cis_age_s
+    -- The age of the CISP's last confirmation of the version held
+    -- (00014), the write's when it has not confirmed one yet.
+    coalesce((SELECT extract(epoch FROM now() - coalesce(confirmed_at, projected_at)) FROM proj_restrictions_state WHERE id), -1)::double precision AS cis_age_s
 `
 
 type PictureProjectionsRow struct {

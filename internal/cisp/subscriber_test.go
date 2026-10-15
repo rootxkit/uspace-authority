@@ -214,6 +214,80 @@ func TestRestrictionsAreProjectedAndAMalformedVersionIsRefusedWhole(t *testing.T
 	}
 }
 
+// The restrictions projection's confirmed_at, picture-ws's cis_age_s,
+// moves with every confirmation of the version held, also of the
+// never-published dataset (404 no_version, version 0): spec 02 F3 makes
+// the age the cache's, and a dataset the CISP keeps confirming is
+// current. On the staging droplet it moved only on a write, so the
+// console showed cis_stale five minutes after every start. The CISP
+// down, it stops, and so the age passes the bound.
+func TestRestrictionsConfirmationMovesTheProjectionAge(t *testing.T) {
+	w := newWorld(t)
+	ctx := context.Background()
+	now := time.Now().UTC()
+	w.sub.cfg.Now = func() time.Time { return now }
+	if err := w.sub.Pull(ctx, DatasetRestrictions, nil); err != nil {
+		t.Fatal(err)
+	}
+	if v, _, writes := w.projector.get(); v != 0 || writes != 1 || !w.projector.confirmedAt().Equal(now) {
+		t.Fatalf("the empty dataset projected v%d in %d writes, confirmed %v, want v0 once at %v", v, writes, w.projector.confirmedAt(), now)
+	}
+	// Still no version, ten minutes on: confirmed, not written again.
+	for range 10 {
+		now = now.Add(time.Minute)
+		if err := w.sub.Pull(ctx, DatasetRestrictions, nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, _, writes := w.projector.get(); writes != 1 || !w.projector.confirmedAt().Equal(now) {
+		t.Fatalf("after 10 no_version answers: %d writes, confirmed %v, want 1 write confirmed at %v", writes, w.projector.confirmedAt(), now)
+	}
+
+	// A version published: written with its confirmation, then every
+	// 304 of the reconciliation moves it.
+	_, ansp := rings(t)
+	f := restrictionFeature("DAR0001", "active")
+	if _, err := w.fake.Publish("restrictions", []json.RawMessage{f}, f, ansp, "restriction_created"); err != nil {
+		t.Fatal(err)
+	}
+	now = now.Add(time.Minute)
+	if err := w.sub.Pull(ctx, DatasetRestrictions, nil); err != nil {
+		t.Fatal(err)
+	}
+	if v, _, writes := w.projector.get(); v != 1 || writes != 2 || !w.projector.confirmedAt().Equal(now) {
+		t.Fatalf("v%d after %d writes confirmed %v", v, writes, w.projector.confirmedAt())
+	}
+	now = now.Add(time.Minute)
+	if err := w.sub.Pull(ctx, DatasetRestrictions, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, writes := w.projector.get(); writes != 2 || !w.projector.confirmedAt().Equal(now) || w.count(CounterNotModified) == 0 {
+		t.Fatalf("a 304 did not move confirmed_at: %d writes, confirmed %v, want %v", writes, w.projector.confirmedAt(), now)
+	}
+
+	// The CISP down: nothing confirms, confirmed_at stays and ages.
+	held := now
+	w.fake.SetDown(true)
+	for range 6 {
+		now = now.Add(time.Minute)
+		if err := w.sub.Pull(ctx, DatasetRestrictions, nil); err == nil {
+			t.Fatal("a pull from a down CISP succeeded")
+		}
+	}
+	if got := w.projector.confirmedAt(); !got.Equal(held) {
+		t.Fatalf("confirmed_at moved to %v with the CISP down, want %v", got, held)
+	}
+	// Back: confirmed again.
+	w.fake.SetDown(false)
+	now = now.Add(time.Minute)
+	if err := w.sub.Pull(ctx, DatasetRestrictions, nil); err != nil {
+		t.Fatal(err)
+	}
+	if !w.projector.confirmedAt().Equal(now) {
+		t.Fatalf("the CISP back did not confirm: %v", w.projector.confirmedAt())
+	}
+}
+
 // E-02: the CISP down for the whole run. Nothing held: the dataset is
 // stale with no age (never an empty sky). A version held: it is served,
 // its age rises past the bound and it is shown stale with the pull's

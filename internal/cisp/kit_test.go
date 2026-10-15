@@ -333,21 +333,41 @@ func (m *memCache) get(d Dataset) (Cached, bool) {
 
 // memProjector records the restrictions projection.
 type memProjector struct {
-	mu      sync.Mutex
-	version int64
-	rows    []RestrictionRow
-	writes  int
+	mu        sync.Mutex
+	version   int64
+	rows      []RestrictionRow
+	writes    int
+	confirmed time.Time
+	confirms  int
 }
 
-func (m *memProjector) ProjectRestrictions(_ context.Context, version int64, _ string, rows []RestrictionRow, _ time.Time) error {
+func (m *memProjector) ProjectRestrictions(_ context.Context, version int64, _ string, rows []RestrictionRow, _, confirmed time.Time) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.writes > 0 && m.version > version {
 		return ErrProjectionNewer
 	}
-	m.version, m.rows = version, slices.Clone(rows)
+	m.version, m.rows, m.confirmed = version, slices.Clone(rows), confirmed
 	m.writes++
 	return nil
+}
+
+// ConfirmRestrictions is TSProjector's: the version held only, never back.
+func (m *memProjector) ConfirmRestrictions(_ context.Context, version int64, confirmed time.Time) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.writes > 0 && m.version == version && confirmed.After(m.confirmed) {
+		m.confirmed = confirmed
+		m.confirms++
+	}
+	return nil
+}
+
+// confirmedAt is the projection's confirmed_at.
+func (m *memProjector) confirmedAt() time.Time {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.confirmed
 }
 
 func (m *memProjector) get() (int64, []RestrictionRow, int) {

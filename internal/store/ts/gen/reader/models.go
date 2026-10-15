@@ -113,6 +113,7 @@ type ProjRestrictionsState struct {
 	CisVersion  int64
 	Etag        string
 	ProjectedAt time.Time
+	ConfirmedAt *time.Time
 }
 
 type ProjZone struct {
