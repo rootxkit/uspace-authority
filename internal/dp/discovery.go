@@ -59,6 +59,10 @@ type tileState struct {
 	tile       Tile
 	sub        *subscription
 	lastSearch time.Time
+	// searchFailing and subFailing are since when this tile's ISA
+	// search, and its subscription call without an HTTP answer, fail
+	// (zero: the last one succeeded). Guarded by Discovery.mu.
+	searchFailing, subFailing time.Time
 }
 
 // DSSCalls are the DSS operations discovery makes (Client).
@@ -88,10 +92,10 @@ type Discovery struct {
 	Limiter  *logging.Limiter
 	Now      func() time.Time
 
-	mu          sync.Mutex
-	tiles       map[string]*tileState
-	state       string
-	since       time.Time
+	mu    sync.Mutex
+	tiles map[string]*tileState
+	// answered is when a DSS call last succeeded (zero: never).
+	answered    time.Time
 	subscribers map[string]string // subscription id -> tile key
 }
 
@@ -111,28 +115,60 @@ func (d *Discovery) init() {
 	}
 }
 
-// State is the DSS's state and since when.
+// State is the DSS's state and since when: dss_unavailable since the
+// earliest failure while any viewed tile's last search (or last
+// subscription call without an HTTP answer) failed, so a tile that keeps
+// failing is never masked by another tile's success; ok since the last
+// success otherwise (zero: no call answered yet).
 func (d *Discovery) State() (string, time.Time) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	if d.DSS == nil {
 		return DSSUnconfigured, time.Time{}
 	}
-	if d.state == "" {
-		return DSSOK, time.Time{}
+	var since time.Time
+	for _, st := range d.tiles {
+		for _, f := range []time.Time{st.searchFailing, st.subFailing} {
+			if !f.IsZero() && (since.IsZero() || f.Before(since)) {
+				since = f
+			}
+		}
 	}
-	return d.state, d.since
+	if !since.IsZero() {
+		return DSSUnavailable, since
+	}
+	return DSSOK, d.answered
 }
 
-func (d *Discovery) setState(ok bool, now time.Time) {
+// setSearch records the outcome of st's ISA search at now.
+func (d *Discovery) setSearch(st *tileState, ok bool, now time.Time) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	st.searchFailing = failingSince(st.searchFailing, ok, now)
+	if ok {
+		d.answered = now
+	}
+}
+
+// setSubscribe records the outcome of st's subscription call at now;
+// failed is a call that got no HTTP answer (a refusal is an answer).
+func (d *Discovery) setSubscribe(st *tileState, ok bool, now time.Time) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	st.subFailing = failingSince(st.subFailing, ok, now)
+	if ok {
+		d.answered = now
+	}
+}
+
+func failingSince(prev time.Time, ok bool, now time.Time) time.Time {
 	switch {
 	case ok:
-		d.state, d.since = DSSOK, now
-	case d.state != DSSUnavailable:
-		d.state, d.since = DSSUnavailable, now
+		return time.Time{}
+	case prev.IsZero():
+		return now
 	}
+	return prev
 }
 
 // Known reports whether subscription id is one of this system's.
@@ -242,11 +278,11 @@ func (d *Discovery) search(ctx context.Context, st *tileState, now time.Time) {
 			return
 		}
 		d.Counters.Inc(CounterSearchFailed)
-		d.setState(false, now)
+		d.setSearch(st, false, now)
 		d.warn("dp_isa_search", "ISA search failed; the known ISAs stay in use until their time_end (dss_unavailable)", err)
 		return
 	}
-	d.setState(true, now)
+	d.setSearch(st, true, now)
 	st.lastSearch = now
 	d.ISAs.FromSearch(st.tile.Key(), isas)
 }
@@ -290,12 +326,12 @@ func (d *Discovery) subscribe(ctx context.Context, st *tileState, now time.Time)
 			d.Counters.Inc(CounterSubsFailed)
 		}
 		if StatusOf(err) == 0 {
-			d.setState(false, now)
+			d.setSubscribe(st, false, now)
 		}
 		d.warn("dp_subscription", "DSS subscription not created or renewed; the tile is searched every reread", err)
 		return
 	}
-	d.setState(true, now)
+	d.setSubscribe(st, true, now)
 	if version == "" {
 		d.Counters.Inc(CounterSubsCreated)
 	} else {

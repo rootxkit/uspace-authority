@@ -13,6 +13,7 @@ import (
 
 	"github.com/rootxkit/uspace-authority/internal/bus"
 	"github.com/rootxkit/uspace-authority/internal/cell"
+	"github.com/rootxkit/uspace-authority/internal/dpviews"
 	"github.com/rootxkit/uspace-authority/internal/track"
 	"github.com/rootxkit/uspace-authority/internal/violation"
 )
@@ -798,5 +799,93 @@ func TestMannedSameSampleInALaterStateReplacesIt(t *testing.T) {
 	_, snap := subscribe(t, k, subscribeFrameOf(44.80, 41.70, 44.85, 41.73))
 	if len(snap.Manned) != 1 || !strings.Contains(string(snap.Manned[0]), `"source_disabled"`) {
 		t.Fatalf("snapshot %d %s", len(snap.Manned), snap.Manned)
+	}
+}
+
+// dpMsg is dp-poller's dp.v1.status message.
+func dpMsg(t *testing.T, body dpviews.Status) []byte {
+	t.Helper()
+	raw, err := json.Marshal(bus.SystemEnvelope(dpviews.StatusSchema, "authority/dp-poller", time.Now(), body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return raw
+}
+
+// No Service Provider heard is dp_unavailable unless dp-poller says,
+// within stale_after_s, that the DSS answers its ISA searches and it
+// holds no provider: then nothing in view has an ISA and the Display
+// Provider is idle, not degraded (spec 02, the F3411 row). On the
+// staging droplet, with the DSS answering 144 tile searches and no USSP
+// flight active, the console said "Display Provider unavailable".
+func TestDPIdleWhenTheDSSAnswersAndNoISAIsInView(t *testing.T) {
+	h := testHub(t, func(c *Config, in *Inputs) {
+		c.StatusInterval = time.Hour
+		in.Policy = func() PolicyView {
+			return PolicyView{Version: "7", StaleAfterS: 12, LiveMaxAgeS: 4, CISStaleBoundS: 300}
+		}
+	})
+	conn := connect(t, h, consoleSession(), nil)
+	st, _ := subscribe(t, conn, subscribeFrameOf(44.80, 41.70, 44.85, 41.73))
+	if st.DPState != DPUnavailable || !has(st.Degraded, DegradedDP) {
+		t.Fatalf("nothing heard from dp-poller: dp_state %q, degraded %v", st.DPState, st.Degraded)
+	}
+	tick := func(at time.Time) StatusBody {
+		t.Helper()
+		h.Tick(at)
+		return statusOf(t, mustUntil(t, conn, SchemaStatus))
+	}
+
+	now := time.Now()
+	h.OfferDPStatus(dpMsg(t, dpviews.Status{DSS: dpviews.DSSAnswered, Tiles: 144}), now)
+	if st = tick(now); st.DPState != DPIdle || has(st.Degraded, DegradedDP) {
+		t.Fatalf("DSS answering, no ISA in view: dp_state %q, degraded %v; want idle, not degraded", st.DPState, st.Degraded)
+	}
+	// dp-poller silent past stale_after_s: unavailable again.
+	if st = tick(now.Add(13 * time.Second)); st.DPState != DPUnavailable || !has(st.Degraded, DegradedDP) {
+		t.Fatalf("dp-poller silent for 13 s: dp_state %q", st.DPState)
+	}
+	cases := map[string]dpviews.Status{
+		"the DSS failing":          {DSS: dpviews.DSSUnavailable, DSSSince: ptr(bus.Stamp(now))},
+		"no DSS configured":        {DSS: dpviews.DSSUnconfigured},
+		"no ISA search yet":        {DSS: dpviews.DSSUnknown},
+		"a provider not yet heard": {DSS: dpviews.DSSAnswered, ISAs: 1, Providers: 1},
+		// An ISA in view whose Service Provider cannot be polled: its
+		// flight is missing, never idle.
+		"an ISA in view, nothing polled": {DSS: dpviews.DSSAnswered, ISAs: 1, UnpolledISAs: 1},
+		"an ISA held, no provider":       {DSS: dpviews.DSSAnswered, ISAs: 1},
+	}
+	for name, b := range cases {
+		now = now.Add(time.Second)
+		h.OfferDPStatus(dpMsg(t, b), now)
+		if st = tick(now); st.DPState != DPUnavailable || !has(st.Degraded, DegradedDP) {
+			t.Errorf("%s: dp_state %q, degraded %v; want unavailable", name, st.DPState, st.Degraded)
+		}
+	}
+	// The reason is said: dp_isas_unpolled with the ISA unpolled, and
+	// only then.
+	now = now.Add(time.Second)
+	h.OfferDPStatus(dpMsg(t, dpviews.Status{DSS: dpviews.DSSAnswered, ISAs: 2, UnpolledISAs: 2}), now)
+	if st = tick(now); !has(st.Degraded, DegradedDPUnpolled) || !has(st.Degraded, DegradedDP) || st.DPState != DPUnavailable {
+		t.Fatalf("ISAs in view, none polled: dp_state %q, degraded %v; want unavailable with dp_isas_unpolled", st.DPState, st.Degraded)
+	}
+	now = now.Add(time.Second)
+	h.OfferDPStatus(dpMsg(t, dpviews.Status{DSS: dpviews.DSSAnswered, Tiles: 4}), now)
+	if st = tick(now); has(st.Degraded, DegradedDPUnpolled) || st.DPState != DPIdle {
+		t.Fatalf("no ISA in view: dp_state %q, degraded %v", st.DPState, st.Degraded)
+	}
+	// A message that is not dp/status/v1, or too large, changes nothing
+	// and is counted.
+	h.OfferDPStatus([]byte(`{"schema":"source/status/v1","body":{"dss":"ok"}}`), now)
+	if h.counters.Get(CounterDPStatusMalformed) != 1 {
+		t.Fatal("a foreign message was not refused")
+	}
+	big := []byte(`{"schema":"dp/status/v1","body":{"dss":"dss_unavailable","pad":"` + strings.Repeat("x", maxMessageBytes) + `"}}`)
+	h.OfferDPStatus(big, now)
+	if h.counters.Get(CounterDPStatusMalformed) != 2 {
+		t.Fatal("a message over maxMessageBytes was not refused")
+	}
+	if st = tick(now); st.DPState != DPIdle {
+		t.Fatalf("a refused message changed dp_state to %q", st.DPState)
 	}
 }

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.uspace.ge/dp/status/v1.json",
+  "title": "dp/status/v1",
+  "description": "The F3411 Display Provider's own status, published by dp-poller on core NATS subject dp.v1.status every status interval (DP_STATUS_INTERVAL_MS) whatever Service Providers it holds, in the 04 §2 envelope. picture-ws reads it to tell a Display Provider with nothing to poll (the DSS answering, no ISA in any viewed area: dp_state idle) from one that is silent, unconfigured or cut off from the DSS (dp_unavailable). Each Service Provider's row stays on src.v1.network_rid.<uss_id> (source/status/v1). Internal to this system (NATS never crosses a system, M30); owned by uspace-authority (WP-14).",
+  "allOf": [{ "$ref": "https://schemas.uspace.ge/envelope/v1.json" }],
+  "properties": {
+    "schema": { "const": "dp/status/v1" },
+    "body": {
+      "type": "object",
+      "required": ["dss", "dss_since", "tiles", "isas", "providers", "unpolled_isas"],
+      "additionalProperties": false,
+      "properties": {
+        "dss": {
+          "description": "ok: the last ISA search answered; dss_unavailable: it failed; dss_unconfigured: no DSS_BASE_URL; unknown: no search yet (nothing viewed, or just started).",
+          "enum": ["ok", "dss_unavailable", "dss_unconfigured", "unknown"]
+        },
+        "dss_since": { "type": ["string", "null"], "format": "date-time", "description": "Since when the DSS is in a state other than ok." },
+        "tiles": { "type": "integer", "minimum": 0, "description": "Root tiles of the viewed areas searched for ISAs." },
+        "isas": { "type": "integer", "minimum": 0 },
+        "providers": { "type": "integer", "minimum": 0, "description": "Service Providers the held ISAs name." },
+        "unpolled_isas": { "type": "integer", "minimum": 0, "description": "ISAs in view whose Service Provider cannot be polled (an owner that is not a subject token, a refused or clashing uss_base_url, DP_MAX_PROVIDERS reached): their flights are missing, and picture-ws says dp_isas_unpolled." }
+      }
+    }
+  }
+}

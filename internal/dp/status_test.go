@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -16,6 +18,7 @@ import (
 	"github.com/rootxkit/uspace-core/vectors"
 
 	"github.com/rootxkit/uspace-authority/internal/bus"
+	"github.com/rootxkit/uspace-authority/internal/dpviews"
 	"github.com/rootxkit/uspace-authority/internal/store/ts"
 	"github.com/rootxkit/uspace-authority/internal/track"
 )
@@ -67,11 +70,11 @@ func TestStatusStates(t *testing.T) {
 	if b.State != StateDisabled || b.DisabledBy == nil || *b.DisabledBy != "instance" || b.DisabledByWho == nil || *b.DisabledByWho != who {
 		t.Fatalf("disabled: %+v", b)
 	}
-	if n := st.Publish(now); n != 1 || pub.subj[0] != "src.v1.network_rid.ussp-lab-01" {
+	if n := st.Publish(now); n != 1 || len(pub.subj) != 2 || pub.subj[0] != dpviews.StatusSubject || pub.subj[1] != "src.v1.network_rid.ussp-lab-01" {
 		t.Fatalf("published %d %v", n, pub.subj)
 	}
 	var env bus.Envelope[StatusBody]
-	if err := json.Unmarshal(pub.data[0], &env); err != nil || env.Schema != StatusSchema || env.Body.Source != SourceType {
+	if err := json.Unmarshal(pub.data[1], &env); err != nil || env.Schema != StatusSchema || env.Body.Source != SourceType {
 		t.Fatalf("%v %+v", err, env)
 	}
 }
@@ -281,3 +284,76 @@ func read(t *testing.T, path string) string {
 	}
 	return strings.ReplaceAll(string(b), "\r\n", "\n")
 }
+
+// dp.v1.status is published every interval, with no Service Provider
+// held too (presence of the message picture-ws needs to say idle rather
+// than dp_unavailable): the DSS's state, unknown before an ISA search
+// answered, and the counts. Its members are schemas/dp/status/v1.json's.
+func TestSelfStatusWithoutProviders(t *testing.T) {
+	e := engine(t, &fakeSP{}, &recorder{}, nil)
+	pub := &pubs{}
+	st := &Status{Engine: e, Pub: pub}
+	now := t0.Add(time.Second)
+	if n := st.Publish(now); n != 0 || len(pub.subj) != 1 || pub.subj[0] != dpviews.StatusSubject {
+		t.Fatalf("published %d %v, want dp.v1.status alone", n, pub.subj)
+	}
+	var env bus.Envelope[dpviews.Status]
+	if err := json.Unmarshal(pub.data[0], &env); err != nil || env.Schema != dpviews.StatusSchema || env.Producer != Producer {
+		t.Fatalf("%v %+v", err, env)
+	}
+	if env.Body.DSS != DSSUnconfigured || env.Body.Providers != 0 {
+		t.Fatalf("no DSS configured: %+v", env.Body)
+	}
+	d := &Discovery{DSS: noDSS{}, ISAs: &ISAs{Max: 10}, Counters: &core.Counters{}}
+	e.Discovery = d
+	if b := st.Self(); b.DSS != dpviews.DSSUnknown || b.DSSSince != nil {
+		t.Fatalf("before a search: %+v", b)
+	}
+	d.Sync(context.Background(), []Tile{{Box: Box{MinLat: 41.70, MinLon: 44.80, MaxLat: 41.71, MaxLon: 44.81}}})
+	if b := st.Self(); b.DSS != dpviews.DSSAnswered || b.DSSSince != nil {
+		t.Fatalf("a search answered: %+v", b)
+	}
+	e.unpolled = 2
+	if b := st.Self(); b.UnpolledISAs != 2 {
+		t.Fatalf("unpolled ISAs not said: %+v", b)
+	}
+
+	raw, err := os.ReadFile("../../schemas/dp/status/v1.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var s struct {
+		Properties struct {
+			Schema struct {
+				Const string `json:"const"`
+			} `json:"schema"`
+			Body struct {
+				Required   []string                   `json:"required"`
+				Properties map[string]json.RawMessage `json:"properties"`
+			} `json:"body"`
+		} `json:"properties"`
+	}
+	if err := json.Unmarshal(raw, &s); err != nil || s.Properties.Schema.Const != dpviews.StatusSchema {
+		t.Fatalf("%v %q", err, s.Properties.Schema.Const)
+	}
+	var m map[string]any
+	_ = json.Unmarshal(pub.data[0], &env)
+	b, _ := json.Marshal(env.Body)
+	_ = json.Unmarshal(b, &m)
+	if got, want := slices.Sorted(maps.Keys(m)), slices.Sorted(maps.Keys(s.Properties.Body.Properties)); !slices.Equal(got, want) {
+		t.Fatalf("message %v, schema %v", got, want)
+	}
+}
+
+// noDSS is a configured DSS the test never calls.
+type noDSS struct{}
+
+func (noDSS) SearchISAs(context.Context, Box, time.Time, time.Time) ([]f3411.IdentificationServiceArea, error) {
+	return nil, nil
+}
+
+func (noDSS) PutSubscription(context.Context, string, string, Box, time.Time, time.Time, string) (*f3411.PutSubscriptionResponse, error) {
+	return nil, nil
+}
+
+func (noDSS) DeleteSubscription(context.Context, string, string) error { return nil }

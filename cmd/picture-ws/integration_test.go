@@ -13,6 +13,7 @@ import (
 
 	"github.com/rootxkit/uspace-authority/internal/bus"
 	"github.com/rootxkit/uspace-authority/internal/cell"
+	"github.com/rootxkit/uspace-authority/internal/dpviews"
 	"github.com/rootxkit/uspace-authority/internal/picture"
 	"github.com/rootxkit/uspace-authority/internal/sources"
 	"github.com/rootxkit/uspace-authority/internal/store/storetest"
@@ -349,4 +350,50 @@ func TestIntegrationCISStaleIsTheAgeOfTheLastConfirmation(t *testing.T) {
 	// write's age, an hour, so stale.
 	set(fmt.Sprintf(written, "NULL"))
 	status(func(b picture.StatusBody) bool { return has(b.Degraded, picture.DegradedCISStale) })
+}
+
+// dp_state through the real picture-ws: no Service Provider heard is
+// dp_unavailable until dp-poller's dp.v1.status says the DSS answers and
+// no ISA is in view, which is idle and not degraded; dp-poller silent
+// past stale_after_s, dp_unavailable again.
+func TestIntegrationDPIdleFromDPPollersStatus(t *testing.T) {
+	nc, _ := connectNATS(t)
+	api := newSessionAPI(t)
+	p := startPicture(t, api, natsURL(t), nil)
+	c := dialConsole(t, p.ws, api.session(t, "dp-idle"), 0)
+	status := func(d time.Duration, ok func(picture.StatusBody) bool) picture.StatusBody {
+		t.Helper()
+		return statusBody(t, c.until(t, picture.SchemaStatus, d, func(e envelope) bool {
+			var b picture.StatusBody
+			return json.Unmarshal(e.Body, &b) == nil && ok(b)
+		}))
+	}
+	status(5*time.Second, func(b picture.StatusBody) bool {
+		return b.DPState == picture.DPUnavailable && has(b.Degraded, picture.DegradedDP)
+	})
+	stop := make(chan struct{})
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		t := time.NewTicker(500 * time.Millisecond)
+		defer t.Stop()
+		for {
+			env := bus.SystemEnvelope(dpviews.StatusSchema, "authority/dp-poller", time.Now(), dpviews.Status{DSS: dpviews.DSSAnswered, Tiles: 4})
+			_ = bus.PublishCore(nc, dpviews.StatusSubject, env)
+			select {
+			case <-stop:
+				return
+			case <-t.C:
+			}
+		}
+	}()
+	st := status(10*time.Second, func(b picture.StatusBody) bool { return b.DPState == picture.DPIdle })
+	if has(st.Degraded, picture.DegradedDP) {
+		t.Fatalf("idle and degraded %v", st.Degraded)
+	}
+	close(stop)
+	<-done
+	status(30*time.Second, func(b picture.StatusBody) bool {
+		return b.DPState == picture.DPUnavailable && has(b.Degraded, picture.DegradedDP)
+	})
 }

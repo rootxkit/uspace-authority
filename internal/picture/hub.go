@@ -74,6 +74,10 @@ const (
 	DegradedCISAbsent      = "cis_absent"
 	DegradedCISStale       = "cis_stale"
 	DegradedDP             = "dp_unavailable"
+	// DegradedDPUnpolled: an ISA in view names a Service Provider
+	// dp-poller cannot poll (dp.v1.status unpolled_isas > 0): that
+	// flight is missing, whatever the other providers show.
+	DegradedDPUnpolled = "dp_isas_unpolled"
 	// DegradedManned: the ANSP's manned traffic feed is not live (down
 	// since T, stale, or never heard; WP-15): manned aircraft are missing
 	// or old, the sky is not empty.
@@ -93,7 +97,11 @@ const (
 // dp_state values (the authority defines them; the lab's schema takes a
 // slug).
 const (
-	DPPolling     = "polling"
+	DPPolling = "polling"
+	// DPIdle: no Service Provider heard, but dp-poller says within
+	// stale_after_s that the DSS answers its ISA searches and no ISA is
+	// in view, so there is nothing to poll; not degraded.
+	DPIdle        = "idle"
 	DPStale       = "stale"
 	DPDisabled    = "disabled"
 	DPUnavailable = "unavailable"
@@ -237,6 +245,7 @@ type Hub struct {
 	alerts   *alertSet
 	sources  *SourceView
 	counters *core.Counters
+	dp       dpSelf
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -604,6 +613,7 @@ func (h *Hub) parts(now time.Time, all []SourceState, unconfirmed int, unconfirm
 	if p.proj.CISAgeS != nil && p.policy.CISStaleBoundS > 0 && *p.proj.CISAgeS > p.policy.CISStaleBoundS {
 		present[DegradedCISStale] = time.Time{}
 	}
+	dpSelf, dpOK := h.dpFresh(now, time.Duration(p.policy.StaleAfterS*float64(time.Second)))
 	switch h.sources.TypeState("network_rid") {
 	case StateLive:
 		p.dpState = DPPolling
@@ -613,8 +623,16 @@ func (h *Hub) parts(now time.Time, all []SourceState, unconfirmed int, unconfirm
 		p.dpState = DPStale
 		present[DegradedDP] = time.Time{}
 	default:
+		if dpOK && dpIdle(dpSelf) {
+			// Working, and no ISA in view: nothing to poll.
+			p.dpState = DPIdle
+			break
+		}
 		p.dpState = DPUnavailable
 		present[DegradedDP] = time.Time{}
+	}
+	if dpOK && dpSelf.UnpolledISAs > 0 {
+		present[DegradedDPUnpolled] = time.Time{}
 	}
 	switch h.sources.TypeState("ansp_feed") {
 	case StateLive, StateDisabled:
