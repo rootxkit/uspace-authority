@@ -10,7 +10,7 @@ import { z } from "zod";
 import { useLang, useT, fmtRegistrationNumber } from "@rootxkit/uspace-ui/i18n";
 import { CheckboxField, EnumField, Form, TextField, UTCDateTimeField, shapes } from "@rootxkit/uspace-ui/form";
 import { columnsFor, tableColumn } from "@rootxkit/uspace-ui/table";
-import { Input, Label } from "@rootxkit/uspace-ui/ui";
+import { Input, Label, TABLE_NOWRAP } from "@rootxkit/uspace-ui/ui";
 import { useWatch } from "react-hook-form";
 import Link from "next/link";
 import type { components } from "../api/types";
@@ -44,7 +44,7 @@ export function OperatorsPage() {
         id: "registration_number",
         accessorKey: "registration_number",
         header: () => t("authority.registry.f.registration_number"),
-        cell: (ctx) => <span className="font-mono">{fmtRegistrationNumber(ctx.getValue())}</span>,
+        cell: (ctx) => <span className={`font-mono ${TABLE_NOWRAP}`}>{fmtRegistrationNumber(ctx.getValue())}</span>,
       }),
       c.enum("operator_type", "authority.registry.operator_type", { headerKey: "authority.registry.f.operator_type" }),
       tableColumn<Operator, string>({ id: "status", accessorKey: "status", header: () => t("authority.registry.f.status"), cell: (ctx) => <StatusBadge status={ctx.getValue()} /> }),

@@ -12,7 +12,7 @@ import { useState } from "react";
 import { ApiError } from "@rootxkit/uspace-ui/api";
 import { inputToUtc } from "@rootxkit/uspace-ui/form";
 import { fmtNum, fmtRegistrationNumber, fmtTimeUTC, useLang, useT } from "@rootxkit/uspace-ui/i18n";
-import { Badge, Button, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@rootxkit/uspace-ui/ui";
+import { Badge, Button, TABLE_NOWRAP, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@rootxkit/uspace-ui/ui";
 import { Table } from "../../common/Table";
 import type { components } from "../../api/types";
 import { LoadNotice, ProblemText } from "../../common/Problem";
@@ -101,7 +101,7 @@ export function OccurrenceQueue() {
             )}
             {rows.map((o) => (
               <TableRow key={o.occurrence_id} data-occurrence-row={o.occurrence_id}>
-                <TableCell>
+                <TableCell className={TABLE_NOWRAP}>
                   <Link className="underline underline-offset-2" href={consolePath(lang, `/occurrences/${o.occurrence_id}`)}>
                     {fmtTimeUTC(o.received_at, lang)}
                   </Link>

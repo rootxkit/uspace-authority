@@ -12,7 +12,7 @@ import { useState } from "react";
 import { ApiError } from "@rootxkit/uspace-ui/api";
 import { inputToUtc } from "@rootxkit/uspace-ui/form";
 import { fmtAge, fmtAltitude, fmtHeading, fmtHeight, fmtNum, fmtRegistrationNumber, fmtSpeed, fmtTimeUTC, useLang, useT, type HeightRef } from "@rootxkit/uspace-ui/i18n";
-import { Badge, Button, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@rootxkit/uspace-ui/ui";
+import { Badge, Button, TABLE_NOWRAP, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@rootxkit/uspace-ui/ui";
 import { Table } from "../common/Table";
 import type { components } from "../api/types";
 import { en } from "../i18n/catalogues";
@@ -123,7 +123,7 @@ function Fleet({ fleet, truncated }: { fleet: readonly S["PoliceUAS"][]; truncat
         <TableCaption>{t("authority.police.fleet")}</TableCaption>
         <TableHeader>
           <TableRow>
-            <TableHead>{t("authority.police.uas.serial")}</TableHead>
+            <TableHead className={TABLE_NOWRAP}>{t("authority.police.uas.serial")}</TableHead>
             <TableHead>{t("authority.police.uas.status")}</TableHead>
             <TableHead>{t("authority.police.uas.class")}</TableHead>
             <TableHead>{t("authority.police.uas.model")}</TableHead>
@@ -133,11 +133,11 @@ function Fleet({ fleet, truncated }: { fleet: readonly S["PoliceUAS"][]; truncat
         <TableBody>
           {fleet.map((u) => (
             <TableRow key={u.serial}>
-              <TableCell>{u.serial}</TableCell>
+              <TableCell className={TABLE_NOWRAP}>{u.serial}</TableCell>
               <TableCell>{t(`authority.registry_status.${u.status}`)}</TableCell>
               <TableCell>{u.class_label ?? "—"}</TableCell>
               <TableCell>{[u.manufacturer, u.model].filter((x) => x !== undefined).join(" ") || "—"}</TableCell>
-              <TableCell>{u.registration_mark ?? "—"}</TableCell>
+              <TableCell className={TABLE_NOWRAP}>{u.registration_mark ?? "—"}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -176,12 +176,12 @@ function PositionsTable({ a }: { a: S["PoliceAircraft"] }) {
       <TableBody>
         {a.positions.map((p, i) => (
           <TableRow key={keys[i]}>
-            <TableCell>{fmtTimeUTC(p.at, lang, { seconds: true })}</TableCell>
-            <TableCell className="font-mono">{`${fmtNum(p.lat_deg, 6)}, ${fmtNum(p.lon_deg, 6)}`}</TableCell>
-            <TableCell>{p.alt_source === "pressure" ? fmtAltitude(null, "pressure", lang) : fmtAltitude(p.alt_amsl_m ?? null, "AMSL", lang)}</TableCell>
-            <TableCell>{fmtHeight(p.height_m ?? null, (p.height_ref ?? null) as HeightRef | null, lang)}</TableCell>
-            <TableCell>{fmtSpeed(p.speed_ms ?? null, lang)}</TableCell>
-            <TableCell>{fmtHeading(p.track_deg ?? null)}</TableCell>
+            <TableCell className={TABLE_NOWRAP}>{fmtTimeUTC(p.at, lang, { seconds: true })}</TableCell>
+            <TableCell className={`font-mono ${TABLE_NOWRAP}`}>{`${fmtNum(p.lat_deg, 6)}, ${fmtNum(p.lon_deg, 6)}`}</TableCell>
+            <TableCell className={TABLE_NOWRAP}>{p.alt_source === "pressure" ? fmtAltitude(null, "pressure", lang) : fmtAltitude(p.alt_amsl_m ?? null, "AMSL", lang)}</TableCell>
+            <TableCell className={TABLE_NOWRAP}>{fmtHeight(p.height_m ?? null, (p.height_ref ?? null) as HeightRef | null, lang)}</TableCell>
+            <TableCell className={TABLE_NOWRAP}>{fmtSpeed(p.speed_ms ?? null, lang)}</TableCell>
+            <TableCell className={TABLE_NOWRAP}>{fmtHeading(p.track_deg ?? null)}</TableCell>
           </TableRow>
         ))}
       </TableBody>
