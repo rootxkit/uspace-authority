@@ -57,6 +57,8 @@
   "authority.footer.contact": "კონტაქტი: {contact}",
   "authority.footer.observer": "მხოლოდ დაკვირვება: ეს კონსოლი არცერთ საჰაერო ხომალდს არაფერს უგზავნის.",
   "authority.footer.operator": "ოპერატორი: {name}",
+  "authority.id.copied": "დაკოპირდა: {id}",
+  "authority.id.copy": "იდენტიფიკატორის კოპირება: {id}",
   "authority.layer.tracks": "საჰაერო ხომალდები",
   "authority.layer.zones": "გეოზონები",
   "authority.locale.en": "English",

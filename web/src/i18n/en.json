@@ -57,6 +57,8 @@
   "authority.footer.contact": "Contact: {contact}",
   "authority.footer.observer": "Observation only: this console sends nothing to any aircraft.",
   "authority.footer.operator": "Operated by {name}",
+  "authority.id.copied": "Copied: {id}",
+  "authority.id.copy": "Copy the id {id}",
   "authority.layer.tracks": "Aircraft",
   "authority.layer.zones": "Geo-zones",
   "authority.locale.en": "English",

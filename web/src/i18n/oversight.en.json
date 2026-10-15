@@ -1,7 +1,11 @@
 {
   "authority.audit.actor": "Actor",
   "authority.audit.actor_id": "Actor",
-  "authority.audit.actor_value": "{type} {id} ({realm})",
+  "authority.audit.actor_line": "{type} · {realm}",
+  "authority.audit.actor_type.client": "Client",
+  "authority.audit.actor_type.receiver": "Receiver",
+  "authority.audit.actor_type.system": "System",
+  "authority.audit.actor_type.user": "User",
   "authority.audit.anchored_to": "Linked to the dropped month",
   "authority.audit.broken": "First broken row",
   "authority.audit.broken_value": "row {id} at {at}: {reason}",

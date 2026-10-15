@@ -13,6 +13,7 @@ import { Badge } from "@rootxkit/uspace-ui/ui";
 import type { components } from "../api/types";
 import { must, useLoad } from "../authoring/api";
 import { Loaded, UTC } from "../authoring/ui";
+import { shortId } from "../common/ids";
 
 type Row = components["schemas"]["PublicationOutboxRow"];
 type Status = components["schemas"]["PublicationStatus"];
@@ -73,7 +74,10 @@ export function PublicationState({ dataset, round = 0 }: { dataset: PublicationD
                     </span>
                     {r.last_error !== null && r.last_error !== undefined && r.last_error !== "" && <span className="text-xs">{t("authority.pub.last_error", { error: r.last_error })}</span>}
                     <span className="text-xs">
-                      {t("authority.pub.created_by", { by: r.created_by })} <UTC iso={r.created_at} />
+                      <span title={r.created_by} data-id={r.created_by} data-testid="publication-by">
+                        {t("authority.pub.created_by", { by: shortId(r.created_by) })}
+                      </span>{" "}
+                      <UTC iso={r.created_at} />
                       {r.acknowledged_at !== null && r.acknowledged_at !== undefined && (
                         <>
                           {" · "}
