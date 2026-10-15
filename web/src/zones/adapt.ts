@@ -1,9 +1,11 @@
 // The published geo-zones (GET /v1/zones?state=published) as the kit's
 // ZoneView. It copies what api said and decides nothing: the geometry is
 // passed as published when GeoJSON can draw it (Polygon, MultiPolygon);
-// a circle (a Point with an extent) or anything else is listed as not
-// drawn, never approximated here, because drawing a circle is geodesy and
-// geodesy is uspace-core's (CLAUDE.md rule 3). Limits are passed only
+// a circle (a Point with a Circle extent) is drawn by the outline api drew
+// for it (GET /v1/outlines/circle, uspace-core's geodesy) and is listed as
+// not drawn while it has none, never approximated here, because drawing a
+// circle is geodesy and geodesy is uspace-core's (CLAUDE.md rule 3).
+// Anything else is listed as not drawn. Limits are passed only
 // when published in metres; `applies` is null because api states no
 // applicability on this read, and the kit draws such a zone in full.
 import { isVerticalRef, isZoneType, type ZoneView } from "@rootxkit/uspace-ui/model";
@@ -27,18 +29,36 @@ export function localText(v: unknown, lang: Lang): string | null {
 
 const DRAWABLE = new Set(["Polygon", "MultiPolygon"]);
 
+/** A published circle's centre and radius (ED-318: a Point with a Circle extent), or null for any other geometry. */
+export function circleOf(z: ZoneVersion): { lat: number; lng: number; radiusM: number } | null {
+  const geometry = obj(obj(z.feature)?.["geometry"]);
+  if (geometry?.["type"] !== "Point" || obj(geometry["extent"])?.["subType"] !== "Circle") return null;
+  const c = Array.isArray(geometry["coordinates"]) ? (geometry["coordinates"] as unknown[]) : [];
+  const lng = num(c[0]);
+  const lat = num(c[1]);
+  const radiusM = num(obj(geometry["extent"])?.["radius"]);
+  return lng === null || lat === null || radiusM === null ? null : { lat, lng, radiusM };
+}
+
+/** The key a circle's outline is asked for and kept under. */
+export function circleKey(c: { lat: number; lng: number; radiusM: number }): string {
+  return `${c.lat},${c.lng},${c.radiusM}`;
+}
+
 export type ZoneAdapted = { drawn: true; view: ZoneView } | { drawn: false; identifier: string; reason: "geometry" | "type" };
 
-/** One zone version as a ZoneView, or why it is not drawn. */
-export function adaptZone(z: ZoneVersion, lang: Lang): ZoneAdapted {
+/** One zone version as a ZoneView, or why it is not drawn; a circle is drawn with `circleOutline`, api's outline of it. */
+export function adaptZone(z: ZoneVersion, lang: Lang, circleOutline?: GeoJSON.Polygon | null): ZoneAdapted {
   const feature = obj(z.feature);
   const p = obj(feature?.["properties"]);
   const geometry = obj(feature?.["geometry"]);
   const type = p?.["type"] ?? z.type;
   if (!isZoneType(type)) return { drawn: false, identifier: z.identifier, reason: "type" };
-  if (geometry === null || typeof geometry["type"] !== "string" || !DRAWABLE.has(geometry["type"])) {
+  const circle = circleOf(z) !== null && circleOutline !== undefined && circleOutline !== null ? circleOutline : null;
+  if (circle === null && (geometry === null || typeof geometry["type"] !== "string" || !DRAWABLE.has(geometry["type"]))) {
     return { drawn: false, identifier: z.identifier, reason: "geometry" };
   }
+  if (geometry === null) return { drawn: false, identifier: z.identifier, reason: "geometry" };
   const layer = obj(geometry["layer"]);
   const metres = layer !== null && (layer["uom"] === undefined || layer["uom"] === "m");
   const lowerRef = layer?.["lowerReference"];
@@ -56,7 +76,7 @@ export function adaptZone(z: ZoneVersion, lang: Lang): ZoneAdapted {
       lowerRef: isVerticalRef(lowerRef) ? lowerRef : null,
       upperLimitM: metres ? num(layer?.["upper"]) : null,
       upperRef: isVerticalRef(upperRef) ? upperRef : null,
-      geometry: { type: geometry["type"], coordinates: geometry["coordinates"] } as unknown as ZoneView["geometry"],
+      geometry: (circle ?? { type: geometry["type"], coordinates: geometry["coordinates"] }) as unknown as ZoneView["geometry"],
       applies: null,
       restrictionState: null,
       version: z.published_version === undefined ? String(z.zone_version) : String(z.published_version),
