@@ -280,6 +280,15 @@ type RetentionHandler interface {
 	ReleaseLegalHold(ctx context.Context, request gen.ReleaseLegalHoldRequestObject) (gen.ReleaseLegalHoldResponseObject, error)
 }
 
+// OverviewHandler serves /v1/overview/* (api): the console overview's
+// counts, one operation per domain (internal/overview).
+type OverviewHandler interface {
+	GetOverviewRegistry(ctx context.Context, request gen.GetOverviewRegistryRequestObject) (gen.GetOverviewRegistryResponseObject, error)
+	GetOverviewUSpace(ctx context.Context, request gen.GetOverviewUSpaceRequestObject) (gen.GetOverviewUSpaceResponseObject, error)
+	GetOverviewCertificates(ctx context.Context, request gen.GetOverviewCertificatesRequestObject) (gen.GetOverviewCertificatesResponseObject, error)
+	GetOverviewAudit(ctx context.Context, request gen.GetOverviewAuditRequestObject) (gen.GetOverviewAuditResponseObject, error)
+}
+
 // Server implements gen.StrictServerInterface by delegating to one
 // handler per group. A group left nil must not be mounted.
 type Server struct {
@@ -308,6 +317,7 @@ type Server struct {
 	DPOHandler
 	AuditVerifyHandler
 	RetentionHandler
+	OverviewHandler
 }
 
 var _ gen.StrictServerInterface = Server{}

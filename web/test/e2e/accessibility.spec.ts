@@ -6,7 +6,7 @@
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { expect, test, type Page } from "@playwright/test";
-import { INSPECTOR, OFFICER, POLICE, resetMock, signInTo } from "./helpers";
+import { ADMIN, INSPECTOR, OFFICER, POLICE, REGISTRAR, resetMock, signInTo } from "./helpers";
 
 const AXE_SOURCE = readFileSync(createRequire(import.meta.url).resolve("axe-core/axe.min.js"), "utf8");
 const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22a", "wcag22aa"];
@@ -64,6 +64,16 @@ for (const setup of [
       await expect(page.getByTestId("excerpt-samples")).toBeVisible();
       expect(await axeViolations(page), "violation detail").toEqual([]);
       await check(page, `/${l}/incidents`, "incidents-table");
+    });
+
+    test("the registrar's and the admin's overview counts", async ({ page }) => {
+      await signInTo(page, l, REGISTRAR, new RegExp(`/${l}$`));
+      await expect(page.getByTestId("kpi-operators")).toHaveAttribute("data-state", "loaded");
+      expect(await axeViolations(page), "registrar overview").toEqual([]);
+      await page.context().clearCookies();
+      await signInTo(page, l, ADMIN, new RegExp(`/${l}$`));
+      for (const tile of ["kpi-uspace", "kpi-certificates", "kpi-audit"]) await expect(page.getByTestId(tile)).toHaveAttribute("data-state", "loaded");
+      expect(await axeViolations(page), "admin overview").toEqual([]);
     });
 
     test("the incident officer's occurrence reports", async ({ page }) => {

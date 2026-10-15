@@ -191,6 +191,14 @@ var Roles = map[string][]string{
 	"LimitCertificate":              {RoleAdmin},
 	"RevokeCertificate":             {RoleAdmin},
 	"ReinstateCertificate":          {RoleAdmin},
+
+	// The overview's figures: each the roles of its domain's list
+	// operation (ListRegistryOperators, ListUSpaceAirspaces,
+	// ListCertificates, ListAuditEvents), never more; console realm only.
+	"GetOverviewRegistry":     {RoleRegistrar, RoleInspector, RoleViewer},
+	"GetOverviewUSpace":       {RoleAdmin},
+	"GetOverviewCertificates": {RoleAdmin},
+	"GetOverviewAudit":        {RoleAdmin, RoleAuditor},
 }
 
 // Realms names the operations of a realm other than the console's

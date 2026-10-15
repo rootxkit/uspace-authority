@@ -3,9 +3,12 @@
 // /<locale> (every console session): the overview. The key figures and
 // panels are only what the console already reads: the live picture
 // (tracks, active violations and sources from picture-ws, for the
-// configured map view) and, through the BFF, the published zones and
-// the work queues a role's reads admit (violations awaiting review,
-// open incidents, reports to classify). A figure a role does not read is
+// configured map view) and, through the BFF, the published zones, the
+// work queues a role's reads admit (violations awaiting review, open
+// incidents, reports to classify) and api's counts of the registry, the
+// U-space airspaces, the certificates and the audit log's last 24 hours
+// (/v1/overview/*, each read only by the roles of its list). A figure a
+// role does not read is
 // not shown; one that was refused or failed is a dash with the reason,
 // never a zero (E-02). A queue read is one page: past it the figure says
 // "at least". Nothing here judges: every status repeats what api or
@@ -34,12 +37,21 @@ import { headerNowMs } from "../picture/feedAge";
 import { BBoxWatcher } from "../picture/InspectorMap";
 import { SUBSCRIBE_LAYERS, TRAIL_POINTS, usePicture } from "../picture/usePicture";
 import { useReportFeed } from "../shell/feedPill";
-import { IncidentIcon, OccurrenceIcon, SourceIcon, TrackIcon, ViolationIcon, ZoneIcon } from "../shell/icons";
+import { AuditIcon, CertificateIcon, IncidentIcon, OccurrenceIcon, RegistryIcon, SourceIcon, TrackIcon, USpaceIcon, ViolationIcon, ZoneIcon } from "../shell/icons";
 import { renderLink } from "../shell/link";
 import type { Role } from "../shell/nav";
 import { consolePath, loginPath, picturePath } from "../shell/paths";
 import { useZones } from "../zones/useZones";
-import { queueCount, sourceSummary, type QueueCount } from "./figures";
+import {
+  CERTIFICATE_STATUSES,
+  REGISTRY_STATUSES,
+  ZONE_STATES,
+  countSummary,
+  queueCount,
+  sourceSummary,
+  type CountSummary,
+  type QueueCount,
+} from "./figures";
 
 type S = components["schemas"];
 
@@ -58,6 +70,41 @@ export const QUEUE_ROLES = {
   occurrences: ["incident_officer"],
   zones: ["inspector", "admin", "viewer"],
 } as const satisfies Record<string, readonly Role[]>;
+
+/**
+ * The roles each count's read admits (api/openapi.yaml x-roles of
+ * /v1/overview/*): the roles of its domain's list, as the console offers
+ * them. summary-roles.test.ts holds the two together.
+ */
+export const SUMMARY_ROLES = {
+  registry: ["registrar", "inspector", "viewer"],
+  uspace: ["admin"],
+  certificates: ["admin"],
+  audit: ["admin", "auditor"],
+} as const satisfies Record<string, readonly Role[]>;
+
+/** The catalogue key of each status a count names (the contract's enums). */
+const REGISTRY_STATUS_KEYS = {
+  active: "authority.registry.status.active",
+  suspended: "authority.registry.status.suspended",
+  revoked: "authority.registry.status.revoked",
+  expired: "authority.registry.status.expired",
+} as const satisfies Record<S["RegistryStatus"], string>;
+const ZONE_STATE_KEYS = {
+  draft: "authority.zone.state.draft",
+  approved: "authority.zone.state.approved",
+  published: "authority.zone.state.published",
+  superseded: "authority.zone.state.superseded",
+} as const satisfies Record<S["ZoneState"], string>;
+const CERTIFICATE_STATUS_KEYS = {
+  issued: "authority.cert.status.issued",
+  operating: "authority.cert.status.operating",
+  ceased: "authority.cert.status.ceased",
+  suspended: "authority.cert.status.suspended",
+  limited: "authority.cert.status.limited",
+  revoked: "authority.cert.status.revoked",
+  lapsed: "authority.cert.status.lapsed",
+} as const satisfies Record<S["CertificateStatus"], string>;
 
 const SEVERITY_TONE = { info: "info", warning: "warning", critical: "critical" } as const satisfies Record<S["ViolationSummary"]["severity"], StatusTone>;
 
@@ -105,6 +152,67 @@ function QueueTile(props: { label: string; icon: ReactNode; state: Load<QueueCou
           )
         }
       />
+    </div>
+  );
+}
+
+/** A read's state through f once it has loaded. */
+function mapLoad<T, U>(l: Load<T>, f: (data: T) => U): Load<U> {
+  return l.kind === "loaded" ? { kind: "loaded", data: f(l.data) } : l;
+}
+
+/**
+ * One of api's counts: the total (or "at least" past a bound), the
+ * statuses it counted, each in words, and the database clock's time of
+ * the count; a dash with the reason while it is not known (E-02).
+ */
+function CountTile(props: {
+  label: string;
+  icon: ReactNode;
+  state: Load<CountSummary>;
+  /** The catalogue key of each status's name; none for a count without statuses. */
+  statusKeys?: Readonly<Record<string, string>>;
+  /** The key of the time line: when it was counted, or the window it counts. */
+  timeKey: string;
+  href: string;
+  testId: string;
+}) {
+  const t = useT();
+  const { lang } = useLang();
+  const s = props.state;
+  const known = s.kind === "loaded" ? s.data : null;
+  const value = known === null ? null : known.more ? t("authority.overview.at_least", { count: known.count }) : known.count;
+  let hint: ReactNode;
+  if (s.kind === "refused") hint = t("authority.overview.refused", { status: s.error.status });
+  else if (s.kind === "failed") hint = t("authority.overview.failed");
+  else if (known === null) hint = t("authority.overview.loading");
+  else {
+    const keys = props.statusKeys;
+    hint = (
+      <span className="grid gap-0.5">
+        {keys !== undefined && (
+          <span data-testid={`${props.testId}-breakdown`} className="flex flex-wrap gap-x-2">
+            {known.items.length === 0 ? (
+              <span>{t("authority.overview.breakdown_none")}</span>
+            ) : (
+              known.items.map((i) => (
+                <span key={i.status} data-status={i.status} data-count={i.count}>
+                  {t("authority.overview.breakdown_item", { status: t(keys[i.status] ?? i.status), count: i.count })}
+                </span>
+              ))
+            )}
+          </span>
+        )}
+        <span>{t(props.timeKey, { time: fmtTimeUTC(known.asOf, lang) })}</span>
+        <Link className="underline underline-offset-2" href={props.href}>
+          {t("authority.overview.open_page")}
+        </Link>
+      </span>
+    );
+  }
+  return (
+    <div data-testid={props.testId} data-state={s.kind} data-count={known?.count} data-more={known === null ? undefined : String(known.more)} className="grid">
+      <StatTile icon={props.icon} label={props.label} value={value} hint={hint} />
     </div>
   );
 }
@@ -196,6 +304,24 @@ export function Overview() {
     const page = must(await c.GET("/v1/occurrences", { params: { query: { state: "received", limit: QUEUE_PAGE_LIMIT } } }));
     return { rows: page.occurrences, count: queueCount(page.occurrences, page.next_cursor) };
   });
+
+  // api's counts, each read only by the roles its operation admits.
+  const registryQ = useLoad(hasAny(roles, SUMMARY_ROLES.registry) ? "overview:registry" : null, async (c) => must(await c.GET("/v1/overview/registry")));
+  const uspaceQ = useLoad(hasAny(roles, SUMMARY_ROLES.uspace) ? "overview:uspace" : null, async (c) => {
+    const r = must(await c.GET("/v1/overview/uspace"));
+    return countSummary(r, ZONE_STATES, r.as_of);
+  });
+  const certificatesQ = useLoad(hasAny(roles, SUMMARY_ROLES.certificates) ? "overview:certificates" : null, async (c) => {
+    const r = must(await c.GET("/v1/overview/certificates"));
+    return countSummary(r, CERTIFICATE_STATUSES, r.as_of);
+  });
+  const auditQ = useLoad(hasAny(roles, SUMMARY_ROLES.audit) ? "overview:audit" : null, async (c) => {
+    const r = must(await c.GET("/v1/overview/audit"));
+    return { count: r.events, more: r.more, items: [], asOf: r.as_of } satisfies CountSummary;
+  });
+  const operatorsS = mapLoad(registryQ.state, (r) => countSummary(r.operators, REGISTRY_STATUSES, r.as_of));
+  const uasS = mapLoad(registryQ.state, (r) => countSummary(r.uas, REGISTRY_STATUSES, r.as_of));
+  const pilotsS = mapLoad(registryQ.state, (r) => countSummary(r.pilots, REGISTRY_STATUSES, r.as_of));
 
   const tracks = useMemo(() => [...picture.tracks.values()], [picture.tracks]);
   const active = useMemo(
@@ -316,6 +442,69 @@ export function Overview() {
             state={countOf(incidentsQ.state)}
             href={consolePath(lang, "/incidents")}
             pendingKey="authority.overview.incidents_pending"
+          />
+        )}
+        {registryQ.state.kind !== "idle" && (
+          <>
+            <CountTile
+              testId="kpi-operators"
+              icon={<RegistryIcon />}
+              label={t("authority.overview.operators")}
+              state={operatorsS}
+              statusKeys={REGISTRY_STATUS_KEYS}
+              timeKey="authority.overview.counted_at"
+              href={consolePath(lang, "/registry/operators")}
+            />
+            <CountTile
+              testId="kpi-uas"
+              icon={<RegistryIcon />}
+              label={t("authority.overview.uas")}
+              state={uasS}
+              statusKeys={REGISTRY_STATUS_KEYS}
+              timeKey="authority.overview.counted_at"
+              href={consolePath(lang, "/registry/uas")}
+            />
+            <CountTile
+              testId="kpi-pilots"
+              icon={<RegistryIcon />}
+              label={t("authority.overview.pilots")}
+              state={pilotsS}
+              statusKeys={REGISTRY_STATUS_KEYS}
+              timeKey="authority.overview.counted_at"
+              href={consolePath(lang, "/registry/pilots")}
+            />
+          </>
+        )}
+        {uspaceQ.state.kind !== "idle" && (
+          <CountTile
+            testId="kpi-uspace"
+            icon={<USpaceIcon />}
+            label={t("authority.overview.uspace")}
+            state={uspaceQ.state}
+            statusKeys={ZONE_STATE_KEYS}
+            timeKey="authority.overview.counted_at"
+            href={consolePath(lang, "/uspace")}
+          />
+        )}
+        {certificatesQ.state.kind !== "idle" && (
+          <CountTile
+            testId="kpi-certificates"
+            icon={<CertificateIcon />}
+            label={t("authority.overview.certificates")}
+            state={certificatesQ.state}
+            statusKeys={CERTIFICATE_STATUS_KEYS}
+            timeKey="authority.overview.counted_at"
+            href={consolePath(lang, "/certificates")}
+          />
+        )}
+        {auditQ.state.kind !== "idle" && (
+          <CountTile
+            testId="kpi-audit"
+            icon={<AuditIcon />}
+            label={t("authority.overview.audit")}
+            state={auditQ.state}
+            timeKey="authority.overview.audit_window"
+            href={consolePath(lang, "/audit")}
           />
         )}
         {occurrencesQ.state.kind !== "idle" && (

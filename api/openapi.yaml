@@ -149,6 +149,11 @@ tags:
       same state. A session of the console or the police realm is
       required, checked against the sessions table through api.
 
+  - name: overview
+    description: |
+      The console overview's figures: counts by status, state or window,
+      never a record and never personal data. One read per domain, each
+      admitting the roles that read that domain's list (least privilege).
 paths:
   # WP-0: health paths, served by every process on its admin port.
   /healthz:
@@ -5113,6 +5118,102 @@ paths:
           $ref: "#/components/responses/Problem"
         default:
           $ref: "#/components/responses/Problem"
+  # Overview: the console overview's figures. Each operation counts one
+  # domain in SQL on the database clock (index-backed or bounded counts,
+  # migration 00027) and admits the roles of that domain's list
+  # operation, so a figure is shown only to whoever may open the list.
+  # They carry no personal data and write no events row: a count names
+  # no record. A police-realm session is refused (console realm only).
+  /v1/overview/registry:
+    get:
+      operationId: getOverviewRegistry
+      tags: [overview]
+      summary: Registered operators, UAS and remote pilots by status
+      description: |
+        Every operator, UAS and remote pilot of the registry counted by
+        its status, in one statement (one snapshot), with the database
+        clock's time of the count. The roles of listRegistryOperators.
+      security:
+        - sessionCookie: []
+      x-roles: [registrar, inspector, viewer]
+      x-audit: none
+      responses:
+        "200":
+          description: The counts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OverviewRegistry"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/overview/uspace:
+    get:
+      operationId: getOverviewUSpace
+      tags: [overview]
+      summary: U-space airspaces by the state of their newest version
+      description: |
+        The newest version of every U-space airspace (what
+        listUSpaceAirspaces lists) counted by its state. The roles of
+        listUSpaceAirspaces.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: none
+      responses:
+        "200":
+          description: The counts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OverviewUSpace"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/overview/certificates:
+    get:
+      operationId: getOverviewCertificates
+      tags: [overview]
+      summary: USSP and CISP certificates by status
+      description: |
+        Every certificate counted by its derived status. The roles of
+        listCertificates.
+      security:
+        - sessionCookie: []
+      x-roles: [admin]
+      x-audit: none
+      responses:
+        "200":
+          description: The counts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OverviewCertificates"
+        default:
+          $ref: "#/components/responses/Problem"
+  /v1/overview/audit:
+    get:
+      operationId: getOverviewAudit
+      tags: [audit, overview]
+      summary: Audit events of the last 24 hours
+      description: |
+        The events rows whose ts is within the `window_s` seconds (24
+        hours) that end at the database clock's `as_of`, counted up to
+        100000 rows: at the bound `more` is true and the count is a
+        lower bound. A count, not a read of the log: no
+        row is returned and no `audit_events_viewed` row is written. The
+        roles of listAuditEvents.
+      security:
+        - sessionCookie: []
+      x-roles: [admin, auditor]
+      x-audit: none
+      responses:
+        "200":
+          description: The count.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OverviewAudit"
+        default:
+          $ref: "#/components/responses/Problem"
 
 components:
   securitySchemes:
@@ -8145,3 +8246,57 @@ components:
           items:
             $ref: "#/components/schemas/LegalHold"
         truncated: {type: boolean}
+    OverviewRegistryCounts:
+      type: object
+      required: [active, suspended, revoked, expired, total]
+      description: One registry entity's records by status (RegistryStatus); total is their sum.
+      properties:
+        active: {type: integer, format: int64, minimum: 0}
+        suspended: {type: integer, format: int64, minimum: 0}
+        revoked: {type: integer, format: int64, minimum: 0}
+        expired: {type: integer, format: int64, minimum: 0}
+        total: {type: integer, format: int64, minimum: 0}
+    OverviewRegistry:
+      type: object
+      required: [as_of, operators, uas, pilots]
+      properties:
+        as_of: {type: string, format: date-time, description: The database clock at the count.}
+        operators:
+          $ref: "#/components/schemas/OverviewRegistryCounts"
+        uas:
+          $ref: "#/components/schemas/OverviewRegistryCounts"
+        pilots:
+          $ref: "#/components/schemas/OverviewRegistryCounts"
+    OverviewUSpace:
+      type: object
+      required: [as_of, draft, approved, published, superseded, total]
+      description: The newest version of every U-space airspace by state (ZoneState); total is their sum, one per airspace.
+      properties:
+        as_of: {type: string, format: date-time, description: The database clock at the count.}
+        draft: {type: integer, format: int64, minimum: 0}
+        approved: {type: integer, format: int64, minimum: 0}
+        published: {type: integer, format: int64, minimum: 0}
+        superseded: {type: integer, format: int64, minimum: 0}
+        total: {type: integer, format: int64, minimum: 0}
+    OverviewCertificates:
+      type: object
+      required: [as_of, issued, operating, ceased, suspended, limited, revoked, lapsed, total]
+      description: Every certificate by status (CertificateStatus); total is their sum.
+      properties:
+        as_of: {type: string, format: date-time, description: The database clock at the count.}
+        issued: {type: integer, format: int64, minimum: 0}
+        operating: {type: integer, format: int64, minimum: 0}
+        ceased: {type: integer, format: int64, minimum: 0}
+        suspended: {type: integer, format: int64, minimum: 0}
+        limited: {type: integer, format: int64, minimum: 0}
+        revoked: {type: integer, format: int64, minimum: 0}
+        lapsed: {type: integer, format: int64, minimum: 0}
+        total: {type: integer, format: int64, minimum: 0}
+    OverviewAudit:
+      type: object
+      required: [as_of, window_s, events, more]
+      properties:
+        as_of: {type: string, format: date-time, description: The database clock at the count; the window ends here.}
+        window_s: {type: integer, format: int64, minimum: 1, description: The window's length in seconds (86400).}
+        events: {type: integer, format: int64, minimum: 0, description: The events rows of the window, at most the bound.}
+        more: {type: boolean, description: The bound was reached; events is a lower bound.}

@@ -1,7 +1,8 @@
 // The overview's figures: a queue page with more behind it says so (and
-// one without does not), and the sources are counted by their state.
+// one without does not), the sources are counted by their state, and
+// api's counts list the statuses it counted in the contract's order.
 import { describe, expect, it } from "vitest";
-import { queueCount, sourceSummary } from "./figures";
+import { breakdown, CERTIFICATE_STATUSES, countSummary, queueCount, REGISTRY_STATUSES, sourceSummary, ZONE_STATES } from "./figures";
 
 describe("queueCount", () => {
   it("a last page is the whole count", () => {
@@ -26,5 +27,33 @@ describe("sourceSummary", () => {
 
   it("no source reported is a total of zero, not a healthy picture", () => {
     expect(sourceSummary([])).toEqual({ total: 0, healthy: 0, disabled: 0, attention: 0 });
+  });
+});
+
+describe("breakdown and countSummary", () => {
+  it("lists the statuses api counted, in the contract's order", () => {
+    expect(breakdown({ expired: 2, active: 5, suspended: 0 }, REGISTRY_STATUSES)).toEqual([
+      { status: "active", count: 5 },
+      { status: "expired", count: 2 },
+    ]);
+    expect(countSummary({ active: 5, suspended: 0, revoked: 1, expired: 2, total: 8 }, REGISTRY_STATUSES, "2026-10-15T08:00:00Z")).toEqual({
+      count: 8,
+      more: false,
+      items: [
+        { status: "active", count: 5 },
+        { status: "revoked", count: 1 },
+        { status: "expired", count: 2 },
+      ],
+      asOf: "2026-10-15T08:00:00Z",
+    });
+  });
+
+  it("a summary of zeros is a counted zero with nothing listed (the pair above)", () => {
+    const s = countSummary({ as_of: "x", draft: 0, approved: 0, published: 0, superseded: 0, total: 0 }, ZONE_STATES, "x");
+    expect(s).toEqual({ count: 0, more: false, items: [], asOf: "x" });
+  });
+
+  it("a member that is not a count, or a status outside the order, is not listed", () => {
+    expect(countSummary({ as_of: "x", issued: 1, unknown: 9, total: 1 }, CERTIFICATE_STATUSES, "x").items).toEqual([{ status: "issued", count: 1 }]);
   });
 });

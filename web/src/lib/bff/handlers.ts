@@ -88,10 +88,26 @@ export const OVERSIGHT_PROXY_ROUTES: readonly ProxyRoute[] = [
 ];
 
 /**
+ * The overview's figures (api/openapi.yaml /v1/overview/*): one exact
+ * path per domain, GET only. api decides who reads each (the roles of
+ * the domain's list, console realm only); the BFF only refuses any
+ * other path or method before api.
+ */
+export const OVERVIEW_PROXY_ROUTES: readonly ProxyRoute[] = [
+  route(["GET"], "/v1/overview/registry"),
+  route(["GET"], "/v1/overview/uspace"),
+  route(["GET"], "/v1/overview/certificates"),
+  route(["GET"], "/v1/overview/audit"),
+];
+
+/** The routes whose methods the proxy checks itself (methodRefused). */
+const METHOD_ROUTES: readonly ProxyRoute[] = [...OVERSIGHT_PROXY_ROUTES, ...OVERVIEW_PROXY_ROUTES];
+
+/**
  * What the console may reach through the proxy, and nothing else: the
  * caller's session (who is signed in, for the shell), the zones (the
- * inspector map's zone layer), WP-22's authoring operations and WP-23's
- * routes. A later page adds its paths here in its own work package.
+ * inspector map's zone layer), WP-22's authoring operations, WP-23's
+ * routes and the overview's figures. A later page adds its paths here in its own work package.
  * Every pattern is anchored; an identifier segment admits only the
  * characters api's identifiers use.
  */
@@ -117,6 +133,7 @@ export const PROXY_ALLOW_PATHS: readonly RegExp[] = [
   /^\/v1\/certificates(\/(register|publish-list))?$/,
   /^\/v1\/certificates\/[0-9a-f]{32}(\/(status-notices|suspend|limit|revoke|reinstate))?$/,
   ...OVERSIGHT_PROXY_ROUTES.map((r) => r.path),
+  ...OVERVIEW_PROXY_ROUTES.map((r) => r.path),
 ];
 
 /**
@@ -151,12 +168,12 @@ export function boundedProxy(proxy: BffHandlers["proxy"], maxBytes: number): Bff
 }
 
 /**
- * True when `pathname` is one of WP-23's routes and none of them admits
- * `method`: the proxy refuses it before api (fail closed). A path of
- * another work package is left to its own list.
+ * True when `pathname` is one of WP-23's or the overview's routes and
+ * none of them admits `method`: the proxy refuses it before api (fail
+ * closed). A path of another work package is left to its own list.
  */
 export function methodRefused(method: string, pathname: string): boolean {
-  const routes = OVERSIGHT_PROXY_ROUTES.filter((r) => r.path.test(pathname));
+  const routes = METHOD_ROUTES.filter((r) => r.path.test(pathname));
   return routes.length > 0 && !routes.some((r) => (r.methods as readonly string[]).includes(method));
 }
 
