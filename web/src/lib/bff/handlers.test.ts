@@ -7,7 +7,7 @@
 // acceptance it differs from (E-01).
 import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { configFromEnv, createBff, DEFAULT_PROXY_MAX_BODY_BYTES, methodRefused, OVERSIGHT_PROXY_ROUTES, PROXY_ALLOW_PATHS, type BffConfig } from "./handlers";
+import { configFromEnv, createBff, DEFAULT_PROXY_MAX_BODY_BYTES, methodRefused, OVERSIGHT_PROXY_ROUTES, OVERVIEW_PROXY_ROUTES, PROXY_ALLOW_PATHS, type BffConfig } from "./handlers";
 
 const ORIGIN = "https://console.test";
 const SECRET = "unit-test-only-challenge-seal-key-0123456789";
@@ -346,6 +346,46 @@ describe("WP-23's routes", () => {
     expect(methodRefused("POST", "/v1/violations")).toBe(true);
     expect(PROXY_ALLOW_PATHS.some((re) => re.test(`/v1/occurrences/${ULID}/reporter`))).toBe(true);
     expect(PROXY_ALLOW_PATHS.some((re) => re.test("/v1/occurrences/not-a-ulid/reporter"))).toBe(false);
+  });
+});
+
+describe("the overview's figures", () => {
+  const PATHS = ["/v1/overview/registry", "/v1/overview/uspace", "/v1/overview/certificates", "/v1/overview/audit"];
+  const req = (method: string, path: string) =>
+    new NextRequest(`${ORIGIN}/_bff/api${path}`, {
+      method,
+      headers: {
+        cookie: "uspace_session=header.payload.sig; uspace_csrf=c1",
+        "x-csrf-token": "c1",
+        host: "console.test",
+        ...(method === "GET" ? {} : { "content-type": "application/json", "content-length": "2" }),
+      },
+      ...(method === "GET" ? {} : { body: "{}" }),
+    });
+
+  it("each one path is read with GET and reaches api with the bearer", async () => {
+    const api = fakeApi();
+    const bff = createBff(cfg(api.fetch));
+    for (const p of PATHS) expect((await bff.proxy(req("GET", p))).status, p).toBe(200);
+    expect(api.calls.map((c) => `${c.method} ${new URL(c.url).pathname} ${c.auth}`)).toEqual(PATHS.map((p) => `GET ${p} Bearer header.payload.sig`));
+  });
+
+  it("another method on one of them is refused before api (the pair above)", async () => {
+    const api = fakeApi();
+    const bff = createBff(cfg(api.fetch));
+    for (const p of PATHS) for (const m of ["POST", "PUT", "PATCH"]) expect((await bff.proxy(req(m, p))).status, `${m} ${p}`).toBe(405);
+    expect(api.calls).toEqual([]);
+  });
+
+  it("only the exact paths: a neighbour, a prefix or a longer path is the 404 before api", async () => {
+    const api = fakeApi();
+    const bff = createBff(cfg(api.fetch));
+    for (const p of ["/v1/overview", "/v1/overview/", "/v1/overview/summary", "/v1/overview/registry/", "/v1/overview/registry/x", "/v1/overview/auditx", "/v1/overview/zones"]) {
+      expect((await bff.proxy(req("GET", p))).status, p).toBe(404);
+    }
+    expect(api.calls).toEqual([]);
+    expect(OVERVIEW_PROXY_ROUTES.every((r) => r.methods.length === 1 && r.methods[0] === "GET" && r.path.source.startsWith("^") && r.path.source.endsWith("$"))).toBe(true);
+    expect(OVERVIEW_PROXY_ROUTES.map((r) => r.path.source)).toEqual(PATHS.map((p) => new RegExp(`^${p}$`).source));
   });
 });
 

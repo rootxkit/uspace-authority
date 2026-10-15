@@ -218,8 +218,10 @@ the kit's `bffHandlers` configured in `web/src/lib/bff/handlers.ts`.
   U-space, publication and certificate operations of the console (each
   pattern anchored; a zone or U-space identifier is the
   `^[A-Za-z0-9_-]{1,7}$` api/openapi.yaml pins, `ZONE_IDENTIFIER`; the
-  registry's machine operations are not among them), and WP-23's `OVERSIGHT_PROXY_ROUTES`, each of which names the
-  methods of its operations (a path of WP-23's with another method is
+  registry's machine operations are not among them), WP-23's `OVERSIGHT_PROXY_ROUTES`
+  and the overview's `OVERVIEW_PROXY_ROUTES` (the four exact
+  `/v1/overview/*` paths, `GET` only), each of which names the
+  methods of its operations (a path of these lists with another method is
   the BFF's 405 and never reaches api; without a session it is the
   BFF's 401 and without the CSRF pair its 403 first, so the 405 tells
   only a signed-in caller which methods a route takes). Any other path
