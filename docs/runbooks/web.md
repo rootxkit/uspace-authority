@@ -271,7 +271,9 @@ other frame to `web/src/picture/adapt.ts`.
   (`web/src/picture/degraded.ts`), with the server's ages
   (`projection_age_s`, `cis_age_s`) and, for the bus, picture-ws's
   `nats_since` read from `GET /v1/picture/sources`. An unknown slug is
-  shown as the server names it.
+  shown as the server names it. The strip under the kit's status bar
+  names each slug by a short label, the server's code in its tooltip
+  (`web/src/picture/StatusLine.tsx`); an unknown one as sent.
 - The violations panel is the snapshot's `alerts[]` on connect (C-08),
   then every raise, update and clear.
 - The sources panel is the kit's, from the status frame's `sources[]`:
@@ -311,7 +313,7 @@ every field problem by path. The edit controls follow the operations'
 | personal-data panels | registrar, inspector (applications: registrar) | Nothing is read until a purpose of `WEB_PII_PURPOSES` is chosen; the purpose is the request's `purpose`, api records the view before it answers, and the panel keeps nothing after it closes. |
 | `/registry/import` | registrar | The dry run first, its report by record and field; the import is offered only for the file a dry run read without a problem, and confirms the counts. |
 | `/registry/applications` | registrar | The queue by state; off (`REGISTRY_APPLICATIONS`, pending GCAA) api answers 404 and the page says the portal is off. |
-| `/zones`, `/zones/<id>` | read: inspector, admin, viewer; author: inspector; approve, publish: admin | The versions in a state on a list and a map; history with the difference between two versions; approval; the applicability check (`unknown` is never shown as applies); the ED-318 export at a time; publication with the outbox state. |
+| `/zones`, `/zones/<id>` | read: inspector, admin, viewer; author: inspector; approve, publish: admin | The versions in a state on a list and a map (a circle drawn by the outline api draws, `GET /v1/outlines/circle`, and listed as not drawn when api refuses it, as it does a viewer); history with the difference between two versions; approval; the applicability check (`unknown` is never shown as applies); the ED-318 export at a time; publication with the outbox state. |
 | `/zones/new`, `/zones/<id>/edit` | inspector | The editor (below). |
 | `/zones/import` | inspector | ED-318 or ED-269, at most 4 MiB (refused before sending past it); every problem by path; nothing imported on any problem. |
 | `/uspace/*` | admin | The editor in U-space mode with the designation and its Art. 3(4) block; designation; publication. |
