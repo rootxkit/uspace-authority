@@ -46,6 +46,9 @@ type UntrustedError struct {
 	// Mismatch is true when the signature verified but what was
 	// served (or merged from a delta) is not what it signs (audit A-B2).
 	Mismatch bool
+	// Expiry is true for a restrictions version without a publisher
+	// signature that is not a verified expiry (expiry.go).
+	Expiry bool
 }
 
 func (e *UntrustedError) Error() string {
@@ -180,33 +183,57 @@ type VersionReader interface {
 	GetVersion(ctx context.Context, ds Dataset, v int64) (Fetched, error)
 }
 
+// The provenance kinds of an installed version.
+const (
+	// ProvenancePublisher is a version its publisher signed.
+	ProvenancePublisher = "publisher"
+	// ProvenanceCISPExpiry is a restrictions version the CISP made
+	// itself, installed by the expiry rule (expiry.go).
+	ProvenanceCISPExpiry = "cisp_expiry"
+)
+
+// Provenance is how an installed version was shown to be trusted.
+type Provenance struct {
+	// Kind is ProvenancePublisher or ProvenanceCISPExpiry.
+	Kind string
+	// KID is the kid that verified: the publisher's, or the CISP's for
+	// an expiry.
+	KID string
+	// Removed are the restrictions an expiry ended, by identifier.
+	Removed []string
+}
+
 // checkProvenance reads version v as published (GET
 // /v1/{dataset}/versions/{v}) and verifies X-Publisher-Signature over its
 // bytes with the keys of the dataset's publisher. It returns an
 // *UntrustedError when the signature is missing or does not verify (or
-// there are no keys), with the kid that verified otherwise, and another
-// error when the version could not be read (a pull failure: nothing is
-// held, the next pull tries again). A version the CISP made itself (a
-// restriction expiring) carries no publisher signature and is held
-// until the publisher's next signed version (spec gap, in the runbook).
-func checkProvenance(ctx context.Context, r VersionReader, pv PublisherVerifier, v *Version) (string, error) {
-	untrusted := func(format string, a ...any) (string, error) {
-		return "", &UntrustedError{Dataset: v.Dataset, Version: v.Number, Reason: fmt.Sprintf(format, a...)}
+// there are no keys), the provenance otherwise, and another error when
+// the version could not be read (a pull failure: nothing is held, the
+// next pull tries again). A restrictions version the CISP made itself
+// (a restriction expiring) carries no publisher signature: it is
+// installed only when it is a verified expiry of the set in use (ex,
+// expiry.go), else held until the publisher's next signed version.
+func checkProvenance(ctx context.Context, r VersionReader, pv PublisherVerifier, v *Version, ex expiryCheck) (Provenance, error) {
+	untrusted := func(format string, a ...any) (Provenance, error) {
+		return Provenance{}, &UntrustedError{Dataset: v.Dataset, Version: v.Number, Reason: fmt.Sprintf(format, a...)}
 	}
 	if pv == nil {
 		return untrusted("no publisher keys are configured")
 	}
 	f, err := r.GetVersion(ctx, v.Dataset, v.Number)
 	if err != nil {
-		return "", fmt.Errorf("reading %s version %d as published: %w", v.Dataset, v.Number, err)
+		return Provenance{}, fmt.Errorf("reading %s version %d as published: %w", v.Dataset, v.Number, err)
 	}
 	if f.Status != http.StatusOK {
-		return "", fmt.Errorf("reading %s version %d as published: the CISP answered %d", v.Dataset, v.Number, f.Status)
+		return Provenance{}, fmt.Errorf("reading %s version %d as published: the CISP answered %d", v.Dataset, v.Number, f.Status)
 	}
 	if f.Version != 0 && f.Version != v.Number {
 		return untrusted("the CISP served version %d for version %d", f.Version, v.Number)
 	}
 	if strings.TrimSpace(f.PublisherSignature) == "" {
+		if v.Dataset == DatasetRestrictions {
+			return checkExpiry(ctx, pv, v, &f, ex)
+		}
 		return untrusted("no %s (a version the CISP made itself is not used until its publisher signs the next)", HeaderPublisherSignature)
 	}
 	pub := PublisherOf(v.Dataset)
@@ -218,9 +245,9 @@ func checkProvenance(ctx context.Context, r VersionReader, pv PublisherVerifier,
 		return untrusted("%s names %q, the signature's kid is %q", HeaderPublisherKID, short(f.PublisherKID), sig.KID)
 	}
 	if why := signedContentDiffers(v, f.Body); why != "" {
-		return "", &UntrustedError{Dataset: v.Dataset, Version: v.Number, Reason: why, Mismatch: true}
+		return Provenance{}, &UntrustedError{Dataset: v.Dataset, Version: v.Number, Reason: why, Mismatch: true}
 	}
-	return sig.KID, nil
+	return Provenance{Kind: ProvenancePublisher, KID: sig.KID}, nil
 }
 
 // signedContentDiffers ties what is about to be installed to the bytes

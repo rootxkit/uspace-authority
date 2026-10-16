@@ -72,16 +72,23 @@ type SubscriberConfig struct {
 	SubscriptionRecheck time.Duration
 	// StaleBoundS is the policy's cis_stale_bound_s.
 	StaleBoundS func() float64
-	Now         func() time.Time
+	// ExpirySkew is cis_expiry_skew_s (CIS_EXPIRY_SKEW_S): how far past
+	// Now the at of a CISP expiry record may be (expiry.go). Zero allows
+	// none.
+	ExpirySkew time.Duration
+	Now        func() time.Time
 	// Direct is the ANSP's degraded direct path (direct.go).
 	Direct DirectConfig
 }
 
 type dsState struct {
-	cur       *Version
-	kid       string
-	fetchedAt time.Time
-	checkedAt time.Time
+	cur *Version
+	kid string
+	// provenance is how cur was trusted when installed (Provenance.Kind;
+	// "" for a version loaded from the database at start).
+	provenance string
+	fetchedAt  time.Time
+	checkedAt  time.Time
 	// empty is true when the CISP said the dataset has no version yet.
 	empty   bool
 	held    *UntrustedError
@@ -208,7 +215,7 @@ func (s *Subscriber) Warm(ctx context.Context) {
 		s.mu.Lock()
 		st := s.st[c.Dataset]
 		if st != nil {
-			st.cur, st.kid, st.fetchedAt, st.checkedAt = v, c.PublisherKID, c.FetchedAt, now.Add(-age)
+			st.cur, st.kid, st.provenance, st.fetchedAt, st.checkedAt = v, c.PublisherKID, "", c.FetchedAt, now.Add(-age)
 		}
 		s.mu.Unlock()
 		s.cfg.Logger.Info("CIS version loaded from the database", slog.String("dataset", string(c.Dataset)),
@@ -371,21 +378,33 @@ func (s *Subscriber) accept(ctx context.Context, v, cur *Version, reconcile bool
 		s.confirm(ctx, v.Dataset, cur)
 		return nil
 	}
-	kid, err := checkProvenance(ctx, s.cfg.CISP, s.cfg.Publishers, v)
+	prov, err := checkProvenance(ctx, s.cfg.CISP, s.cfg.Publishers, v, expiryCheck{Prev: cur, Now: s.cfg.Now(), Skew: s.cfg.ExpirySkew})
 	if err != nil {
 		var ue *UntrustedError
 		if errors.As(err, &ue) {
 			if ue.Mismatch {
 				s.cfg.Counters.Inc(CounterSignedMismatch)
 			}
+			if ue.Expiry {
+				s.cfg.Counters.Inc(CounterExpiryHeld)
+			}
 			return s.hold(v, ue)
 		}
 		return s.failPull(v.Dataset, err)
 	}
+	// The kid stored is the publisher's: a version the CISP made has
+	// none (the CISP's kid is in the log line).
+	kid := prov.KID
+	if prov.Kind == ProvenanceCISPExpiry {
+		kid = ""
+		s.cfg.Counters.Inc(CounterExpiryInstalled)
+		s.cfg.Logger.Info("CIS restrictions expiry verified: the version the CISP made is installed", slog.Int64("cis_version", v.Number),
+			slog.Any("removed", prov.Removed), slog.String("cisp_kid", prov.KID))
+	}
 	now := s.cfg.Now()
 	s.mu.Lock()
 	st := s.st[v.Dataset]
-	st.cur, st.kid, st.fetchedAt, st.checkedAt, st.empty = v, kid, now, now, false
+	st.cur, st.kid, st.provenance, st.fetchedAt, st.checkedAt, st.empty = v, kid, prov.Kind, now, now, false
 	st.refused, st.lastErr = nil, ""
 	if st.held != nil && st.held.Version <= v.Number {
 		st.held = nil
@@ -399,7 +418,7 @@ func (s *Subscriber) accept(ctx context.Context, v, cur *Version, reconcile bool
 	}
 	s.cfg.Logger.Info("CIS version installed", slog.String("dataset", string(v.Dataset)), slog.Int64("cis_version", v.Number),
 		slog.Int("features", v.FeatureCount()), slog.Bool("delta", v.Delta), slog.Bool("reconcile", reconcile),
-		slog.String("publisher_kid", kid))
+		slog.String("provenance", prov.Kind), slog.String("publisher_kid", kid))
 	c := &Cached{
 		Dataset: v.Dataset, Version: v.Number, ETag: v.ETag, UpdatedAt: v.UpdatedAt, FetchedAt: now, CheckedAt: now,
 		FeatureCount: v.FeatureCount(), PublisherKID: kid, Payload: v.Body,
@@ -706,6 +725,10 @@ type CacheState struct {
 	LastError      string
 	// Pending is a notified version not pulled yet.
 	Pending *int64
+	// Provenance is how the version held was trusted when this process
+	// installed it (ProvenancePublisher, ProvenanceCISPExpiry); "" for
+	// one loaded from the database at start.
+	Provenance string
 }
 
 // State is every subscribed dataset's state at now.
@@ -717,7 +740,7 @@ func (s *Subscriber) State() []CacheState {
 	out := make([]CacheState, 0, len(SubscribedDatasets))
 	for _, d := range SubscribedDatasets {
 		st := s.st[d]
-		cs := CacheState{Dataset: d, LastError: st.lastErr}
+		cs := CacheState{Dataset: d, LastError: st.lastErr, Provenance: st.provenance}
 		if st.lastErr == "" && st.cur == nil && s.warmErr != "" {
 			cs.LastError = "cache not read: " + s.warmErr
 		}

@@ -62,9 +62,14 @@
 //     verifies: GET /v1/{dataset}/versions/{v} and X-Publisher-Signature
 //     over those bytes, with the authority's publication keys for its
 //     own datasets and the ANSP's for the restrictions; a version without
-//     one (a version the CISP made itself, a restriction expiring) or
-//     whose signature does not verify is held, counted
-//     (cis_publisher_untrusted) and shown, never used. The version held
+//     one or whose signature does not verify is held, counted
+//     (cis_publisher_untrusted) and shown, never used. The one exception
+//     is a restrictions version the CISP made itself when a restriction
+//     reached its end: installed when it is a verified expiry of the
+//     version in use (spec 02 F3 erratum, expiry.go; X-CIS-Signature
+//     with the CISP's keys, nothing added or changed, every removal at
+//     or after its signed end), counted cis_expiry_installed, else held
+//     and counted cis_expiry_held as well. The version held
 //     is in cis_cache with when it was fetched and when the CISP last
 //     confirmed it; cis_age_s is the time since that confirmation, and a
 //     dataset older than the policy's cis_stale_bound_s, or never read,

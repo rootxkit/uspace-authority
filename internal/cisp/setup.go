@@ -61,10 +61,18 @@ type Setup struct {
 	// ANSPPublisherJWKSURL verifies the publisher signatures of pulled
 	// restrictions versions (CIS_ANSP_PUBLISHER_JWKS_URL).
 	ANSPPublisherJWKSURL string
-	// PublisherKeys, when set, replace the publication ring's JWKS and
-	// ANSPPublisherJWKSURL by publisher (tests).
-	PublisherKeys      map[string]coreauth.IssuerConfig
+	// CISPJWKSURL verifies X-CIS-Signature over a restrictions version
+	// the CISP made itself, an expiry (CIS_CISP_JWKS_URL, default
+	// CISP_JWKS_URL); empty holds every such version.
+	CISPJWKSURL string
+	// PublisherKeys, when set, replace the publication ring's JWKS,
+	// ANSPPublisherJWKSURL and CISPJWKSURL by name (tests).
+	PublisherKeys map[string]coreauth.IssuerConfig
+	// PublisherSigMaxAge bounds the iat of the publisher signatures and
+	// of the CISP's signature over an expiry alike.
 	PublisherSigMaxAge time.Duration
+	// ExpirySkew is cis_expiry_skew_s (CIS_EXPIRY_SKEW_S).
+	ExpirySkew time.Duration
 
 	ReconcileInterval time.Duration
 	// DirectMax and DirectKeep bound the ANSP's degraded direct path
@@ -137,6 +145,9 @@ func Assemble(_ context.Context, s Setup) (*Parts, error) {
 	if s.ANSPPublisherJWKSURL != "" {
 		keys[PublisherANSP] = coreauth.IssuerConfig{JWKSURL: s.ANSPPublisherJWKSURL}
 	}
+	if s.CISPJWKSURL != "" {
+		keys[PublisherCISP] = coreauth.IssuerConfig{JWKSURL: s.CISPJWKSURL}
+	}
 	for name, k := range s.PublisherKeys {
 		keys[name] = k
 	}
@@ -167,7 +178,7 @@ func Assemble(_ context.Context, s Setup) (*Parts, error) {
 	p.Subscriber = NewSubscriber(SubscriberConfig{
 		CISP: reader, Publishers: p.Publishers, Schemas: schemas, Store: store, Projector: projector, Announcer: announcer,
 		Counters: counters, Logger: logger, Limiter: s.Limiter, CallbackURL: s.CallbackURL, BBox: s.BBox,
-		ReconcileInterval: s.ReconcileInterval, StaleBoundS: s.StaleBoundS, Now: s.Now,
+		ReconcileInterval: s.ReconcileInterval, StaleBoundS: s.StaleBoundS, ExpirySkew: s.ExpirySkew, Now: s.Now,
 		// The ANSP's pull_url is public and signed: a client of its own,
 		// never the CISP's.
 		Direct: DirectConfig{Client: orClient(s.DirectClient), Store: directStore(s.DB, store), Max: s.DirectMax, Keep: s.DirectKeep},
@@ -273,6 +284,9 @@ func (p *Parts) StatusAttrs() []slog.Attr {
 		}
 		if c.AgeS != nil {
 			attrs = append(attrs, slog.Float64("cis_"+string(c.Dataset)+"_age_s", *c.AgeS))
+		}
+		if c.Provenance != "" {
+			attrs = append(attrs, slog.String("cis_"+string(c.Dataset)+"_provenance", c.Provenance))
 		}
 		if c.Stale {
 			stale = append(stale, string(c.Dataset))
