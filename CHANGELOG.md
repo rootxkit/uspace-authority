@@ -558,3 +558,17 @@ Unreleased; the format follows Keep a Changelog.
   outer ring and the centre, dragged or clicked; holes and radius typed)
   and show a circle's outline as api drew it with uspace-core's geodesy
   (`GET /v1/outlines/circle`, `internal/outline`; PLAN section 14 Q-A23).
+- CIS restrictions expiry (spec 02 F3 erratum 2026-10-16; no API
+  change): a restrictions version the CISP made itself when a
+  restriction reached its end is installed as a verified expiry instead
+  of held, so the version in use no longer ages into `cis_stale` after
+  every natural expiry. Its `X-CIS-Signature` is verified with the
+  CISP's keys (`CIS_CISP_JWKS_URL`, default `CISP_JWKS_URL`, under
+  `CIS_PUBLISHER_SIG_MAX_AGE_S`), its record's `at` against this clock
+  plus `CIS_EXPIRY_SKEW_S` (default 30 s), and its content against the
+  version in use (removals only, each at or after its signed end, the
+  record's `feature_id` among them). Anything else, a CISP older than
+  the erratum included, is held as before. Counted
+  `cis_expiry_installed` and `cis_expiry_held`; the status line names
+  the provenance (`cis_<dataset>_provenance`). The detectors still end
+  each restriction by its own window.

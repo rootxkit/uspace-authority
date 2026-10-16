@@ -48,6 +48,9 @@ type Feature struct {
 	Identifier  string
 	Raw         json.RawMessage
 	Restriction *cispclient.CisRestriction
+	// Applicability is the feature's limitedApplicability as
+	// ed318.Parse read it (nil when absent).
+	Applicability []ed318.TimePeriod
 }
 
 // RefusalError is a version refused whole on receipt (spec 06 T9): the
@@ -126,7 +129,7 @@ func ParseVersion(s *Schemas, d Dataset, body []byte, etag string, headerVersion
 	v.Features = make([]Feature, len(fc.Features))
 	for i := range fc.Features {
 		p := &fc.Features[i].Properties
-		f := Feature{Identifier: p.Identifier, Raw: top.Features[i]}
+		f := Feature{Identifier: p.Identifier, Raw: top.Features[i], Applicability: p.LimitedApplicability}
 		if d == DatasetRestrictions {
 			raw, ok := p.ExtendedProperties[RestrictionKey]
 			if !ok {

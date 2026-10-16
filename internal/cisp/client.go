@@ -37,6 +37,7 @@ const (
 	HeaderCISVersion         = "X-CIS-Version"
 	HeaderPublisherSignature = "X-Publisher-Signature"
 	HeaderPublisherKID       = "X-Publisher-Kid"
+	HeaderCISSignature       = "X-CIS-Signature"
 )
 
 // TokenSource hands out an ecosystem token for the host of baseURL
@@ -313,6 +314,10 @@ type Fetched struct {
 	// X-Publisher-Kid ("" when absent; only a version read sends them).
 	PublisherSignature string
 	PublisherKID       string
+	// CISSignature is X-CIS-Signature, the CISP's own detached JWS over
+	// the bytes ("" when absent). It is verified only for a restrictions
+	// version the CISP made itself (an expiry, expiry.go).
+	CISSignature string
 }
 
 // Head is HEAD /v1/{dataset} with If-None-Match etag (the 60 s
@@ -436,7 +441,8 @@ func (c *Client) GetURL(ctx context.Context, raw string) (Fetched, error) {
 
 func fetchedHeaders(resp *http.Response) (Fetched, error) {
 	f := Fetched{Status: resp.StatusCode, ETag: resp.Header.Get("ETag"),
-		PublisherSignature: resp.Header.Get(HeaderPublisherSignature), PublisherKID: resp.Header.Get(HeaderPublisherKID)}
+		PublisherSignature: resp.Header.Get(HeaderPublisherSignature), PublisherKID: resp.Header.Get(HeaderPublisherKID),
+		CISSignature: resp.Header.Get(HeaderCISSignature)}
 	if v := resp.Header.Get(HeaderCISVersion); v != "" {
 		n, err := strconv.ParseInt(v, 10, 64)
 		if err != nil || n < 0 {

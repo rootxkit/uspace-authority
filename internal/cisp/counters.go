@@ -33,6 +33,8 @@ const (
 	CounterRejectedPublication  = "cis_rejected_publications"   // a version refused whole (ed318.Parse or the pinned schema), the previous one kept (T9)
 	CounterUntrusted            = "cis_publisher_untrusted"     // a version held: its publisher's signature is missing or does not verify
 	CounterSignedMismatch       = "cis_signed_content_mismatch" // a version held: what was served (or merged from a delta) is not what the publisher signed
+	CounterExpiryInstalled      = "cis_expiry_installed"        // a restrictions version the CISP made itself installed as a verified expiry (02 F3 erratum)
+	CounterExpiryHeld           = "cis_expiry_held"             // a restrictions version without a publisher signature held: not a verified expiry
 	CounterVersionReplays       = "cis_version_replays"
 	CounterReconcileCatchups    = "cis_reconcile_catchups" // a newer version found by the 60 s reconciliation, not by a notification
 	CounterStoreFailed          = "cis_store_failed"

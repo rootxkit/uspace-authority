@@ -73,11 +73,16 @@ func assembleCISP(ctx context.Context, cfg *config.API, rt *proc.Runtime, tok *t
 	if ansp == "" {
 		ansp = cfg.ANSPJWKSURL
 	}
+	cispKeys := cfg.CISCISPJWKSURL
+	if cispKeys == "" {
+		cispKeys = cfg.CISPJWKSURL
+	}
 	return cisp.Assemble(ctx, cisp.Setup{
 		DB: db, Audit: w, Projector: reg.Projector, JS: bp.JS, NATSTimeout: time.Duration(cfg.NATSTimeoutMS) * time.Millisecond,
 		PublicationRing: ring, Tokens: src, BaseURL: cfg.CISPBaseURL, CallbackURL: cfg.CISCallbackURL, BBox: bbox,
-		Audiences: cfg.AudienceList(), NotifyIssuers: issuers, ANSPPublisherJWKSURL: ansp,
+		Audiences: cfg.AudienceList(), NotifyIssuers: issuers, ANSPPublisherJWKSURL: ansp, CISPJWKSURL: cispKeys,
 		PublisherSigMaxAge: time.Duration(cfg.CISPublisherSigMaxAgeS) * time.Second,
+		ExpirySkew:         time.Duration(cfg.CISExpirySkewS) * time.Second,
 		ReconcileInterval:  time.Duration(cfg.CISReconcileS) * time.Second,
 		HeartbeatInterval:  time.Duration(cfg.CISHeartbeatS) * time.Second,
 		BackoffMin:         time.Duration(cfg.CISSendBackoffMinS) * time.Second,

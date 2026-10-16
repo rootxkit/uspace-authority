@@ -65,6 +65,10 @@ func (d Dataset) PublishScope() string {
 const (
 	PublisherAuthority = "authority"
 	PublisherANSP      = "ansp"
+	// PublisherCISP is the CISP's own key set, which verifies
+	// X-CIS-Signature over a restrictions version the CISP made itself
+	// (an expiry, expiry.go). It is never the publisher of a dataset.
+	PublisherCISP = "cisp"
 )
 
 // PublisherOf is the publisher whose key must have signed a version of d.

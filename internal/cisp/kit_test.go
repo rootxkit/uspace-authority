@@ -420,13 +420,13 @@ func newWorld(t *testing.T) *world {
 	w := &world{fake: fake, client: client, store: &memOutbox{}, cache: newMemCache(), projector: &memProjector{}, announcer: &memAnnouncer{}}
 	w.outbox = NewOutbox(sch, authority, w.store, nil)
 	pubs := NewPublishers(map[string]auth.IssuerConfig{
-		PublisherAuthority: {Keys: authority.JWKS()}, PublisherANSP: {Keys: ansp.JWKS()},
+		PublisherAuthority: {Keys: authority.JWKS()}, PublisherANSP: {Keys: ansp.JWKS()}, PublisherCISP: {Keys: fake.Ring.JWKS()},
 	}, 0, nil)
 	if err := pubs.Build(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	w.sub = NewSubscriber(SubscriberConfig{CISP: client, Publishers: pubs, Schemas: sch, Store: w.cache, Projector: w.projector,
-		Announcer: w.announcer, Counters: w.outbox.Counters})
+		Announcer: w.announcer, Counters: w.outbox.Counters, ExpirySkew: DefaultExpirySkew})
 	w.sender = &Sender{Store: w.store, CISP: client, Signer: authority, Counters: w.outbox.Counters}
 	notify, err := auth.NewCompactVerifier(context.Background(), auth.CompactConfig{
 		Issuers:   map[string]auth.IssuerConfig{fakecisp.Issuer: {Keys: fake.Ring.JWKS()}, "https://ansp.test": {Keys: ansp.JWKS()}},

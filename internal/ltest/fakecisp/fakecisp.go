@@ -17,7 +17,8 @@
 //   - GET and HEAD /v1/{dataset} with If-None-Match and since_version (a
 //     DatasetDelta); 404 no_version before the first version;
 //   - GET /v1/{dataset}/versions/{v}: the publisher's bytes with
-//     X-Publisher-Signature and X-Publisher-Kid.
+//     X-Publisher-Signature and X-Publisher-Kid, and X-CIS-Signature
+//     (a real one only for a version published with PublishCISP).
 //
 // Notifications are compact JWS (core's KeyRing.SignCompact) of a
 // cis/change/v1 record, aud the callback's host. Controls make the CISP
@@ -64,6 +65,8 @@ type Version struct {
 	Published    []byte
 	Signature    string
 	SignatureKID string
+	// CISSignature is the X-CIS-Signature served ("": a placeholder).
+	CISSignature string
 	Features     map[string]json.RawMessage
 	Order        []string
 	USSPs        bool
@@ -241,7 +244,26 @@ func (f *Fake) Current(ds string) *Version {
 // signature by ring (nil: unsigned, a version the CISP made). It
 // notifies the subscriptions with reason.
 func (f *Fake) Publish(ds string, features []json.RawMessage, published []byte, ring *auth.KeyRing, reason string) (*Version, error) {
-	v := &Version{Published: published, Features: map[string]json.RawMessage{}}
+	return f.publish(ds, features, published, ring, "", reason)
+}
+
+// PublishCISP stores a version the CISP made itself (a restriction
+// expiring): features as served, record the bytes
+// /v1/{dataset}/versions/{v} serves, no publisher signature, and
+// cisSignature as X-CIS-Signature ("" serves none). The caller signs
+// (Ring.SignDetached over record, or any other key or bytes).
+func (f *Fake) PublishCISP(ds string, features []json.RawMessage, record []byte, cisSignature, reason string) (*Version, error) {
+	if cisSignature == "" {
+		cisSignature = noCISSignature
+	}
+	return f.publish(ds, features, record, nil, cisSignature, reason)
+}
+
+// noCISSignature makes the version answer carry no X-CIS-Signature.
+const noCISSignature = "-"
+
+func (f *Fake) publish(ds string, features []json.RawMessage, published []byte, ring *auth.KeyRing, cisSig, reason string) (*Version, error) {
+	v := &Version{Published: published, CISSignature: cisSig, Features: map[string]json.RawMessage{}}
 	for _, ft := range features {
 		id, err := identifier(ft)
 		if err != nil {
@@ -533,7 +555,13 @@ func (f *Fake) version(w http.ResponseWriter, ds, raw string) {
 	}
 	w.Header().Set("ETag", etag(ds, v.Number))
 	w.Header().Set("X-CIS-Version", strconv.FormatInt(v.Number, 10))
-	w.Header().Set("X-CIS-Signature", "unused-by-the-fake")
+	switch v.CISSignature {
+	case "":
+		w.Header().Set("X-CIS-Signature", "unused-by-the-fake")
+	case noCISSignature:
+	default:
+		w.Header().Set("X-CIS-Signature", v.CISSignature)
+	}
 	if v.Signature != "" {
 		w.Header().Set("X-Publisher-Signature", v.Signature)
 		w.Header().Set("X-Publisher-Kid", v.SignatureKID)
