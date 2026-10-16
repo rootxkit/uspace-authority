@@ -16,11 +16,13 @@ from the CISP's file at that commit).
 | `CISP_CLIENT_ID`, `CISP_CLIENT_SECRET_FILE`, `CISP_TOKEN_URL` | `authority-01`, unset, `ISSUER_URL/oauth/token` | The client this system uses at its own token service for the CISP's tokens (audience = the CISP's host, M18). Create it with `POST /v1/oauth/clients` (scopes `cis.read`, `cis.publish:zones`, `cis.publish:uspace`, `cis.publish:ussp_list`; audience the CISP's host). |
 | `CIS_CALLBACK_URL` | unset | This system's `POST /v1/cis/notifications` as the CISP must call it. Unset: no subscription; the 60 s reconciliation alone keeps the cache. Its host must be one of `AUTHORITY_AUDIENCES` (the CISP signs `aud` as that host): api refuses to start otherwise. |
 | `AUTHORITY_CIS_NOTIFY_ISSUERS` | the CISP and ANSP peers | `<iss>=<jwks_url>`, at most two: the CISP (`CISP_ISSUER_URL`) and the ANSP's direct delivery (`ANSP_ISSUER_URL`, M5). |
-| `CIS_ANSP_PUBLISHER_JWKS_URL` | `ANSP_JWKS_URL` | The ANSP's keys, which must have signed every restrictions version this system uses. |
+| `CIS_ANSP_PUBLISHER_JWKS_URL` | `ANSP_JWKS_URL` | The ANSP's keys, which must have signed every restrictions version this system uses but a verified expiry. |
+| `CIS_CISP_JWKS_URL` | `CISP_JWKS_URL` | The CISP's keys, which verify `X-CIS-Signature` over a restrictions version the CISP made itself (an expiry). Unset with `CISP_JWKS_URL`: every such version is held, as before. |
+| `CIS_EXPIRY_SKEW_S` | 30 | `cis_expiry_skew_s`: how far past this system's clock the `at` of the CISP's expiry record may be (0 to 300). |
 | `CIS_RECONCILE_S` | 60 | The reconciliation of every dataset (at most 60, 02 F3). |
 | `CIS_HEARTBEAT_S` | 15 | The publisher heartbeat (M3). |
 | `CIS_SEND_BACKOFF_MIN_S`, `CIS_SEND_BACKOFF_MAX_S`, `CIS_SEND_GIVE_UP_S` | 2, 300, 86400 | The sender's retry: doubling from the minimum, capped at 5 min, given up 24 h after the row was queued. |
-| `CIS_PUBLISHER_SIG_MAX_AGE_S` | 31622400 (366 d) | How old the publisher signature of a pulled version may be (a signature is as old as its version). |
+| `CIS_PUBLISHER_SIG_MAX_AGE_S` | 31622400 (366 d) | How old the publisher signature of a pulled version may be (a signature is as old as its version); the CISP's signature over an expiry is held to the same bound. |
 | `CIS_JTI_MAX_LIVE` | 100000 | Delivery ids remembered by the receiver (E-10). |
 | `CIS_DIRECT_MAX` | 500 | Restrictions held from the ANSP's degraded direct delivery, and pulls waiting for it; past it a direct notification is answered 503 (E-10). |
 | `CIS_DIRECT_KEEP_S` | 86400 | How long a direct restriction that is over is kept, and a failed pull retried (pending GCAA; spec 02 F3's 24 h retry window). |
@@ -132,11 +134,28 @@ retry, conflict, held or refused version and webhook outcome.
 - Every 60 s each dataset is reconciled: HEAD with the held ETag, and on
   a change the delta from the version held.
 - A version is used only when its publisher signed it: the authority for
-  zones, uspace_airspace and ussp_list, the ANSP for restrictions. A
-  version the CISP made itself (a restriction expiring) carries no
-  publisher signature and is held until the publisher's next signed
-  version; the restriction's own window still ends it for the
-  detectors.
+  zones, uspace_airspace and ussp_list, the ANSP for restrictions. The
+  one exception is the spec 02 F3 erratum of 2026-10-16: a restrictions
+  version the CISP made itself (a restriction reaching its end, no
+  publisher signature) is installed as a verified expiry when its bytes
+  at `/v1/restrictions/versions/{v}` are the CISP's expiry record
+  (`op` `expire`, `restriction_id`, `feature_id`, `ends_at`, `at`),
+  `X-CIS-Signature` over them verifies with the CISP's keys
+  (`CIS_CISP_JWKS_URL`, `iat` within `CIS_PUBLISHER_SIG_MAX_AGE_S`),
+  `at` is no later than this clock plus `CIS_EXPIRY_SKEW_S`, and,
+  compared feature by feature with the version in use (without the
+  CISP's `cis_*` members), it removes one or more restrictions and adds
+  or changes none, every removed one has one `limitedApplicability`
+  period ending at or before `at`, and `feature_id` is one of them. It
+  is counted `cis_expiry_installed`, and the status line says
+  `cis_restrictions_provenance: cisp_expiry` until the next version.
+  Anything else (a CISP older than the erratum, whose record has no
+  `feature_id`, included) is held as before: counted `cis_expiry_held`
+  and `cis_publisher_untrusted`, `held_reason` saying why, the version
+  in use kept and ageing towards `cis_stale`. Either way the
+  restriction's own window ends it for the detectors: the expiry
+  version is version and freshness bookkeeping, never the reason a
+  restriction stops applying.
 - What is installed must be what was signed, not only signed: the
   served collection (or the one merged from a delta) is compared,
   feature by feature without the CISP's `cis_*` members, with the
@@ -153,8 +172,9 @@ retry, conflict, held or refused version and webhook outcome.
 - The CISP builds the restrictions collection it serves; the ANSP's
   signature covers one request, so only that request's feature is tied
   to it, the version's other restrictions to the requests that made
-  them. The CISP's own `X-CIS-Signature` is not verified (shared with
-  the USSPs).
+  them. The CISP's own `X-CIS-Signature` is verified only over a
+  version the CISP made itself, by the expiry rule above (shared with
+  the USSPs and the ANSP).
 - Reads are unfiltered (`?at=` is not used): the provenance check needs
   the version as published, and the detectors judge each restriction's
   window.
